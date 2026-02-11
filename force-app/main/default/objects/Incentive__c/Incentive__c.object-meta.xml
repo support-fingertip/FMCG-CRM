@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Incentive</label>
+    <pluralLabel>Incentives</pluralLabel>
+    <nameField>
+        <label>Incentive Number</label>
+        <displayFormat>INC-{0000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Incentive calculation record for salesperson based on target achievement with slab-based multiplier computation (MOD-08 Target and Achievement Management)</description>
+</CustomObject>

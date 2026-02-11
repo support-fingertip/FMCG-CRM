@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+    <active>true</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>allInternalUsers</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Scheme_Type__c</field>
+        <field>Start_Date__c</field>
+        <field>End_Date__c</field>
+        <field>Budget__c</field>
+        <field>Target_Channel__c</field>
+        <field>Region__c</field>
+        <field>Owner</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>true</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <type>userHierarchyField</type>
+            </approver>
+        </assignedApprover>
+        <label>Regional Manager Approval</label>
+        <name>Regional_Manager_Approval</name>
+    </approvalStep>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Trade_Marketing_Manager</name>
+                <type>queue</type>
+            </approver>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>Scheme__c.Budget__c</field>
+                <operation>greaterThan</operation>
+                <value>100000</value>
+            </criteriaItems>
+        </entryCriteria>
+        <label>Trade Marketing Approval</label>
+        <name>Trade_Marketing_Approval</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+    </approvalStep>
+    <description>Approval process for trade schemes and promotions requiring regional and trade marketing sign-off</description>
+    <emailTemplate>Scheme_Approval_Request</emailTemplate>
+    <entryCriteria>
+        <criteriaItems>
+            <field>Scheme__c.Status__c</field>
+            <operation>equals</operation>
+            <value>Submitted</value>
+        </criteriaItems>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Approve_Scheme</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalRejectionActions>
+        <action>
+            <name>Reject_Scheme</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <label>Scheme Approval</label>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>
