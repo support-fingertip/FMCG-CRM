@@ -1,0 +1,231 @@
+<template>
+    <lightning-card title="Visit Check-In / Check-Out" icon-name="standard:visit">
+        <div class="slds-p-around_medium">
+
+            <!-- Map Section -->
+            <div class="map-section slds-m-bottom_medium">
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_2-of-3">
+                        <div class="map-container">
+                            <template if:true={mapMarkers}>
+                                <lightning-map
+                                    map-markers={mapMarkers}
+                                    zoom-level="15"
+                                    markers-title="Visit Location"
+                                    show-footer>
+                                </lightning-map>
+                            </template>
+                            <template if:false={mapMarkers}>
+                                <div class="map-placeholder">
+                                    <lightning-icon icon-name="utility:location" size="large"></lightning-icon>
+                                    <p class="slds-m-top_small">Fetching location...</p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <!-- Distance & Geo-fence Status -->
+                        <div class="geo-status-card">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small">Location Status</h3>
+                            <div class="status-item">
+                                <span class="status-label">Distance to Outlet</span>
+                                <span class={distanceBadgeClass}>{distanceDisplay}</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Geo-fence</span>
+                                <span class={geofenceStatusClass}>{geofenceStatus}</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">GPS Accuracy</span>
+                                <span class="status-value">{gpsAccuracy}</span>
+                            </div>
+                            <template if:false={isWithinGeofence}>
+                                <div class="geofence-warning slds-m-top_small">
+                                    <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                                    <span class="slds-m-left_x-small slds-text-body_small">
+                                        You are outside the allowed check-in radius
+                                    </span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outlet 360 View Summary -->
+            <div class="outlet-summary slds-m-bottom_medium">
+                <h3 class="slds-text-heading_small slds-m-bottom_small">Outlet Overview</h3>
+                <div class="slds-grid slds-gutters slds-wrap">
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="summary-tile">
+                            <span class="tile-label">Last Visit</span>
+                            <span class="tile-value">{outletSummary.lastVisitDate}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="summary-tile">
+                            <span class="tile-label">Pending Orders</span>
+                            <span class="tile-value">{outletSummary.pendingOrders}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="summary-tile">
+                            <span class="tile-label">Outstanding</span>
+                            <span class="tile-value outstanding">{outletSummary.outstandingBalanceFormatted}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="summary-tile">
+                            <span class="tile-label">Active Schemes</span>
+                            <span class="tile-value scheme-count">{outletSummary.activeSchemes}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selfie Capture -->
+            <div class="selfie-section slds-m-bottom_medium">
+                <div class="slds-grid slds-gutters slds-grid_vertical-align-center">
+                    <div class="slds-col slds-size_1-of-2">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">Visit Photo</h3>
+                        <div class="photo-upload-area">
+                            <template if:false={photoPreview}>
+                                <div class="upload-placeholder">
+                                    <lightning-icon icon-name="utility:photo" size="large"></lightning-icon>
+                                    <p class="slds-m-top_x-small">Capture or upload a photo</p>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="user"
+                                        class="file-input"
+                                        onchange={capturePhoto}
+                                        data-id="photoInput" />
+                                    <lightning-button
+                                        variant="neutral"
+                                        label="Take Selfie / Upload Photo"
+                                        icon-name="utility:photo"
+                                        onclick={triggerPhotoCapture}
+                                        class="slds-m-top_small">
+                                    </lightning-button>
+                                </div>
+                            </template>
+                            <template if:true={photoPreview}>
+                                <div class="photo-preview">
+                                    <img src={photoPreview} alt="Visit Photo" class="captured-photo" />
+                                    <lightning-button-icon
+                                        icon-name="utility:close"
+                                        alternative-text="Remove photo"
+                                        variant="bare-inverse"
+                                        class="remove-photo-btn"
+                                        onclick={removePhoto}>
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <!-- Visit Duration Timer -->
+                        <template if:true={isCheckedIn}>
+                            <div class="timer-card">
+                                <h3 class="slds-text-heading_small slds-m-bottom_small">Visit Duration</h3>
+                                <div class="timer-display">
+                                    <span class="timer-value">{visitDurationDisplay}</span>
+                                </div>
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                    Checked in at {checkInTimeDisplay}
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visit Activities Checklist -->
+            <template if:true={isCheckedIn}>
+                <div class="activities-section slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">Visit Activities</h3>
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <template for:each={visitActivities} for:item="activity">
+                            <div class="slds-col slds-size_1-of-4 slds-p-around_xx-small" key={activity.id}>
+                                <div class={activity.cardClass} data-activity-id={activity.id} onclick={toggleActivity}>
+                                    <lightning-icon icon-name={activity.icon} size="medium"
+                                        class="slds-m-bottom_x-small"></lightning-icon>
+                                    <span class="activity-label">{activity.label}</span>
+                                    <template if:true={activity.completed}>
+                                        <lightning-icon icon-name="utility:check" size="xx-small"
+                                            class="activity-check" variant="success"></lightning-icon>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Non-Productive Reason -->
+            <template if:true={showNonProductiveReason}>
+                <div class="non-productive-section slds-m-bottom_medium">
+                    <lightning-combobox
+                        label="Non-Productive Visit Reason"
+                        value={nonProductiveReason}
+                        options={nonProductiveReasonOptions}
+                        placeholder="Select reason..."
+                        onchange={handleNonProductiveReasonChange}
+                        required>
+                    </lightning-combobox>
+                    <lightning-textarea
+                        label="Additional Comments"
+                        value={nonProductiveComments}
+                        onchange={handleNonProductiveCommentsChange}
+                        placeholder="Add details..."
+                        class="slds-m-top_small">
+                    </lightning-textarea>
+                </div>
+            </template>
+
+            <!-- Check-In / Check-Out Buttons -->
+            <div class="action-section">
+                <div class="slds-grid slds-grid_align-center slds-gutters">
+                    <template if:false={isCheckedIn}>
+                        <div class="slds-col">
+                            <lightning-button
+                                variant="brand"
+                                label="Check In"
+                                icon-name="utility:checkin"
+                                onclick={handleCheckIn}
+                                disabled={isProcessing}
+                                class="checkin-btn">
+                            </lightning-button>
+                        </div>
+                    </template>
+                    <template if:true={isCheckedIn}>
+                        <div class="slds-col">
+                            <lightning-button
+                                variant="neutral"
+                                label="Mark Non-Productive"
+                                icon-name="utility:block_visitor"
+                                onclick={handleMarkNonProductive}
+                                class="slds-m-right_small">
+                            </lightning-button>
+                        </div>
+                        <div class="slds-col">
+                            <lightning-button
+                                variant="destructive"
+                                label="Check Out"
+                                icon-name="utility:checkout"
+                                onclick={handleCheckOut}
+                                disabled={isProcessing}
+                                class="checkout-btn">
+                            </lightning-button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Spinner -->
+            <template if:true={isProcessing}>
+                <lightning-spinner alternative-text="Processing..." size="medium"></lightning-spinner>
+            </template>
+        </div>
+    </lightning-card>
+</template>

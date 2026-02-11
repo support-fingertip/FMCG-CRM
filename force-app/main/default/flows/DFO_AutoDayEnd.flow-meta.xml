@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/metadata">
+    <apiVersion>59.0</apiVersion>
+    <label>DFO - Auto Day End</label>
+    <description>Automatically closes day attendance records that were not manually ended by cutoff time</description>
+    <processType>AutoLaunchedFlow</processType>
+    <status>Active</status>
+    <interviewLabel>Auto Day End {!$Flow.CurrentDateTime}</interviewLabel>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <scheduledPaths>
+            <name>Run_Daily</name>
+            <connector>
+                <targetReference>Get_Open_Attendance</targetReference>
+            </connector>
+            <label>Run Daily at 9 PM</label>
+            <timeSource>RecordTriggerEvent</timeSource>
+        </scheduledPaths>
+    </start>
+    <recordLookups>
+        <name>Get_Open_Attendance</name>
+        <label>Get Open Attendance Records</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <connector>
+            <targetReference>Update_Open_Records</targetReference>
+        </connector>
+        <object>Day_Attendance__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Started</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Attendance_Date__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </filters>
+        <outputReference>OpenAttendanceRecords</outputReference>
+    </recordLookups>
+    <recordUpdates>
+        <name>Update_Open_Records</name>
+        <label>Close Open Attendance</label>
+        <locationX>176</locationX>
+        <locationY>276</locationY>
+        <inputReference>OpenAttendanceRecords</inputReference>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Auto-Closed</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Day_End_Time__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </inputAssignments>
+    </recordUpdates>
+    <variables>
+        <name>OpenAttendanceRecords</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Day_Attendance__c</objectType>
+    </variables>
+</Flow>

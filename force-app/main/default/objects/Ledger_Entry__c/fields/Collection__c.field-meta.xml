@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Collection__c</fullName>
+    <label>Collection</label>
+    <type>Lookup</type>
+    <referenceTo>Collection__c</referenceTo>
+    <relationshipLabel>Ledger Entries</relationshipLabel>
+    <relationshipName>Ledger_Entries</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

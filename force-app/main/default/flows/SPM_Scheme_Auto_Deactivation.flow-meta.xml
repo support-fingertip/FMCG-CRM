@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/metadata">
+    <apiVersion>59.0</apiVersion>
+    <label>SPM - Scheme Auto Deactivation</label>
+    <description>Scheduled flow that runs daily to deactivate schemes that have passed their end date</description>
+    <processType>AutoLaunchedFlow</processType>
+    <status>Active</status>
+    <interviewLabel>Scheme Auto Deactivation {!$Flow.CurrentDateTime}</interviewLabel>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <scheduledPaths>
+            <name>Run_Daily_Check</name>
+            <connector>
+                <targetReference>Get_Expired_Schemes</targetReference>
+            </connector>
+            <label>Run Daily</label>
+            <timeSource>RecordTriggerEvent</timeSource>
+        </scheduledPaths>
+    </start>
+    <recordLookups>
+        <name>Get_Expired_Schemes</name>
+        <label>Get Expired Active Schemes</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <connector>
+            <targetReference>Check_Records_Found</targetReference>
+        </connector>
+        <object>Scheme__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>End_Date__c</field>
+            <operator>LessThan</operator>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Active</stringValue>
+            </value>
+        </filters>
+        <outputReference>ExpiredSchemes</outputReference>
+    </recordLookups>
+    <decisions>
+        <name>Check_Records_Found</name>
+        <label>Expired Schemes Found?</label>
+        <locationX>176</locationX>
+        <locationY>276</locationY>
+        <defaultConnectorLabel>No Expired Schemes</defaultConnectorLabel>
+        <rules>
+            <name>Has_Expired_Schemes</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>ExpiredSchemes</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Update_Expired_Schemes</targetReference>
+            </connector>
+            <label>Has Expired Schemes</label>
+        </rules>
+    </decisions>
+    <recordUpdates>
+        <name>Update_Expired_Schemes</name>
+        <label>Deactivate Expired Schemes</label>
+        <locationX>50</locationX>
+        <locationY>418</locationY>
+        <inputReference>ExpiredSchemes</inputReference>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Expired</stringValue>
+            </value>
+        </inputAssignments>
+    </recordUpdates>
+    <variables>
+        <name>ExpiredSchemes</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Scheme__c</objectType>
+    </variables>
+</Flow>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Tax Configuration</label>
+    <pluralLabel>Tax Configurations</pluralLabel>
+    <nameField>
+        <label>Tax Configuration Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Tax rules and rate configurations for GST, VAT, and Sales Tax compliance (MOD-01 Master Data Management)</description>
+</CustomObject>

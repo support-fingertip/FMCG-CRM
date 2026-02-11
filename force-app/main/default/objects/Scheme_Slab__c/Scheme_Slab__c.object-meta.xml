@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Scheme Slab</label>
+    <pluralLabel>Scheme Slabs</pluralLabel>
+    <nameField>
+        <label>Scheme Slab Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Quantity or value based slabs within a Scheme defining discount tiers and free product rewards (MOD-07 Scheme and Promotion Management)</description>
+</CustomObject>

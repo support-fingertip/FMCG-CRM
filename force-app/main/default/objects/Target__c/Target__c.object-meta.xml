@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Target</label>
+    <pluralLabel>Targets</pluralLabel>
+    <nameField>
+        <label>Target Number</label>
+        <displayFormat>TGT-{0000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Sales target assignment for salesperson by territory, period, and KPI type with achievement tracking (MOD-08 Target and Achievement Management)</description>
+</CustomObject>

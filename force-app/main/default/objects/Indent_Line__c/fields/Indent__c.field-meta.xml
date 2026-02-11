@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Indent__c</fullName>
+    <label>Indent</label>
+    <type>MasterDetail</type>
+    <referenceTo>Indent__c</referenceTo>
+    <relationshipLabel>Indent Lines</relationshipLabel>
+    <relationshipName>Indent_Lines</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Geo_Fence_Lat__c</fullName>
+    <label>Geo Fence Latitude</label>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>7</scale>
+    <required>false</required>
+    <unique>false</unique>
+</CustomField>

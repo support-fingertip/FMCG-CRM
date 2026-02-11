@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Credit_Available__c</fullName>
+    <label>Credit Available</label>
+    <type>Currency</type>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
+</CustomField>

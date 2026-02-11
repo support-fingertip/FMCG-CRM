@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Price List</label>
+    <pluralLabel>Price Lists</pluralLabel>
+    <nameField>
+        <label>Price List Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Custom pricing beyond standard PriceBook for region and channel-specific pricing (MOD-01 Master Data Management)</description>
+</CustomObject>

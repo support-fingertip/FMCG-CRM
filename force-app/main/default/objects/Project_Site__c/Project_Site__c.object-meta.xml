@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Project Site</label>
+    <pluralLabel>Project Sites</pluralLabel>
+    <nameField>
+        <label>Project Site Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Hardware project and construction site tracking for building material and hardware industry verticals (MOD-13 Industry Extensions)</description>
+</CustomObject>

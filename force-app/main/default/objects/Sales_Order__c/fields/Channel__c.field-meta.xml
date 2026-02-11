@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Channel__c</fullName>
+    <label>Channel</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Field App</fullName>
+                <default>true</default>
+                <label>Field App</label>
+            </value>
+            <value>
+                <fullName>Retailer Portal</fullName>
+                <default>false</default>
+                <label>Retailer Portal</label>
+            </value>
+            <value>
+                <fullName>WhatsApp</fullName>
+                <default>false</default>
+                <label>WhatsApp</label>
+            </value>
+            <value>
+                <fullName>API</fullName>
+                <default>false</default>
+                <label>API</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

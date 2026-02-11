@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Channel Partner</label>
+    <pluralLabel>Channel Partners</pluralLabel>
+    <nameField>
+        <label>Channel Partner Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Distributor, Stockist, and C&amp;F Agent profiles with KYC and credit management (MOD-01 Master Data Management)</description>
+</CustomObject>

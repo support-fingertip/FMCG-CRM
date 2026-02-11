@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Sales Order</label>
+    <pluralLabel>Sales Orders</pluralLabel>
+    <nameField>
+        <label>Sales Order Number</label>
+        <displayFormat>SO-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Sales order header capturing order details placed by salesperson during retail visits (MOD-05 Order Management)</description>
+</CustomObject>

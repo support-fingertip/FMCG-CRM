@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Check_Out_Time__c</fullName>
+    <label>Check Out Time</label>
+    <type>DateTime</type>
+    <required>false</required>
+</CustomField>

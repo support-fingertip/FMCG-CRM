@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>POSM_Condition__c</fullName>
+    <label>POSM Condition</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Good</fullName>
+                <default>false</default>
+                <label>Good</label>
+            </value>
+            <value>
+                <fullName>Damaged</fullName>
+                <default>false</default>
+                <label>Damaged</label>
+            </value>
+            <value>
+                <fullName>Missing</fullName>
+                <default>false</default>
+                <label>Missing</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

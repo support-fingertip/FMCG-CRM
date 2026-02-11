@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Loyalty Points</label>
+    <pluralLabel>Loyalty Points</pluralLabel>
+    <nameField>
+        <label>Loyalty Points Number</label>
+        <displayFormat>LP-{0000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Hardware loyalty and rewards program tracking for points earned, redeemed, expired, and adjusted (MOD-13 Industry Extensions)</description>
+</CustomObject>

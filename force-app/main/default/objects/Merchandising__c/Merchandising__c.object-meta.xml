@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Merchandising</label>
+    <pluralLabel>Merchandisings</pluralLabel>
+    <nameField>
+        <label>Merchandising Number</label>
+        <type>AutoNumber</type>
+        <displayFormat>MER-{0000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Shelf and display audit tracking for outlet merchandising compliance and share of shelf measurement (MOD-04 Outlet Visit Execution)</description>
+</CustomObject>

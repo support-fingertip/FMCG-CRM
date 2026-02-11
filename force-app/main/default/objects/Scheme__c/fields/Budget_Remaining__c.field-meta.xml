@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Budget_Remaining__c</fullName>
+    <label>Budget Remaining</label>
+    <type>Currency</type>
+    <precision>18</precision>
+    <scale>2</scale>
+    <formula>Budget_Amount__c - Budget_Used__c</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+</CustomField>

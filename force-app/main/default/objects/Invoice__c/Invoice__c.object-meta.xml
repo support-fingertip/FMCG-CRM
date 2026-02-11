@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Invoice</label>
+    <pluralLabel>Invoices</pluralLabel>
+    <nameField>
+        <label>Invoice Number</label>
+        <displayFormat>INV-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Invoice generated from approved Sales Orders with GST compliance, e-invoicing, and delivery tracking (MOD-05 Order Management)</description>
+</CustomObject>

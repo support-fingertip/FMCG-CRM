@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Short_Delivery_Notes__c</fullName>
+    <label>Short Delivery Notes</label>
+    <type>TextArea</type>
+    <required>false</required>
+</CustomField>

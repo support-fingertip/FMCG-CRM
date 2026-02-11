@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/metadata">
+    <apiVersion>59.0</apiVersion>
+    <label>OMS - Sales Order Auto Approval</label>
+    <description>Automatically approves sales orders under the configured threshold value</description>
+    <processType>AutoLaunchedFlow</processType>
+    <status>Active</status>
+    <interviewLabel>Auto Approve Sales Order {!$Flow.CurrentDateTime}</interviewLabel>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <object>Sales_Order__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Submitted</stringValue>
+            </value>
+        </filters>
+        <connector>
+            <targetReference>Check_Order_Value</targetReference>
+        </connector>
+    </start>
+    <decisions>
+        <name>Check_Order_Value</name>
+        <label>Check Order Value</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <defaultConnector>
+            <targetReference>Route_For_Approval</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Needs Approval</defaultConnectorLabel>
+        <rules>
+            <name>Under_Threshold</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Total_Net_Amount__c</leftValueReference>
+                <operator>LessThanOrEqualTo</operator>
+                <rightValue>
+                    <numberValue>50000.0</numberValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Auto_Approve_Order</targetReference>
+            </connector>
+            <label>Under Threshold</label>
+        </rules>
+    </decisions>
+    <recordUpdates>
+        <name>Auto_Approve_Order</name>
+        <label>Auto Approve Order</label>
+        <locationX>50</locationX>
+        <locationY>276</locationY>
+        <inputReference>$Record</inputReference>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Approved</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Approval_Date__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </inputAssignments>
+    </recordUpdates>
+    <recordUpdates>
+        <name>Route_For_Approval</name>
+        <label>Route For Approval</label>
+        <locationX>302</locationX>
+        <locationY>276</locationY>
+        <inputReference>$Record</inputReference>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Submitted</stringValue>
+            </value>
+        </inputAssignments>
+    </recordUpdates>
+</Flow>

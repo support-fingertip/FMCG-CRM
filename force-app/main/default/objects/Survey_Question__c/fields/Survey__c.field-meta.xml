@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Survey__c</fullName>
+    <label>Survey</label>
+    <type>MasterDetail</type>
+    <referenceTo>Survey__c</referenceTo>
+    <relationshipLabel>Survey Questions</relationshipLabel>
+    <relationshipName>Survey_Questions</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Product Category</label>
+    <pluralLabel>Product Categories</pluralLabel>
+    <nameField>
+        <label>Category Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Product categorization hierarchy for FMCG product classification (MOD-01 Master Data Management)</description>
+</CustomObject>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Distributor Stock</label>
+    <pluralLabel>Distributor Stock</pluralLabel>
+    <nameField>
+        <label>Stock Entry Number</label>
+        <displayFormat>DST-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Distributor inventory snapshot tracking opening/closing stock, receipts, and sales for SFA distribution management</description>
+</CustomObject>

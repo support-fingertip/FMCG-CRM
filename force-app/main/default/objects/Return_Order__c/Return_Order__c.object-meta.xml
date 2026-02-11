@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Return Order</label>
+    <pluralLabel>Return Orders</pluralLabel>
+    <nameField>
+        <label>Return Order Number</label>
+        <displayFormat>RO-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Sales return header for tracking product returns with reason categorization and credit note processing (MOD-05 Order Management)</description>
+</CustomObject>

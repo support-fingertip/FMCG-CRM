@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Return Line</label>
+    <pluralLabel>Return Lines</pluralLabel>
+    <nameField>
+        <label>Return Line Number</label>
+        <displayFormat>RL-{0000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Individual product return line items within a Return Order with reason and batch tracking (MOD-05 Order Management)</description>
+</CustomObject>

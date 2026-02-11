@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Feature_Code__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Feature Code</label>
+    <length>50</length>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Survey Question</label>
+    <pluralLabel>Survey Questions</pluralLabel>
+    <nameField>
+        <label>Question Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Individual survey questions with configurable question types and validation rules (MOD-04 Outlet Visit Execution)</description>
+</CustomObject>

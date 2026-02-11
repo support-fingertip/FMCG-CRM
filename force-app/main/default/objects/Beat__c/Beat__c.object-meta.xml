@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Beat</label>
+    <pluralLabel>Beats</pluralLabel>
+    <nameField>
+        <label>Beat Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Beat/route definition for sales territory coverage planning (MOD-02 Beat Plan and Route Management)</description>
+</CustomObject>

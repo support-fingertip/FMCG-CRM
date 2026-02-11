@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Scheme_Type__c</fullName>
+    <label>Scheme Type</label>
+    <type>Picklist</type>
+    <required>true</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Buy X Get Y</fullName>
+                <default>false</default>
+                <label>Buy X Get Y</label>
+            </value>
+            <value>
+                <fullName>Flat Discount Percent</fullName>
+                <default>false</default>
+                <label>Flat Discount Percent</label>
+            </value>
+            <value>
+                <fullName>Amount Off</fullName>
+                <default>false</default>
+                <label>Amount Off</label>
+            </value>
+            <value>
+                <fullName>Slab Based</fullName>
+                <default>false</default>
+                <label>Slab Based</label>
+            </value>
+            <value>
+                <fullName>Combo Offer</fullName>
+                <default>false</default>
+                <label>Combo Offer</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

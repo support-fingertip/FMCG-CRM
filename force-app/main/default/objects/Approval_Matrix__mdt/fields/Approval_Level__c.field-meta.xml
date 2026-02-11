@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Approval_Level__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Approval Level</label>
+    <precision>2</precision>
+    <scale>0</scale>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

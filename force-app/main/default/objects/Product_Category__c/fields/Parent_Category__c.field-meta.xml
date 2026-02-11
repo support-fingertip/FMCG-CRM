@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Parent_Category__c</fullName>
+    <label>Parent Category</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>Product_Category__c</referenceTo>
+    <relationshipLabel>Sub-Categories</relationshipLabel>
+    <relationshipName>Sub_Categories</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

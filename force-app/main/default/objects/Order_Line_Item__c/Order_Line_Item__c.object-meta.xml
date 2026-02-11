@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Order Line Item</label>
+    <pluralLabel>Order Line Items</pluralLabel>
+    <nameField>
+        <label>Order Line Item Number</label>
+        <displayFormat>OLI-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Individual product line items within a Sales Order capturing quantity, pricing, and scheme details (MOD-05 Order Management)</description>
+</CustomObject>
