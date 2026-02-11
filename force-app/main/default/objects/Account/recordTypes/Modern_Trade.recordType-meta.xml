@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Modern_Trade</fullName>
+    <active>true</active>
+    <label>Modern Trade</label>
+    <description>Modern Trade key account record type</description>
+</RecordType>
