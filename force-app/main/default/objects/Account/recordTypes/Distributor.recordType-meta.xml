@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Distributor</fullName>
+    <active>true</active>
+    <label>Distributor</label>
+    <description>Distribution partner record type</description>
+</RecordType>
