@@ -5,8 +5,9 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 import getOutletDetails from '@salesforce/apex/OutletThreeSixtyController.getOutletDetails';
 import getRecentOrders from '@salesforce/apex/OutletThreeSixtyController.getRecentOrders';
-import getOutstandingBalance from '@salesforce/apex/OutletThreeSixtyController.getOutstandingBalance';
+import getRecentCollections from '@salesforce/apex/OutletThreeSixtyController.getRecentCollections';
 import getVisitHistory from '@salesforce/apex/OutletThreeSixtyController.getVisitHistory';
+import getApplicableSchemes from '@salesforce/apex/OutletThreeSixtyController.getApplicableSchemes';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -174,7 +175,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
 
     async loadCollections() {
         try {
-            const result = await getOutstandingBalance({ accountId: this.recordId });
+            const result = await getRecentCollections({ accountId: this.recordId });
             this.collections = (result || []).map(col => ({
                 id: col.Id,
                 receiptNumber: col.Name || col.Receipt_Number__c,

@@ -9,27 +9,77 @@
 public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
-    public static List<Product2> searchProducts(String searchTerm, String categoryId) {
+    public static List<Product2> searchProducts(String searchTerm, String category, Id accountId) {
         String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
         String query = 'SELECT Id, Name, ProductCode, Description, IsActive, ' +
                        '(SELECT Id, UnitPrice, Pricebook2Id FROM PricebookEntries WHERE IsActive = true LIMIT 1) ' +
                        'FROM Product2 WHERE IsActive = true AND (Name LIKE :searchKey OR ProductCode LIKE :searchKey)';
-        if (String.isNotBlank(categoryId)) {
-            query += ' AND Id IN (SELECT Product__c FROM Product_Extension__c WHERE Product_Category__c = :categoryId)';
+        if (String.isNotBlank(category)) {
+            query += ' AND Id IN (SELECT Product__c FROM Product_Extension__c WHERE Product_Category__c = :category)';
         }
         query += ' ORDER BY Name LIMIT 50';
         return Database.query(query);
     }
 
     @AuraEnabled
-    public static Sales_Order__c createSalesOrder(Sales_Order__c order, List<Order_Line_Item__c> lineItems) {
+    public static Sales_Order__c createSalesOrder(String orderJson) {
         Savepoint sp = Database.setSavepoint();
         try {
-            insert order;
-            for (Order_Line_Item__c li : lineItems) {
-                li.Sales_Order__c = order.Id;
+            Map<String, Object> orderData = (Map<String, Object>) JSON.deserializeUntyped(orderJson);
+
+            // Extract and build the Sales_Order__c record
+            Sales_Order__c order = new Sales_Order__c();
+            if (orderData.containsKey('accountId')) {
+                order.Account__c = (Id) orderData.get('accountId');
             }
-            insert lineItems;
+            if (orderData.containsKey('visitId') && orderData.get('visitId') != null) {
+                order.Visit__c = (Id) orderData.get('visitId');
+            }
+            if (orderData.containsKey('status')) {
+                order.Status__c = (String) orderData.get('status');
+            }
+            if (orderData.containsKey('remarks')) {
+                order.Notes__c = (String) orderData.get('remarks');
+            }
+            order.Order_Date__c = Date.today();
+
+            insert order;
+
+            // Extract and build line items
+            List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>();
+            if (orderData.containsKey('lineItems')) {
+                List<Object> rawLines = (List<Object>) orderData.get('lineItems');
+                for (Object rawLine : rawLines) {
+                    Map<String, Object> lineMap = (Map<String, Object>) rawLine;
+                    Order_Line_Item__c li = new Order_Line_Item__c();
+                    li.Sales_Order__c = order.Id;
+                    if (lineMap.containsKey('productId')) {
+                        li.Product__c = (Id) lineMap.get('productId');
+                    }
+                    if (lineMap.containsKey('quantity')) {
+                        li.Quantity__c = Decimal.valueOf(String.valueOf(lineMap.get('quantity')));
+                    }
+                    if (lineMap.containsKey('rate')) {
+                        li.Unit_Price__c = Decimal.valueOf(String.valueOf(lineMap.get('rate')));
+                    }
+                    if (lineMap.containsKey('discountAmount')) {
+                        li.Discount_Amount__c = Decimal.valueOf(String.valueOf(lineMap.get('discountAmount')));
+                    }
+                    if (lineMap.containsKey('taxRate')) {
+                        li.Tax_Rate__c = Decimal.valueOf(String.valueOf(lineMap.get('taxRate')));
+                    }
+                    if (lineMap.containsKey('taxAmount')) {
+                        li.Tax_Amount__c = Decimal.valueOf(String.valueOf(lineMap.get('taxAmount')));
+                    }
+                    if (lineMap.containsKey('totalAmount')) {
+                        li.Line_Total__c = Decimal.valueOf(String.valueOf(lineMap.get('totalAmount')));
+                    }
+                    lineItems.add(li);
+                }
+            }
+            if (!lineItems.isEmpty()) {
+                insert lineItems;
+            }
             // Recalculate totals
             updateOrderTotals(order.Id);
             return [SELECT Id, Name, Status__c, Total_Net_Amount__c FROM Sales_Order__c WHERE Id = :order.Id];
@@ -54,7 +104,8 @@ public with sharing class OrderEntryController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<Scheme__c> getApplicableSchemes(Id accountId, Date orderDate) {
+    public static List<Scheme__c> getApplicableSchemes(Id accountId) {
+        Date orderDate = Date.today();
         return [
             SELECT Id, Name, Scheme_Code__c, Scheme_Type__c, Description__c,
                    Start_Date__c, End_Date__c, Max_Discount_Cap__c,

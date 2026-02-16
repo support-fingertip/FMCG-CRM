@@ -9,6 +9,6 @@
         </users>
     </queueMembers>
     <queueSobject>
-        <sobjectType>JournalType</sobjectType>
+        <sobjectType>Journey_Plan__c</sobjectType>
     </queueSobject>
 </Queue>

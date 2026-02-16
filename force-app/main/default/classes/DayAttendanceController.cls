@@ -13,12 +13,13 @@ public with sharing class DayAttendanceController {
     /**
      * @description Creates a Day Attendance record to mark the start of a working day.
      *              Validates that no duplicate attendance exists for the same date.
-     * @param attendance The Day_Attendance__c record pre-populated with start fields.
+     * @param dayJson JSON string containing the day start data.
      * @return The inserted Day_Attendance__c record.
      */
     @AuraEnabled
-    public static Day_Attendance__c startDay(Day_Attendance__c attendance) {
+    public static Day_Attendance__c startDay(String dayJson) {
         try {
+            Day_Attendance__c attendance = (Day_Attendance__c) JSON.deserialize(dayJson, Day_Attendance__c.class);
             // Check for existing attendance on the same date for this user
             Date attendanceDate = attendance.Attendance_Date__c != null
                 ? attendance.Attendance_Date__c
@@ -72,12 +73,14 @@ public with sharing class DayAttendanceController {
     /**
      * @description Marks day-end on an existing attendance record, calculating
      *              summary metrics from the day's visits and orders.
-     * @param attendanceId The Id of the Day_Attendance__c record.
+     * @param dayJson JSON string containing the day end data including the attendance Id.
      * @return The updated Day_Attendance__c record.
      */
     @AuraEnabled
-    public static Day_Attendance__c endDay(Id attendanceId) {
+    public static Day_Attendance__c endDay(String dayJson) {
         try {
+            Map<String, Object> endData = (Map<String, Object>) JSON.deserializeUntyped(dayJson);
+            Id attendanceId = (Id) endData.get('dayId');
             Day_Attendance__c attendance = [
                 SELECT Id, Salesperson__c, Attendance_Date__c, Day_Start_Time__c, Status__c
                 FROM Day_Attendance__c
@@ -181,15 +184,24 @@ public with sharing class DayAttendanceController {
     // ── Get Day Stats ───────────────────────────────────────────────────────────
 
     /**
-     * @description Retrieves real-time day statistics for a given user and date.
-     * @param userId The Salesperson (User) Id.
-     * @param attendanceDate The date to query stats for.
+     * @description Retrieves real-time day statistics for a given day attendance record.
+     * @param dayId The Day_Attendance__c record Id.
      * @return Map with totalVisits, productiveCalls, totalOrders, totalOrderValue,
      *         totalCollection, distanceTraveled.
      */
     @AuraEnabled(cacheable=true)
-    public static Map<String, Object> getDayStats(Id userId, Date attendanceDate) {
+    public static Map<String, Object> getDayStats(Id dayId) {
         Map<String, Object> stats = new Map<String, Object>();
+
+        // Look up the Day_Attendance__c record to get userId and date
+        Day_Attendance__c dayRec = [
+            SELECT Salesperson__c, Attendance_Date__c
+            FROM Day_Attendance__c
+            WHERE Id = :dayId
+            LIMIT 1
+        ];
+        Id userId = dayRec.Salesperson__c;
+        Date attendanceDate = dayRec.Attendance_Date__c;
 
         // Visit statistics
         AggregateResult[] visitAgg = [

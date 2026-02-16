@@ -24,7 +24,7 @@
         <locationY>134</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Update_Open_Records</targetReference>
+            <targetReference>Loop_Open_Records</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>

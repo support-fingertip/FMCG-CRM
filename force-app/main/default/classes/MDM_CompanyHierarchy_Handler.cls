@@ -120,28 +120,18 @@ public with sharing class MDM_CompanyHierarchy_Handler extends TriggerHandler {
         }
         if (startParents.isEmpty()) return;
 
-        // Build parent map by walking up ancestors (bounded)
+        // Build parent map by querying all hierarchy records at once
+        // and traversing the tree in memory instead of iterative SOQL
         Map<Id, Id> parentById = new Map<Id, Id>();
-        Set<Id> frontier = new Set<Id>(startParents);
+        for (Company_Hierarchy__c node : [
+            SELECT Id, Parent_Hierarchy__c
+            FROM Company_Hierarchy__c
+            WHERE Parent_Hierarchy__c != null
+        ]) {
+            parentById.put(node.Id, node.Parent_Hierarchy__c);
+        }
 
         Integer maxDepth = 50;
-        Integer depth = 0;
-
-        while (!frontier.isEmpty() && depth < maxDepth) {
-            List<Company_Hierarchy__c> nodes = [
-                SELECT Id, Parent_Hierarchy__c
-                FROM Company_Hierarchy__c
-                WHERE Id IN :frontier
-            ];
-
-            frontier.clear();
-            for (Company_Hierarchy__c node : nodes) {
-                if (parentById.containsKey(node.Id)) continue;
-                parentById.put(node.Id, node.Parent_Hierarchy__c);
-                if (node.Parent_Hierarchy__c != null) frontier.add(node.Parent_Hierarchy__c);
-            }
-            depth++;
-        }
 
         for (Company_Hierarchy__c rec : records) {
             if (rec.Id == null || rec.Parent_Hierarchy__c == null) continue;

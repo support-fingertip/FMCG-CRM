@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Channel__c</fullName>
+    <label>Channel</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>General Trade</fullName>
+                <default>false</default>
+                <label>General Trade</label>
+            </value>
+            <value>
+                <fullName>Modern Trade</fullName>
+                <default>false</default>
+                <label>Modern Trade</label>
+            </value>
+            <value>
+                <fullName>Wholesale</fullName>
+                <default>false</default>
+                <label>Wholesale</label>
+            </value>
+            <value>
+                <fullName>E-Commerce</fullName>
+                <default>false</default>
+                <label>E-Commerce</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

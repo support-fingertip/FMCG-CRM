@@ -57,7 +57,7 @@ private class OMS_SalesOrder_TriggerHandler_Test {
         Test.stopTest();
 
         Sales_Order__c inserted = [
-            SELECT Id, Status__c, Order_Date__c, Salesperson__c,
+            SELECT Id, Order_Status__c, Order_Date__c, Sales_Rep__c,
                    Total_Gross_Amount__c, Total_Tax__c, Total_Discount__c
             FROM Sales_Order__c
             WHERE Id = :order.Id
@@ -66,7 +66,7 @@ private class OMS_SalesOrder_TriggerHandler_Test {
         System.assertNotEquals(null, inserted, 'Order should have been inserted successfully');
         System.assertEquals(Date.today(), inserted.Order_Date__c,
             'Order date should default to today when not specified');
-        System.assertNotEquals(null, inserted.Salesperson__c,
+        System.assertNotEquals(null, inserted.Sales_Rep__c,
             'Salesperson should default to the running user');
     }
 
@@ -80,25 +80,25 @@ private class OMS_SalesOrder_TriggerHandler_Test {
         Visit__c visit = [SELECT Id FROM Visit__c LIMIT 1];
 
         Sales_Order__c order = TestDataFactory.createSalesOrder(acct.Id, UserInfo.getUserId(), visit.Id);
-        order.Status__c = 'Draft';
+        order.Order_Status__c = 'Draft';
         insert order;
 
         Test.startTest();
 
         // Draft -> Submitted
-        order.Status__c = 'Submitted';
+        order.Order_Status__c = 'Submitted';
         update order;
 
-        Sales_Order__c afterSubmit = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id = :order.Id];
-        System.assertEquals('Submitted', afterSubmit.Status__c,
+        Sales_Order__c afterSubmit = [SELECT Id, Order_Status__c FROM Sales_Order__c WHERE Id = :order.Id];
+        System.assertEquals('Submitted', afterSubmit.Order_Status__c,
             'Order should transition from Draft to Submitted');
 
         // Submitted -> Approved
-        order.Status__c = 'Approved';
+        order.Order_Status__c = 'Approved';
         update order;
 
-        Sales_Order__c afterApproval = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id = :order.Id];
-        System.assertEquals('Approved', afterApproval.Status__c,
+        Sales_Order__c afterApproval = [SELECT Id, Order_Status__c FROM Sales_Order__c WHERE Id = :order.Id];
+        System.assertEquals('Approved', afterApproval.Order_Status__c,
             'Order should transition from Submitted to Approved');
 
         Test.stopTest();
@@ -114,13 +114,13 @@ private class OMS_SalesOrder_TriggerHandler_Test {
         Visit__c visit = [SELECT Id FROM Visit__c LIMIT 1];
 
         Sales_Order__c order = TestDataFactory.createSalesOrder(acct.Id, UserInfo.getUserId(), visit.Id);
-        order.Status__c = 'Draft';
+        order.Order_Status__c = 'Draft';
         insert order;
 
         Test.startTest();
 
         // Attempt invalid transition: Draft -> Approved (skipping Submitted)
-        order.Status__c = 'Approved';
+        order.Order_Status__c = 'Approved';
         Database.SaveResult result = Database.update(order, false);
 
         Test.stopTest();
@@ -169,7 +169,7 @@ private class OMS_SalesOrder_TriggerHandler_Test {
 
         // Insert the first order
         Sales_Order__c firstOrder = TestDataFactory.createSalesOrder(acct.Id, UserInfo.getUserId(), visit.Id);
-        firstOrder.Status__c = 'Draft';
+        firstOrder.Order_Status__c = 'Draft';
         firstOrder.Total_Gross_Amount__c = 5000;
         firstOrder.Total_Net_Amount__c = 5000;
         insert firstOrder;
@@ -178,7 +178,7 @@ private class OMS_SalesOrder_TriggerHandler_Test {
 
         // Attempt to insert a second order with identical key fields
         Sales_Order__c duplicateOrder = TestDataFactory.createSalesOrder(acct.Id, UserInfo.getUserId(), visit.Id);
-        duplicateOrder.Status__c = 'Draft';
+        duplicateOrder.Order_Status__c = 'Draft';
         duplicateOrder.Total_Gross_Amount__c = 5000;
         duplicateOrder.Total_Net_Amount__c = 5000;
         Database.SaveResult result = Database.insert(duplicateOrder, false);
@@ -204,10 +204,10 @@ private class OMS_SalesOrder_TriggerHandler_Test {
         for (Integer i = 0; i < 200; i++) {
             Sales_Order__c order = new Sales_Order__c(
                 Account__c = acct.Id,
-                Salesperson__c = UserInfo.getUserId(),
+                Sales_Rep__c = UserInfo.getUserId(),
                 Visit__c = visit.Id,
                 Order_Date__c = Date.today().addDays(-i - 1),
-                Status__c = 'Draft',
+                Order_Status__c = 'Draft',
                 Channel__c = 'Field App',
                 Order_Type__c = 'Regular',
                 Total_Gross_Amount__c = 100 + i,

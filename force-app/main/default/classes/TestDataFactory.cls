@@ -100,6 +100,8 @@ public class TestDataFactory {
             Check_In_Time__c = DateTime.now(),
             Check_In_Lat__c = 19.0760,
             Check_In_Long__c = 72.8777,
+            Check_In_Latitude__c = 19.0760,
+            Check_In_Longitude__c = 72.8777,
             Visit_Status__c = 'Checked In',
             Is_Planned__c = true
         );
@@ -109,10 +111,10 @@ public class TestDataFactory {
     public static Sales_Order__c createSalesOrder(Id accountId, Id userId, Id visitId) {
         Sales_Order__c order = new Sales_Order__c(
             Account__c = accountId,
-            Salesperson__c = userId,
+            Sales_Rep__c = userId,
             Visit__c = visitId,
             Order_Date__c = Date.today(),
-            Status__c = 'Draft',
+            Order_Status__c = 'Draft',
             Order_Type__c = 'Regular',
             Channel__c = 'Field App',
             Total_Gross_Amount__c = 0,
@@ -183,6 +185,8 @@ public class TestDataFactory {
             Territory__c = territoryId,
             Period_Month__c = month,
             Period_Year__c = year,
+            Month__c = month,
+            Year__c = year,
             Target_Type__c = type,
             Target_Value__c = value,
             Achievement_Value__c = 0,

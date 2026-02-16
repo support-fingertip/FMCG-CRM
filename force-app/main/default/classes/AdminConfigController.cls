@@ -352,45 +352,53 @@ public with sharing class AdminConfigController {
             // Process app configs
             if (configData.containsKey('appConfigs')) {
                 List<Object> appConfigs = (List<Object>) configData.get('appConfigs');
+
+                // Bulk-query all App_Config__mdt records and build a Map by DeveloperName
+                Map<String, App_Config__mdt> appConfigByDevName = new Map<String, App_Config__mdt>();
+                for (App_Config__mdt ac : [
+                    SELECT Id, DeveloperName, MasterLabel
+                    FROM App_Config__mdt
+                ]) {
+                    appConfigByDevName.put(ac.DeveloperName, ac);
+                }
+
                 for (Object configObj : appConfigs) {
                     Map<String, Object> config = (Map<String, Object>) configObj;
                     String developerName = (String) config.get('developerName');
                     String value = (String) config.get('configValue');
-                    
+
                     if (developerName != null && value != null) {
-                        // We need to find the actual ID for the config to update
-                        List<App_Config__mdt> existing = [
-                            SELECT Id, DeveloperName, MasterLabel
-                            FROM App_Config__mdt
-                            WHERE DeveloperName = :developerName
-                            LIMIT 1
-                        ];
-                        if (!existing.isEmpty()) {
-                            updateAppConfig(existing[0].Id, value);
+                        App_Config__mdt existing = appConfigByDevName.get(developerName);
+                        if (existing != null) {
+                            updateAppConfig(existing.Id, value);
                         }
                     }
                 }
             }
-            
+
             // Process geo configs
             if (configData.containsKey('geoConfigs')) {
                 List<Object> geoConfigs = (List<Object>) configData.get('geoConfigs');
+
+                // Bulk-query all Geo_Config__mdt records and build a Map by Config_Type__c
+                Map<String, Geo_Config__mdt> geoConfigByType = new Map<String, Geo_Config__mdt>();
+                for (Geo_Config__mdt gc : [
+                    SELECT Id, DeveloperName, MasterLabel, Config_Type__c
+                    FROM Geo_Config__mdt
+                ]) {
+                    geoConfigByType.put(gc.Config_Type__c, gc);
+                }
+
                 for (Object configObj : geoConfigs) {
                     Map<String, Object> config = (Map<String, Object>) configObj;
                     String configType = (String) config.get('configType');
                     String value = (String) config.get('value');
-                    
+
                     if (configType != null && value != null) {
                         // For simplicity, we'll just update the geofence radius
                         if (configType == 'Geofence_Radius') {
-                            // We need to find the actual ID for the geo config to update
-                            List<Geo_Config__mdt> existing = [
-                                SELECT Id, DeveloperName, MasterLabel
-                                FROM Geo_Config__mdt
-                                WHERE Config_Type__c = :configType
-                                LIMIT 1
-                            ];
-                            if (!existing.isEmpty()) {
+                            Geo_Config__mdt existing = geoConfigByType.get(configType);
+                            if (existing != null) {
                                 // Convert to integer and update
                                 Integer intValue = Integer.valueOf(value);
                                 updateGeoConfig(JSON.serialize(new Map<String, Object>{

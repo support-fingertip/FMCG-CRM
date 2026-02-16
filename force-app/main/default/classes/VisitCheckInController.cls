@@ -18,12 +18,13 @@ public with sharing class VisitCheckInController {
 
     /**
      * @description Creates a new Visit record with check-in data (timestamp, GPS coords).
-     * @param visit The Visit__c record pre-populated with check-in fields by the LWC.
+     * @param visitJson JSON string containing the visit check-in data.
      * @return The inserted Visit__c record with Id and Name.
      */
     @AuraEnabled
-    public static Visit__c createVisit(Visit__c visit) {
+    public static Visit__c createVisit(String visitJson) {
         try {
+            Visit__c visit = (Visit__c) JSON.deserialize(visitJson, Visit__c.class);
             if (visit.Check_In_Time__c == null) {
                 visit.Check_In_Time__c = Datetime.now();
             }
@@ -48,13 +49,16 @@ public with sharing class VisitCheckInController {
 
     /**
      * @description Updates a Visit record with check-out data and calculates duration.
-     * @param visitId The Id of the Visit to complete.
-     * @param updates A Visit__c instance carrying check-out field values.
+     * @param visitJson JSON string containing the visit check-out data including visitId.
      * @return The updated Visit__c record.
      */
     @AuraEnabled
-    public static Visit__c completeVisit(Id visitId, Visit__c updates) {
+    public static Visit__c completeVisit(String visitJson) {
         try {
+            Map<String, Object> visitData = (Map<String, Object>) JSON.deserializeUntyped(visitJson);
+            Id visitId = (Id) visitData.get('visitId');
+            Visit__c updates = (Visit__c) JSON.deserialize(visitJson, Visit__c.class);
+
             Visit__c visit = [
                 SELECT Id, Check_In_Time__c, Visit_Status__c
                 FROM Visit__c

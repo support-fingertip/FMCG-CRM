@@ -89,12 +89,12 @@ public with sharing class SchemeViewController {
      *              determine the correct discount tier.
      * @param schemeId The Scheme__c record Id.
      * @param quantity The order quantity (units or cases).
-     * @param value    The order value (amount).
+     * @param orderValue The order value (amount).
      * @return Map containing discountAmount, discountPercent, freeProduct, freeQuantity,
      *         appliedSlabId, and discountType.
      */
     @AuraEnabled
-    public static Map<String, Object> calculateSchemeDiscount(Id schemeId, Decimal quantity, Decimal value) {
+    public static Map<String, Object> calculateSchemeDiscount(Id schemeId, Decimal quantity, Decimal orderValue) {
         try {
             Map<String, Object> result = new Map<String, Object>();
             result.put('discountAmount', 0);
@@ -127,7 +127,7 @@ public with sharing class SchemeViewController {
                     compareValue = quantity != null ? quantity : 0;
                 } else {
                     // Value-based slab
-                    compareValue = value != null ? value : 0;
+                    compareValue = orderValue != null ? orderValue : 0;
                 }
 
                 Boolean meetsMin = slab.Min_Value__c == null || compareValue >= slab.Min_Value__c;
@@ -157,12 +157,12 @@ public with sharing class SchemeViewController {
 
             if (appliedSlab.Discount_Type__c == 'Percentage') {
                 discountPercent = appliedSlab.Discount_Value__c != null ? appliedSlab.Discount_Value__c : 0;
-                Decimal baseValue = value != null ? value : 0;
+                Decimal baseValue = orderValue != null ? orderValue : 0;
                 discountAmount = (baseValue * discountPercent / 100).setScale(2, RoundingMode.HALF_UP);
             } else if (appliedSlab.Discount_Type__c == 'Flat') {
                 discountAmount = appliedSlab.Discount_Value__c != null ? appliedSlab.Discount_Value__c : 0;
-                if (value != null && value > 0) {
-                    discountPercent = (discountAmount / value * 100).setScale(2, RoundingMode.HALF_UP);
+                if (orderValue != null && orderValue > 0) {
+                    discountPercent = (discountAmount / orderValue * 100).setScale(2, RoundingMode.HALF_UP);
                 }
             } else if (appliedSlab.Discount_Type__c == 'Free Product') {
                 result.put('freeProduct', appliedSlab.Free_Product__c);
@@ -175,8 +175,8 @@ public with sharing class SchemeViewController {
             // Apply discount cap
             if (scheme.Max_Discount_Cap__c != null && discountAmount > scheme.Max_Discount_Cap__c) {
                 discountAmount = scheme.Max_Discount_Cap__c;
-                if (value != null && value > 0) {
-                    discountPercent = (discountAmount / value * 100).setScale(2, RoundingMode.HALF_UP);
+                if (orderValue != null && orderValue > 0) {
+                    discountPercent = (discountAmount / orderValue * 100).setScale(2, RoundingMode.HALF_UP);
                 }
             }
 

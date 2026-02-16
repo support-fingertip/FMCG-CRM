@@ -115,14 +115,58 @@ public with sharing class ReturnOrderController {
      * @description Creates a Return Order with its line items after validating
      *              that return quantities do not exceed available quantities.
      *              Uses savepoint for transactional integrity.
-     * @param returnOrder The Return_Order__c header record.
-     * @param returnLines List of Return_Line__c records.
+     * @param returnJson JSON string containing the return order data and line items.
      * @return The inserted Return_Order__c record with Id.
      */
     @AuraEnabled
-    public static Return_Order__c createReturnOrder(Return_Order__c returnOrder, List<Return_Line__c> returnLines) {
+    public static Return_Order__c createReturnOrder(String returnJson) {
         Savepoint sp = Database.setSavepoint();
         try {
+            Map<String, Object> returnData = (Map<String, Object>) JSON.deserializeUntyped(returnJson);
+
+            // Build the Return_Order__c header
+            Return_Order__c returnOrder = new Return_Order__c();
+            if (returnData.containsKey('accountId')) {
+                returnOrder.Account__c = (Id) returnData.get('accountId');
+            }
+            if (returnData.containsKey('invoiceId')) {
+                returnOrder.Invoice__c = (Id) returnData.get('invoiceId');
+            }
+            if (returnData.containsKey('remarks')) {
+                returnOrder.Return_Reason__c = (String) returnData.get('remarks');
+            }
+            if (returnData.containsKey('visitId') && returnData.get('visitId') != null) {
+                returnOrder.Visit__c = (Id) returnData.get('visitId');
+            }
+
+            // Build the Return_Line__c records
+            List<Return_Line__c> returnLines = new List<Return_Line__c>();
+            if (returnData.containsKey('returnLines')) {
+                List<Object> rawLines = (List<Object>) returnData.get('returnLines');
+                for (Object rawLine : rawLines) {
+                    Map<String, Object> lineMap = (Map<String, Object>) rawLine;
+                    Return_Line__c rl = new Return_Line__c();
+                    if (lineMap.containsKey('invoiceLineId')) {
+                        rl.Invoice_Line__c = (Id) lineMap.get('invoiceLineId');
+                    }
+                    if (lineMap.containsKey('productId')) {
+                        rl.Product__c = (Id) lineMap.get('productId');
+                    }
+                    if (lineMap.containsKey('returnQty')) {
+                        rl.Return_Quantity__c = Decimal.valueOf(String.valueOf(lineMap.get('returnQty')));
+                    }
+                    if (lineMap.containsKey('reason')) {
+                        rl.Return_Reason__c = (String) lineMap.get('reason');
+                    }
+                    if (lineMap.containsKey('returnAmount')) {
+                        rl.Unit_Price__c = rl.Return_Quantity__c != null && rl.Return_Quantity__c > 0
+                            ? Decimal.valueOf(String.valueOf(lineMap.get('returnAmount'))) / rl.Return_Quantity__c
+                            : 0;
+                    }
+                    returnLines.add(rl);
+                }
+            }
+
             // Validate inputs
             if (returnLines == null || returnLines.isEmpty()) {
                 throw new AuraHandledException('At least one return line item is required.');

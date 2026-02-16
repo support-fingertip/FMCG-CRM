@@ -40,12 +40,11 @@ public with sharing class OutletThreeSixtyController {
     /**
      * @description Retrieves recent sales orders for an outlet.
      * @param accountId  The Account (outlet) Id.
-     * @param limitCount Maximum number of orders to return.
      * @return List of Sales_Order__c records with line item summaries.
      */
     @AuraEnabled(cacheable=true)
-    public static List<Sales_Order__c> getRecentOrders(Id accountId, Integer limitCount) {
-        Integer queryLimit = (limitCount != null && limitCount > 0) ? limitCount : 10;
+    public static List<Sales_Order__c> getRecentOrders(Id accountId) {
+        Integer queryLimit = 10;
         // Cap at 100 to prevent excessive queries
         if (queryLimit > 100) {
             queryLimit = 100;
@@ -88,6 +87,25 @@ public with sharing class OutletThreeSixtyController {
         }
         Decimal balance = (Decimal)results[0].get('totalBalance');
         return balance != null ? balance : 0;
+    }
+
+    // ── Get Recent Collections ──────────────────────────────────────────────────
+
+    /**
+     * @description Retrieves recent collection records for an outlet.
+     * @param accountId The Account (outlet) Id.
+     * @return List of Collection__c records.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Collection__c> getRecentCollections(Id accountId) {
+        return [
+            SELECT Id, Name, Collection_Date__c, Amount__c, Payment_Mode__c,
+                   Status__c, Receipt_Number__c, CreatedDate
+            FROM Collection__c
+            WHERE Account__c = :accountId
+            ORDER BY Collection_Date__c DESC
+            LIMIT 20
+        ];
     }
 
     // ── Get Visit History ───────────────────────────────────────────────────────
