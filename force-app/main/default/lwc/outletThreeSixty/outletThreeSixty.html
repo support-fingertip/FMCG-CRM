@@ -1,0 +1,304 @@
+<template>
+    <lightning-card title="Outlet 360 View" icon-name="standard:account">
+        <div slot="actions">
+            <lightning-button-icon
+                icon-name="utility:refresh"
+                alternative-text="Refresh"
+                onclick={refreshData}>
+            </lightning-button-icon>
+        </div>
+
+        <div class="slds-p-around_medium">
+
+            <!-- Outlet Header -->
+            <div class="outlet-header slds-m-bottom_medium">
+                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                    <div class="slds-col">
+                        <h2 class="outlet-name">{outletData.name}</h2>
+                        <div class="outlet-meta">
+                            <span class={outletData.classBadgeClass}>{outletData.outletClass}</span>
+                            <span class="meta-divider">|</span>
+                            <span class="meta-text">{outletData.channel}</span>
+                            <span class="meta-divider">|</span>
+                            <span class="meta-text">{outletData.type}</span>
+                        </div>
+                        <template if:true={outletData.gstin}>
+                            <p class="gstin-text">GSTIN: {outletData.gstin}</p>
+                        </template>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <template if:true={mapMarkers}>
+                            <div class="mini-map">
+                                <lightning-map
+                                    map-markers={mapMarkers}
+                                    zoom-level="15"
+                                    markers-title={outletData.name}
+                                    list-view="hidden">
+                                </lightning-map>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Tiles -->
+            <div class="kpi-tiles slds-m-bottom_medium">
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="kpi-tile kpi-orders">
+                            <span class="kpi-label">MTD Order Value</span>
+                            <span class="kpi-value">{outletData.mtdOrderValueFormatted}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="kpi-tile kpi-outstanding">
+                            <span class="kpi-label">Outstanding</span>
+                            <span class="kpi-value outstanding-value">{outletData.outstandingFormatted}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="kpi-tile kpi-avg">
+                            <span class="kpi-label">Avg Order Value</span>
+                            <span class="kpi-value">{outletData.avgOrderValueFormatted}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="kpi-tile kpi-frequency">
+                            <span class="kpi-label">Visit Frequency</span>
+                            <span class="kpi-value">{outletData.visitFrequency}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs-section">
+                <lightning-tabset active-tab-value={activeTab} onactive={handleTabChange}>
+
+                    <!-- Orders Tab -->
+                    <lightning-tab label="Orders" value="orders" icon-name="standard:orders">
+                        <div class="tab-content">
+                            <template if:true={hasOrders}>
+                                <div class="slds-scrollable_y tab-table-container">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th scope="col"><div class="slds-truncate">Order #</div></th>
+                                                <th scope="col"><div class="slds-truncate">Date</div></th>
+                                                <th scope="col"><div class="slds-truncate">Items</div></th>
+                                                <th scope="col"><div class="slds-truncate">Amount</div></th>
+                                                <th scope="col"><div class="slds-truncate">Status</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={orders} for:item="order">
+                                                <tr key={order.id}>
+                                                    <td>
+                                                        <a data-id={order.id} onclick={navigateToRecord}>
+                                                            {order.orderNumber}
+                                                        </a>
+                                                    </td>
+                                                    <td>{order.dateFormatted}</td>
+                                                    <td>{order.itemCount}</td>
+                                                    <td class="amount-cell">{order.amountFormatted}</td>
+                                                    <td>
+                                                        <span class={order.statusBadge}>{order.status}</span>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                            <template if:false={hasOrders}>
+                                <div class="empty-tab">
+                                    <p class="slds-text-color_weak">No recent orders found.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+
+                    <!-- Collections Tab -->
+                    <lightning-tab label="Collections" value="collections" icon-name="standard:currency">
+                        <div class="tab-content">
+                            <!-- Outstanding Summary -->
+                            <div class="collection-summary slds-m-bottom_small">
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="summary-mini-card">
+                                            <span class="mini-label">Total Outstanding</span>
+                                            <span class="mini-value text-danger">{outletData.outstandingFormatted}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="summary-mini-card">
+                                            <span class="mini-label">MTD Collections</span>
+                                            <span class="mini-value text-success">{outletData.mtdCollectionFormatted}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <div class="summary-mini-card">
+                                            <span class="mini-label">Overdue Amount</span>
+                                            <span class="mini-value text-danger">{outletData.overdueAmountFormatted}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Collections Table -->
+                            <template if:true={hasCollections}>
+                                <div class="slds-scrollable_y tab-table-container">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th scope="col"><div class="slds-truncate">Receipt #</div></th>
+                                                <th scope="col"><div class="slds-truncate">Date</div></th>
+                                                <th scope="col"><div class="slds-truncate">Amount</div></th>
+                                                <th scope="col"><div class="slds-truncate">Mode</div></th>
+                                                <th scope="col"><div class="slds-truncate">Status</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={collections} for:item="col">
+                                                <tr key={col.id}>
+                                                    <td>{col.receiptNumber}</td>
+                                                    <td>{col.dateFormatted}</td>
+                                                    <td class="amount-cell">{col.amountFormatted}</td>
+                                                    <td><lightning-badge label={col.mode}></lightning-badge></td>
+                                                    <td><span class={col.statusBadge}>{col.status}</span></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                            <template if:false={hasCollections}>
+                                <div class="empty-tab">
+                                    <p class="slds-text-color_weak">No recent collections found.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+
+                    <!-- Visits Tab -->
+                    <lightning-tab label="Visits" value="visits" icon-name="standard:visit">
+                        <div class="tab-content">
+                            <template if:true={hasVisits}>
+                                <div class="slds-scrollable_y tab-table-container">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th scope="col"><div class="slds-truncate">Date</div></th>
+                                                <th scope="col"><div class="slds-truncate">Salesperson</div></th>
+                                                <th scope="col"><div class="slds-truncate">Check-In</div></th>
+                                                <th scope="col"><div class="slds-truncate">Duration</div></th>
+                                                <th scope="col"><div class="slds-truncate">Productive</div></th>
+                                                <th scope="col"><div class="slds-truncate">Activities</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={visits} for:item="visit">
+                                                <tr key={visit.id}>
+                                                    <td>{visit.dateFormatted}</td>
+                                                    <td>{visit.salesperson}</td>
+                                                    <td>{visit.checkInTime}</td>
+                                                    <td>{visit.duration}</td>
+                                                    <td>
+                                                        <template if:true={visit.isProductive}>
+                                                            <lightning-icon icon-name="utility:check"
+                                                                size="xx-small" variant="success"></lightning-icon>
+                                                            <span class="slds-m-left_xx-small productive-yes">Yes</span>
+                                                        </template>
+                                                        <template if:false={visit.isProductive}>
+                                                            <lightning-icon icon-name="utility:close"
+                                                                size="xx-small" variant="error"></lightning-icon>
+                                                            <span class="slds-m-left_xx-small productive-no">No</span>
+                                                        </template>
+                                                    </td>
+                                                    <td>{visit.activities}</td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                            <template if:false={hasVisits}>
+                                <div class="empty-tab">
+                                    <p class="slds-text-color_weak">No visit history found.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+
+                    <!-- Schemes Tab -->
+                    <lightning-tab label="Schemes" value="schemes" icon-name="standard:promotions">
+                        <div class="tab-content">
+                            <template if:true={hasSchemes}>
+                                <div class="scheme-cards-grid">
+                                    <template for:each={schemes} for:item="scheme">
+                                        <div class="scheme-mini-card" key={scheme.id}>
+                                            <div class="scheme-mini-header">
+                                                <span class="scheme-mini-name">{scheme.name}</span>
+                                                <span class="scheme-mini-type" style={scheme.typeBadgeStyle}>{scheme.type}</span>
+                                            </div>
+                                            <p class="scheme-mini-desc">{scheme.description}</p>
+                                            <div class="scheme-mini-dates">
+                                                {scheme.validFrom} - {scheme.validTo}
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <template if:false={hasSchemes}>
+                                <div class="empty-tab">
+                                    <p class="slds-text-color_weak">No applicable schemes found.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+
+                    <!-- Stock Tab -->
+                    <lightning-tab label="Stock" value="stock" icon-name="standard:product_item">
+                        <div class="tab-content">
+                            <template if:true={hasStock}>
+                                <div class="slds-scrollable_y tab-table-container">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th scope="col"><div class="slds-truncate">Product</div></th>
+                                                <th scope="col"><div class="slds-truncate">SKU</div></th>
+                                                <th scope="col"><div class="slds-truncate">Available Qty</div></th>
+                                                <th scope="col"><div class="slds-truncate">Reserved</div></th>
+                                                <th scope="col"><div class="slds-truncate">Last Updated</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={stockItems} for:item="item">
+                                                <tr key={item.id}>
+                                                    <td>{item.productName}</td>
+                                                    <td>{item.sku}</td>
+                                                    <td class={item.qtyClass}>{item.availableQty}</td>
+                                                    <td>{item.reservedQty}</td>
+                                                    <td>{item.lastUpdated}</td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                            <template if:false={hasStock}>
+                                <div class="empty-tab">
+                                    <p class="slds-text-color_weak">No stock information available.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                </lightning-tabset>
+            </div>
+
+            <!-- Spinner -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>59.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <description>Automatically closes day attendance records that were not manually ended by cutoff time</description>
+    <interviewLabel>Auto Day End {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>DFO - Auto Day End</label>
+    <loops>
+        <name>Loop_Open_Records</name>
+        <label>Loop Through Open Records</label>
+        <locationX>176</locationX>
+        <locationY>276</locationY>
+        <collectionReference>OpenAttendanceRecords</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Update_Open_Records</targetReference>
+        </nextValueConnector>
+    </loops>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>Get_Open_Attendance</name>
+        <label>Get Open Attendance Records</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Update_Open_Records</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Started</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Attendance_Date__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </filters>
+        <object>Day_Attendance__c</object>
+        <outputReference>OpenAttendanceRecords</outputReference>
+    </recordLookups>
+    <recordUpdates>
+        <name>Update_Open_Records</name>
+        <label>Close Open Attendance</label>
+        <locationX>50</locationX>
+        <locationY>418</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Loop_Open_Records.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Day_End_Time__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Auto-Closed</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Day_Attendance__c</object>
+    </recordUpdates>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Open_Attendance</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>OpenAttendanceRecords</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Day_Attendance__c</objectType>
+    </variables>
+</Flow>

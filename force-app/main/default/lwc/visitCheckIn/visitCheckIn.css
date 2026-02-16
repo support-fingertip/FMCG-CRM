@@ -1,0 +1,292 @@
+/* Visit Check-In Styles */
+:host {
+    --brand-primary: #0176d3;
+    --success-color: #2e844a;
+    --warning-color: #dd7a01;
+    --error-color: #ea001e;
+    --border-color: #e5e5e5;
+    --bg-light: #f3f3f3;
+}
+
+.map-section {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.map-container {
+    height: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.map-placeholder {
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-light);
+    border-radius: 8px;
+    color: #706e6b;
+}
+
+.geo-status-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    height: 100%;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.status-label {
+    font-size: 12px;
+    color: #706e6b;
+    font-weight: 500;
+}
+
+.status-value {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-success {
+    background: #e6f7e9;
+    color: var(--success-color);
+}
+
+.badge-danger {
+    background: #fce4e4;
+    color: var(--error-color);
+}
+
+.geofence-warning {
+    background: #fffbf0;
+    border: 1px solid #f9e3b6;
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+}
+
+/* Outlet Summary */
+.outlet-summary {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.summary-tile {
+    background: linear-gradient(135deg, #f8f9fa 0%, #eef2f6 100%);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.summary-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tile-label {
+    display: block;
+    font-size: 11px;
+    color: #706e6b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.tile-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #181818;
+}
+
+.tile-value.outstanding {
+    color: var(--error-color);
+}
+
+.tile-value.scheme-count {
+    color: var(--brand-primary);
+}
+
+/* Selfie / Photo Section */
+.selfie-section {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.photo-upload-area {
+    border: 2px dashed #d0d0d0;
+    border-radius: 8px;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-placeholder {
+    text-align: center;
+    padding: 20px;
+    color: #706e6b;
+}
+
+.file-input {
+    display: none;
+}
+
+.photo-preview {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    padding: 8px;
+}
+
+.captured-photo {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.remove-photo-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    padding: 4px;
+}
+
+/* Timer */
+.timer-card {
+    background: linear-gradient(135deg, #0176d3 0%, #014486 100%);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    color: #ffffff;
+}
+
+.timer-card h3 {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.timer-display {
+    margin-top: 8px;
+}
+
+.timer-value {
+    font-size: 42px;
+    font-weight: 800;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    letter-spacing: 3px;
+    color: #ffffff;
+}
+
+/* Activities */
+.activities-section {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.activity-card {
+    background: #f8f9fa;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.activity-card:hover {
+    border-color: var(--brand-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(1, 118, 211, 0.15);
+}
+
+.activity-completed {
+    background: #e6f7e9;
+    border-color: var(--success-color);
+}
+
+.activity-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 4px;
+    color: #181818;
+}
+
+.activity-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+}
+
+/* Non-productive section */
+.non-productive-section {
+    background: #fffbf0;
+    border: 1px solid #f9e3b6;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+/* Action Section */
+.action-section {
+    padding: 16px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.checkin-btn {
+    --sds-c-button-brand-color-background: var(--success-color);
+    --sds-c-button-brand-color-border: var(--success-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .map-container {
+        height: 200px;
+    }
+
+    .slds-grid.slds-gutters {
+        flex-direction: column;
+    }
+
+    .slds-col {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .timer-value {
+        font-size: 32px;
+    }
+}

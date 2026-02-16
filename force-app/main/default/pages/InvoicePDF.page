@@ -1,0 +1,301 @@
+<apex:page standardController="Invoice__c" extensions="InvoicePDFController" renderAs="pdf" applyHtmlTag="false" showHeader="false" sidebar="false">
+<html>
+<head>
+<style type="text/css">
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11px;
+        color: #333;
+    }
+    .header {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .company-name {
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .invoice-title {
+        font-size: 16px;
+        color: #e74c3c;
+        text-align: right;
+    }
+    .info-table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .info-table td {
+        vertical-align: top;
+        padding: 3px;
+    }
+    .label {
+        font-weight: bold;
+        color: #555;
+        width: 120px;
+    }
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .items-table th {
+        background-color: #2c3e50;
+        color: white;
+        padding: 8px 5px;
+        text-align: left;
+        font-size: 10px;
+    }
+    .items-table td {
+        padding: 6px 5px;
+        border-bottom: 1px solid #ddd;
+        font-size: 10px;
+    }
+    .items-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    .totals-section {
+        float: right;
+        width: 300px;
+        margin-top: 15px;
+    }
+    .totals-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .totals-table td {
+        padding: 5px;
+        border-bottom: 1px solid #eee;
+    }
+    .totals-table .grand-total {
+        font-size: 14px;
+        font-weight: bold;
+        color: #2c3e50;
+        border-top: 2px solid #2c3e50;
+    }
+    .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 9px;
+        color: #999;
+        border-top: 1px solid #ddd;
+        padding-top: 5px;
+    }
+    .bill-to, .ship-to {
+        width: 48%;
+        display: inline-block;
+        vertical-align: top;
+    }
+    .section-title {
+        font-weight: bold;
+        color: #2c3e50;
+        font-size: 12px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #2c3e50;
+        padding-bottom: 3px;
+    }
+    .qr-code {
+        text-align: right;
+        margin-top: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="header">
+        <table width="100%">
+            <tr>
+                <td width="60%">
+                    <div class="company-name">{!invoice.Account__r.Name}</div>
+                    <div>Tax Invoice</div>
+                </td>
+                <td width="40%" style="text-align: right;">
+                    <div class="invoice-title">INVOICE</div>
+                    <div><strong>Invoice #:</strong> {!invoice.Name}</div>
+                    <div><strong>Date:</strong>
+                        <apex:outputText value="{0,date,dd-MMM-yyyy}">
+                            <apex:param value="{!invoice.Invoice_Date__c}"/>
+                        </apex:outputText>
+                    </div>
+                    <div><strong>Due Date:</strong>
+                        <apex:outputText value="{0,date,dd-MMM-yyyy}">
+                            <apex:param value="{!invoice.Due_Date__c}"/>
+                        </apex:outputText>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div>
+        <div class="bill-to">
+            <div class="section-title">Bill To</div>
+            <div><strong>{!invoice.Account__r.Name}</strong></div>
+            <div>{!invoice.Account__r.BillingStreet}</div>
+            <div>{!invoice.Account__r.BillingCity}, {!invoice.Account__r.BillingState} {!invoice.Account__r.BillingPostalCode}</div>
+            <div>GSTIN: {!invoice.GSTIN__c}</div>
+        </div>
+        <div class="ship-to">
+            <div class="section-title">Ship To</div>
+            <div><strong>{!invoice.Account__r.Name}</strong></div>
+            <div>{!invoice.Account__r.ShippingStreet}</div>
+            <div>{!invoice.Account__r.ShippingCity}, {!invoice.Account__r.ShippingState} {!invoice.Account__r.ShippingPostalCode}</div>
+        </div>
+    </div>
+
+    <table class="info-table" style="margin-top: 15px;">
+        <tr>
+            <td class="label">Order Reference:</td>
+            <td>{!invoice.Sales_Order__r.Name}</td>
+            <td class="label">E-Way Bill No:</td>
+            <td>{!invoice.E_Way_Bill_No__c}</td>
+        </tr>
+        <tr>
+            <td class="label">Vehicle No:</td>
+            <td>{!invoice.Vehicle_No__c}</td>
+            <td class="label">Transporter:</td>
+            <td>{!invoice.Transporter__c}</td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width:5%">#</th>
+                <th style="width:30%">Product</th>
+                <th style="width:10%">HSN/SAC</th>
+                <th style="width:8%">Qty</th>
+                <th style="width:10%">Unit Price</th>
+                <th style="width:8%">Discount</th>
+                <th style="width:7%">CGST</th>
+                <th style="width:7%">SGST</th>
+                <th style="width:7%">IGST</th>
+                <th style="width:10%">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <apex:repeat value="{!lineItems}" var="item">
+                <tr>
+                    <td>{!item.index}</td>
+                    <td>{!item.line.Product__r.Name}</td>
+                    <td>{!item.line.HSN_SAC_Code__c}</td>
+                    <td style="text-align:right;">{!item.line.Quantity__c}</td>
+                    <td style="text-align:right;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!item.line.Unit_Price__c}"/>
+                        </apex:outputText>
+                    </td>
+                    <td style="text-align:right;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!item.line.Discount__c}"/>
+                        </apex:outputText>
+                    </td>
+                    <td style="text-align:right;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!item.line.CGST__c}"/>
+                        </apex:outputText>
+                    </td>
+                    <td style="text-align:right;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!item.line.SGST__c}"/>
+                        </apex:outputText>
+                    </td>
+                    <td style="text-align:right;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!item.line.IGST__c}"/>
+                        </apex:outputText>
+                    </td>
+                    <td style="text-align:right;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!item.line.Line_Total__c}"/>
+                        </apex:outputText>
+                    </td>
+                </tr>
+            </apex:repeat>
+        </tbody>
+    </table>
+
+    <div class="totals-section">
+        <table class="totals-table">
+            <tr>
+                <td>Subtotal:</td>
+                <td style="text-align:right;">
+                    <apex:outputText value="{0, number, ###,##0.00}">
+                        <apex:param value="{!invoice.Total_Amount__c}"/>
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <td>Total Tax:</td>
+                <td style="text-align:right;">
+                    <apex:outputText value="{0, number, ###,##0.00}">
+                        <apex:param value="{!invoice.Tax_Amount__c}"/>
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <td class="grand-total">Grand Total:</td>
+                <td class="grand-total" style="text-align:right;">
+                    <apex:outputText value="{0, number, ###,##0.00}">
+                        <apex:param value="{!invoice.Net_Amount__c}"/>
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <td>Amount Paid:</td>
+                <td style="text-align:right;">
+                    <apex:outputText value="{0, number, ###,##0.00}">
+                        <apex:param value="{!amountPaid}"/>
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Balance Due:</strong></td>
+                <td style="text-align:right;"><strong>
+                    <apex:outputText value="{0, number, ###,##0.00}">
+                        <apex:param value="{!invoice.Balance_Due__c}"/>
+                    </apex:outputText>
+                </strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="clear:both; margin-top: 50px;">
+        <div class="section-title">Amount in Words</div>
+        <div>{!amountInWords}</div>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <table width="100%">
+            <tr>
+                <td width="50%">
+                    <div class="section-title">Terms &amp; Conditions</div>
+                    <div style="font-size:9px;">
+                        1. Payment is due within {!creditDays} days from invoice date.<br/>
+                        2. Goods once sold will not be taken back unless defective.<br/>
+                        3. Interest @ 18% p.a. will be charged on overdue payments.<br/>
+                        4. Subject to local jurisdiction.
+                    </div>
+                </td>
+                <td width="50%" style="text-align:right;">
+                    <div style="margin-top: 40px; border-top: 1px solid #333; display: inline-block; padding-top: 5px;">
+                        Authorized Signatory
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        This is a computer-generated invoice and does not require a physical signature.
+        {!IF(NOT(ISBLANK(invoice.E_Invoice_IRN__c)), 'IRN: ' + invoice.E_Invoice_IRN__c, '')}
+    </div>
+</body>
+</html>
+</apex:page>
