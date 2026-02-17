@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>GRN Lines</relationshipLabel>
     <relationshipName>GRN_Lines</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

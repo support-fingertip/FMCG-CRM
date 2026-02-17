@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Return Lines</relationshipLabel>
     <relationshipName>Return_Lines</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

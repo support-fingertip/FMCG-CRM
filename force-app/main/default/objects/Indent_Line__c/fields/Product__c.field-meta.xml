@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Indent Lines</relationshipLabel>
     <relationshipName>Indent_Lines</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

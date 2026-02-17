@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Distributor Stock</relationshipLabel>
     <relationshipName>Distributor_Stock</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

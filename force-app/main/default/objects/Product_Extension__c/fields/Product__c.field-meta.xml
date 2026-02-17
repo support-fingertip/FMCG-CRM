@@ -3,7 +3,7 @@
     <fullName>Product__c</fullName>
     <label>Product</label>
     <type>Lookup</type>
-    <required>true</required>
+    <required>false</required>
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Product Extensions</relationshipLabel>
     <relationshipName>Product_Extensions</relationshipName>
