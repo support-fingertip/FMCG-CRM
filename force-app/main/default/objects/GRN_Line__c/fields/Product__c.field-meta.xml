@@ -7,5 +7,5 @@
     <relationshipLabel>GRN Lines</relationshipLabel>
     <relationshipName>GRN_Lines</relationshipName>
     <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

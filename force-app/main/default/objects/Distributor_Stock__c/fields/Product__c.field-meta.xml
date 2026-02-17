@@ -7,5 +7,5 @@
     <relationshipLabel>Distributor Stock</relationshipLabel>
     <relationshipName>Distributor_Stock</relationshipName>
     <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

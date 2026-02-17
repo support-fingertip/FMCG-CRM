@@ -7,5 +7,5 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Price Lists</relationshipLabel>
     <relationshipName>Price_Lists</relationshipName>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

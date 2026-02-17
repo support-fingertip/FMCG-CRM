@@ -7,5 +7,5 @@
     <relationshipLabel>Return Lines</relationshipLabel>
     <relationshipName>Return_Lines</relationshipName>
     <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>
