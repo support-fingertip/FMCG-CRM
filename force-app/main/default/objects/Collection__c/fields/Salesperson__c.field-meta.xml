@@ -6,6 +6,6 @@
     <referenceTo>User</referenceTo>
     <relationshipLabel>Collections</relationshipLabel>
     <relationshipName>Collections</relationshipName>
-    <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

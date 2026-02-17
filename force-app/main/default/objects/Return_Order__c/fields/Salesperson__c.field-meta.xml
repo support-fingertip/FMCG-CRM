@@ -6,6 +6,6 @@
     <referenceTo>User</referenceTo>
     <relationshipLabel>Return Orders</relationshipLabel>
     <relationshipName>Return_Orders</relationshipName>
-    <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

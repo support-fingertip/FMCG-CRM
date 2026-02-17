@@ -6,6 +6,6 @@
     <referenceTo>User</referenceTo>
     <relationshipLabel>GPS Logs</relationshipLabel>
     <relationshipName>GPS_Logs</relationshipName>
-    <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>
