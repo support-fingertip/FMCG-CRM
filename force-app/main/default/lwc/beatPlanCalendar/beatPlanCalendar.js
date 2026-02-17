@@ -1,9 +1,20 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
+import Id from '@salesforce/user/Id';
 
+import getJourneyPlanById from '@salesforce/apex/BeatPlanController.getJourneyPlanById';
 import getJourneyPlan from '@salesforce/apex/BeatPlanController.getJourneyPlan';
-import getBeatsForTerritory from '@salesforce/apex/BeatPlanController.getBeatsForTerritory';
+import getBeatsForUser from '@salesforce/apex/BeatPlanController.getBeatsForUser';
 import submitForApproval from '@salesforce/apex/BeatPlanController.submitForApproval';
+
+// Fields to read from the Journey_Plan__c record page context
+const JP_SALESPERSON_FIELD = 'Journey_Plan__c.Salesperson__c';
+const JP_MONTH_FIELD = 'Journey_Plan__c.Month__c';
+const JP_YEAR_FIELD = 'Journey_Plan__c.Year__c';
+const JP_STATUS_FIELD = 'Journey_Plan__c.Status__c';
+
+const JP_FIELDS = [JP_SALESPERSON_FIELD, JP_MONTH_FIELD, JP_YEAR_FIELD, JP_STATUS_FIELD];
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -16,9 +27,8 @@ const BEAT_COLORS = [
 ];
 
 export default class BeatPlanCalendar extends LightningElement {
-    @api userId;
-    @api month;
-    @api year;
+    // recordId is auto-set when placed on a Journey_Plan__c record page
+    @api recordId;
 
     @track calendarData = {};
     @track journeyPlan = {};
@@ -36,6 +46,8 @@ export default class BeatPlanCalendar extends LightningElement {
     @track availableBeats = [];
     @track pjpStatus = 'Draft';
 
+    currentUserId = Id;
+    resolvedUserId = null;
     currentDate = new Date();
     currentWeekStart = null;
     currentMonth = null;
@@ -43,6 +55,48 @@ export default class BeatPlanCalendar extends LightningElement {
     isLoading = false;
     beatColorMap = {};
     allBeats = [];
+    dataLoaded = false;
+
+    /**
+     * Wire adapter: reads the Journey_Plan__c record fields when on a record page.
+     * Once we have the Salesperson__c, we use it to load beats.
+     */
+    @wire(getRecord, { recordId: '$recordId', fields: JP_FIELDS })
+    wiredJourneyPlanRecord({ error, data }) {
+        if (data) {
+            this.resolvedUserId = getFieldValue(data, JP_SALESPERSON_FIELD);
+            const monthName = getFieldValue(data, JP_MONTH_FIELD);
+            const yearStr = getFieldValue(data, JP_YEAR_FIELD);
+            this.pjpStatus = getFieldValue(data, JP_STATUS_FIELD) || 'Draft';
+
+            // Set month/year from the record
+            if (monthName) {
+                const monthIdx = MONTH_NAMES.indexOf(monthName);
+                if (monthIdx >= 0) {
+                    this.currentMonth = monthIdx;
+                }
+            }
+            if (yearStr) {
+                this.currentYear = parseInt(yearStr, 10);
+            }
+
+            // Load data once we have the user resolved
+            if (!this.dataLoaded) {
+                this.dataLoaded = true;
+                this.loadCalendar();
+                this.loadBeats();
+            }
+        } else if (error) {
+            console.error('Error loading Journey Plan record:', error);
+            // Fallback: load with current user
+            if (!this.dataLoaded) {
+                this.resolvedUserId = this.currentUserId;
+                this.dataLoaded = true;
+                this.loadCalendar();
+                this.loadBeats();
+            }
+        }
+    }
 
     get calendarTitle() {
         if (this.weekView) {
@@ -65,6 +119,7 @@ export default class BeatPlanCalendar extends LightningElement {
     get pjpStatusBadgeClass() {
         const statusMap = {
             'Draft': 'pjp-badge pjp-draft',
+            'Submitted': 'pjp-badge pjp-pending',
             'Pending Approval': 'pjp-badge pjp-pending',
             'Approved': 'pjp-badge pjp-approved',
             'Active': 'pjp-badge pjp-active',
@@ -79,25 +134,50 @@ export default class BeatPlanCalendar extends LightningElement {
 
     connectedCallback() {
         const today = new Date();
-        this.currentMonth = this.month !== undefined ? this.month : today.getMonth();
-        this.currentYear = this.year !== undefined ? this.year : today.getFullYear();
+        if (this.currentMonth === null) {
+            this.currentMonth = today.getMonth();
+        }
+        if (this.currentYear === null) {
+            this.currentYear = today.getFullYear();
+        }
         this.currentWeekStart = this.getWeekStart(today);
-        this.loadCalendar();
-        this.loadBeats();
+
+        // If there's no recordId (e.g. placed on a Home/App page), load immediately
+        // using the current user. If recordId is present, the @wire will handle it.
+        if (!this.recordId) {
+            this.resolvedUserId = this.currentUserId;
+            this.dataLoaded = true;
+            this.loadCalendar();
+            this.loadBeats();
+        }
     }
 
+    /**
+     * Loads the journey plan. Uses getJourneyPlanById when we have a recordId,
+     * otherwise falls back to getJourneyPlan with user/month/year.
+     */
     async loadCalendar() {
         this.isLoading = true;
         try {
-            const result = await getJourneyPlan({
-                userId: this.userId,
-                month: this.currentMonth + 1,
-                year: this.currentYear
-            });
+            let result;
+
+            if (this.recordId) {
+                // On a Journey Plan record page - load by record Id directly
+                result = await getJourneyPlanById({ journeyPlanId: this.recordId });
+            } else if (this.resolvedUserId) {
+                // Standalone usage - load by user + month + year
+                const monthName = MONTH_NAMES[this.currentMonth];
+                const yearStr = String(this.currentYear);
+                result = await getJourneyPlan({
+                    userId: this.resolvedUserId,
+                    month: monthName,
+                    year: yearStr
+                });
+            }
 
             if (result) {
                 this.journeyPlan = result.journeyPlan || {};
-                this.pjpStatus = result.journeyPlan?.Status__c || 'Draft';
+                this.pjpStatus = result.journeyPlan?.Status__c || this.pjpStatus || 'Draft';
                 this.calendarData = this.buildCalendarData(result.planDays || []);
                 this.calculateSummaryStats(result.planDays || []);
             }
@@ -119,17 +199,27 @@ export default class BeatPlanCalendar extends LightningElement {
         }
     }
 
+    /**
+     * Loads beats for the salesperson by calling getBeatsForUser,
+     * which resolves the territory automatically on the server.
+     */
     async loadBeats() {
         try {
-            const result = await getBeatsForTerritory({ userId: this.userId });
+            const userId = this.resolvedUserId || this.currentUserId;
+            if (!userId) {
+                console.warn('No userId available to load beats');
+                return;
+            }
+
+            const result = await getBeatsForUser({ userId: userId });
             this.allBeats = (result || []).map((beat, index) => {
                 const color = BEAT_COLORS[index % BEAT_COLORS.length];
                 this.beatColorMap[beat.Id] = color;
                 return {
                     id: beat.Id,
                     name: beat.Name,
-                    outletCount: beat.Outlet_Count__c || 0,
-                    territory: beat.Territory__c || '',
+                    outletCount: beat.Total_Outlets__c || 0,
+                    territory: beat.Territory__r?.Name || '',
                     colorStyle: 'background-color: ' + color,
                     color: color
                 };
@@ -142,37 +232,83 @@ export default class BeatPlanCalendar extends LightningElement {
 
     buildCalendarData(planDays) {
         const data = {};
+        // Map Journey_Plan_Day__c records into the calendar.
+        // Each day has Day_of_Week__c (Monday, Tuesday...) and Week_Number__c (Week 1, Week 2...).
+        // We need to convert these into actual date keys for the calendar grid.
+        const effectiveFrom = this.journeyPlan?.Effective_From__c;
+        const monthStart = effectiveFrom
+            ? new Date(effectiveFrom)
+            : new Date(this.currentYear, this.currentMonth, 1);
+
+        // Build a lookup from (weekNumber, dayOfWeek) → actual date
+        const dayNameToIndex = {
+            'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+            'Thursday': 4, 'Friday': 5, 'Saturday': 6
+        };
+
         planDays.forEach(day => {
-            const dateKey = day.Plan_Date__c;
+            // Calculate the actual date for this plan day entry
+            const weekNum = this.parseWeekNumber(day.Week_Number__c); // 1-based
+            const dayIdx = dayNameToIndex[day.Day_of_Week__c];
+
+            if (dayIdx === undefined || !weekNum) {
+                return; // Skip invalid entries
+            }
+
+            // Find the first occurrence of the day in the month, then offset by week
+            const firstOfMonth = new Date(this.currentYear, this.currentMonth, 1);
+            const firstDayOfWeekInMonth = firstOfMonth.getDay();
+            let dateOffset = dayIdx - firstDayOfWeekInMonth;
+            if (dateOffset < 0) dateOffset += 7;
+            const actualDate = new Date(this.currentYear, this.currentMonth, 1 + dateOffset + (weekNum - 1) * 7);
+
+            const dateKey = this.formatDateKey(actualDate);
+
             if (!data[dateKey]) {
                 data[dateKey] = { beats: [], totalVisits: 0 };
             }
+
             const beatColor = this.beatColorMap[day.Beat__c] ||
                 BEAT_COLORS[Object.keys(data).length % BEAT_COLORS.length];
 
+            // Assign color to map for consistency
+            if (day.Beat__c) {
+                this.beatColorMap[day.Beat__c] = beatColor;
+            }
+
             data[dateKey].beats.push({
                 id: day.Beat__c || day.Id,
-                name: day.Beat_Name__c || day.Beat__r?.Name || 'Beat',
-                outletCount: day.Outlet_Count__c || 0,
+                name: day.Beat__r?.Name || 'Beat',
+                outletCount: day.Planned_Outlets__c || day.Beat__r?.Total_Outlets__c || 0,
                 colorStyle: 'background-color: ' + beatColor,
                 color: beatColor
             });
-            data[dateKey].totalVisits += day.Outlet_Count__c || 0;
+            data[dateKey].totalVisits += day.Planned_Outlets__c || day.Beat__r?.Total_Outlets__c || 0;
         });
         return data;
+    }
+
+    /**
+     * Parses "Week 1", "Week 2", etc. into the numeric value 1, 2, etc.
+     */
+    parseWeekNumber(weekStr) {
+        if (!weekStr) return 1;
+        const match = weekStr.match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : 1;
     }
 
     calculateSummaryStats(planDays) {
         const uniqueDates = new Set();
         const uniqueBeats = new Set();
         let totalVisits = 0;
-        let totalOutlets = 0;
 
         planDays.forEach(day => {
-            uniqueDates.add(day.Plan_Date__c);
-            uniqueBeats.add(day.Beat__c);
-            totalVisits += day.Outlet_Count__c || 0;
-            totalOutlets += day.Outlet_Count__c || 0;
+            const key = (day.Week_Number__c || '') + '_' + (day.Day_of_Week__c || '');
+            uniqueDates.add(key);
+            if (day.Beat__c) {
+                uniqueBeats.add(day.Beat__c);
+            }
+            totalVisits += day.Planned_Outlets__c || day.Beat__r?.Total_Outlets__c || 0;
         });
 
         const workingDays = this.weekView ? 6 : this.getWorkingDaysInMonth();
@@ -182,7 +318,7 @@ export default class BeatPlanCalendar extends LightningElement {
             totalPlannedVisits: totalVisits,
             coveragePercent: Math.min(coverage, 100),
             assignedBeats: uniqueBeats.size,
-            totalOutlets: totalOutlets,
+            totalOutlets: totalVisits,
             avgVisitsPerDay: uniqueDates.size > 0 ? Math.round(totalVisits / uniqueDates.size) : 0
         };
     }
@@ -360,15 +496,16 @@ export default class BeatPlanCalendar extends LightningElement {
     }
 
     async handleSubmitApproval() {
-        if (!this.journeyPlan.Id) {
+        const planId = this.journeyPlan?.Id || this.recordId;
+        if (!planId) {
             this.showToast('Warning', 'No journey plan to submit', 'warning');
             return;
         }
 
         this.isLoading = true;
         try {
-            await submitForApproval({ journeyPlanId: this.journeyPlan.Id });
-            this.pjpStatus = 'Pending Approval';
+            await submitForApproval({ journeyPlanId: planId });
+            this.pjpStatus = 'Submitted';
             this.showToast('Success', 'Journey Plan submitted for approval', 'success');
         } catch (error) {
             this.showToast('Error', 'Approval submission failed: ' + this.reduceErrors(error), 'error');
@@ -377,7 +514,8 @@ export default class BeatPlanCalendar extends LightningElement {
         }
     }
 
-    // Helper methods
+    // ── Helper methods ────────────────────────────────────────────────────────
+
     getWeekStart(date) {
         const d = new Date(date);
         const day = d.getDay();
