@@ -89,8 +89,7 @@ public without sharing class SPM_SchemeEngine_Service {
             return results;
         }
 
-        // Sort schemes by priority (lower number = higher priority)
-        candidateSchemes.sort();
+        // Schemes already sorted by Priority ASC from SOQL ORDER BY clause
 
         // Track stacking rules
         Set<String> appliedSchemeTypes = new Set<String>();
