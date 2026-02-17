@@ -7,5 +7,5 @@
     <relationshipLabel>Survey Responses</relationshipLabel>
     <relationshipName>Survey_Responses</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

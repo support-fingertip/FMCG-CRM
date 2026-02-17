@@ -7,5 +7,5 @@
     <relationshipLabel>GPS Logs</relationshipLabel>
     <relationshipName>GPS_Logs</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

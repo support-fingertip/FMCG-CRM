@@ -7,5 +7,5 @@
     <relationshipLabel>Collections</relationshipLabel>
     <relationshipName>Collections</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

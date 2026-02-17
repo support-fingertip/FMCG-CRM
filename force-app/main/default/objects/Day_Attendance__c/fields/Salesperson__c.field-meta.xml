@@ -7,5 +7,5 @@
     <relationshipLabel>Day Attendances</relationshipLabel>
     <relationshipName>Day_Attendances</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

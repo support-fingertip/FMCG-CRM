@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Claim Lines</relationshipLabel>
     <relationshipName>Claim_Lines</relationshipName>
-    <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

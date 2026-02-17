@@ -7,5 +7,5 @@
     <relationshipLabel>Leave Requests</relationshipLabel>
     <relationshipName>Leave_Requests</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

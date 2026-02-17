@@ -7,5 +7,5 @@
     <relationshipLabel>Return Orders</relationshipLabel>
     <relationshipName>Return_Orders</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

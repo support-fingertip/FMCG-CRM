@@ -7,5 +7,5 @@
     <relationshipLabel>Visits</relationshipLabel>
     <relationshipName>Visits</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>
