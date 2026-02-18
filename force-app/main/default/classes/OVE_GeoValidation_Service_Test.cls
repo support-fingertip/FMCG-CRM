@@ -111,7 +111,7 @@ private class OVE_GeoValidation_Service_Test {
     @isTest
     static void testNullCoordinates() {
         Test.startTest();
-        Double distance = OVE_GeoValidation_Service.calculateDistance((Double)null, (Double)null, 19.0760, 72.8777);
+        Double distance = OVE_GeoValidation_Service.calculateDistance((Double)null, (Double)null, (Double)19.0760, (Double)72.8777);
         Test.stopTest();
 
         // Service should handle nulls gracefully, returning 0 or a default
@@ -127,7 +127,7 @@ private class OVE_GeoValidation_Service_Test {
     static void testProximityWithNulls() {
         Test.startTest();
         Boolean result = OVE_GeoValidation_Service.validateCheckInProximity(
-            (Double)null, (Double)null, 19.0760, 72.8777, 500.0
+            (Double)null, (Double)null, (Double)19.0760, (Double)72.8777, (Double)500.0
         );
         Test.stopTest();
 
