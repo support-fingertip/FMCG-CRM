@@ -81,7 +81,6 @@ public without sharing class TAM_Achievement_Service {
         Target__c updateTarget = new Target__c(
             Id = targetId,
             Achievement_Value__c = achievementValue,
-            Achievement_Percent__c = achievementPercent,
             Last_Calculated__c = DateTime.now()
         );
         update updateTarget;
@@ -290,15 +289,20 @@ public without sharing class TAM_Achievement_Service {
      * @description Calculates volume achievement by summing order line item quantities.
      */
     private static Decimal calculateVolumeAchievement(Target__c target) {
-        AggregateResult[] results = [
-            SELECT SUM(oli.Quantity__c) totalQuantity
-            FROM Order_Line_Item__c oli
-            WHERE oli.Sales_Order__r.Sales_Rep__c = :target.User__c
-              AND oli.Sales_Order__r.Order_Status__c IN ('Delivered', 'Dispatched', 'Processing')
-              AND oli.Sales_Order__r.Order_Date__c >= :target.Period_Start__c
-              AND oli.Sales_Order__r.Order_Date__c <= :target.Period_End__c
-              AND (oli.Product__c = :target.Product__c OR :target.Product__c = null)
-        ];
+        Id productId = target.Product__c;
+        String query = 'SELECT SUM(Quantity__c) totalQuantity' +
+            ' FROM Order_Line_Item__c' +
+            ' WHERE Sales_Order__r.Sales_Rep__c = :userId' +
+            ' AND Sales_Order__r.Order_Status__c IN (\'Delivered\', \'Dispatched\', \'Processing\')' +
+            ' AND Sales_Order__r.Order_Date__c >= :periodStart' +
+            ' AND Sales_Order__r.Order_Date__c <= :periodEnd';
+        if (productId != null) {
+            query += ' AND Product__c = :productId';
+        }
+        Id userId = target.User__c;
+        Date periodStart = target.Period_Start__c;
+        Date periodEnd = target.Period_End__c;
+        AggregateResult[] results = Database.query(query);
 
         if (results != null && !results.isEmpty()) {
             Decimal total = (Decimal) results[0].get('totalQuantity');

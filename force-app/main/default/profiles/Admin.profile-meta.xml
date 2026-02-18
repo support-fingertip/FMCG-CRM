@@ -2766,11 +2766,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Survey_Answer__c.Survey_Question__c</field>
-        <readable>false</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Survey_Question__c.Is_Required__c</field>
         <readable>false</readable>
     </fieldPermissions>

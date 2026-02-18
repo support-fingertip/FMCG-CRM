@@ -192,12 +192,15 @@ public without sharing class OMS_OrderValidation_Service {
      */
     private static Decimal getMinOrderValue() {
         try {
-            SFA_Settings__c settings = SFA_Settings__c.getOrgDefaults();
-            if (settings != null && settings.Min_Order_Value__c != null) {
-                return settings.Min_Order_Value__c;
+            List<App_Config__mdt> configs = [
+                SELECT Value__c FROM App_Config__mdt
+                WHERE DeveloperName = 'Min_Order_Value' LIMIT 1
+            ];
+            if (!configs.isEmpty() && configs[0].Value__c != null) {
+                return Decimal.valueOf(configs[0].Value__c);
             }
         } catch (Exception e) {
-            // Custom setting may not exist; fall back to default
+            // Custom metadata may not exist; fall back to default
         }
         return 0; // Default: no minimum
     }

@@ -234,7 +234,7 @@ public with sharing class VisitCheckInController {
             // Haversine formula to calculate distance in metres
             Double distance = calculateHaversineDistance(
                 lat.doubleValue(), lng.doubleValue(),
-                outlet.ShippingLatitude, outlet.ShippingLongitude
+                (Double) outlet.ShippingLatitude, (Double) outlet.ShippingLongitude
             );
 
             Boolean isWithinFence = distance <= allowedRadius;

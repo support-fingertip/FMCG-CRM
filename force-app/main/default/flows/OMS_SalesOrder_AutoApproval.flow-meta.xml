@@ -6,24 +6,6 @@
     <processType>AutoLaunchedFlow</processType>
     <status>Active</status>
     <interviewLabel>Auto Approve Sales Order {!$Flow.CurrentDateTime}</interviewLabel>
-    <start>
-        <locationX>50</locationX>
-        <locationY>0</locationY>
-        <object>Sales_Order__c</object>
-        <recordTriggerType>CreateAndUpdate</recordTriggerType>
-        <triggerType>RecordAfterSave</triggerType>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Status__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Submitted</stringValue>
-            </value>
-        </filters>
-        <connector>
-            <targetReference>Check_Order_Value</targetReference>
-        </connector>
-    </start>
     <decisions>
         <name>Check_Order_Value</name>
         <label>Check Order Value</label>
@@ -81,4 +63,22 @@
             </value>
         </inputAssignments>
     </recordUpdates>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <object>Sales_Order__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Submitted</stringValue>
+            </value>
+        </filters>
+        <connector>
+            <targetReference>Check_Order_Value</targetReference>
+        </connector>
+    </start>
 </Flow>

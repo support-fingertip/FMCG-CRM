@@ -25,7 +25,7 @@
         <name>ASM_Approval</name>
     </approvalStep>
     <description>Approval process for Permanent Journey Plans (PJP) submitted by sales representatives for monthly route planning</description>
-    <emailTemplate>Journey_Plan_Approval_Request</emailTemplate>
+    <emailTemplate>unfiled$public/Journey_Plan_Approval_Request</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Journey_Plan__c.Status__c</field>

@@ -119,7 +119,6 @@
     </decisions>
     <formulas>
         <name>NewBalanceFormula</name>
-        <label>New Balance Due</label>
         <dataType>Currency</dataType>
         <expression>{!Get_Related_Invoice.Balance_Due__c} - {!$Record.Amount__c}</expression>
         <scale>2</scale>

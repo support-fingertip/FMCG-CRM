@@ -15,22 +15,22 @@ private class OVE_GeoValidation_Service_Test {
     @isTest
     static void testDistanceCalculation() {
         // Mumbai CST coordinates
-        Decimal lat1 = 18.9398;
-        Decimal lon1 = 72.8354;
+        Double lat1 = 18.9398;
+        Double lon1 = 72.8354;
 
         // Mumbai Airport coordinates
-        Decimal lat2 = 19.0896;
-        Decimal lon2 = 72.8656;
+        Double lat2 = 19.0896;
+        Double lon2 = 72.8656;
 
         Test.startTest();
-        Decimal distance = OVE_GeoValidation_Service.calculateDistance(lat1, lon1, lat2, lon2);
+        Double distance = OVE_GeoValidation_Service.calculateDistance(lat1, lon1, lat2, lon2);
         Test.stopTest();
 
         // Distance between Mumbai CST and Airport is approximately 17-20 km
         System.assertNotEquals(null, distance, 'Distance should not be null');
-        System.assert(distance > 10,
+        System.assert(distance > 10000,
             'Distance between Mumbai CST and Airport should be greater than 10 km, got: ' + distance);
-        System.assert(distance < 30,
+        System.assert(distance < 30000,
             'Distance between Mumbai CST and Airport should be less than 30 km, got: ' + distance);
     }
 
@@ -41,19 +41,19 @@ private class OVE_GeoValidation_Service_Test {
     @isTest
     static void testProximityValid() {
         // Outlet location
-        Decimal outletLat = 19.0760;
-        Decimal outletLon = 72.8777;
+        Double outletLat = 19.0760;
+        Double outletLon = 72.8777;
 
         // Check-in location ~50 meters away
-        Decimal checkInLat = 19.0764;
-        Decimal checkInLon = 72.8780;
+        Double checkInLat = 19.0764;
+        Double checkInLon = 72.8780;
 
-        // Radius of 200 meters (0.2 km)
-        Decimal radiusKm = 0.2;
+        // Radius of 200 meters
+        Double radiusMeters = 200.0;
 
         Test.startTest();
-        Boolean isWithin = OVE_GeoValidation_Service.isWithinRadius(
-            checkInLat, checkInLon, outletLat, outletLon, radiusKm
+        Boolean isWithin = OVE_GeoValidation_Service.validateCheckInProximity(
+            checkInLat, checkInLon, outletLat, outletLon, radiusMeters
         );
         Test.stopTest();
 
@@ -68,19 +68,19 @@ private class OVE_GeoValidation_Service_Test {
     @isTest
     static void testProximityInvalid() {
         // Outlet in Mumbai
-        Decimal outletLat = 19.0760;
-        Decimal outletLon = 72.8777;
+        Double outletLat = 19.0760;
+        Double outletLon = 72.8777;
 
         // Check-in in Delhi (~1,150 km away)
-        Decimal checkInLat = 28.6139;
-        Decimal checkInLon = 77.2090;
+        Double checkInLat = 28.6139;
+        Double checkInLon = 77.2090;
 
-        // Radius of 0.5 km
-        Decimal radiusKm = 0.5;
+        // Radius of 500 meters
+        Double radiusMeters = 500.0;
 
         Test.startTest();
-        Boolean isWithin = OVE_GeoValidation_Service.isWithinRadius(
-            checkInLat, checkInLon, outletLat, outletLon, radiusKm
+        Boolean isWithin = OVE_GeoValidation_Service.validateCheckInProximity(
+            checkInLat, checkInLon, outletLat, outletLon, radiusMeters
         );
         Test.stopTest();
 
@@ -93,11 +93,11 @@ private class OVE_GeoValidation_Service_Test {
      */
     @isTest
     static void testSameLocation() {
-        Decimal lat = 19.0760;
-        Decimal lon = 72.8777;
+        Double lat = 19.0760;
+        Double lon = 72.8777;
 
         Test.startTest();
-        Decimal distance = OVE_GeoValidation_Service.calculateDistance(lat, lon, lat, lon);
+        Double distance = OVE_GeoValidation_Service.calculateDistance(lat, lon, lat, lon);
         Test.stopTest();
 
         System.assertEquals(0, distance,
@@ -111,7 +111,7 @@ private class OVE_GeoValidation_Service_Test {
     @isTest
     static void testNullCoordinates() {
         Test.startTest();
-        Decimal distance = OVE_GeoValidation_Service.calculateDistance(null, null, 19.0760, 72.8777);
+        Double distance = OVE_GeoValidation_Service.calculateDistance(null, null, 19.0760, 72.8777);
         Test.stopTest();
 
         // Service should handle nulls gracefully, returning 0 or a default
@@ -126,8 +126,8 @@ private class OVE_GeoValidation_Service_Test {
     @isTest
     static void testProximityWithNulls() {
         Test.startTest();
-        Boolean result = OVE_GeoValidation_Service.isWithinRadius(
-            null, null, 19.0760, 72.8777, 0.5
+        Boolean result = OVE_GeoValidation_Service.validateCheckInProximity(
+            null, null, 19.0760, 72.8777, 500.0
         );
         Test.stopTest();
 

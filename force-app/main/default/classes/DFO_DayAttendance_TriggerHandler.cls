@@ -143,13 +143,25 @@ public class DFO_DayAttendance_TriggerHandler extends TriggerHandler {
         for (AggregateResult ar : [
             SELECT Day_Attendance__c attId,
                    COUNT(Id) totalVisits,
-                   SUM(CASE WHEN Is_Productive__c = true THEN 1 ELSE 0 END) productiveVisits,
                    SUM(Order_Value__c) totalOrderValue
             FROM Visit__c
             WHERE Day_Attendance__c IN :attendanceIds
             GROUP BY Day_Attendance__c
         ]) {
             visitAggregates.put((Id) ar.get('attId'), ar);
+        }
+
+        // Aggregate productive visit counts separately (SOQL doesn't support CASE WHEN)
+        Map<Id, Integer> productiveVisitCounts = new Map<Id, Integer>();
+        for (AggregateResult ar : [
+            SELECT Day_Attendance__c attId,
+                   COUNT(Id) productiveVisits
+            FROM Visit__c
+            WHERE Day_Attendance__c IN :attendanceIds
+              AND Is_Productive__c = true
+            GROUP BY Day_Attendance__c
+        ]) {
+            productiveVisitCounts.put((Id) ar.get('attId'), (Integer) ar.get('productiveVisits'));
         }
 
         // Aggregate collection metrics
@@ -172,7 +184,8 @@ public class DFO_DayAttendance_TriggerHandler extends TriggerHandler {
             AggregateResult visitAR = visitAggregates.get(rec.Id);
             if (visitAR != null) {
                 rec.Total_Visits__c = (Integer) visitAR.get('totalVisits');
-                rec.Productive_Calls__c = ((Decimal) visitAR.get('productiveVisits')).intValue();
+                rec.Productive_Calls__c = productiveVisitCounts.containsKey(rec.Id)
+                    ? productiveVisitCounts.get(rec.Id) : 0;
                 rec.Total_Order_Value__c = (Decimal) visitAR.get('totalOrderValue');
             } else {
                 rec.Total_Visits__c = 0;
@@ -263,8 +276,8 @@ public class DFO_DayAttendance_TriggerHandler extends TriggerHandler {
                     Visit__c prev = visits[i - 1];
                     Visit__c curr = visits[i];
                     totalDistance += OVE_GeoValidation_Service.calculateDistance(
-                        prev.Check_In_Latitude__c, prev.Check_In_Longitude__c,
-                        curr.Check_In_Latitude__c, curr.Check_In_Longitude__c
+                        (Double) prev.Check_In_Latitude__c, (Double) prev.Check_In_Longitude__c,
+                        (Double) curr.Check_In_Latitude__c, (Double) curr.Check_In_Longitude__c
                     );
                 }
             }

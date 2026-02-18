@@ -10,7 +10,7 @@
         <field>Scheme_Type__c</field>
         <field>Start_Date__c</field>
         <field>End_Date__c</field>
-        <field>Budget__c</field>
+        <field>Budget_Amount__c</field>
         <field>Target_Channel__c</field>
         <field>Region__c</field>
         <field>Owner</field>
@@ -35,7 +35,7 @@
         </assignedApprover>
         <entryCriteria>
             <criteriaItems>
-                <field>Scheme__c.Budget__c</field>
+                <field>Scheme__c.Budget_Amount__c</field>
                 <operation>greaterThan</operation>
                 <value>100000</value>
             </criteriaItems>
@@ -47,7 +47,7 @@
         </rejectBehavior>
     </approvalStep>
     <description>Approval process for trade schemes and promotions requiring regional and trade marketing sign-off</description>
-    <emailTemplate>Scheme_Approval_Request</emailTemplate>
+    <emailTemplate>unfiled$public/Scheme_Approval_Request</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Scheme__c.Status__c</field>

@@ -9,14 +9,9 @@
     <start>
         <locationX>50</locationX>
         <locationY>0</locationY>
-        <scheduledPaths>
-            <name>Run_Daily_Check</name>
-            <connector>
-                <targetReference>Get_Expired_Schemes</targetReference>
-            </connector>
-            <label>Run Daily</label>
-            <timeSource>RecordTriggerEvent</timeSource>
-        </scheduledPaths>
+        <connector>
+            <targetReference>Get_Expired_Schemes</targetReference>
+        </connector>
     </start>
     <recordLookups>
         <name>Get_Expired_Schemes</name>

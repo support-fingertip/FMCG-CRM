@@ -1,9 +1,9 @@
 import { LightningElement, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
-import getActiveSchemes from '@salesforce/apex/SchemeViewerController.getActiveSchemes';
-import getSchemeDetails from '@salesforce/apex/SchemeViewerController.getSchemeDetails';
-import calculateSchemeDiscount from '@salesforce/apex/SchemeViewerController.calculateSchemeDiscount';
+import getActiveSchemes from '@salesforce/apex/SchemeViewController.getActiveSchemes';
+import getSchemeDetails from '@salesforce/apex/SchemeViewController.getSchemeDetails';
+import calculateSchemeDiscount from '@salesforce/apex/SchemeViewController.calculateSchemeDiscount';
 
 const SCHEME_TYPE_COLORS = {
     'Percentage Discount': { bg: '#e8f4fd', color: '#0176d3', short: '%' },

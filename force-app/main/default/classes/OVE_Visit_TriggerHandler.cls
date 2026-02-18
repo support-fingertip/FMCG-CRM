@@ -108,25 +108,25 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
                 : defaultRadius;
 
             Boolean withinRadius = OVE_GeoValidation_Service.validateCheckInProximity(
-                visit.Check_In_Latitude__c,
-                visit.Check_In_Longitude__c,
-                outlet.Outlet_Latitude__c,
-                outlet.Outlet_Longitude__c,
+                (Double) visit.Check_In_Latitude__c,
+                (Double) visit.Check_In_Longitude__c,
+                (Double) outlet.Outlet_Latitude__c,
+                (Double) outlet.Outlet_Longitude__c,
                 radiusMeters
             );
 
             if (!withinRadius) {
                 Double distance = OVE_GeoValidation_Service.calculateDistance(
-                    visit.Check_In_Latitude__c,
-                    visit.Check_In_Longitude__c,
-                    outlet.Outlet_Latitude__c,
-                    outlet.Outlet_Longitude__c
+                    (Double) visit.Check_In_Latitude__c,
+                    (Double) visit.Check_In_Longitude__c,
+                    (Double) outlet.Outlet_Latitude__c,
+                    (Double) outlet.Outlet_Longitude__c
                 );
 
                 visit.addError(
-                    'Check-in location is ' + distance.setScale(0) +
+                    'Check-in location is ' + String.valueOf(Math.round(distance)) +
                     'm from the outlet, which exceeds the allowed radius of ' +
-                    radiusMeters.setScale(0) + 'm. ' +
+                    String.valueOf(Math.round(radiusMeters)) + 'm. ' +
                     'Please check in from the outlet\'s registered location.'
                 );
             }
@@ -245,12 +245,15 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
      */
     private Double getConfiguredRadius() {
         try {
-            SFA_Settings__c settings = SFA_Settings__c.getOrgDefaults();
-            if (settings != null && settings.Default_Geofence_Radius__c != null) {
-                return settings.Default_Geofence_Radius__c;
+            List<Geo_Config__mdt> configs = [
+                SELECT Value__c FROM Geo_Config__mdt
+                WHERE DeveloperName = 'Default_Geofence_Radius' LIMIT 1
+            ];
+            if (!configs.isEmpty() && configs[0].Value__c != null) {
+                return Double.valueOf(configs[0].Value__c);
             }
         } catch (Exception e) {
-            // Custom setting may not exist; fall back to default
+            // Custom metadata may not exist; fall back to default
         }
         return DEFAULT_GEOFENCE_RADIUS;
     }

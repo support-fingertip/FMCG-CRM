@@ -150,7 +150,7 @@ public with sharing class DayAttendanceController {
                     );
                 }
                 // Convert metres to kilometres
-                attendance.Distance_Traveled_Km__c = (totalDistance / 1000).setScale(2, RoundingMode.HALF_UP);
+                attendance.Distance_Traveled_Km__c = Decimal.valueOf(totalDistance / 1000).setScale(2, RoundingMode.HALF_UP);
             }
 
             // Set end location from last GPS log

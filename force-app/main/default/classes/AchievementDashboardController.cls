@@ -21,7 +21,7 @@ public with sharing class AchievementDashboardController {
     @AuraEnabled(cacheable=true)
     public static List<Target__c> getTargetsAndAchievements(Id userId, String month, String year) {
         return [
-            SELECT Id, Name, Target_Type__c, Target_Period__c, Month__c, Year__c,
+            SELECT Id, Name, Target_Type__c, Month__c, Year__c,
                    Salesperson__c, Salesperson__r.Name,
                    Territory__c, Territory__r.Name,
                    Target_Value__c, Achievement_Value__c, Achievement_Percent__c,

@@ -6,146 +6,6 @@
     <processType>AutoLaunchedFlow</processType>
     <status>Active</status>
     <interviewLabel>Invoice Generation {!$Flow.CurrentDateTime}</interviewLabel>
-    <start>
-        <locationX>50</locationX>
-        <locationY>0</locationY>
-        <object>Sales_Order__c</object>
-        <recordTriggerType>CreateAndUpdate</recordTriggerType>
-        <triggerType>RecordAfterSave</triggerType>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Status__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Approved</stringValue>
-            </value>
-        </filters>
-        <connector>
-            <targetReference>Check_Existing_Invoice</targetReference>
-        </connector>
-    </start>
-    <recordLookups>
-        <name>Check_Existing_Invoice</name>
-        <label>Check Existing Invoice</label>
-        <locationX>176</locationX>
-        <locationY>134</locationY>
-        <connector>
-            <targetReference>Has_Invoice</targetReference>
-        </connector>
-        <object>Invoice__c</object>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Sales_Order__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>$Record.Id</elementReference>
-            </value>
-        </filters>
-        <getFirstRecordOnly>true</getFirstRecordOnly>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordLookups>
-    <decisions>
-        <name>Has_Invoice</name>
-        <label>Invoice Already Exists?</label>
-        <locationX>176</locationX>
-        <locationY>276</locationY>
-        <defaultConnector>
-            <targetReference>Create_Invoice</targetReference>
-        </defaultConnector>
-        <defaultConnectorLabel>No Invoice Found</defaultConnectorLabel>
-        <rules>
-            <name>Invoice_Exists</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>Check_Existing_Invoice</leftValueReference>
-                <operator>IsNull</operator>
-                <rightValue>
-                    <booleanValue>false</booleanValue>
-                </rightValue>
-            </conditions>
-            <label>Invoice Exists</label>
-        </rules>
-    </decisions>
-    <recordCreates>
-        <name>Create_Invoice</name>
-        <label>Create Invoice</label>
-        <locationX>302</locationX>
-        <locationY>418</locationY>
-        <connector>
-            <targetReference>Get_Order_Line_Items</targetReference>
-        </connector>
-        <object>Invoice__c</object>
-        <inputAssignments>
-            <field>Sales_Order__c</field>
-            <value>
-                <elementReference>$Record.Id</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Account__c</field>
-            <value>
-                <elementReference>$Record.Account__c</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Invoice_Date__c</field>
-            <value>
-                <elementReference>$Flow.CurrentDate</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Total_Amount__c</field>
-            <value>
-                <elementReference>$Record.Total_Net_Amount__c</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Balance_Due__c</field>
-            <value>
-                <elementReference>$Record.Total_Net_Amount__c</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Status__c</field>
-            <value>
-                <stringValue>Pending</stringValue>
-            </value>
-        </inputAssignments>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordCreates>
-    <recordLookups>
-        <name>Get_Order_Line_Items</name>
-        <label>Get Order Line Items</label>
-        <locationX>302</locationX>
-        <locationY>560</locationY>
-        <connector>
-            <targetReference>Loop_Order_Lines</targetReference>
-        </connector>
-        <object>Order_Line_Item__c</object>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Sales_Order__c</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>$Record.Id</elementReference>
-            </value>
-        </filters>
-        <outputReference>OrderLineItems</outputReference>
-    </recordLookups>
-    <loops>
-        <name>Loop_Order_Lines</name>
-        <label>Loop Order Line Items</label>
-        <locationX>302</locationX>
-        <locationY>702</locationY>
-        <collectionReference>OrderLineItems</collectionReference>
-        <iterationOrder>Asc</iterationOrder>
-        <nextValueConnector>
-            <targetReference>Assign_Invoice_Line</targetReference>
-        </nextValueConnector>
-        <noMoreValuesConnector>
-            <targetReference>Create_Invoice_Lines</targetReference>
-        </noMoreValuesConnector>
-    </loops>
     <assignments>
         <name>Assign_Invoice_Line</name>
         <label>Build Invoice Line Item</label>
@@ -197,6 +57,89 @@
             </value>
         </assignmentItems>
     </assignments>
+    <decisions>
+        <name>Has_Invoice</name>
+        <label>Invoice Already Exists?</label>
+        <locationX>176</locationX>
+        <locationY>276</locationY>
+        <defaultConnector>
+            <targetReference>Create_Invoice</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Invoice Found</defaultConnectorLabel>
+        <rules>
+            <name>Invoice_Exists</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Check_Existing_Invoice</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <label>Invoice Exists</label>
+        </rules>
+    </decisions>
+    <loops>
+        <name>Loop_Order_Lines</name>
+        <label>Loop Order Line Items</label>
+        <locationX>302</locationX>
+        <locationY>702</locationY>
+        <collectionReference>OrderLineItems</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Assign_Invoice_Line</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Create_Invoice_Lines</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <recordCreates>
+        <name>Create_Invoice</name>
+        <label>Create Invoice</label>
+        <locationX>302</locationX>
+        <locationY>418</locationY>
+        <connector>
+            <targetReference>Get_Order_Line_Items</targetReference>
+        </connector>
+        <object>Invoice__c</object>
+        <inputAssignments>
+            <field>Sales_Order__c</field>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Account__c</field>
+            <value>
+                <elementReference>$Record.Account__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Invoice_Date__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Total_Amount__c</field>
+            <value>
+                <elementReference>$Record.Total_Net_Amount__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Balance_Due__c</field>
+            <value>
+                <elementReference>$Record.Total_Net_Amount__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Pending</stringValue>
+            </value>
+        </inputAssignments>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
     <recordCreates>
         <name>Create_Invoice_Lines</name>
         <label>Create Invoice Line Items</label>
@@ -207,6 +150,45 @@
         </connector>
         <inputReference>InvoiceLineItems</inputReference>
     </recordCreates>
+    <recordLookups>
+        <name>Check_Existing_Invoice</name>
+        <label>Check Existing Invoice</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <connector>
+            <targetReference>Has_Invoice</targetReference>
+        </connector>
+        <object>Invoice__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Sales_Order__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Order_Line_Items</name>
+        <label>Get Order Line Items</label>
+        <locationX>302</locationX>
+        <locationY>560</locationY>
+        <connector>
+            <targetReference>Loop_Order_Lines</targetReference>
+        </connector>
+        <object>Order_Line_Item__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Sales_Order__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <outputReference>OrderLineItems</outputReference>
+    </recordLookups>
     <recordUpdates>
         <name>Update_Order_Processing</name>
         <label>Update Order to Processing</label>
@@ -220,6 +202,24 @@
             </value>
         </inputAssignments>
     </recordUpdates>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <object>Sales_Order__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Approved</stringValue>
+            </value>
+        </filters>
+        <connector>
+            <targetReference>Check_Existing_Invoice</targetReference>
+        </connector>
+    </start>
     <variables>
         <name>OrderLineItems</name>
         <dataType>SObject</dataType>

@@ -9,14 +9,9 @@
     <start>
         <locationX>50</locationX>
         <locationY>0</locationY>
-        <scheduledPaths>
-            <name>Run_Daily</name>
-            <connector>
-                <targetReference>Get_Open_Attendance</targetReference>
-            </connector>
-            <label>Run Daily at 9 PM</label>
-            <timeSource>RecordTriggerEvent</timeSource>
-        </scheduledPaths>
+        <connector>
+            <targetReference>Get_Open_Attendance</targetReference>
+        </connector>
     </start>
     <recordLookups>
         <name>Get_Open_Attendance</name>

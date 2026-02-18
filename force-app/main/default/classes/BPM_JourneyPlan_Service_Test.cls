@@ -46,7 +46,7 @@ private class BPM_JourneyPlan_Service_Test {
                 Journey_Plan__c = jp.Id,
                 Day_of_Week__c = new List<String>{'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'}[i],
                 Beat__c = beats[i].Id,
-                Week_Number__c = 1,
+                Week_Number__c = String.valueOf(1),
                 Planned_Outlets__c = 4,
                 Sequence_Order__c = i + 1
             );
@@ -217,7 +217,7 @@ private class BPM_JourneyPlan_Service_Test {
         // Approve
         plan.Status__c = 'Approved';
         plan.Approved_By__c = UserInfo.getUserId();
-        plan.Approval_Date__c = DateTime.now();
+        plan.Approval_Date__c = Date.today();
         update plan;
 
         Journey_Plan__c approved = [SELECT Status__c, Approved_By__c FROM Journey_Plan__c WHERE Id = :plan.Id];

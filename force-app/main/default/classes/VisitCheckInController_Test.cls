@@ -250,8 +250,8 @@ private class VisitCheckInController_Test {
         Decimal lonDiff = Math.abs(territory.Geo_Fence_Long__c - nearLon);
 
         // At Mumbai's latitude, 1 degree ~ 111 km
-        Decimal approxDistKm = Math.sqrt(
-            Math.pow(latDiff * 111, 2) + Math.pow(lonDiff * 111 * Math.cos(territory.Geo_Fence_Lat__c * Math.PI / 180), 2)
+        Double approxDistKm = Math.sqrt(
+            Math.pow((Double)(latDiff * 111), 2) + Math.pow((Double)(lonDiff * 111 * Math.cos((Double)(territory.Geo_Fence_Lat__c * Math.PI / 180))), 2)
         );
         Decimal approxDistMeters = approxDistKm * 1000;
 
@@ -266,8 +266,8 @@ private class VisitCheckInController_Test {
 
         Decimal farLatDiff = Math.abs(territory.Geo_Fence_Lat__c - farLat);
         Decimal farLonDiff = Math.abs(territory.Geo_Fence_Long__c - farLon);
-        Decimal farDistKm = Math.sqrt(
-            Math.pow(farLatDiff * 111, 2) + Math.pow(farLonDiff * 111 * Math.cos(territory.Geo_Fence_Lat__c * Math.PI / 180), 2)
+        Double farDistKm = Math.sqrt(
+            Math.pow((Double)(farLatDiff * 111), 2) + Math.pow((Double)(farLonDiff * 111 * Math.cos((Double)(territory.Geo_Fence_Lat__c * Math.PI / 180))), 2)
         );
         Decimal farDistMeters = farDistKm * 1000;
 

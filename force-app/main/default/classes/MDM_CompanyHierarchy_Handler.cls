@@ -237,15 +237,25 @@ public class MDM_CompanyHierarchy_Handler extends TriggerHandler {
 
         for (AggregateResult ar : [
             SELECT Parent_Hierarchy__c parentId,
-                   COUNT(Id) totalChildren,
-                   SUM(CASE WHEN Is_Active__c = true THEN 1 ELSE 0 END) activeChildren
+                   COUNT(Id) totalChildren
             FROM Company_Hierarchy__c
             WHERE Parent_Hierarchy__c IN :parentIds
             GROUP BY Parent_Hierarchy__c
         ]) {
             Id parentId = (Id) ar.get('parentId');
             totalChildCount.put(parentId, (Integer) ar.get('totalChildren'));
-            activeChildCount.put(parentId, ((Decimal) ar.get('activeChildren')).intValue());
+        }
+
+        for (AggregateResult ar : [
+            SELECT Parent_Hierarchy__c parentId,
+                   COUNT(Id) activeChildren
+            FROM Company_Hierarchy__c
+            WHERE Parent_Hierarchy__c IN :parentIds
+              AND Is_Active__c = true
+            GROUP BY Parent_Hierarchy__c
+        ]) {
+            Id parentId = (Id) ar.get('parentId');
+            activeChildCount.put(parentId, (Integer) ar.get('activeChildren'));
         }
 
         // Update parent records
