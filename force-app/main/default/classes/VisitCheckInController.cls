@@ -274,6 +274,23 @@ public with sharing class VisitCheckInController {
         return EARTH_RADIUS_METERS * c;
     }
 
+    // ── Visit Activities ────────────────────────────────────────────────────────
+
+    /**
+     * @description Returns the list of standard visit activity types available
+     *              during a field visit check-in.
+     * @return List of activity definition maps with id, label, and icon.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getVisitActivities() {
+        List<Map<String, String>> activities = new List<Map<String, String>>();
+        activities.add(new Map<String, String>{ 'id' => 'order', 'label' => 'Order', 'icon' => 'standard:orders' });
+        activities.add(new Map<String, String>{ 'id' => 'collection', 'label' => 'Collection', 'icon' => 'standard:currency' });
+        activities.add(new Map<String, String>{ 'id' => 'merchandising', 'label' => 'Merchandising', 'icon' => 'standard:product_item' });
+        activities.add(new Map<String, String>{ 'id' => 'survey', 'label' => 'Survey', 'icon' => 'standard:survey' });
+        return activities;
+    }
+
     private static Double toRadians(Double degrees) {
         return degrees * Math.PI / 180;
     }
