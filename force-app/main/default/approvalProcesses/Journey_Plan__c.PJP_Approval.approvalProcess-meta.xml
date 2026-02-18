@@ -18,6 +18,7 @@
         <allowDelegate>true</allowDelegate>
         <assignedApprover>
             <approver>
+                <name>ManagerId</name>
                 <type>userHierarchyField</type>
             </approver>
         </assignedApprover>

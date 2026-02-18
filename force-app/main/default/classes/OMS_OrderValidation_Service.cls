@@ -193,11 +193,11 @@ public without sharing class OMS_OrderValidation_Service {
     private static Decimal getMinOrderValue() {
         try {
             List<App_Config__mdt> configs = [
-                SELECT Value__c FROM App_Config__mdt
+                SELECT Config_Value__c FROM App_Config__mdt
                 WHERE DeveloperName = 'Min_Order_Value' LIMIT 1
             ];
-            if (!configs.isEmpty() && configs[0].Value__c != null) {
-                return Decimal.valueOf(configs[0].Value__c);
+            if (!configs.isEmpty() && configs[0].Config_Value__c != null) {
+                return Decimal.valueOf(configs[0].Config_Value__c);
             }
         } catch (Exception e) {
             // Custom metadata may not exist; fall back to default

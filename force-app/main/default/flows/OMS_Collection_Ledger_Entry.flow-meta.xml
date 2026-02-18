@@ -128,7 +128,15 @@
         <label>Update Invoice Balance Due</label>
         <locationX>50</locationX>
         <locationY>560</locationY>
-        <inputReference>Get_Related_Invoice</inputReference>
+        <object>Invoice__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Invoice__c</elementReference>
+            </value>
+        </filters>
         <inputAssignments>
             <field>Balance_Due__c</field>
             <value>

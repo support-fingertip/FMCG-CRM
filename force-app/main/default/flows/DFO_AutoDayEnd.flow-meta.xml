@@ -44,7 +44,22 @@
         <label>Close Open Attendance</label>
         <locationX>176</locationX>
         <locationY>276</locationY>
-        <inputReference>OpenAttendanceRecords</inputReference>
+        <object>Day_Attendance__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Started</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Attendance_Date__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </filters>
         <inputAssignments>
             <field>Status__c</field>
             <value>

@@ -195,7 +195,22 @@
         <label>Update Day Attendance Summary</label>
         <locationX>50</locationX>
         <locationY>1412</locationY>
-        <inputReference>Get_Day_Attendance</inputReference>
+        <object>Day_Attendance__c</object>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>User__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.OwnerId</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Attendance_Date__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </filters>
         <inputAssignments>
             <field>Total_Orders_Value__c</field>
             <value>

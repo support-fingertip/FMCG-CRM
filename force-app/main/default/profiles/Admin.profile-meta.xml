@@ -2811,11 +2811,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Survey_Response__c.Survey__c</field>
-        <readable>false</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Survey_Response__c.Total_Score__c</field>
         <readable>false</readable>
     </fieldPermissions>
