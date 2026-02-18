@@ -201,6 +201,48 @@
                 <elementReference>Pincode</elementReference>
             </value>
         </inputAssignments>
+        <inputAssignments>
+            <field>Outlet_Type__c</field>
+            <value>
+                <elementReference>OutletType</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Outlet_Class__c</field>
+            <value>
+                <elementReference>OutletClass</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Channel__c</field>
+            <value>
+                <elementReference>Channel</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>GSTIN__c</field>
+            <value>
+                <elementReference>GSTIN</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>PAN__c</field>
+            <value>
+                <elementReference>PAN</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Owner_Name__c</field>
+            <value>
+                <elementReference>OwnerName</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>BillingCountry</field>
+            <value>
+                <stringValue>India</stringValue>
+            </value>
+        </inputAssignments>
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordCreates>
     <screens>

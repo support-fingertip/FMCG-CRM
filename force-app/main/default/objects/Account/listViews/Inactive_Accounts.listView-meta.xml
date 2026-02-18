@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Inactive_Accounts</fullName>
+    <label>Inactive Accounts</label>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Account.Is_Active__c</field>
+        <operation>equals</operation>
+        <value>0</value>
+    </filters>
+    <columns>ACCOUNT.NAME</columns>
+    <columns>RECORDTYPE</columns>
+    <columns>Account.Outlet_Type__c</columns>
+    <columns>Account.Outlet_Class__c</columns>
+    <columns>Account.Beat__c</columns>
+    <columns>Account.Territory__c</columns>
+    <columns>Account.Last_Visit_Date__c</columns>
+    <columns>Account.Last_Order_Date__c</columns>
+    <columns>ACCOUNT.PHONE1</columns>
+</ListView>
