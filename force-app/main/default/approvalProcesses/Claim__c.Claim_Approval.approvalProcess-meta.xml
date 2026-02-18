@@ -7,12 +7,12 @@
     </allowedSubmitters>
     <approvalPageFields>
         <field>Name</field>
-        <field>Distributor__c</field>
+        <field>Account__c</field>
         <field>Claim_Type__c</field>
         <field>Total_Amount__c</field>
         <field>Claim_Date__c</field>
         <field>Scheme__c</field>
-        <field>Supporting_Documents__c</field>
+        <field>Supporting_Doc_URL__c</field>
         <field>Owner</field>
     </approvalPageFields>
     <approvalStep>

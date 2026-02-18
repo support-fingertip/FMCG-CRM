@@ -7,11 +7,11 @@
     </allowedSubmitters>
     <approvalPageFields>
         <field>Name</field>
-        <field>Sales_Rep__c</field>
-        <field>Route__c</field>
-        <field>Plan_Month__c</field>
-        <field>Total_Visits_Planned__c</field>
+        <field>Salesperson__c</field>
+        <field>Month__c</field>
+        <field>Total_Planned_Visits__c</field>
         <field>Territory__c</field>
+        <field>Plan_Date__c</field>
         <field>Owner</field>
     </approvalPageFields>
     <approvalStep>

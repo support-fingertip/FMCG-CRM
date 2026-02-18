@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/metadata">
+    <available>true</available>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Leave Request Approval</name>
+    <style>none</style>
+    <subject>Leave Request Approval: {!Leave_Request__c.Name}</subject>
+    <type>text</type>
+</EmailTemplate>

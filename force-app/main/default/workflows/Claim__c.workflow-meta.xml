@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/metadata">
+    <fieldUpdates>
+        <fullName>Approve_Claim</fullName>
+        <field>Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Approve Claim</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Reject_Claim</fullName>
+        <field>Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Reject Claim</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+    </fieldUpdates>
+</Workflow>

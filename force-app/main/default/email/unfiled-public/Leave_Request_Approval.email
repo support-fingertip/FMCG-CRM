@@ -1,0 +1,11 @@
+A leave request requires your approval.
+
+Request: {!Leave_Request__c.Name}
+Employee: {!Leave_Request__c.Employee__c}
+Type: {!Leave_Request__c.Leave_Type__c}
+From: {!Leave_Request__c.Start_Date__c}
+To: {!Leave_Request__c.End_Date__c}
+Days: {!Leave_Request__c.Number_of_Days__c}
+Reason: {!Leave_Request__c.Reason__c}
+
+Please review and approve or reject this leave request.

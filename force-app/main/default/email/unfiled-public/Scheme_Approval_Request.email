@@ -1,0 +1,11 @@
+A scheme requires your approval.
+
+Scheme: {!Scheme__c.Name}
+Type: {!Scheme__c.Scheme_Type__c}
+Start Date: {!Scheme__c.Start_Date__c}
+End Date: {!Scheme__c.End_Date__c}
+Budget: {!Scheme__c.Budget_Amount__c}
+Channel: {!Scheme__c.Target_Channel__c}
+Region: {!Scheme__c.Region__c}
+
+Please review and approve or reject this scheme.

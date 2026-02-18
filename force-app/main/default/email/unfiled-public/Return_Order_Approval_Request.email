@@ -1,0 +1,9 @@
+A return order requires your approval.
+
+Return Order: {!Return_Order__c.Name}
+Account: {!Return_Order__c.Account__c}
+Reason: {!Return_Order__c.Return_Reason__c}
+Total Amount: {!Return_Order__c.Total_Return_Amount__c}
+Date: {!Return_Order__c.Return_Date__c}
+
+Please review and approve or reject this return order.

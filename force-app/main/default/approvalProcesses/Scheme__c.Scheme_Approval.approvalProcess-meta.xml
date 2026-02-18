@@ -53,7 +53,7 @@
         <criteriaItems>
             <field>Scheme__c.Status__c</field>
             <operation>equals</operation>
-            <value>Submitted</value>
+            <value>Pending Approval</value>
         </criteriaItems>
     </entryCriteria>
     <finalApprovalActions>
