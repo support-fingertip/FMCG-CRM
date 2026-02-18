@@ -48,7 +48,6 @@
         </rejectBehavior>
     </approvalStep>
     <description>Approval process for trade schemes and promotions requiring regional and trade marketing sign-off</description>
-    <emailTemplate>unfiled$public/Scheme_Approval_Request</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Scheme__c.Status__c</field>

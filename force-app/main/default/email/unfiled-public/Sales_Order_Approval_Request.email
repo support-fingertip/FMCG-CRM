@@ -1,8 +1,0 @@
-A sales order requires your approval.
-
-Order: {!Sales_Order__c.Name}
-Account: {!Sales_Order__c.Account__c}
-Amount: {!Sales_Order__c.Total_Net_Amount__c}
-Date: {!Sales_Order__c.Order_Date__c}
-
-Please review and approve or reject this order.

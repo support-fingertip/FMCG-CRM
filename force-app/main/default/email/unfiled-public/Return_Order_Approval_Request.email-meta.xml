@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<EmailTemplate xmlns="http://soap.sforce.com/2006/metadata">
-    <available>true</available>
-    <encodingKey>UTF-8</encodingKey>
-    <name>Return Order Approval Request</name>
-    <style>none</style>
-    <subject>Return Order Approval Request: {!Return_Order__c.Name}</subject>
-    <type>text</type>
-</EmailTemplate>

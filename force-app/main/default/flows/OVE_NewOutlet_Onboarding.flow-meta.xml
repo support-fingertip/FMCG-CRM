@@ -205,6 +205,7 @@
             <name>OutletType</name>
             <fieldText>Outlet Type</fieldText>
             <fieldType>RadioButtons</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <choiceReferences>GroceryChoice</choiceReferences>
             <choiceReferences>MedicalChoice</choiceReferences>
@@ -216,6 +217,7 @@
             <name>OutletClass</name>
             <fieldText>Outlet Class</fieldText>
             <fieldType>RadioButtons</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <choiceReferences>ClassAChoice</choiceReferences>
             <choiceReferences>ClassBChoice</choiceReferences>
@@ -227,6 +229,7 @@
             <name>Channel</name>
             <fieldText>Channel</fieldText>
             <fieldType>RadioButtons</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <choiceReferences>GTChoice</choiceReferences>
             <choiceReferences>MTChoice</choiceReferences>

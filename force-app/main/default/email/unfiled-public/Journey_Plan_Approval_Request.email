@@ -1,9 +1,0 @@
-A journey plan requires your approval.
-
-Plan: {!Journey_Plan__c.Name}
-Salesperson: {!Journey_Plan__c.Salesperson__c}
-Month: {!Journey_Plan__c.Month__c}
-Territory: {!Journey_Plan__c.Territory__c}
-Total Planned Visits: {!Journey_Plan__c.Total_Planned_Visits__c}
-
-Please review and approve or reject this journey plan.

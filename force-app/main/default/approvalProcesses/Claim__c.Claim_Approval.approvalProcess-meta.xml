@@ -48,7 +48,6 @@
         </rejectBehavior>
     </approvalStep>
     <description>Approval process for distributor claims including scheme claims, damage claims, and credit notes</description>
-    <emailTemplate>unfiled$public/Claim_Approval_Request</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Claim__c.Status__c</field>

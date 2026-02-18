@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomApplication xmlns="http://soap.sforce.com/2006/metadata">
-    <label>Field Sales CRM Utility Bar</label>
+    <formFactor>Large</formFactor>
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
-    <formFactor>Large</formFactor>
+    <label>Field Sales CRM Utility Bar</label>
     <navType>Standard</navType>
     <uiType>Lightning</uiType>
 </CustomApplication>

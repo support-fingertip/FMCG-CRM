@@ -25,7 +25,6 @@
         <name>Manager_Approval</name>
     </approvalStep>
     <description>Approval process for sales orders exceeding auto-approval threshold</description>
-    <emailTemplate>unfiled$public/Sales_Order_Approval_Request</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Sales_Order__c.Status__c</field>

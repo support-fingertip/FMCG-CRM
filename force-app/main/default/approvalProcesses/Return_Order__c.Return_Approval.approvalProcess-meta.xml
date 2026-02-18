@@ -47,7 +47,6 @@
         </rejectBehavior>
     </approvalStep>
     <description>Approval process for return orders requiring manager and distribution manager sign-off</description>
-    <emailTemplate>unfiled$public/Return_Order_Approval_Request</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Return_Order__c.Status__c</field>
