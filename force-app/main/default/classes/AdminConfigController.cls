@@ -114,6 +114,199 @@ public with sharing class AdminConfigController {
         ];
     }
 
+    // ── Update App Config ──────────────────────────────────────────────────
+
+    /**
+     * @description Updates a single App_Config__mdt record's value using the
+     *              Metadata.DeployContainer approach.
+     * @param configId The Id of the App_Config__mdt record to update.
+     * @param value    The new Config_Value__c string.
+     * @return Success message string.
+     */
+    @AuraEnabled
+    public static String updateAppConfig(String configId, String value) {
+        try {
+            List<App_Config__mdt> existing = [
+                SELECT Id, DeveloperName, MasterLabel
+                FROM App_Config__mdt
+                WHERE Id = :configId
+                LIMIT 1
+            ];
+            if (existing.isEmpty()) {
+                throw new AuraHandledException('App config record not found.');
+            }
+
+            Metadata.CustomMetadata customMetadata = new Metadata.CustomMetadata();
+            customMetadata.fullName = 'App_Config__mdt.' + existing[0].DeveloperName;
+            customMetadata.label = existing[0].MasterLabel;
+
+            Metadata.CustomMetadataValue valueField = new Metadata.CustomMetadataValue();
+            valueField.field = 'Config_Value__c';
+            valueField.value = value;
+            customMetadata.values.add(valueField);
+
+            Metadata.DeployContainer container = new Metadata.DeployContainer();
+            container.addMetadata(customMetadata);
+            Id deployJobId = Metadata.Operations.enqueueDeployment(
+                container, new AdminConfigDeployCallback()
+            );
+
+            return 'App config update queued. Deployment Job Id: ' + deployJobId;
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to update app config: ' + e.getMessage());
+        }
+    }
+
+    // ── Update Geo Config ────────────────────────────────────────────────────
+
+    /**
+     * @description Updates Geo_Config__mdt records from a JSON payload.
+     * @param geoJson JSON string with geo configuration values.
+     * @return Success message string.
+     */
+    @AuraEnabled
+    public static String updateGeoConfig(String geoJson) {
+        try {
+            Map<String, Object> geoData = (Map<String, Object>) JSON.deserializeUntyped(geoJson);
+            Metadata.DeployContainer container = new Metadata.DeployContainer();
+
+            // Map JSON keys to Geo_Config__mdt Config_Type__c values
+            Map<String, String> keyToConfigType = new Map<String, String>{
+                'geofenceRadius' => 'Geofence_Radius_Meters',
+                'trackingInterval' => 'Tracking_Interval_Seconds',
+                'gpsAccuracy' => 'GPS_Accuracy_Meters',
+                'enableTracking' => 'Enable_Tracking',
+                'enforceGeofence' => 'Enforce_Geofence',
+                'trackDistance' => 'Track_Distance'
+            };
+
+            List<Geo_Config__mdt> allConfigs = [
+                SELECT Id, DeveloperName, MasterLabel, Config_Type__c
+                FROM Geo_Config__mdt
+            ];
+            Map<String, Geo_Config__mdt> configByType = new Map<String, Geo_Config__mdt>();
+            for (Geo_Config__mdt gc : allConfigs) {
+                configByType.put(gc.Config_Type__c, gc);
+            }
+
+            for (String jsonKey : keyToConfigType.keySet()) {
+                if (!geoData.containsKey(jsonKey)) {
+                    continue;
+                }
+                String configType = keyToConfigType.get(jsonKey);
+                Geo_Config__mdt existing = configByType.get(configType);
+                if (existing == null) {
+                    continue;
+                }
+
+                Metadata.CustomMetadata customMetadata = new Metadata.CustomMetadata();
+                customMetadata.fullName = 'Geo_Config__mdt.' + existing.DeveloperName;
+                customMetadata.label = existing.MasterLabel;
+
+                Metadata.CustomMetadataValue valueField = new Metadata.CustomMetadataValue();
+                valueField.field = 'Value__c';
+                valueField.value = String.valueOf(geoData.get(jsonKey));
+                customMetadata.values.add(valueField);
+
+                container.addMetadata(customMetadata);
+            }
+
+            Id deployJobId = Metadata.Operations.enqueueDeployment(
+                container, new AdminConfigDeployCallback()
+            );
+
+            return 'Geo config update queued. Deployment Job Id: ' + deployJobId;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to update geo config: ' + e.getMessage());
+        }
+    }
+
+    // ── Import Config ────────────────────────────────────────────────────────
+
+    /**
+     * @description Imports configuration from a JSON string (matching exportConfig format)
+     *              and deploys updates to custom metadata records.
+     * @param configJson JSON string with configuration data.
+     * @return Success message string.
+     */
+    @AuraEnabled
+    public static String importConfig(String configJson) {
+        try {
+            Map<String, Object> configData = (Map<String, Object>) JSON.deserializeUntyped(configJson);
+            Metadata.DeployContainer container = new Metadata.DeployContainer();
+
+            // Import Feature Toggles
+            if (configData.containsKey('featureToggles')) {
+                List<Object> toggles = (List<Object>) configData.get('featureToggles');
+                for (Object toggleObj : toggles) {
+                    Map<String, Object> toggle = (Map<String, Object>) toggleObj;
+                    String devName = (String) toggle.get('developerName');
+
+                    Metadata.CustomMetadata cm = new Metadata.CustomMetadata();
+                    cm.fullName = 'Feature_Toggle__mdt.' + devName;
+                    cm.label = (String) toggle.get('label');
+
+                    Metadata.CustomMetadataValue isEnabledField = new Metadata.CustomMetadataValue();
+                    isEnabledField.field = 'Is_Enabled__c';
+                    isEnabledField.value = toggle.get('isEnabled');
+                    cm.values.add(isEnabledField);
+
+                    container.addMetadata(cm);
+                }
+            }
+
+            // Import App Configs
+            if (configData.containsKey('appConfigs')) {
+                List<Object> appConfigs = (List<Object>) configData.get('appConfigs');
+                for (Object configObj : appConfigs) {
+                    Map<String, Object> config = (Map<String, Object>) configObj;
+                    String devName = (String) config.get('developerName');
+
+                    Metadata.CustomMetadata cm = new Metadata.CustomMetadata();
+                    cm.fullName = 'App_Config__mdt.' + devName;
+                    cm.label = (String) config.get('label');
+
+                    Metadata.CustomMetadataValue valueField = new Metadata.CustomMetadataValue();
+                    valueField.field = 'Config_Value__c';
+                    valueField.value = (String) config.get('configValue');
+                    cm.values.add(valueField);
+
+                    container.addMetadata(cm);
+                }
+            }
+
+            // Import Geo Configs
+            if (configData.containsKey('geoConfigs')) {
+                List<Object> geoConfigs = (List<Object>) configData.get('geoConfigs');
+                for (Object configObj : geoConfigs) {
+                    Map<String, Object> config = (Map<String, Object>) configObj;
+                    String devName = (String) config.get('developerName');
+
+                    Metadata.CustomMetadata cm = new Metadata.CustomMetadata();
+                    cm.fullName = 'Geo_Config__mdt.' + devName;
+                    cm.label = (String) config.get('label');
+
+                    Metadata.CustomMetadataValue valueField = new Metadata.CustomMetadataValue();
+                    valueField.field = 'Value__c';
+                    valueField.value = (String) config.get('value');
+                    cm.values.add(valueField);
+
+                    container.addMetadata(cm);
+                }
+            }
+
+            Id deployJobId = Metadata.Operations.enqueueDeployment(
+                container, new AdminConfigDeployCallback()
+            );
+
+            return 'Configuration import queued. Deployment Job Id: ' + deployJobId;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to import configuration: ' + e.getMessage());
+        }
+    }
+
     // ── Export Config ───────────────────────────────────────────────────────────
 
     /**
