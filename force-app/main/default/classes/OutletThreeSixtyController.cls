@@ -242,4 +242,27 @@ public with sharing class OutletThreeSixtyController {
 
         return kpis;
     }
+
+    // ── Get Applicable Schemes ────────────────────────────────────────────────
+
+    /**
+     * @description Retrieves active schemes applicable to a given outlet/account.
+     * @param accountId The Account (outlet) Id.
+     * @return List of active Scheme__c records.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Scheme__c> getApplicableSchemes(Id accountId) {
+        Date today = Date.today();
+        return [
+            SELECT Id, Name, Scheme_Type__c, Description__c,
+                   Start_Date__c, End_Date__c, Status__c,
+                   Target_Channel__c, Region__c, Budget_Amount__c
+            FROM Scheme__c
+            WHERE Status__c = 'Active'
+            AND Start_Date__c <= :today
+            AND End_Date__c >= :today
+            ORDER BY End_Date__c ASC
+            LIMIT 50
+        ];
+    }
 }

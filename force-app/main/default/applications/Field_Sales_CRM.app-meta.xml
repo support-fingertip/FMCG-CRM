@@ -4,22 +4,8 @@
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <formFactor>Large</formFactor>
     <navType>Standard</navType>
-    <tab>standard-home</tab>
-    <tab>FSCRM_Dashboard</tab>
-    <tab>Visit__c</tab>
-    <tab>Sales_Order__c</tab>
-    <tab>Collection__c</tab>
-    <tab>Beat__c</tab>
-    <tab>Journey_Plan__c</tab>
-    <tab>Target__c</tab>
-    <tab>Scheme__c</tab>
-    <tab>Invoice__c</tab>
-    <tab>Return_Order__c</tab>
-    <tab>Day_Attendance__c</tab>
-    <tab>standard-Account</tab>
-    <tab>standard-report</tab>
-    <tab>standard-Dashboard</tab>
     <uiType>Lightning</uiType>
     <utilityBar>Field_Sales_CRM_UtilityBar</utilityBar>
 </CustomApplication>

@@ -128,6 +128,7 @@
             <name>OutletName</name>
             <fieldText>Outlet Name</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -135,6 +136,7 @@
             <name>OwnerName</name>
             <fieldText>Owner/Proprietor Name</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -142,6 +144,7 @@
             <name>Phone</name>
             <fieldText>Phone Number</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -149,6 +152,7 @@
             <name>Email</name>
             <fieldText>Email Address</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>false</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -163,6 +167,7 @@
             <name>City</name>
             <fieldText>City</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -170,6 +175,7 @@
             <name>State</name>
             <fieldText>State</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -177,6 +183,7 @@
             <name>Pincode</name>
             <fieldText>Pincode</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>true</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -243,6 +250,7 @@
             <name>GSTIN</name>
             <fieldText>GSTIN (if available)</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>false</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>
@@ -250,6 +258,7 @@
             <name>PAN</name>
             <fieldText>PAN Number</fieldText>
             <fieldType>InputField</fieldType>
+            <dataType>String</dataType>
             <isRequired>false</isRequired>
             <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
         </fields>

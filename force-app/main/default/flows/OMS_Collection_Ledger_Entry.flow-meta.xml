@@ -70,7 +70,7 @@
         <inputAssignments>
             <field>Reference_Number__c</field>
             <value>
-                <elementReference>$Record.Reference_Number__c</elementReference>
+                <elementReference>$Record.Receipt_Number__c</elementReference>
             </value>
         </inputAssignments>
         <storeOutputAutomatically>true</storeOutputAutomatically>

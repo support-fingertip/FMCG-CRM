@@ -3,9 +3,7 @@
     <label>Field Sales CRM Utility Bar</label>
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
-    <formFactors>
-        <formFactor>Large</formFactor>
-    </formFactors>
+    <formFactor>Large</formFactor>
     <navType>Standard</navType>
     <uiType>Lightning</uiType>
 </CustomApplication>

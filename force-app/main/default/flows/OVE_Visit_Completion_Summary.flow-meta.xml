@@ -270,6 +270,7 @@
         <isCollection>false</isCollection>
         <isInput>false</isInput>
         <isOutput>false</isOutput>
+        <scale>2</scale>
         <value>
             <numberValue>0.0</numberValue>
         </value>
@@ -280,6 +281,7 @@
         <isCollection>false</isCollection>
         <isInput>false</isInput>
         <isOutput>false</isOutput>
+        <scale>2</scale>
         <value>
             <numberValue>0.0</numberValue>
         </value>
