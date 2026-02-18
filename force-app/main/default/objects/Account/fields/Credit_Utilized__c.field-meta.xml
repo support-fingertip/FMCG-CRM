@@ -2,9 +2,11 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Credit_Utilized__c</fullName>
     <label>Credit Utilized</label>
-    <precision>18</precision>
-    <required>false</required>
-    <scale>2</scale>
-    <trackFeedHistory>false</trackFeedHistory>
+    <description>Total outstanding invoice balance against this account. Updated by trigger on Invoice changes.</description>
     <type>Currency</type>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+    <trackFeedHistory>false</trackFeedHistory>
 </CustomField>

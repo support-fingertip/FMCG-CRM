@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>FSSAI_License_No__c</fullName>
+    <label>FSSAI License No</label>
+    <description>Food Safety and Standards Authority of India license number for FMCG compliance</description>
+    <type>Text</type>
+    <length>20</length>
+    <required>false</required>
+    <unique>false</unique>
+</CustomField>
