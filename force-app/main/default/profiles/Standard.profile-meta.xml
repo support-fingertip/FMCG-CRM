@@ -3192,22 +3192,22 @@
         <readable>false</readable>
     </fieldPermissions>
     <layoutAssignments>
-        <layout>Account-Account Layout</layout>
+        <layout>Account-Retailer Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>Account-Account Layout</layout>
+        <layout>Account-Distributor Layout</layout>
         <recordType>Account.Distributor</recordType>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>Account-Account Layout</layout>
+        <layout>Account-Modern Trade Layout</layout>
         <recordType>Account.Modern_Trade</recordType>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>Account-Account Layout</layout>
+        <layout>Account-Retailer Layout</layout>
         <recordType>Account.Retailer</recordType>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>Account-Account Layout</layout>
+        <layout>Account-Super Stockist Layout</layout>
         <recordType>Account.Super_Stockist</recordType>
     </layoutAssignments>
     <layoutAssignments>
