@@ -21,21 +21,13 @@
                 <identifier>c_outletThreeSixty</identifier>
             </componentInstance>
         </itemInstances>
-        <name>main</name>
-        <type>Facet</type>
-    </flexiPageRegions>
-    <flexiPageRegions>
         <itemInstances>
             <componentInstance>
-                <componentInstanceProperties>
-                    <name>hideRelatedLists</name>
-                    <value></value>
-                </componentInstanceProperties>
                 <componentName>force:detailPanel</componentName>
                 <identifier>force_detailPanel</identifier>
             </componentInstance>
         </itemInstances>
-        <name>sidebar</name>
+        <name>main</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -45,17 +37,13 @@
                 <identifier>force_relatedListContainer</identifier>
             </componentInstance>
         </itemInstances>
-        <name>main2</name>
+        <name>sidebar</name>
         <type>Facet</type>
     </flexiPageRegions>
     <masterLabel>Account Record Page</masterLabel>
     <sobjectType>Account</sobjectType>
     <template>
-        <name>flexipage:defaultPageTemplate2</name>
-        <properties>
-            <name>navItems</name>
-            <value>[{"label":"360 View","name":"main"},{"label":"Details","name":"sidebar"},{"label":"Related","name":"main2"}]</value>
-        </properties>
+        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>
