@@ -516,10 +516,10 @@
         <enabled>true</enabled>
         <name>EditPublicFilters</name>
     </userPermissions>
-    <userPermissions>
+    <!-- <userPermissions>
         <enabled>true</enabled>
         <name>EditPublicReports</name>
-    </userPermissions>
+    </userPermissions> -->
     <userPermissions>
         <enabled>true</enabled>
         <name>EditPublicTemplates</name>
@@ -548,10 +548,10 @@
         <enabled>true</enabled>
         <name>ManageDashbdsInPubFolders</name>
     </userPermissions>
-    <userPermissions>
+    <!-- <userPermissions>
         <enabled>true</enabled>
         <name>ManageDashboards</name>
-    </userPermissions>
+    </userPermissions> -->
     <userPermissions>
         <enabled>true</enabled>
         <name>ManageDataIntegrations</name>

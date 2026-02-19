@@ -1,11 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomApplication xmlns="http://soap.sforce.com/2006/metadata">
-    <formFactor>Large</formFactor>
+    <label>Field Sales CRM</label>
+    <!-- <formFactors> -->
+    <formFactors>Large</formFactors>
+    <!--  <formFactors>Medium</formFactors> -->
+    <formFactors>Small</formFactors>
+    <!-- </formFactors> -->
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
-    <label>Field Sales CRM</label>
     <navType>Standard</navType>
+    <!--  <tabs> -->
+    <tabs>standard-home</tabs>
+    <tabs>FSCRM_Dashboard</tabs>
+    <tabs>Visit__c</tabs>
+    <tabs>Sales_Order__c</tabs>
+    <tabs>Collection__c</tabs>
+    <tabs>Beat__c</tabs>
+    <tabs>Journey_Plan__c</tabs>
+    <tabs>Target__c</tabs>
+    <tabs>Scheme__c</tabs>
+    <tabs>Invoice__c</tabs>
+    <tabs>Return_Order__c</tabs>
+    <tabs>Day_Attendance__c</tabs>
+    <tabs>standard-Account</tabs>
+    <tabs>standard-report</tabs>
+    <tabs>standard-Dashboard</tabs>
+    <!--  </tabs> -->
     <uiType>Lightning</uiType>
-    <utilityBar>Field_Sales_CRM_UtilityBar</utilityBar>
+    <!--  <utilityBar>Field_Sales_CRM_UtilityBar</utilityBar> -->
 </CustomApplication>
