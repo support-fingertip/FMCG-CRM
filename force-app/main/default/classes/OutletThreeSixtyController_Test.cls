@@ -136,12 +136,10 @@ private class OutletThreeSixtyController_Test {
             Description__c = '10% off on all products',
             Start_Date__c = Date.today().addDays(-10),
             End_Date__c = Date.today().addDays(20),
-            Status__c = 'Approved',
-            Is_Active__c = true,
+            Status__c = 'Active',
             Applicable_Channel__c = 'GT',
             Budget_Amount__c = 50000,
             Budget_Used__c = 10000,
-            Budget_Remaining__c = 40000,
             Max_Discount_Cap__c = 5000
         );
         insert scheme;

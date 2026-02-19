@@ -363,7 +363,7 @@ public with sharing class OutletThreeSixtyController {
                    Max_Discount_Cap__c, Is_Stackable__c, Priority__c, Tier__c
             FROM Scheme__c
             WHERE Is_Active__c = true
-            AND Status__c = 'Approved'
+            AND Status__c = 'Active'
             AND Start_Date__c <= :today
             AND End_Date__c >= :today
             AND (Applicable_Channel__c = null

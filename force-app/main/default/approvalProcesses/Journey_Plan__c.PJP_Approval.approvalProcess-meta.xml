@@ -24,6 +24,7 @@
         </assignedApprover>
         <label>Area Sales Manager Approval</label>
         <name>ASM_Approval</name>
+        <number>1</number>
     </approvalStep>
     <description>Approval process for Permanent Journey Plans (PJP) submitted by sales representatives for monthly route planning</description>
     <entryCriteria>

@@ -4,7 +4,7 @@
     <label>My Accounts</label>
     <filterScope>Mine</filterScope>
     <columns>ACCOUNT.NAME</columns>
-    <columns>RECORDTYPE</columns>
+    <columns>ACCOUNT.RECORDTYPE</columns>
     <columns>Account.Outlet_Type__c</columns>
     <columns>Account.Outlet_Class__c</columns>
     <columns>Account.Channel__c</columns>

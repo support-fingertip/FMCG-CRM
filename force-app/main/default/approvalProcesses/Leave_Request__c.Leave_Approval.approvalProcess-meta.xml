@@ -25,6 +25,7 @@
         </assignedApprover>
         <label>Reporting Manager Approval</label>
         <name>Reporting_Manager_Approval</name>
+        <number>1</number>
     </approvalStep>
     <approvalStep>
         <allowDelegate>false</allowDelegate>
@@ -43,6 +44,7 @@
         </entryCriteria>
         <label>HR Approval</label>
         <name>HR_Approval</name>
+        <number>2</number>
         <rejectBehavior>
             <type>RejectRequest</type>
         </rejectBehavior>

@@ -1,18 +1,160 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/metadata">
     <apiVersion>59.0</apiVersion>
-    <label>OVE - New Outlet Onboarding</label>
     <description>Screen flow for field reps to register new retail outlets during visits</description>
+    <interviewLabel>New Outlet Registration {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>OVE - New Outlet Onboarding</label>
     <processType>Flow</processType>
     <status>Active</status>
-    <interviewLabel>New Outlet Registration {!$Flow.CurrentDateTime}</interviewLabel>
-    <start>
-        <locationX>50</locationX>
-        <locationY>0</locationY>
+    <choices>
+        <name>GroceryChoice</name>
+        <choiceText>Grocery</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>Grocery</stringValue></value>
+    </choices>
+    <choices>
+        <name>MedicalChoice</name>
+        <choiceText>Medical/Pharmacy</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>Medical</stringValue></value>
+    </choices>
+    <choices>
+        <name>HardwareChoice</name>
+        <choiceText>Hardware</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>Hardware</stringValue></value>
+    </choices>
+    <choices>
+        <name>GeneralStoreChoice</name>
+        <choiceText>General Store</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>General Store</stringValue></value>
+    </choices>
+    <choices>
+        <name>ClassAChoice</name>
+        <choiceText>Class A (Premium)</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>A</stringValue></value>
+    </choices>
+    <choices>
+        <name>ClassBChoice</name>
+        <choiceText>Class B (Standard)</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>B</stringValue></value>
+    </choices>
+    <choices>
+        <name>ClassCChoice</name>
+        <choiceText>Class C (Economy)</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>C</stringValue></value>
+    </choices>
+    <choices>
+        <name>ClassDChoice</name>
+        <choiceText>Class D (Small)</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>D</stringValue></value>
+    </choices>
+    <choices>
+        <name>GTChoice</name>
+        <choiceText>General Trade (GT)</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>GT</stringValue></value>
+    </choices>
+    <choices>
+        <name>MTChoice</name>
+        <choiceText>Modern Trade (MT)</choiceText>
+        <dataType>String</dataType>
+        <value><stringValue>MT</stringValue></value>
+    </choices>
+    <recordCreates>
+        <name>Create_Account</name>
+        <label>Create Outlet Account</label>
+        <locationX>176</locationX>
+        <locationY>560</locationY>
         <connector>
-            <targetReference>Outlet_Basic_Info</targetReference>
+            <targetReference>Success_Screen</targetReference>
         </connector>
-    </start>
+        <object>Account</object>
+        <inputAssignments>
+            <field>Name</field>
+            <value>
+                <elementReference>OutletName</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Phone</field>
+            <value>
+                <elementReference>Phone</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>BillingStreet</field>
+            <value>
+                <elementReference>Address</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>BillingCity</field>
+            <value>
+                <elementReference>City</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>BillingState</field>
+            <value>
+                <elementReference>State</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>BillingPostalCode</field>
+            <value>
+                <elementReference>Pincode</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Outlet_Type__c</field>
+            <value>
+                <elementReference>OutletType</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Outlet_Class__c</field>
+            <value>
+                <elementReference>OutletClass</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Channel__c</field>
+            <value>
+                <elementReference>Channel</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>GSTIN__c</field>
+            <value>
+                <elementReference>GSTIN</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>PAN__c</field>
+            <value>
+                <elementReference>PAN</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Owner_Name__c</field>
+            <value>
+                <elementReference>OwnerName</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>BillingCountry</field>
+            <value>
+                <stringValue>India</stringValue>
+            </value>
+        </inputAssignments>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
     <screens>
         <name>Outlet_Basic_Info</name>
         <label>Outlet Basic Information</label>
@@ -168,95 +310,6 @@
         <showFooter>true</showFooter>
         <showHeader>true</showHeader>
     </screens>
-    <recordCreates>
-        <name>Create_Account</name>
-        <label>Create Outlet Account</label>
-        <locationX>176</locationX>
-        <locationY>560</locationY>
-        <connector>
-            <targetReference>Success_Screen</targetReference>
-        </connector>
-        <object>Account</object>
-        <inputAssignments>
-            <field>Name</field>
-            <value>
-                <elementReference>OutletName</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Phone</field>
-            <value>
-                <elementReference>Phone</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>BillingStreet</field>
-            <value>
-                <elementReference>Address</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>BillingCity</field>
-            <value>
-                <elementReference>City</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>BillingState</field>
-            <value>
-                <elementReference>State</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>BillingPostalCode</field>
-            <value>
-                <elementReference>Pincode</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Outlet_Type__c</field>
-            <value>
-                <elementReference>OutletType</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Outlet_Class__c</field>
-            <value>
-                <elementReference>OutletClass</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Channel__c</field>
-            <value>
-                <elementReference>Channel</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>GSTIN__c</field>
-            <value>
-                <elementReference>GSTIN</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>PAN__c</field>
-            <value>
-                <elementReference>PAN</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Owner_Name__c</field>
-            <value>
-                <elementReference>OwnerName</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>BillingCountry</field>
-            <value>
-                <stringValue>India</stringValue>
-            </value>
-        </inputAssignments>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </recordCreates>
     <screens>
         <name>Success_Screen</name>
         <label>Registration Complete</label>
@@ -273,64 +326,11 @@
         <showFooter>true</showFooter>
         <showHeader>true</showHeader>
     </screens>
-    <choices>
-        <name>GroceryChoice</name>
-        <choiceText>Grocery</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>Grocery</stringValue></value>
-    </choices>
-    <choices>
-        <name>MedicalChoice</name>
-        <choiceText>Medical/Pharmacy</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>Medical</stringValue></value>
-    </choices>
-    <choices>
-        <name>HardwareChoice</name>
-        <choiceText>Hardware</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>Hardware</stringValue></value>
-    </choices>
-    <choices>
-        <name>GeneralStoreChoice</name>
-        <choiceText>General Store</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>General Store</stringValue></value>
-    </choices>
-    <choices>
-        <name>ClassAChoice</name>
-        <choiceText>Class A (Premium)</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>A</stringValue></value>
-    </choices>
-    <choices>
-        <name>ClassBChoice</name>
-        <choiceText>Class B (Standard)</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>B</stringValue></value>
-    </choices>
-    <choices>
-        <name>ClassCChoice</name>
-        <choiceText>Class C (Economy)</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>C</stringValue></value>
-    </choices>
-    <choices>
-        <name>ClassDChoice</name>
-        <choiceText>Class D (Small)</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>D</stringValue></value>
-    </choices>
-    <choices>
-        <name>GTChoice</name>
-        <choiceText>General Trade (GT)</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>GT</stringValue></value>
-    </choices>
-    <choices>
-        <name>MTChoice</name>
-        <choiceText>Modern Trade (MT)</choiceText>
-        <dataType>String</dataType>
-        <value><stringValue>MT</stringValue></value>
-    </choices>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Outlet_Basic_Info</targetReference>
+        </connector>
+    </start>
 </Flow>

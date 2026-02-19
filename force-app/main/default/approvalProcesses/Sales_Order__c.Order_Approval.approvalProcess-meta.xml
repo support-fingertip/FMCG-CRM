@@ -23,6 +23,7 @@
         </assignedApprover>
         <label>Manager Approval</label>
         <name>Manager_Approval</name>
+        <number>1</number>
     </approvalStep>
     <description>Approval process for sales orders exceeding auto-approval threshold</description>
     <entryCriteria>

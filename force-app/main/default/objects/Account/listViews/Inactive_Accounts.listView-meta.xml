@@ -9,7 +9,7 @@
         <value>0</value>
     </filters>
     <columns>ACCOUNT.NAME</columns>
-    <columns>RECORDTYPE</columns>
+    <columns>ACCOUNT.RECORDTYPE</columns>
     <columns>Account.Outlet_Type__c</columns>
     <columns>Account.Outlet_Class__c</columns>
     <columns>Account.Beat__c</columns>

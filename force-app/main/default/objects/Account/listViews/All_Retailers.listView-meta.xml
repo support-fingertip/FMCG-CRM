@@ -4,7 +4,7 @@
     <label>All Retailers</label>
     <filterScope>Everything</filterScope>
     <filters>
-        <field>RECORDTYPE</field>
+        <field>ACCOUNT.RECORDTYPE</field>
         <operation>equals</operation>
         <value>Account.Retailer</value>
     </filters>
