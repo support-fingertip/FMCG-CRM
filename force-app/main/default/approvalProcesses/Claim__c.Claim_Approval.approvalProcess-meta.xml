@@ -25,7 +25,6 @@
         </assignedApprover>
         <label>Area Sales Manager Approval</label>
         <name>ASM_Approval</name>
-        <number>1</number>
     </approvalStep>
     <approvalStep>
         <allowDelegate>false</allowDelegate>
@@ -44,7 +43,6 @@
         </entryCriteria>
         <label>Finance Team Approval</label>
         <name>Finance_Approval</name>
-        <number>2</number>
         <rejectBehavior>
             <type>RejectRequest</type>
         </rejectBehavior>

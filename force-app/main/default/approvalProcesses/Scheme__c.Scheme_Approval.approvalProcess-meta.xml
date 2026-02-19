@@ -25,7 +25,6 @@
         </assignedApprover>
         <label>Regional Manager Approval</label>
         <name>Regional_Manager_Approval</name>
-        <number>1</number>
     </approvalStep>
     <approvalStep>
         <allowDelegate>false</allowDelegate>
@@ -44,7 +43,6 @@
         </entryCriteria>
         <label>Trade Marketing Approval</label>
         <name>Trade_Marketing_Approval</name>
-        <number>2</number>
         <rejectBehavior>
             <type>RejectRequest</type>
         </rejectBehavior>
