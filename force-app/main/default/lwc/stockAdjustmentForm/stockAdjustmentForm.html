@@ -1,0 +1,171 @@
+<template>
+    <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading" size="large" class="slds-is-fixed"></lightning-spinner>
+    </template>
+
+    <lightning-card title="Stock Adjustment" icon-name="standard:calibration">
+        <div class="slds-p-around_medium">
+            <!-- Error Banner -->
+            <template if:true={errorMessage}>
+                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_medium" role="alert">
+                    <lightning-icon icon-name="utility:error" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+                    <h2>{errorMessage}</h2>
+                </div>
+            </template>
+
+            <!-- Success Banner -->
+            <template if:true={successMessage}>
+                <div class="slds-notify slds-notify_alert slds-alert_success slds-m-bottom_medium" role="alert">
+                    <lightning-icon icon-name="utility:success" size="x-small" variant="inverse" class="slds-m-right_x-small"></lightning-icon>
+                    <h2>{successMessage}</h2>
+                </div>
+            </template>
+
+            <!-- Step 1: Select Warehouse & Product -->
+            <div class="slds-section slds-is-open slds-m-bottom_small">
+                <h3 class="slds-section__title"><span class="slds-text-heading_small">1. Select Location & Product</span></h3>
+            </div>
+
+            <div class="slds-grid slds-gutters_small slds-wrap slds-m-bottom_medium">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12 slds-p-bottom_x-small">
+                    <lightning-combobox
+                        name="warehouse"
+                        label="Warehouse"
+                        required
+                        value={selectedWarehouseId}
+                        options={warehouseOptions}
+                        onchange={handleWarehouseChange}
+                    ></lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12 slds-p-bottom_x-small">
+                    <lightning-record-picker
+                        label="Product"
+                        placeholder="Search for a product..."
+                        object-api-name="Product2"
+                        onchange={handleProductChange}
+                    ></lightning-record-picker>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-12 slds-p-bottom_x-small">
+                    <lightning-input label="Batch Number" value={batchNumber} onchange={handleBatchChange} placeholder="Optional"></lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-12 slds-grid slds-grid_vertical-align-end slds-p-bottom_x-small">
+                    <lightning-button label="Check Stock" variant="neutral" onclick={handleCheckStock} disabled={!canCheckStock} icon-name="utility:search"></lightning-button>
+                </div>
+            </div>
+
+            <!-- Current System Stock Display -->
+            <template if:true={stockChecked}>
+                <div class="slds-box slds-box_x-small slds-theme_shade slds-m-bottom_medium">
+                    <p class="slds-text-body_regular">
+                        <strong>Current System Stock:</strong> {formattedSystemQty} units
+                    </p>
+                </div>
+
+                <!-- Step 2: Adjustment Details -->
+                <div class="slds-section slds-is-open slds-m-bottom_small">
+                    <h3 class="slds-section__title"><span class="slds-text-heading_small">2. Adjustment Details</span></h3>
+                </div>
+
+                <div class="slds-grid slds-gutters_small slds-wrap slds-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12 slds-p-bottom_x-small">
+                        <lightning-combobox
+                            name="adjustmentType"
+                            label="Adjustment Type"
+                            required
+                            value={adjustmentType}
+                            options={adjustmentTypeOptions}
+                            onchange={handleTypeChange}
+                        ></lightning-combobox>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12 slds-p-bottom_x-small">
+                        <lightning-input
+                            type="date"
+                            label="Adjustment Date"
+                            value={adjustmentDate}
+                            onchange={handleDateChange}
+                        ></lightning-input>
+                    </div>
+                </div>
+
+                <!-- Physical Count: Enter actual qty -->
+                <template if:true={isPhysicalCount}>
+                    <div class="slds-grid slds-gutters_small slds-wrap slds-m-bottom_medium">
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12">
+                            <lightning-input
+                                type="number"
+                                label="Actual Physical Count"
+                                value={actualQty}
+                                min="0"
+                                onchange={handleActualQtyChange}
+                                required
+                            ></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12 slds-grid slds-grid_vertical-align-end">
+                            <div class="slds-box slds-box_x-small">
+                                <p class="slds-text-body_small">
+                                    Variance: <span class={adjustmentDirectionClass}><strong>{formattedAdjQty}</strong></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Manual adjustment: Enter adjustment qty directly -->
+                <template if:true={isManualAdjustment}>
+                    <div class="slds-grid slds-gutters_small slds-wrap slds-m-bottom_medium">
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12">
+                            <lightning-input
+                                type="number"
+                                label="Adjustment Quantity"
+                                value={adjustmentQty}
+                                onchange={handleAdjustmentQtyChange}
+                                required
+                                message-when-value-missing="Quantity is required"
+                            ></lightning-input>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                                Positive = Add, Negative = Deduct
+                            </p>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Projected stock summary -->
+                <template if:true={adjustmentType}>
+                    <div class="slds-box slds-box_x-small slds-m-bottom_medium">
+                        <div class="slds-grid slds-gutters_small">
+                            <div class="slds-col">
+                                <p class="slds-text-body_small">System Qty: <strong>{formattedSystemQty}</strong></p>
+                            </div>
+                            <div class="slds-col">
+                                <p class="slds-text-body_small">Adjustment: <span class={adjustmentDirectionClass}><strong>{formattedAdjQty}</strong></span></p>
+                            </div>
+                            <div class="slds-col">
+                                <p class="slds-text-body_small">Projected Qty: <strong>{projectedQty}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Step 3: Reason -->
+                <div class="slds-section slds-is-open slds-m-bottom_small">
+                    <h3 class="slds-section__title"><span class="slds-text-heading_small">3. Reason</span></h3>
+                </div>
+
+                <lightning-textarea
+                    label="Reason for Adjustment"
+                    value={reason}
+                    onchange={handleReasonChange}
+                    required
+                    placeholder="Provide a detailed reason for this stock adjustment..."
+                    class="slds-m-bottom_medium"
+                ></lightning-textarea>
+
+                <!-- Actions -->
+                <div class="slds-grid slds-grid_align-end">
+                    <lightning-button label="Reset" variant="neutral" onclick={handleReset} class="slds-m-right_small"></lightning-button>
+                    <lightning-button label="Create Adjustment" variant="brand" onclick={handleSubmit}></lightning-button>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

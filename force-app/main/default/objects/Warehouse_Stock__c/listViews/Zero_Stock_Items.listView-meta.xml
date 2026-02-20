@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Zero_Stock_Items</fullName>
+    <label>Zero Stock Items</label>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Is_Zero_Stock__c</field>
+        <operation>equals</operation>
+        <value>true</value>
+    </filters>
+    <columns>NAME</columns>
+    <columns>Warehouse__c</columns>
+    <columns>Product__c</columns>
+    <columns>Qty_On_Hand__c</columns>
+</ListView>

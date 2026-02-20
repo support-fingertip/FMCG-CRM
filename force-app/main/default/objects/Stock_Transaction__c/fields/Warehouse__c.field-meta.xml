@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Warehouse__c</fullName>
+    <label>Warehouse</label>
+    <type>Lookup</type>
+    <referenceTo>Warehouse__c</referenceTo>
+    <relationshipLabel>Stock Transactions</relationshipLabel>
+    <relationshipName>Stock_Transactions</relationshipName>
+    <required>true</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

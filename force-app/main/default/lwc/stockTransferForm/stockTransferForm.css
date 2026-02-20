@@ -1,0 +1,17 @@
+:host {
+    display: block;
+}
+
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+}
+
+.table-container table {
+    min-width: 700px;
+}
+
+lightning-badge {
+    white-space: nowrap;
+}
