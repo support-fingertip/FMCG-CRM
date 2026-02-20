@@ -3,6 +3,5 @@
     <fullName>Change_Reason__c</fullName>
     <label>Change Reason</label>
     <type>TextArea</type>
-    <length>255</length>
     <required>false</required>
 </CustomField>

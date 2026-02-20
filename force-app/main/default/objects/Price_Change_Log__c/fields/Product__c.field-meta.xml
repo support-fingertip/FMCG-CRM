@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipName>Price_Change_Logs</relationshipName>
     <relationshipLabel>Price Change Logs</relationshipLabel>
-    <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>
