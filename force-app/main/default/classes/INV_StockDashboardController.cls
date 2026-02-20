@@ -185,12 +185,12 @@ public with sharing class INV_StockDashboardController {
     @AuraEnabled(cacheable=true)
     public static List<Account> getDistributorsWithStock() {
         Set<Id> accountIds = new Set<Id>();
-        for (Distributor_Stock__c s : [
+        for (AggregateResult ar : [
             SELECT Account__c FROM Distributor_Stock__c
             WHERE Is_Current__c = true
             GROUP BY Account__c
         ]) {
-            accountIds.add(s.Account__c);
+            accountIds.add((Id) ar.get('Account__c'));
         }
 
         if (accountIds.isEmpty()) {
