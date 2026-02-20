@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
-    <excludeButtons>
-        <button>Submit</button>
-    </excludeButtons>
-    <excludeButtons>
-        <button>ChangeOwnerOne</button>
-    </excludeButtons>
-    <excludeButtons>
-        <button>ChangeRecordType</button>
-    </excludeButtons>
-    <excludeButtons>
-        <button>Share</button>
-    </excludeButtons>
+    <excludeButtons>Submit</excludeButtons>
+    <excludeButtons>ChangeOwnerOne</excludeButtons>
+    <excludeButtons>ChangeRecordType</excludeButtons>
+    <excludeButtons>Share</excludeButtons>
     <layoutSections>
         <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
