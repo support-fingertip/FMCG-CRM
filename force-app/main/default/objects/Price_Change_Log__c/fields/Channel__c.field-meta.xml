@@ -2,9 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Channel__c</fullName>
     <label>Channel</label>
-    <required>false</required>
-    <trackTrending>false</trackTrending>
     <type>Picklist</type>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

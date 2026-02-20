@@ -2,9 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Old_Price__c</fullName>
     <label>Old Price</label>
-    <precision>18</precision>
-    <required>false</required>
-    <scale>2</scale>
-    <trackTrending>false</trackTrending>
     <type>Currency</type>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
 </CustomField>

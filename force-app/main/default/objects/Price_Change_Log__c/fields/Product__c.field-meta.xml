@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Product__c</fullName>
-    <deleteConstraint>SetNull</deleteConstraint>
     <label>Product</label>
-    <referenceTo>Product2</referenceTo>
-    <relationshipLabel>Price Change Logs</relationshipLabel>
-    <relationshipName>Price_Change_Logs</relationshipName>
-    <required>false</required>
-    <trackTrending>false</trackTrending>
     <type>Lookup</type>
+    <referenceTo>Product2</referenceTo>
+    <relationshipName>Price_Change_Logs</relationshipName>
+    <relationshipLabel>Price Change Logs</relationshipLabel>
+    <required>true</required>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

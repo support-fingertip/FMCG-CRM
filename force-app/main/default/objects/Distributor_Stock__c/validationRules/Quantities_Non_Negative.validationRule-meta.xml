@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Quantities_Non_Negative</fullName>
+    <active>true</active>
+    <description>Ensures that all stock quantity fields are non-negative.</description>
+    <errorConditionFormula>Opening_Stock__c &lt; 0 OR Received_Qty__c &lt; 0 OR Sold_Qty__c &lt; 0 OR Damaged_Qty__c &lt; 0 OR Closing_Stock__c &lt; 0</errorConditionFormula>
+    <errorMessage>Stock quantities cannot be negative.</errorMessage>
+</ValidationRule>
