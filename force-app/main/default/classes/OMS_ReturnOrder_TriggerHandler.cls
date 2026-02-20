@@ -64,6 +64,7 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
 
         if (!approved.isEmpty()) {
             generateCreditNotes(approved);
+            returnStockToWarehouse(approved);
         }
     }
 
@@ -208,6 +209,80 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
             if (!invoicesToUpdate.isEmpty()) {
                 update invoicesToUpdate;
             }
+        }
+    }
+
+    /**
+     * @description Returns stock to the warehouse when return orders are approved.
+     *              Looks up the Invoice's Warehouse and adds stock back via the
+     *              INV_WarehouseStock_Service.
+     * @param approvedReturns The approved Return_Order__c records.
+     */
+    private void returnStockToWarehouse(List<Return_Order__c> approvedReturns) {
+        // Collect invoice IDs to look up warehouses
+        Set<Id> invoiceIds = new Set<Id>();
+        for (Return_Order__c ret : approvedReturns) {
+            if (ret.Invoice__c != null) {
+                invoiceIds.add(ret.Invoice__c);
+            }
+        }
+
+        if (invoiceIds.isEmpty()) {
+            return;
+        }
+
+        // Query invoices to get warehouse assignments
+        Map<Id, Invoice__c> invoiceMap = new Map<Id, Invoice__c>([
+            SELECT Id, Warehouse__c
+            FROM Invoice__c
+            WHERE Id IN :invoiceIds
+              AND Warehouse__c != null
+        ]);
+
+        if (invoiceMap.isEmpty()) {
+            return;
+        }
+
+        // Group return items by warehouse
+        Map<Id, List<INV_WarehouseStock_Service.StockLineItem>> itemsByWarehouse =
+            new Map<Id, List<INV_WarehouseStock_Service.StockLineItem>>();
+        Map<Id, String> referenceByWarehouse = new Map<Id, String>();
+
+        for (Return_Order__c ret : approvedReturns) {
+            if (ret.Invoice__c == null || ret.Return_Quantity__c == null || ret.Return_Quantity__c <= 0) {
+                continue;
+            }
+
+            Invoice__c inv = invoiceMap.get(ret.Invoice__c);
+            if (inv == null || inv.Warehouse__c == null) {
+                continue;
+            }
+
+            // Get product from invoice line
+            Id productId = ret.Product__c;
+            if (productId == null) {
+                continue;
+            }
+
+            Id warehouseId = inv.Warehouse__c;
+            if (!itemsByWarehouse.containsKey(warehouseId)) {
+                itemsByWarehouse.put(warehouseId, new List<INV_WarehouseStock_Service.StockLineItem>());
+            }
+
+            itemsByWarehouse.get(warehouseId).add(
+                new INV_WarehouseStock_Service.StockLineItem(productId, null, ret.Return_Quantity__c)
+            );
+            referenceByWarehouse.put(warehouseId, ret.Id);
+        }
+
+        // Add stock back to each warehouse
+        for (Id warehouseId : itemsByWarehouse.keySet()) {
+            INV_WarehouseStock_Service.addStock(
+                warehouseId,
+                itemsByWarehouse.get(warehouseId),
+                referenceByWarehouse.get(warehouseId),
+                'Return_Order'
+            );
         }
     }
 }

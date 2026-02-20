@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Adjustment_Qty__c</fullName>
+    <label>Adjustment Qty</label>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>0</scale>
+    <required>true</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+    <description>Positive to add stock, negative to deduct</description>
+</CustomField>

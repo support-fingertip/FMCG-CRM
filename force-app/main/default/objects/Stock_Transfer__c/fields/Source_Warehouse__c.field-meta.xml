@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Source_Warehouse__c</fullName>
+    <label>Source Warehouse</label>
+    <type>Lookup</type>
+    <referenceTo>Warehouse__c</referenceTo>
+    <relationshipLabel>Outbound Transfers</relationshipLabel>
+    <relationshipName>Outbound_Transfers</relationshipName>
+    <required>true</required>
+    <deleteConstraint>Restrict</deleteConstraint>
+</CustomField>

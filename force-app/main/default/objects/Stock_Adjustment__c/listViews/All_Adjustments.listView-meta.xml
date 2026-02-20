@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>All_Adjustments</fullName>
+    <label>All Adjustments</label>
+    <filterScope>Everything</filterScope>
+    <columns>NAME</columns>
+    <columns>Warehouse__c</columns>
+    <columns>Product__c</columns>
+    <columns>Adjustment_Type__c</columns>
+    <columns>Adjustment_Qty__c</columns>
+    <columns>Status__c</columns>
+    <columns>Adjustment_Date__c</columns>
+</ListView>

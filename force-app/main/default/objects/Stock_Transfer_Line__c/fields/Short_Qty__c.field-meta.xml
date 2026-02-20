@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Short_Qty__c</fullName>
+    <label>Short Qty</label>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>0</scale>
+    <formula>IF(ISBLANK(Approved_Qty__c) OR ISBLANK(Received_Qty__c), 0, Approved_Qty__c - Received_Qty__c)</formula>
+</CustomField>

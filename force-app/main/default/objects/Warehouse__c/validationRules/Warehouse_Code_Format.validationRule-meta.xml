@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Warehouse_Code_Format</fullName>
+    <active>true</active>
+    <description>Ensures Warehouse Code is 3-20 alphanumeric characters.</description>
+    <errorConditionFormula>NOT(REGEX(Warehouse_Code__c, "^[A-Za-z0-9]{3,20}$"))</errorConditionFormula>
+    <errorMessage>Warehouse Code must be 3-20 alphanumeric characters.</errorMessage>
+</ValidationRule>
