@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Is_Low_Stock__c</fullName>
+    <label>Is Low Stock</label>
+    <type>Checkbox</type>
+    <formula>AND(
+    NOT(ISBLANK(Min_Stock_Level__c)),
+    (Qty_On_Hand__c - Qty_Reserved__c) &lt;= Min_Stock_Level__c,
+    (Qty_On_Hand__c - Qty_Reserved__c) &gt; 0
+)</formula>
+</CustomField>

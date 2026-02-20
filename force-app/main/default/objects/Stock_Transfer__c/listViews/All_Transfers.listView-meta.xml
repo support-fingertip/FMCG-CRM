@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>All_Transfers</fullName>
+    <label>All Transfers</label>
+    <filterScope>Everything</filterScope>
+    <columns>NAME</columns>
+    <columns>Source_Warehouse__c</columns>
+    <columns>Destination_Warehouse__c</columns>
+    <columns>Transfer_Date__c</columns>
+    <columns>Status__c</columns>
+    <columns>Requested_By__c</columns>
+</ListView>
