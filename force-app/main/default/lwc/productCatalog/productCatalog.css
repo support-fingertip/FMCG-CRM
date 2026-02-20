@@ -1,0 +1,286 @@
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+
+.catalog-container {
+    min-height: 500px;
+}
+
+.sidebar-col {
+    flex: 0 0 250px;
+    max-width: 250px;
+    border-right: 1px solid #dddbda;
+}
+
+.main-col {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+
+.sidebar-panel {
+    height: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: #fafaf9;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dddbda;
+    background-color: #f3f3f3;
+    padding: 0.5rem 0.75rem;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-weight: 700;
+    color: #3e3e3c;
+}
+
+.clear-category-btn {
+    flex-shrink: 0;
+}
+
+.category-tree-wrapper {
+    padding: 0.25rem 0;
+}
+
+/* ── Top Bar ───────────────────────────────────────────────────────────── */
+
+.top-bar {
+    border-bottom: 1px solid #dddbda;
+    background-color: #f3f3f3;
+}
+
+.result-count {
+    white-space: nowrap;
+}
+
+/* ── Category Filter Badge ─────────────────────────────────────────────── */
+
+.category-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* ── Product Grid ──────────────────────────────────────────────────────── */
+
+.product-grid {
+    padding-top: 0.5rem;
+}
+
+/* ── Product Card ──────────────────────────────────────────────────────── */
+
+.product-card {
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    border: 2px solid transparent;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    min-height: 160px;
+}
+
+.product-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border-color: #1b96ff;
+}
+
+.product-card-selected {
+    border-color: #0176d3;
+    background-color: #eef4ff;
+    box-shadow: 0 2px 8px rgba(1, 118, 211, 0.2);
+}
+
+.product-name {
+    font-weight: 600;
+    color: #181818;
+    max-width: 200px;
+}
+
+/* ── Badges ────────────────────────────────────────────────────────────── */
+
+.badge-active lightning-badge {
+    --sds-c-badge-color-background: #2e844a;
+    --sds-c-badge-text-color: #ffffff;
+}
+
+.badge-inactive lightning-badge {
+    --sds-c-badge-color-background: #c23934;
+    --sds-c-badge-text-color: #ffffff;
+}
+
+.badge-category lightning-badge {
+    --sds-c-badge-color-background: #0176d3;
+    --sds-c-badge-text-color: #ffffff;
+}
+
+/* Also support older badge styling hooks */
+.badge-active .slds-badge {
+    background-color: #2e844a;
+    color: #ffffff;
+}
+
+.badge-inactive .slds-badge {
+    background-color: #c23934;
+    color: #ffffff;
+}
+
+.badge-category .slds-badge {
+    background-color: #0176d3;
+    color: #ffffff;
+}
+
+/* ── Product Card Details Row ──────────────────────────────────────────── */
+
+.product-details-row {
+    border-top: 1px solid #e5e5e5;
+    padding-top: 0.375rem;
+    margin-top: 0.375rem;
+}
+
+.detail-item {
+    padding: 0.125rem 0;
+}
+
+.detail-label {
+    display: block;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    color: #706e6b;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.detail-value {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #3e3e3c;
+    line-height: 1.4;
+}
+
+/* ── Loading Area ──────────────────────────────────────────────────────── */
+
+.loading-area {
+    min-height: 300px;
+}
+
+/* ── Empty State ───────────────────────────────────────────────────────── */
+
+.empty-state {
+    text-align: center;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Detail Panel ──────────────────────────────────────────────────────── */
+
+.detail-panel {
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    background-color: #fafaf9;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detail-header {
+    border-bottom: 1px solid #dddbda;
+    margin-bottom: 0.75rem;
+}
+
+.detail-info-grid {
+    padding-bottom: 0.25rem;
+}
+
+.info-item {
+    padding: 0.25rem 0;
+}
+
+.info-label {
+    display: block;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    color: #706e6b;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.info-value {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #3e3e3c;
+    line-height: 1.4;
+}
+
+/* ── Price Table ───────────────────────────────────────────────────────── */
+
+.price-table-wrapper {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+}
+
+.price-table {
+    font-size: 0.8125rem;
+}
+
+.price-table th {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: #f3f3f3;
+}
+
+.price-value {
+    font-weight: 700;
+    color: #2e844a;
+}
+
+/* ── Pagination ────────────────────────────────────────────────────────── */
+
+.pagination-bar {
+    border-top: 1px solid #dddbda;
+    background-color: #f3f3f3;
+}
+
+.page-btn {
+    min-width: 2.25rem;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .sidebar-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #dddbda;
+    }
+
+    .sidebar-panel {
+        max-height: 200px;
+    }
+
+    .product-name {
+        max-width: 100%;
+    }
+}
