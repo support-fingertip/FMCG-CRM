@@ -59,7 +59,7 @@
         <modifyAllRecords>false</modifyAllRecords>
     </objectPermissions>
     <tabSettings>
-        <tab>Product2</tab>
+        <tab>standard-Product2</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
