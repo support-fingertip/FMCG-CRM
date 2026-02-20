@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Price Change Log</label>
+    <pluralLabel>Price Change Logs</pluralLabel>
+    <nameField>
+        <label>Log Number</label>
+        <displayFormat>PCL-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Audit trail for price changes on Price List entries (MOD-01 Master Data Management)</description>
+</CustomObject>

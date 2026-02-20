@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Change_Reason__c</fullName>
+    <label>Change Reason</label>
+    <type>TextArea</type>
+    <length>255</length>
+    <required>false</required>
+</CustomField>
