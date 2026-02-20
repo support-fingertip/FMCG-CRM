@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Queue xmlns="http://soap.sforce.com/2006/04/metadata">
+    <doesSendEmailToMembers>false</doesSendEmailToMembers>
+    <email>hi35@hi.com</email>
+    <name>PJP Approvers</name>
+    <queueMembers>
+        <users>
+            <user>shebin@fingertipplus.com.sfai</user>
+        </users>
+    </queueMembers>
+    <queueSobject>
+        <sobjectType>JournalType</sobjectType>
+    </queueSobject>
+</Queue>

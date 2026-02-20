@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Territory__c</fullName>
+    <label>Territory</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>Territory_Master__c</referenceTo>
+    <relationshipLabel>Channel Partners</relationshipLabel>
+    <relationshipName>Channel_Partners</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

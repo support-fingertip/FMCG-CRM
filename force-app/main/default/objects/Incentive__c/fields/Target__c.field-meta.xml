@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Target__c</fullName>
+    <label>Target</label>
+    <type>Lookup</type>
+    <referenceTo>Target__c</referenceTo>
+    <relationshipLabel>Incentives</relationshipLabel>
+    <relationshipName>Incentives</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

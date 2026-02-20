@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Competitor</label>
+    <pluralLabel>Competitors</pluralLabel>
+    <nameField>
+        <label>Competitor Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Competitor product and pricing tracking for competitive intelligence (MOD-01 Master Data Management)</description>
+</CustomObject>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Survey Response</label>
+    <pluralLabel>Survey Responses</pluralLabel>
+    <nameField>
+        <label>Survey Response Number</label>
+        <type>AutoNumber</type>
+        <displayFormat>SR-{0000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Survey response submissions capturing completed survey answers per visit and account (MOD-04 Outlet Visit Execution)</description>
+</CustomObject>

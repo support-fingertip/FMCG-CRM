@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+    <active>true</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>allInternalUsers</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Employee__c</field>
+        <field>Leave_Type__c</field>
+        <field>Start_Date__c</field>
+        <field>End_Date__c</field>
+        <field>Number_of_Days__c</field>
+        <field>Reason__c</field>
+        <field>Owner</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>true</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>ManagerId</name>
+                <type>userHierarchyField</type>
+            </approver>
+        </assignedApprover>
+        <label>Reporting Manager Approval</label>
+        <name>Reporting_Manager_Approval</name>
+    </approvalStep>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>HR_Team</name>
+                <type>queue</type>
+            </approver>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>Leave_Request__c.Number_of_Days__c</field>
+                <operation>greaterThan</operation>
+                <value>5</value>
+            </criteriaItems>
+        </entryCriteria>
+        <label>HR Approval</label>
+        <name>HR_Approval</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+    </approvalStep>
+    <description>Approval process for employee leave requests requiring reporting manager and HR sign-off for extended leaves</description>
+    <entryCriteria>
+        <criteriaItems>
+            <field>Leave_Request__c.Status__c</field>
+            <operation>equals</operation>
+            <value>Pending</value>
+        </criteriaItems>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Approve_Leave</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalRejectionActions>
+        <action>
+            <name>Reject_Leave</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <label>Leave Approval</label>
+    <nextAutomatedApprover>
+        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
+        <userHierarchyField>ManagerId</userHierarchyField>
+    </nextAutomatedApprover>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>

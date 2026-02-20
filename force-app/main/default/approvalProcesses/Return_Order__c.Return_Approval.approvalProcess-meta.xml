@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+    <active>true</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>allInternalUsers</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Account__c</field>
+        <field>Sales_Order__c</field>
+        <field>Return_Reason__c</field>
+        <field>Total_Return_Amount__c</field>
+        <field>Return_Date__c</field>
+        <field>Owner</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>true</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>ManagerId</name>
+                <type>userHierarchyField</type>
+            </approver>
+        </assignedApprover>
+        <label>Manager Approval</label>
+        <name>Manager_Approval</name>
+    </approvalStep>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Distribution_Manager</name>
+                <type>queue</type>
+            </approver>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>Return_Order__c.Total_Return_Amount__c</field>
+                <operation>greaterThan</operation>
+                <value>25000</value>
+            </criteriaItems>
+        </entryCriteria>
+        <label>Distribution Manager Approval</label>
+        <name>Distribution_Manager_Approval</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+    </approvalStep>
+    <description>Approval process for return orders requiring manager and distribution manager sign-off</description>
+    <entryCriteria>
+        <criteriaItems>
+            <field>Return_Order__c.Status__c</field>
+            <operation>equals</operation>
+            <value>Submitted</value>
+        </criteriaItems>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Approve_Return</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalRejectionActions>
+        <action>
+            <name>Reject_Return</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <label>Return Approval</label>
+    <nextAutomatedApprover>
+        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
+        <userHierarchyField>ManagerId</userHierarchyField>
+    </nextAutomatedApprover>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>

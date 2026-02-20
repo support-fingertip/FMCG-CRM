@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Achievement_Percent__c</fullName>
+    <label>Achievement Percent</label>
+    <type>Percent</type>
+    <precision>5</precision>
+    <scale>2</scale>
+    <formula>IF(Target_Value__c = 0, 0, Achievement_Value__c / Target_Value__c)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+</CustomField>

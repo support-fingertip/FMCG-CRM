@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/metadata">
+    <labels>
+        <fullName>FSCRM_App_Name</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Application Name</shortDescription>
+        <value>Field Sales CRM</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Visit_CheckIn_Success</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Visit Check-In Success Message</shortDescription>
+        <value>Successfully checked in at outlet. Start your visit activities.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Visit_CheckOut_Success</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Visit Check-Out Success Message</shortDescription>
+        <value>Visit completed successfully. Proceed to the next outlet.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Order_Created</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Order Created Message</shortDescription>
+        <value>Sales order created successfully.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Order_Submitted</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Order Submitted Message</shortDescription>
+        <value>Order submitted for approval.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Collection_Recorded</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Collection Recorded Message</shortDescription>
+        <value>Payment collection recorded successfully.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Day_Started</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Day Start Message</shortDescription>
+        <value>Day started successfully. Your attendance has been recorded.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Day_Ended</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Day End Message</shortDescription>
+        <value>Day ended successfully. Review your daily summary.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_GeoFence_Error</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Geo-Fence Validation Error</shortDescription>
+        <value>You are not within the allowed radius of this outlet. Please move closer to check in.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Credit_Limit_Exceeded</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Credit Limit Exceeded Error</shortDescription>
+        <value>Order cannot be placed. Customer credit limit has been exceeded.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Duplicate_Order</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Duplicate Order Warning</shortDescription>
+        <value>A similar order was placed recently. Please verify this is not a duplicate.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Return_Submitted</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Return Order Submitted Message</shortDescription>
+        <value>Return order submitted for approval.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Scheme_Applied</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Scheme Applied Message</shortDescription>
+        <value>Trade scheme has been applied to the order.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_No_Active_Schemes</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No Active Schemes Message</shortDescription>
+        <value>No active schemes available for this order.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Target_Published</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Target Published Message</shortDescription>
+        <value>Targets have been published for the selected period.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_PJP_Submitted</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PJP Submitted Message</shortDescription>
+        <value>Journey Plan submitted for approval.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Outlet_Registered</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>New Outlet Registered Message</shortDescription>
+        <value>New outlet registered successfully. Pending approval for activation.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Min_Order_Value_Error</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Minimum Order Value Error</shortDescription>
+        <value>Order value is below the minimum required amount.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Invalid_Status_Transition</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Invalid Status Transition Error</shortDescription>
+        <value>Invalid status transition. This status change is not allowed.</value>
+    </labels>
+    <labels>
+        <fullName>FSCRM_Already_Checked_In</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Already Checked In Today</shortDescription>
+        <value>You have already started your day. Cannot create duplicate attendance.</value>
+    </labels>
+</CustomLabels>

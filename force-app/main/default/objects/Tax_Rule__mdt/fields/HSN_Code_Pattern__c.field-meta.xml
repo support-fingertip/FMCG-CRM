@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>HSN_Code_Pattern__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>HSN Code Pattern</label>
+    <length>20</length>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

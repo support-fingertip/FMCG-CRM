@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>GRN Line</label>
+    <pluralLabel>GRN Lines</pluralLabel>
+    <nameField>
+        <label>GRN Line Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Line items for Goods Receipt Notes containing product-level receipt details including quantities and batch information</description>
+</CustomObject>

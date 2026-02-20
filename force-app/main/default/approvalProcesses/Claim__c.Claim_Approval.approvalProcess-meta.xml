@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+    <active>true</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>allInternalUsers</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Account__c</field>
+        <field>Claim_Type__c</field>
+        <field>Total_Amount__c</field>
+        <field>Claim_Date__c</field>
+        <field>Scheme__c</field>
+        <field>Supporting_Doc_URL__c</field>
+        <field>Owner</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>true</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>ManagerId</name>
+                <type>userHierarchyField</type>
+            </approver>
+        </assignedApprover>
+        <label>Area Sales Manager Approval</label>
+        <name>ASM_Approval</name>
+    </approvalStep>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Finance_Team</name>
+                <type>queue</type>
+            </approver>
+        </assignedApprover>
+        <entryCriteria>
+            <criteriaItems>
+                <field>Claim__c.Total_Amount__c</field>
+                <operation>greaterThan</operation>
+                <value>50000</value>
+            </criteriaItems>
+        </entryCriteria>
+        <label>Finance Team Approval</label>
+        <name>Finance_Approval</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+    </approvalStep>
+    <description>Approval process for distributor claims including scheme claims, damage claims, and credit notes</description>
+    <entryCriteria>
+        <criteriaItems>
+            <field>Claim__c.Status__c</field>
+            <operation>equals</operation>
+            <value>Submitted</value>
+        </criteriaItems>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Approve_Claim</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalRejectionActions>
+        <action>
+            <name>Reject_Claim</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <label>Claim Approval</label>
+    <nextAutomatedApprover>
+        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
+        <userHierarchyField>ManagerId</userHierarchyField>
+    </nextAutomatedApprover>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>

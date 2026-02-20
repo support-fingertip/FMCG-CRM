@@ -1,0 +1,4 @@
+# List files or directories below to ignore the source from force:source:push/pull commands
+package.xml
+.eslintrc.json
+**/__tests__/**

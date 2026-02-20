@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Day Attendance</label>
+    <pluralLabel>Day Attendances</pluralLabel>
+    <nameField>
+        <label>Attendance Number</label>
+        <type>AutoNumber</type>
+        <displayFormat>ATT-{0000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Daily attendance check-in and check-out tracking for field salespersons with geo-location capture (MOD-03 Daily Field Operations)</description>
+</CustomObject>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Claim Line</label>
+    <pluralLabel>Claim Lines</pluralLabel>
+    <nameField>
+        <label>Claim Line Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Line items for distributor claims containing product-level claim details</description>
+</CustomObject>

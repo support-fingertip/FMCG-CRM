@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Issuing_Authority__c</fullName>
+    <label>Issuing Authority</label>
+    <type>Text</type>
+    <length>255</length>
+    <required>false</required>
+</CustomField>

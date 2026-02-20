@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Journey Plan</label>
+    <pluralLabel>Journey Plans</pluralLabel>
+    <nameField>
+        <label>Journey Plan Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Permanent Journey Plan for salesperson route scheduling and visit planning (MOD-02 Beat Plan and Route Management)</description>
+</CustomObject>

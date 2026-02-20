@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>All_Retailers</fullName>
+    <label>All Retailers</label>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>ACCOUNT.RECORDTYPE</field>
+        <operation>equals</operation>
+        <value>Account.Retailer</value>
+    </filters>
+    <columns>ACCOUNT.NAME</columns>
+    <columns>Account.Outlet_Type__c</columns>
+    <columns>Account.Outlet_Class__c</columns>
+    <columns>Account.Channel__c</columns>
+    <columns>Account.Beat__c</columns>
+    <columns>Account.Territory__c</columns>
+    <columns>ACCOUNT.PHONE1</columns>
+    <columns>Account.Outstanding_Balance__c</columns>
+    <columns>Account.Is_Active__c</columns>
+    <columns>Account.Last_Visit_Date__c</columns>
+</ListView>

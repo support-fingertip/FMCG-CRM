@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Visit</label>
+    <pluralLabel>Visits</pluralLabel>
+    <nameField>
+        <label>Visit Number</label>
+        <type>AutoNumber</type>
+        <displayFormat>VIS-{00000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Individual outlet visit execution tracking with geo-location, duration and productivity metrics (MOD-04 Outlet Visit Execution)</description>
+</CustomObject>

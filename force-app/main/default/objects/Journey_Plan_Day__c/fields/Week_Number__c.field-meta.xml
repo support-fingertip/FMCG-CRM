@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Week_Number__c</fullName>
+    <label>Week Number</label>
+    <type>Picklist</type>
+    <required>true</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Week 1</fullName>
+                <default>false</default>
+                <label>Week 1</label>
+            </value>
+            <value>
+                <fullName>Week 2</fullName>
+                <default>false</default>
+                <label>Week 2</label>
+            </value>
+            <value>
+                <fullName>Week 3</fullName>
+                <default>false</default>
+                <label>Week 3</label>
+            </value>
+            <value>
+                <fullName>Week 4</fullName>
+                <default>false</default>
+                <label>Week 4</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

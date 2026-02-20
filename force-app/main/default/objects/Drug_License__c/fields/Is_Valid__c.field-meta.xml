@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Is_Valid__c</fullName>
+    <label>Is Valid</label>
+    <type>Checkbox</type>
+    <formula>AND(
+    NOT(ISBLANK(Expiry_Date__c)),
+    Expiry_Date__c &gt;= TODAY(),
+    ISPICKVAL(Status__c, 'Active')
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+</CustomField>

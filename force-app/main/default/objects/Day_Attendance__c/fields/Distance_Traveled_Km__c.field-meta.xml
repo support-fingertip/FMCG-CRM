@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Distance_Traveled_Km__c</fullName>
+    <label>Distance Traveled (Km)</label>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+</CustomField>

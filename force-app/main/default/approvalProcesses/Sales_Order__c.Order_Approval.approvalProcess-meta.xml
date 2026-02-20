@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+    <active>true</active>
+    <allowRecall>true</allowRecall>
+    <allowedSubmitters>
+        <type>allInternalUsers</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Account__c</field>
+        <field>Total_Net_Amount__c</field>
+        <field>Order_Date__c</field>
+        <field>Total_Items__c</field>
+        <field>Owner</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>true</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>ManagerId</name>
+                <type>userHierarchyField</type>
+            </approver>
+        </assignedApprover>
+        <label>Manager Approval</label>
+        <name>Manager_Approval</name>
+    </approvalStep>
+    <description>Approval process for sales orders exceeding auto-approval threshold</description>
+    <entryCriteria>
+        <criteriaItems>
+            <field>Sales_Order__c.Status__c</field>
+            <operation>equals</operation>
+            <value>Submitted</value>
+        </criteriaItems>
+        <criteriaItems>
+            <field>Sales_Order__c.Total_Net_Amount__c</field>
+            <operation>greaterThan</operation>
+            <value>50000</value>
+        </criteriaItems>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Approve_Order</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalRejectionActions>
+        <action>
+            <name>Reject_Order</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalRejectionActions>
+    <label>Order Approval</label>
+    <nextAutomatedApprover>
+        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
+        <userHierarchyField>ManagerId</userHierarchyField>
+    </nextAutomatedApprover>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Is_Near_Expiry__c</fullName>
+    <label>Is Near Expiry</label>
+    <type>Checkbox</type>
+    <formula>AND(
+    NOT(ISBLANK(Expiry_Date__c)),
+    (Expiry_Date__c - TODAY()) &lt; 30,
+    (Expiry_Date__c - TODAY()) &gt;= 0
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+</CustomField>

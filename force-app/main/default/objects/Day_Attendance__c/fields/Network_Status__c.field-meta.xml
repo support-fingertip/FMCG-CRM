@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Network_Status__c</fullName>
+    <label>Network Status</label>
+    <type>Text</type>
+    <length>50</length>
+    <required>false</required>
+</CustomField>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Indent Line</label>
+    <pluralLabel>Indent Lines</pluralLabel>
+    <nameField>
+        <label>Indent Line Number</label>
+        <displayFormat>IDL-{0000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Line items for distributor indents containing product, quantity, and pricing details</description>
+</CustomObject>

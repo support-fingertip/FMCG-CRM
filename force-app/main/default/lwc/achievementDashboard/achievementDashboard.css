@@ -1,0 +1,358 @@
+/* Achievement Dashboard Styles */
+:host {
+    --brand-primary: #0176d3;
+    --success-color: #2e844a;
+    --warning-color: #dd7a01;
+    --error-color: #ea001e;
+    --border-color: #e5e5e5;
+    --bg-light: #f8f9fa;
+}
+
+/* KPI Cards */
+.kpi-row {
+    padding: 0;
+}
+
+.kpi-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.kpi-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #706e6b;
+}
+
+/* Progress Ring */
+.kpi-progress-ring-container {
+    position: relative;
+    display: inline-block;
+    margin: 6px 0;
+}
+
+.progress-ring {
+    width: 80px;
+    height: 80px;
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    fill: none;
+    stroke: #e5e5e5;
+    stroke-width: 6;
+}
+
+.progress-ring-circle {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s ease;
+}
+
+.ring-green { stroke: var(--success-color); }
+.ring-amber { stroke: var(--warning-color); }
+.ring-red { stroke: var(--error-color); }
+
+.ring-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    font-weight: 800;
+    color: #181818;
+}
+
+/* KPI Details */
+.kpi-details {
+    margin-top: 8px;
+}
+
+.kpi-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+}
+
+.detail-label {
+    font-size: 11px;
+    color: #706e6b;
+}
+
+.detail-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: #181818;
+}
+
+.detail-value.actual {
+    color: var(--brand-primary);
+    font-weight: 700;
+}
+
+/* Achievement Badges */
+.achievement-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-green {
+    background: #e6f7e9;
+    color: var(--success-color);
+}
+
+.badge-amber {
+    background: #fff8e1;
+    color: var(--warning-color);
+}
+
+.badge-red {
+    background: #fce4e4;
+    color: var(--error-color);
+}
+
+/* Chart Section */
+.chart-section {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.chart-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.bar-chart {
+    width: 100%;
+    min-width: 600px;
+}
+
+/* Drill-down Table */
+.drilldown-section {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.drilldown-table-container {
+    max-height: 400px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.territory-row {
+    background: #f0f7ff !important;
+    font-weight: 600;
+}
+
+.territory-name {
+    font-weight: 700;
+    color: var(--brand-primary);
+    display: flex;
+    align-items: center;
+}
+
+.person-indent-name {
+    padding-left: 24px;
+    color: #181818;
+}
+
+.person-row {
+    background: #ffffff;
+}
+
+.achievement-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mini-progress-bar {
+    width: 60px;
+    height: 6px;
+    background: #e5e5e5;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.mini-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* Leaderboard */
+.leaderboard-section {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.leaderboard-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.leaderboard-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s ease;
+}
+
+.leaderboard-row:hover {
+    background: #f8f9fa;
+}
+
+.leaderboard-row:last-child {
+    border-bottom: none;
+}
+
+.rank-container {
+    width: 40px;
+    flex-shrink: 0;
+}
+
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.rank-gold {
+    background: linear-gradient(135deg, #f9d923 0%, #f0c419 100%);
+    color: #7a6200;
+    box-shadow: 0 2px 4px rgba(249, 217, 35, 0.4);
+}
+
+.rank-silver {
+    background: linear-gradient(135deg, #d1d5db 0%, #b0b5bc 100%);
+    color: #4a4f56;
+    box-shadow: 0 2px 4px rgba(176, 181, 188, 0.4);
+}
+
+.rank-bronze {
+    background: linear-gradient(135deg, #d4a574 0%, #c08b5c 100%);
+    color: #5c3d1e;
+    box-shadow: 0 2px 4px rgba(208, 165, 116, 0.4);
+}
+
+.rank-default {
+    background: #f3f3f3;
+    color: #706e6b;
+}
+
+.person-info {
+    flex: 1;
+    padding: 0 16px;
+}
+
+.person-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #181818;
+}
+
+.person-territory {
+    display: block;
+    font-size: 11px;
+    color: #706e6b;
+}
+
+.person-achievement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 200px;
+}
+
+.leader-progress-bar {
+    width: 120px;
+    height: 8px;
+    background: #e5e5e5;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.leader-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.person-value {
+    width: 100px;
+    text-align: right;
+}
+
+.achievement-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #181818;
+}
+
+/* Table Styles */
+table.slds-table thead th {
+    background: #fafbfc;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #706e6b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .kpi-row .slds-col {
+        flex-basis: 50% !important;
+        max-width: 50% !important;
+        margin-bottom: 8px;
+    }
+
+    .leaderboard-row {
+        flex-wrap: wrap;
+    }
+
+    .person-achievement {
+        width: 100%;
+        margin-top: 6px;
+    }
+
+    .person-value {
+        width: auto;
+        margin-top: 6px;
+    }
+}

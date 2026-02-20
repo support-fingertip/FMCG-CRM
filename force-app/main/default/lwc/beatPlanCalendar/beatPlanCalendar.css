@@ -1,0 +1,414 @@
+/* Beat Plan Calendar Styles */
+:host {
+    --brand-primary: #0176d3;
+    --success-color: #2e844a;
+    --warning-color: #dd7a01;
+    --error-color: #ea001e;
+    --border-color: #e5e5e5;
+    --bg-light: #f8f9fa;
+    --sunday-bg: #fff5f5;
+}
+
+/* Controls */
+.controls-row {
+    background: var(--bg-light);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.calendar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #181818;
+    min-width: 220px;
+    text-align: center;
+}
+
+/* PJP Status Badges */
+.pjp-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pjp-draft {
+    background: #f3f3f3;
+    color: #706e6b;
+}
+
+.pjp-pending {
+    background: #fff8e1;
+    color: #dd7a01;
+}
+
+.pjp-approved {
+    background: #e6f7e9;
+    color: #2e844a;
+}
+
+.pjp-active {
+    background: #e8f4fd;
+    color: #0176d3;
+}
+
+.pjp-rejected {
+    background: #fce4e4;
+    color: #ea001e;
+}
+
+/* Summary Panel */
+.summary-panel {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #eef2f6 100%);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-label {
+    display: block;
+    font-size: 10px;
+    color: #706e6b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.stat-value {
+    display: block;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--brand-primary);
+    margin-top: 2px;
+}
+
+/* Week View Calendar Grid */
+.week-grid {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.day-headers {
+    background: #fafbfc;
+}
+
+.day-header {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.day-header:last-child {
+    border-right: none;
+}
+
+.today-header {
+    background: #e8f4fd;
+    border-bottom-color: var(--brand-primary);
+}
+
+.sunday-header {
+    background: var(--sunday-bg);
+}
+
+.day-name {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #706e6b;
+    letter-spacing: 0.5px;
+}
+
+.day-date {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #181818;
+    margin-top: 2px;
+}
+
+.day-content-row {
+    min-height: 200px;
+}
+
+.day-cell {
+    flex: 1;
+    padding: 8px;
+    border-right: 1px solid var(--border-color);
+    min-height: 200px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    position: relative;
+}
+
+.day-cell:last-child {
+    border-right: none;
+}
+
+.day-cell:hover {
+    background: #f0f7ff;
+}
+
+.today-cell {
+    background: #f0f7ff;
+}
+
+.sunday-cell {
+    background: var(--sunday-bg);
+}
+
+.beat-chip {
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    color: #ffffff;
+    font-size: 12px;
+    transition: transform 0.15s ease;
+}
+
+.beat-chip:hover {
+    transform: scale(1.02);
+}
+
+.beat-name {
+    display: block;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.beat-outlet-count {
+    display: block;
+    font-size: 10px;
+    opacity: 0.85;
+    margin-top: 2px;
+}
+
+.empty-day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+}
+
+.day-visit-count {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+}
+
+.visit-count-badge {
+    background: #eef4ff;
+    color: var(--brand-primary);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* Month View */
+.month-grid {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.month-headers {
+    background: #fafbfc;
+}
+
+.month-header-cell {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #706e6b;
+    letter-spacing: 0.5px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.month-header-cell:last-child {
+    border-right: none;
+}
+
+.month-week-row {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.month-week-row:last-child {
+    border-bottom: none;
+}
+
+.month-cell {
+    flex: 1;
+    min-height: 90px;
+    padding: 4px 6px;
+    border-right: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.month-cell:last-child {
+    border-right: none;
+}
+
+.month-cell:hover {
+    background: #f0f7ff;
+}
+
+.month-cell.other-month {
+    background: #fafbfc;
+    opacity: 0.5;
+}
+
+.date-number {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #181818;
+    margin-bottom: 4px;
+}
+
+.today-date {
+    background: var(--brand-primary);
+    color: #ffffff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.month-beat-chip {
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-bottom: 2px;
+    color: #ffffff;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.month-beat-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.month-beat-count {
+    font-size: 9px;
+    opacity: 0.85;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+/* Drag-Drop Info */
+.drag-drop-info {
+    background: #f0f7ff;
+    border: 1px solid #d0e5fb;
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+}
+
+/* Selected Day Panel */
+.selected-day-panel {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.assigned-beat-item,
+.available-beat-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: all 0.15s ease;
+}
+
+.available-beat-item {
+    cursor: pointer;
+}
+
+.available-beat-item:hover {
+    border-color: var(--brand-primary);
+    background: #f0f7ff;
+}
+
+.beat-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.beat-detail-name {
+    font-weight: 600;
+    font-size: 13px;
+    flex: 1;
+}
+
+.beat-detail-count {
+    font-size: 12px;
+    color: #706e6b;
+    margin-left: 8px;
+}
+
+.add-beat-icon {
+    margin-left: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .day-content-row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    .day-cell {
+        min-width: 120px;
+    }
+
+    .month-cell {
+        min-height: 60px;
+    }
+
+    .stat-card {
+        margin-bottom: 8px;
+    }
+
+    .summary-panel .slds-grid {
+        flex-wrap: wrap;
+    }
+
+    .summary-panel .slds-col {
+        flex-basis: 50% !important;
+        max-width: 50% !important;
+    }
+}

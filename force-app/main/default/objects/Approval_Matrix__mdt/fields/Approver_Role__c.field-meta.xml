@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Approver_Role__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Approver Role</label>
+    <length>80</length>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

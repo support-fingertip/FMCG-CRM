@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Survey</label>
+    <pluralLabel>Surveys</pluralLabel>
+    <nameField>
+        <label>Survey Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Survey form definitions for visit surveys, outlet audits, customer feedback and market intelligence (MOD-04 Outlet Visit Execution)</description>
+</CustomObject>

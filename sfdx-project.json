@@ -1,0 +1,16 @@
+{
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "default": true,
+      "package": "FieldSalesCRM",
+      "versionName": "ver 1.0",
+      "versionNumber": "1.0.0.NEXT",
+      "versionDescription": "Field Sales CRM - SFA for FMCG, Healthcare, Hardware"
+    }
+  ],
+  "name": "FieldSalesCRM",
+  "namespace": "FSCRM",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "59.0"
+}

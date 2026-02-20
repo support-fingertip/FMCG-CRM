@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Company Hierarchy</label>
+    <pluralLabel>Company Hierarchies</pluralLabel>
+    <nameField>
+        <label>Company Hierarchy Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Multi-level company structure for organizational hierarchy management (MOD-01 Master Data Management)</description>
+</CustomObject>

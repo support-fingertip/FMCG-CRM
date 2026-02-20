@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Level__c</fullName>
+    <label>Level</label>
+    <type>Picklist</type>
+    <required>true</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Category</fullName>
+                <default>false</default>
+                <label>Category</label>
+            </value>
+            <value>
+                <fullName>Sub-Category</fullName>
+                <default>false</default>
+                <label>Sub-Category</label>
+            </value>
+            <value>
+                <fullName>Brand</fullName>
+                <default>false</default>
+                <label>Brand</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

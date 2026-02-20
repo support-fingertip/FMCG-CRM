@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Start_Selfie_URL__c</fullName>
+    <label>Start Selfie URL</label>
+    <type>Url</type>
+    <required>false</required>
+</CustomField>
