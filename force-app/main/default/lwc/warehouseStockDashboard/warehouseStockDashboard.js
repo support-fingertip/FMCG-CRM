@@ -52,6 +52,8 @@ export default class WarehouseStockDashboard extends LightningElement {
         this.loadWarehouses();
         this.loadKPIs();
         this.loadCurrentStock();
+        this.loadTransactions();
+        this.loadLowStockAlerts();
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -129,6 +131,7 @@ export default class WarehouseStockDashboard extends LightningElement {
                 this.errorMessage = '';
             })
             .catch(error => {
+                this.transactionsLoaded = true;
                 this.handleError(error, 'Failed to load transactions');
             })
             .finally(() => {
@@ -146,6 +149,7 @@ export default class WarehouseStockDashboard extends LightningElement {
                 this.errorMessage = '';
             })
             .catch(error => {
+                this.lowStockLoaded = true;
                 this.handleError(error, 'Failed to load low stock alerts');
             })
             .finally(() => {
@@ -164,6 +168,8 @@ export default class WarehouseStockDashboard extends LightningElement {
         this.lowStockLoaded = false;
         this.loadKPIs();
         this.loadCurrentStock();
+        this.loadTransactions();
+        this.loadLowStockAlerts();
     }
 
     handleRefresh() {
@@ -359,6 +365,10 @@ export default class WarehouseStockDashboard extends LightningElement {
 
     get hasLowStockRecords() {
         return this.lowStockLoaded && this.lowStockRecords && this.lowStockRecords.length > 0;
+    }
+
+    get showLowStockPlaceholder() {
+        return !this.lowStockLoaded;
     }
 
     get showLowStockEmpty() {

@@ -319,6 +319,12 @@
                             </div>
                         </template>
 
+                        <template if:true={showLowStockPlaceholder}>
+                            <div class="slds-illustration slds-illustration_small slds-p-around_large slds-text-align_center">
+                                <p class="slds-text-body_regular slds-text-color_weak">Loading low stock alerts...</p>
+                            </div>
+                        </template>
+
                         <template if:true={showLowStockEmpty}>
                             <div class="slds-illustration slds-illustration_small slds-p-around_large slds-text-align_center">
                                 <p class="slds-text-body_regular slds-text-color_weak">No low stock alerts. All stock levels are healthy.</p>
