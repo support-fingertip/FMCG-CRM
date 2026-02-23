@@ -3,6 +3,6 @@
     <fullName>Quantities_Non_Negative</fullName>
     <active>true</active>
     <description>Ensures stock quantity fields are non-negative</description>
-    <errorConditionFormula>Qty_On_Hand__c &lt; 0 OR Qty_Reserved__c &lt; 0 OR Qty_Damaged__c &lt; 0</errorConditionFormula>
+    <errorConditionFormula>OR(Qty_On_Hand__c &lt; 0, Qty_Reserved__c &lt; 0, Qty_Damaged__c &lt; 0)</errorConditionFormula>
     <errorMessage>Stock quantities cannot be negative.</errorMessage>
 </ValidationRule>

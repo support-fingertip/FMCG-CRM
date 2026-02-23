@@ -7,5 +7,5 @@
     <relationshipLabel>Stock Transfer Lines</relationshipLabel>
     <relationshipName>Stock_Transfer_Lines</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>
