@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>GT_Price_Lists</fullName>
+    <columns>NAME</columns>
+    <columns>Product__c</columns>
+    <columns>Unit_Price__c</columns>
+    <columns>Price_Type__c</columns>
+    <columns>Region__c</columns>
+    <columns>Effective_From__c</columns>
+    <columns>Effective_To__c</columns>
+    <filters>
+        <field>Channel__c</field>
+        <operation>equals</operation>
+        <value>GT</value>
+    </filters>
+    <filters>
+        <field>Is_Active__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
+    <filterScope>Everything</filterScope>
+    <label>GT Price Lists</label>
+</ListView>

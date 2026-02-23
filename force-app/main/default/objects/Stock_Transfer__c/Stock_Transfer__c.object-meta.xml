@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Stock Transfer</label>
+    <pluralLabel>Stock Transfers</pluralLabel>
+    <nameField>
+        <label>Transfer Number</label>
+        <displayFormat>TRF-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Inter-warehouse stock transfer tracking for FMCG distribution management</description>
+</CustomObject>

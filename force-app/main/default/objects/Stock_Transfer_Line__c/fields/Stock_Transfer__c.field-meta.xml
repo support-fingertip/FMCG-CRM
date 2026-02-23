@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Stock_Transfer__c</fullName>
+    <label>Stock Transfer</label>
+    <type>MasterDetail</type>
+    <referenceTo>Stock_Transfer__c</referenceTo>
+    <relationshipLabel>Transfer Lines</relationshipLabel>
+    <relationshipName>Transfer_Lines</relationshipName>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+    <relationshipOrder>0</relationshipOrder>
+</CustomField>

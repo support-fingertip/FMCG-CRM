@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Qty_Available__c</fullName>
+    <label>Qty Available</label>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>0</scale>
+    <formula>Qty_On_Hand__c - Qty_Reserved__c</formula>
+</CustomField>

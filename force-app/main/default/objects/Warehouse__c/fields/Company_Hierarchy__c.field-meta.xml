@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Company_Hierarchy__c</fullName>
+    <label>Company Hierarchy</label>
+    <type>Lookup</type>
+    <referenceTo>Company_Hierarchy__c</referenceTo>
+    <relationshipLabel>Warehouses</relationshipLabel>
+    <relationshipName>Warehouses</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

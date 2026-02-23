@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Stock Transaction</label>
+    <pluralLabel>Stock Transactions</pluralLabel>
+    <nameField>
+        <label>Transaction Number</label>
+        <displayFormat>STX-{000000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Immutable audit trail of all warehouse stock movements including inbound, outbound, transfers, and adjustments</description>
+</CustomObject>

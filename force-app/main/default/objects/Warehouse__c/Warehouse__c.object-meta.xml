@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Warehouse</label>
+    <pluralLabel>Warehouses</pluralLabel>
+    <nameField>
+        <label>Warehouse Name</label>
+        <type>Text</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Company warehouse/depot master for tracking inventory locations in FMCG distribution</description>
+</CustomObject>

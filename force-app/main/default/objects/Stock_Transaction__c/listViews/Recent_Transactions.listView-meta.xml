@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Recent_Transactions</fullName>
+    <label>All</label>
+    <filterScope>Everything</filterScope>
+    <columns>NAME</columns>
+    <columns>Warehouse__c</columns>
+    <columns>Product__c</columns>
+    <columns>Transaction_Type__c</columns>
+    <columns>Quantity__c</columns>
+    <columns>Direction__c</columns>
+    <columns>Transaction_Date__c</columns>
+</ListView>

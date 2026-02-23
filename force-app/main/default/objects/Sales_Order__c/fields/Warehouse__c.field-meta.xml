@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Warehouse__c</fullName>
+    <label>Warehouse</label>
+    <type>Lookup</type>
+    <referenceTo>Warehouse__c</referenceTo>
+    <relationshipLabel>Sales Orders</relationshipLabel>
+    <relationshipName>Sales_Orders</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Source warehouse for stock allocation and dispatch</description>
+</CustomField>

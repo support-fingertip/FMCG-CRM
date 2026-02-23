@@ -28,7 +28,7 @@ public without sharing class OMS_InvoiceGeneration_Service {
             SELECT Id, Name, Account__c, Order_Date__c, Total_Amount__c,
                    Total_Tax__c, Discount_Amount__c, Net_Amount__c,
                    Sales_Rep__c, Region__c, Channel__c,
-                   Shipping_State__c, Warehouse_State__c,
+                   Shipping_State__c, Warehouse_State__c, Warehouse__c,
                    Shipping_Address__c, Billing_Address__c,
                    Payment_Terms__c,
                    (SELECT Id, Product__c, Quantity__c, Unit_Price__c,
@@ -86,7 +86,8 @@ public without sharing class OMS_InvoiceGeneration_Service {
                 Shipping_Address__c  = order.Shipping_Address__c,
                 Billing_Address__c   = order.Billing_Address__c,
                 Payment_Terms__c     = order.Payment_Terms__c,
-                Due_Date__c          = calculateDueDate(order.Payment_Terms__c)
+                Due_Date__c          = calculateDueDate(order.Payment_Terms__c),
+                Warehouse__c         = order.Warehouse__c
             );
 
             invoicesToInsert.add(invoice);
