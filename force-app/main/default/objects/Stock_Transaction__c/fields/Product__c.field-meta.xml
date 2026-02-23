@@ -6,6 +6,6 @@
     <referenceTo>Product2</referenceTo>
     <relationshipLabel>Stock Transactions</relationshipLabel>
     <relationshipName>Stock_Transactions</relationshipName>
-    <required>true</required>
-    <deleteConstraint>Restrict</deleteConstraint>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>
