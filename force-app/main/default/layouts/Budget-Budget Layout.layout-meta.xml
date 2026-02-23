@@ -82,7 +82,6 @@
         <style>CustomLinks</style>
     </layoutSections>
     <relatedLists>
-        <fields>Amount</fields>
         <fields>Quantity</fields>
         <fields>Status</fields>
         <relatedList>BudgetAllocations</relatedList>
