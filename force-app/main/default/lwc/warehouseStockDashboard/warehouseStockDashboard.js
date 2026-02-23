@@ -179,7 +179,7 @@ export default class WarehouseStockDashboard extends LightningElement {
     }
 
     handleTabChange(event) {
-        this.activeTab = event.target.value;
+        this.activeTab = event.target.activeTabValue;
         if (this.activeTab === 'transactions' && !this.transactionsLoaded) {
             this.loadTransactions();
         } else if (this.activeTab === 'lowStock' && !this.lowStockLoaded) {
