@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CustomApplication xmlns="http://soap.sforce.com/2006/metadata">
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Field Sales CRM</label>
     <!-- <formFactors> -->
     <formFactors>Large</formFactors>
@@ -22,6 +22,10 @@
     <tabs>Scheme__c</tabs>
     <tabs>Invoice__c</tabs>
     <tabs>Return_Order__c</tabs>
+    <tabs>Warehouse__c</tabs>
+    <tabs>Warehouse_Stock_Dashboard</tabs>
+    <tabs>Stock_Transfer__c</tabs>
+    <tabs>Stock_Dashboard</tabs>
     <tabs>Day_Attendance__c</tabs>
     <tabs>standard-Account</tabs>
     <tabs>standard-report</tabs>
