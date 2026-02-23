@@ -76,22 +76,7 @@
         <viewAllRecords>false</viewAllRecords>
         <modifyAllRecords>false</modifyAllRecords>
     </objectPermissions>
-    <!-- Warehouse__c FLS (read-only) -->
-    <fieldPermissions>
-        <field>Warehouse__c.Warehouse_Code__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Warehouse__c.Warehouse_Type__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Warehouse__c.State__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
+    <!-- Warehouse__c FLS (read-only; required fields Warehouse_Code__c, Warehouse_Type__c, State__c excluded) -->
     <fieldPermissions>
         <field>Warehouse__c.City__c</field>
         <readable>true</readable>
@@ -102,12 +87,7 @@
         <readable>true</readable>
         <editable>false</editable>
     </fieldPermissions>
-    <!-- Warehouse_Stock__c FLS (read-only) -->
-    <fieldPermissions>
-        <field>Warehouse_Stock__c.Warehouse__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
+    <!-- Warehouse_Stock__c FLS (read-only; required fields excluded) -->
     <fieldPermissions>
         <field>Warehouse_Stock__c.Product__c</field>
         <readable>true</readable>

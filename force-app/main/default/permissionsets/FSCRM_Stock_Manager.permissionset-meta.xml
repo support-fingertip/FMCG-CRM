@@ -103,22 +103,7 @@
         <viewAllRecords>true</viewAllRecords>
         <modifyAllRecords>false</modifyAllRecords>
     </objectPermissions>
-    <!-- Warehouse__c FLS -->
-    <fieldPermissions>
-        <field>Warehouse__c.Warehouse_Code__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Warehouse__c.Warehouse_Type__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Warehouse__c.State__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
+    <!-- Warehouse__c FLS (required fields Warehouse_Code__c, Warehouse_Type__c, State__c excluded) -->
     <fieldPermissions>
         <field>Warehouse__c.City__c</field>
         <readable>true</readable>
@@ -154,12 +139,7 @@
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
-    <!-- Warehouse_Stock__c FLS (read-only, system-managed) -->
-    <fieldPermissions>
-        <field>Warehouse_Stock__c.Warehouse__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
+    <!-- Warehouse_Stock__c FLS (read-only, system-managed; required field Warehouse__c excluded) -->
     <fieldPermissions>
         <field>Warehouse_Stock__c.Product__c</field>
         <readable>true</readable>
@@ -220,12 +200,7 @@
         <readable>true</readable>
         <editable>false</editable>
     </fieldPermissions>
-    <!-- Stock_Transaction__c FLS (read-only, immutable audit) -->
-    <fieldPermissions>
-        <field>Stock_Transaction__c.Warehouse__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
+    <!-- Stock_Transaction__c FLS (read-only, immutable audit; required field Warehouse__c excluded) -->
     <fieldPermissions>
         <field>Stock_Transaction__c.Product__c</field>
         <readable>true</readable>
@@ -237,27 +212,7 @@
         <editable>false</editable>
     </fieldPermissions>
     <fieldPermissions>
-        <field>Stock_Transaction__c.Transaction_Type__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transaction__c.Direction__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transaction__c.Quantity__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
-    <fieldPermissions>
         <field>Stock_Transaction__c.Running_Balance__c</field>
-        <readable>true</readable>
-        <editable>false</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transaction__c.Transaction_Date__c</field>
         <readable>true</readable>
         <editable>false</editable>
     </fieldPermissions>
@@ -286,27 +241,7 @@
         <readable>true</readable>
         <editable>false</editable>
     </fieldPermissions>
-    <!-- Stock_Transfer__c FLS -->
-    <fieldPermissions>
-        <field>Stock_Transfer__c.Source_Warehouse__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transfer__c.Destination_Warehouse__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transfer__c.Status__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transfer__c.Transfer_Date__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
+    <!-- Stock_Transfer__c FLS (required fields Source/Destination_Warehouse__c, Status__c, Transfer_Date__c excluded) -->
     <fieldPermissions>
         <field>Stock_Transfer__c.Requested_By__c</field>
         <readable>true</readable>
@@ -322,14 +257,9 @@
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
-    <!-- Stock_Transfer_Line__c FLS -->
+    <!-- Stock_Transfer_Line__c FLS (required field Requested_Qty__c excluded) -->
     <fieldPermissions>
         <field>Stock_Transfer_Line__c.Product__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Transfer_Line__c.Requested_Qty__c</field>
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
@@ -358,12 +288,7 @@
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
-    <!-- Stock_Adjustment__c FLS -->
-    <fieldPermissions>
-        <field>Stock_Adjustment__c.Warehouse__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
+    <!-- Stock_Adjustment__c FLS (required fields Warehouse__c, Adjustment_Type__c, Status__c, Adjustment_Date__c, Adjustment_Qty__c, Reason__c excluded) -->
     <fieldPermissions>
         <field>Stock_Adjustment__c.Product__c</field>
         <readable>true</readable>
@@ -375,37 +300,12 @@
         <editable>true</editable>
     </fieldPermissions>
     <fieldPermissions>
-        <field>Stock_Adjustment__c.Adjustment_Type__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Adjustment__c.Status__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Adjustment__c.Adjustment_Date__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
         <field>Stock_Adjustment__c.System_Qty__c</field>
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
     <fieldPermissions>
         <field>Stock_Adjustment__c.Actual_Qty__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Adjustment__c.Adjustment_Qty__c</field>
-        <readable>true</readable>
-        <editable>true</editable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <field>Stock_Adjustment__c.Reason__c</field>
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
