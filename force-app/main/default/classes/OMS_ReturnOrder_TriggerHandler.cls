@@ -219,11 +219,15 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
      * @param approvedReturns The approved Return_Order__c records.
      */
     private void returnStockToWarehouse(List<Return_Order__c> approvedReturns) {
-        // Collect invoice IDs to look up warehouses
+        // Collect invoice IDs and invoice line IDs
         Set<Id> invoiceIds = new Set<Id>();
+        Set<Id> invoiceLineIds = new Set<Id>();
         for (Return_Order__c ret : approvedReturns) {
             if (ret.Invoice__c != null) {
                 invoiceIds.add(ret.Invoice__c);
+            }
+            if (ret.Invoice_Line__c != null) {
+                invoiceLineIds.add(ret.Invoice_Line__c);
             }
         }
 
@@ -243,6 +247,17 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
             return;
         }
 
+        // Query invoice lines to get product references
+        Map<Id, Invoice_Line__c> invoiceLineMap = new Map<Id, Invoice_Line__c>();
+        if (!invoiceLineIds.isEmpty()) {
+            invoiceLineMap = new Map<Id, Invoice_Line__c>([
+                SELECT Id, Product__c
+                FROM Invoice_Line__c
+                WHERE Id IN :invoiceLineIds
+                  AND Product__c != null
+            ]);
+        }
+
         // Group return items by warehouse
         Map<Id, List<INV_WarehouseStock_Service.StockLineItem>> itemsByWarehouse =
             new Map<Id, List<INV_WarehouseStock_Service.StockLineItem>>();
@@ -258,11 +273,15 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
                 continue;
             }
 
-            // Get product from invoice line
-            Id productId = ret.Product__c;
-            if (productId == null) {
+            // Get product from the related invoice line
+            if (ret.Invoice_Line__c == null) {
                 continue;
             }
+            Invoice_Line__c line = invoiceLineMap.get(ret.Invoice_Line__c);
+            if (line == null || line.Product__c == null) {
+                continue;
+            }
+            Id productId = line.Product__c;
 
             Id warehouseId = inv.Warehouse__c;
             if (!itemsByWarehouse.containsKey(warehouseId)) {
