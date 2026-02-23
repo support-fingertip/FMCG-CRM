@@ -219,6 +219,10 @@ export default class StockAdjustmentForm extends LightningElement {
         return this.selectedWarehouseId && this.selectedProductId;
     }
 
+    get isCheckStockDisabled() {
+        return !this.canCheckStock;
+    }
+
     get adjustmentDirection() {
         if (this.adjustmentQty > 0) return 'Add';
         if (this.adjustmentQty < 0) return 'Deduct';

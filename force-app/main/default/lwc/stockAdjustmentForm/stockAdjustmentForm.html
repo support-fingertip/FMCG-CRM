@@ -49,7 +49,7 @@
                     <lightning-input label="Batch Number" value={batchNumber} onchange={handleBatchChange} placeholder="Optional"></lightning-input>
                 </div>
                 <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-12 slds-grid slds-grid_vertical-align-end slds-p-bottom_x-small">
-                    <lightning-button label="Check Stock" variant="neutral" onclick={handleCheckStock} disabled={!canCheckStock} icon-name="utility:search"></lightning-button>
+                    <lightning-button label="Check Stock" variant="neutral" onclick={handleCheckStock} disabled={isCheckStockDisabled} icon-name="utility:search"></lightning-button>
                 </div>
             </div>
 
