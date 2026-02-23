@@ -6,7 +6,7 @@
     <filters>
         <field>Is_Zero_Stock__c</field>
         <operation>equals</operation>
-        <value>true</value>
+        <value>1</value>
     </filters>
     <columns>NAME</columns>
     <columns>Warehouse__c</columns>

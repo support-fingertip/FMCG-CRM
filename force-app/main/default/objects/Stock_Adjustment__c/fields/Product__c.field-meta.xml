@@ -7,5 +7,5 @@
     <relationshipLabel>Stock Adjustments</relationshipLabel>
     <relationshipName>Stock_Adjustments</relationshipName>
     <required>true</required>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

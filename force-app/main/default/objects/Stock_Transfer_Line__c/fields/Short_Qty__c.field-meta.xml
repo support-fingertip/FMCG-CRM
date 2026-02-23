@@ -5,5 +5,5 @@
     <type>Number</type>
     <precision>18</precision>
     <scale>0</scale>
-    <formula>IF(ISBLANK(Approved_Qty__c) OR ISBLANK(Received_Qty__c), 0, Approved_Qty__c - Received_Qty__c)</formula>
+    <formula>IF(OR(ISBLANK(Approved_Qty__c), ISBLANK(Received_Qty__c)), 0, Approved_Qty__c - Received_Qty__c)</formula>
 </CustomField>
