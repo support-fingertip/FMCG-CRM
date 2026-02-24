@@ -2,19 +2,22 @@
     <lightning-card title="Journey Plan Calendar" icon-name="standard:date_input">
         <div slot="actions">
             <div class="slds-grid slds-grid_vertical-align-center slds-gutters_xx-small">
-                <!-- PJP Status Badge -->
                 <div class="slds-col">
                     <span class={pjpStatusBadgeClass}>{pjpStatus}</span>
                 </div>
-                <div class="slds-col">
-                    <lightning-button
-                        variant="brand"
-                        label="Submit for Approval"
-                        icon-name="utility:approval"
-                        onclick={handleSubmitApproval}
-                        disabled={isApprovalDisabled}>
-                    </lightning-button>
-                </div>
+                <template if:true={noPlan}>
+                    <div class="slds-col">
+                        <lightning-button variant="brand" label="Generate Plan"
+                            icon-name="utility:magicwand" onclick={handleGeneratePlan}></lightning-button>
+                    </div>
+                </template>
+                <template if:true={hasPlan}>
+                    <div class="slds-col">
+                        <lightning-button variant="brand" label="Submit for Approval"
+                            icon-name="utility:approval" onclick={handleSubmitApproval}
+                            disabled={isApprovalDisabled}></lightning-button>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -25,44 +28,28 @@
                     <div class="slds-col">
                         <div class="slds-grid slds-gutters_xx-small slds-grid_vertical-align-center">
                             <div class="slds-col">
-                                <lightning-button-icon
-                                    icon-name="utility:chevronleft"
-                                    alternative-text="Previous"
-                                    onclick={handlePrevious}>
-                                </lightning-button-icon>
+                                <lightning-button-icon icon-name="utility:chevronleft"
+                                    alternative-text="Previous" onclick={handlePrevious}></lightning-button-icon>
                             </div>
                             <div class="slds-col">
                                 <h2 class="calendar-title">{calendarTitle}</h2>
                             </div>
                             <div class="slds-col">
-                                <lightning-button-icon
-                                    icon-name="utility:chevronright"
-                                    alternative-text="Next"
-                                    onclick={handleNext}>
-                                </lightning-button-icon>
+                                <lightning-button-icon icon-name="utility:chevronright"
+                                    alternative-text="Next" onclick={handleNext}></lightning-button-icon>
                             </div>
                             <div class="slds-col slds-m-left_small">
-                                <lightning-button
-                                    variant="neutral"
-                                    label="Today"
-                                    onclick={handleToday}
-                                    class="today-btn">
-                                </lightning-button>
+                                <lightning-button variant="neutral" label="Today"
+                                    onclick={handleToday} class="today-btn"></lightning-button>
                             </div>
                         </div>
                     </div>
                     <div class="slds-col">
                         <lightning-button-group>
-                            <lightning-button
-                                label="Week"
-                                variant={weekBtnVariant}
-                                onclick={switchToWeekView}>
-                            </lightning-button>
-                            <lightning-button
-                                label="Month"
-                                variant={monthBtnVariant}
-                                onclick={switchToMonthView}>
-                            </lightning-button>
+                            <lightning-button label="Week" variant={weekBtnVariant}
+                                onclick={switchToWeekView}></lightning-button>
+                            <lightning-button label="Month" variant={monthBtnVariant}
+                                onclick={switchToMonthView}></lightning-button>
                         </lightning-button-group>
                     </div>
                 </div>
@@ -74,153 +61,183 @@
                     <div class="slds-col slds-size_1-of-5">
                         <div class="stat-card">
                             <span class="stat-label">Total Planned</span>
-                            <span class="stat-value">{summaryStats.totalPlannedVisits}</span>
+                            <span class="stat-value stat-primary">{summaryStats.totalPlannedVisits}</span>
                         </div>
                     </div>
                     <div class="slds-col slds-size_1-of-5">
                         <div class="stat-card">
                             <span class="stat-label">Coverage %</span>
-                            <span class="stat-value">{summaryStats.coveragePercent}%</span>
+                            <span class="stat-value stat-success">{summaryStats.coveragePercent}%</span>
                         </div>
                     </div>
                     <div class="slds-col slds-size_1-of-5">
                         <div class="stat-card">
                             <span class="stat-label">Assigned Beats</span>
-                            <span class="stat-value">{summaryStats.assignedBeats}</span>
+                            <span class="stat-value stat-primary">{summaryStats.assignedBeats}</span>
                         </div>
                     </div>
                     <div class="slds-col slds-size_1-of-5">
                         <div class="stat-card">
                             <span class="stat-label">Total Outlets</span>
-                            <span class="stat-value">{summaryStats.totalOutlets}</span>
+                            <span class="stat-value stat-primary">{summaryStats.totalOutlets}</span>
                         </div>
                     </div>
                     <div class="slds-col slds-size_1-of-5">
                         <div class="stat-card">
                             <span class="stat-label">Avg Visits/Day</span>
-                            <span class="stat-value">{summaryStats.avgVisitsPerDay}</span>
+                            <span class="stat-value stat-primary">{summaryStats.avgVisitsPerDay}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- No Plan State -->
+            <template if:true={noPlan}>
+                <div class="no-plan-state">
+                    <lightning-icon icon-name="utility:event" size="large" class="no-plan-icon"></lightning-icon>
+                    <h3 class="slds-text-heading_small slds-m-top_medium">No Journey Plan for this period</h3>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                        Click "Generate Plan" to auto-create a plan from your beat assignments.
+                    </p>
+                </div>
+            </template>
+
             <!-- Calendar Grid - Week View -->
             <template if:true={weekView}>
-                <div class="calendar-grid week-grid">
-                    <!-- Day Headers -->
-                    <div class="slds-grid day-headers">
-                        <template for:each={weekDays} for:item="day">
-                            <div class={day.headerClass} key={day.dateKey}>
-                                <span class="day-name">{day.dayName}</span>
-                                <span class="day-date">{day.dateDisplay}</span>
-                            </div>
-                        </template>
-                    </div>
-                    <!-- Day Content -->
-                    <div class="slds-grid day-content-row">
-                        <template for:each={weekDays} for:item="day">
-                            <div class={day.cellClass} key={day.dateKey} data-date={day.dateKey} onclick={selectDay}>
-                                <template if:true={day.beats}>
-                                    <template for:each={day.beats} for:item="beat">
-                                        <div class="beat-chip" key={beat.id} style={beat.colorStyle}>
-                                            <span class="beat-name">{beat.name}</span>
-                                            <span class="beat-outlet-count">{beat.outletCount} outlets</span>
+                <template if:true={hasPlan}>
+                    <div class="calendar-grid week-grid">
+                        <div class="slds-grid day-headers">
+                            <template for:each={weekDays} for:item="day">
+                                <div class={day.headerClass} key={day.dateKey}>
+                                    <span class="day-name">{day.dayName}</span>
+                                    <span class="day-date">{day.dateDisplay}</span>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="slds-grid day-content-row">
+                            <template for:each={weekDays} for:item="day">
+                                <div class={day.cellClass} key={day.dateKey}
+                                    data-date={day.dateKey} onclick={selectDay}>
+                                    <template if:true={day.beats}>
+                                        <template for:each={day.beats} for:item="beat">
+                                            <div class="beat-chip" key={beat.planDayId} style={beat.colorStyle}>
+                                                <span class="beat-name">{beat.name}</span>
+                                                <span class="beat-outlet-count">{beat.outletCount} outlets</span>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:false={day.hasBeats}>
+                                        <div class="empty-day">
+                                            <span class="slds-text-body_small slds-text-color_weak">No plan</span>
                                         </div>
                                     </template>
-                                </template>
-                                <template if:false={day.beats}>
-                                    <div class="empty-day">
-                                        <span class="slds-text-body_small slds-text-color_weak">No plan</span>
-                                    </div>
-                                </template>
-                                <div class="day-visit-count">
-                                    <span class="visit-count-badge">{day.totalVisits} visits</span>
+                                    <template if:true={day.hasBeats}>
+                                        <div class="day-visit-count">
+                                            <span class="visit-count-badge">{day.totalVisits} visits</span>
+                                        </div>
+                                    </template>
                                 </div>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
                     </div>
-                </div>
+                </template>
             </template>
 
             <!-- Calendar Grid - Month View -->
             <template if:false={weekView}>
-                <div class="calendar-grid month-grid">
-                    <!-- Day Name Headers -->
-                    <div class="slds-grid month-headers">
-                        <div class="month-header-cell">Sun</div>
-                        <div class="month-header-cell">Mon</div>
-                        <div class="month-header-cell">Tue</div>
-                        <div class="month-header-cell">Wed</div>
-                        <div class="month-header-cell">Thu</div>
-                        <div class="month-header-cell">Fri</div>
-                        <div class="month-header-cell">Sat</div>
-                    </div>
-                    <!-- Month Weeks -->
-                    <template for:each={monthWeeks} for:item="week">
-                        <div class="slds-grid month-week-row" key={week.id}>
-                            <template for:each={week.days} for:item="day">
-                                <div class={day.monthCellClass} key={day.dateKey} data-date={day.dateKey} onclick={selectDay}>
-                                    <span class={day.dateNumberClass}>{day.dateNumber}</span>
-                                    <template if:true={day.beats}>
-                                        <template for:each={day.beats} for:item="beat">
-                                            <div class="month-beat-chip" key={beat.id} style={beat.colorStyle}>
-                                                <span class="month-beat-name">{beat.name}</span>
-                                                <span class="month-beat-count">{beat.outletCount}</span>
-                                            </div>
-                                        </template>
-                                    </template>
-                                </div>
-                            </template>
+                <template if:true={hasPlan}>
+                    <div class="calendar-grid month-grid">
+                        <div class="slds-grid month-headers">
+                            <div class="month-header-cell">Sun</div>
+                            <div class="month-header-cell">Mon</div>
+                            <div class="month-header-cell">Tue</div>
+                            <div class="month-header-cell">Wed</div>
+                            <div class="month-header-cell">Thu</div>
+                            <div class="month-header-cell">Fri</div>
+                            <div class="month-header-cell">Sat</div>
                         </div>
-                    </template>
-                </div>
+                        <template for:each={monthWeeks} for:item="week">
+                            <div class="slds-grid month-week-row" key={week.id}>
+                                <template for:each={week.days} for:item="day">
+                                    <div class={day.monthCellClass} key={day.dateKey}
+                                        data-date={day.dateKey} onclick={selectDay}>
+                                        <span class={day.dateNumberClass}>{day.dateNumber}</span>
+                                        <template if:true={day.beats}>
+                                            <template for:each={day.beats} for:item="beat">
+                                                <div class="month-beat-chip" key={beat.planDayId} style={beat.colorStyle}>
+                                                    <span class="month-beat-name">{beat.name}</span>
+                                                    <span class="month-beat-count">{beat.outletCount}</span>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
             </template>
 
-            <!-- Drag-Drop Instructions -->
-            <div class="drag-drop-info slds-m-top_medium">
-                <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                <span class="slds-text-body_small slds-text-color_weak">
-                    To reassign beats, click on a day to select it, then use the beat assignment panel below.
-                    Drag-and-drop support will be available in future releases.
-                </span>
-            </div>
-
-            <!-- Selected Day Detail -->
+            <!-- Selected Day Detail Panel -->
             <template if:true={selectedDayDetail}>
                 <div class="selected-day-panel slds-m-top_medium">
                     <h3 class="slds-text-heading_small slds-m-bottom_small">
-                        {selectedDayDetail.dateDisplay} - Beat Assignment
+                        {selectedDayDetail.dateDisplay}
                     </h3>
                     <div class="slds-grid slds-gutters">
+                        <!-- Assigned Beats -->
                         <div class="slds-col slds-size_1-of-2">
                             <h4 class="slds-text-title_caps slds-m-bottom_x-small">Assigned Beats</h4>
-                            <template if:true={selectedDayDetail.beats}>
+                            <template if:true={hasSelectedBeats}>
                                 <template for:each={selectedDayDetail.beats} for:item="beat">
-                                    <div class="assigned-beat-item" key={beat.id}>
+                                    <div class="assigned-beat-item" key={beat.planDayId}>
                                         <div class="beat-color-dot" style={beat.colorStyle}></div>
                                         <span class="beat-detail-name">{beat.name}</span>
                                         <span class="beat-detail-count">{beat.outletCount} outlets</span>
+                                        <template if:true={isPlanEditable}>
+                                            <lightning-button-icon icon-name="utility:close"
+                                                alternative-text="Remove" size="small" variant="bare-inverse"
+                                                data-plan-day-id={beat.planDayId}
+                                                onclick={handleRemoveBeat}
+                                                class="remove-beat-btn"></lightning-button-icon>
+                                        </template>
                                     </div>
                                 </template>
                             </template>
-                        </div>
-                        <div class="slds-col slds-size_1-of-2">
-                            <h4 class="slds-text-title_caps slds-m-bottom_x-small">Available Beats</h4>
-                            <template for:each={availableBeats} for:item="beat">
-                                <div class="available-beat-item" key={beat.id}
-                                    data-beat-id={beat.id} onclick={assignBeatToDay}>
-                                    <div class="beat-color-dot" style={beat.colorStyle}></div>
-                                    <span class="beat-detail-name">{beat.name}</span>
-                                    <span class="beat-detail-count">{beat.outletCount} outlets</span>
-                                    <lightning-icon icon-name="utility:add" size="xx-small" class="add-beat-icon"></lightning-icon>
-                                </div>
+                            <template if:false={hasSelectedBeats}>
+                                <p class="slds-text-body_small slds-text-color_weak slds-p-around_small">
+                                    No beats assigned to this day.
+                                </p>
                             </template>
                         </div>
+                        <!-- Available Beats -->
+                        <template if:true={isPlanEditable}>
+                            <div class="slds-col slds-size_1-of-2">
+                                <h4 class="slds-text-title_caps slds-m-bottom_x-small">Available Beats</h4>
+                                <template if:true={hasAvailableBeats}>
+                                    <template for:each={availableBeats} for:item="beat">
+                                        <div class="available-beat-item" key={beat.id}
+                                            data-beat-id={beat.id} onclick={assignBeatToDay}>
+                                            <div class="beat-color-dot" style={beat.colorStyle}></div>
+                                            <span class="beat-detail-name">{beat.name}</span>
+                                            <span class="beat-detail-count">{beat.outletCount} outlets</span>
+                                            <lightning-icon icon-name="utility:add" size="xx-small"
+                                                class="add-beat-icon"></lightning-icon>
+                                        </div>
+                                    </template>
+                                </template>
+                                <template if:false={hasAvailableBeats}>
+                                    <p class="slds-text-body_small slds-text-color_weak slds-p-around_small">
+                                        All beats are already assigned.
+                                    </p>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </template>
 
-            <!-- Spinner -->
+            <!-- Loading Spinner -->
             <template if:true={isLoading}>
                 <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
             </template>

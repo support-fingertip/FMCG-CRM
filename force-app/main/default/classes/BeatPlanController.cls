@@ -353,4 +353,200 @@ public with sharing class BeatPlanController {
             update plansToUpdate;
         }
     }
+
+    // ── Beat CRUD ───────────────────────────────────────────────────────────
+
+    @AuraEnabled
+    public static Beat__c saveBeat(Beat__c beat) {
+        try {
+            upsert beat;
+            return [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Id = :beat.Id
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void deleteBeat(Id beatId) {
+        try {
+            delete [SELECT Id FROM Beat__c WHERE Id = :beatId];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Beat Outlet Management ──────────────────────────────────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<Beat_Outlet__c> getBeatOutlets(Id beatId) {
+        return [
+            SELECT Id, Beat__c, Account__c, Account__r.Name,
+                   Is_Active__c, Visit_Sequence__c
+            FROM Beat_Outlet__c
+            WHERE Beat__c = :beatId
+            ORDER BY Visit_Sequence__c
+        ];
+    }
+
+    @AuraEnabled
+    public static List<Beat_Outlet__c> addBeatOutlets(Id beatId, List<Id> accountIds) {
+        try {
+            Set<Id> existingAccountIds = new Set<Id>();
+            for (Beat_Outlet__c bo : [SELECT Account__c FROM Beat_Outlet__c WHERE Beat__c = :beatId]) {
+                existingAccountIds.add(bo.Account__c);
+            }
+
+            List<AggregateResult> maxSeqResult = [
+                SELECT MAX(Visit_Sequence__c) maxVal
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId
+            ];
+            Integer nextSeq = 1;
+            if (maxSeqResult[0].get('maxVal') != null) {
+                nextSeq = ((Decimal)maxSeqResult[0].get('maxVal')).intValue() + 1;
+            }
+
+            List<Beat_Outlet__c> newOutlets = new List<Beat_Outlet__c>();
+            for (Id accId : accountIds) {
+                if (!existingAccountIds.contains(accId)) {
+                    newOutlets.add(new Beat_Outlet__c(
+                        Beat__c = beatId,
+                        Account__c = accId,
+                        Is_Active__c = true,
+                        Visit_Sequence__c = nextSeq++
+                    ));
+                }
+            }
+
+            if (!newOutlets.isEmpty()) {
+                insert newOutlets;
+            }
+
+            return [
+                SELECT Id, Beat__c, Account__c, Account__r.Name,
+                       Is_Active__c, Visit_Sequence__c
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId
+                ORDER BY Visit_Sequence__c
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void removeBeatOutlet(Id beatOutletId) {
+        try {
+            delete [SELECT Id FROM Beat_Outlet__c WHERE Id = :beatOutletId];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static List<Account> searchAccounts(String searchTerm) {
+        if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
+            return new List<Account>();
+        }
+        String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        return [
+            SELECT Id, Name, Type, BillingCity, BillingState
+            FROM Account
+            WHERE Name LIKE :searchPattern
+            ORDER BY Name
+            LIMIT 50
+        ];
+    }
+
+    // ── Calendar Day Persistence ────────────────────────────────────────────
+
+    @AuraEnabled
+    public static Journey_Plan_Day__c addBeatToCalendarDay(
+        Id journeyPlanId, Id beatId, String dayOfWeek, String weekNumber, Date planDate
+    ) {
+        try {
+            Journey_Plan__c plan = [
+                SELECT Id, Status__c FROM Journey_Plan__c WHERE Id = :journeyPlanId LIMIT 1
+            ];
+            if (plan.Status__c == 'Approved' || plan.Status__c == 'Submitted') {
+                throw new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+            }
+
+            Integer outletCount = [
+                SELECT COUNT() FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId AND Is_Active__c = true
+            ];
+
+            List<AggregateResult> maxSeq = [
+                SELECT MAX(Sequence_Order__c) maxVal
+                FROM Journey_Plan_Day__c
+                WHERE Journey_Plan__c = :journeyPlanId
+            ];
+            Integer nextSeq = 1;
+            if (maxSeq[0].get('maxVal') != null) {
+                nextSeq = ((Decimal)maxSeq[0].get('maxVal')).intValue() + 1;
+            }
+
+            Journey_Plan_Day__c planDay = new Journey_Plan_Day__c(
+                Journey_Plan__c = journeyPlanId,
+                Beat__c = beatId,
+                Day_of_Week__c = dayOfWeek,
+                Week_Number__c = weekNumber,
+                Plan_Date__c = planDate,
+                Planned_Outlets__c = outletCount,
+                Status__c = 'Planned',
+                Sequence_Order__c = nextSeq
+            );
+            insert planDay;
+
+            return [
+                SELECT Id, Day_of_Week__c, Week_Number__c, Beat__c,
+                       Beat__r.Name, Beat__r.Beat_Code__c, Beat__r.Total_Outlets__c,
+                       Planned_Outlets__c, Sequence_Order__c, Plan_Date__c, Notes__c,
+                       Journey_Plan__c
+                FROM Journey_Plan_Day__c
+                WHERE Id = :planDay.Id
+            ];
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void removePlanDay(Id planDayId) {
+        try {
+            Journey_Plan_Day__c day = [
+                SELECT Id, Journey_Plan__r.Status__c
+                FROM Journey_Plan_Day__c WHERE Id = :planDayId LIMIT 1
+            ];
+            if (day.Journey_Plan__r.Status__c == 'Approved' || day.Journey_Plan__r.Status__c == 'Submitted') {
+                throw new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+            }
+            delete day;
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Generate Default Plan ───────────────────────────────────────────────
+
+    @AuraEnabled
+    public static Id generateDefaultPlan(Id userId, Id territoryId, String month, String year) {
+        try {
+            return BPM_JourneyPlan_Service.generateDefaultPlan(userId, territoryId, month, year);
+        } catch (BPM_JourneyPlanServiceException e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

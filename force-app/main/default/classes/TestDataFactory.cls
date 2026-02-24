@@ -231,4 +231,39 @@ public class TestDataFactory {
         );
         return jp;
     }
+
+    public static Beat_Outlet__c createBeatOutlet(Id beatId, Id accountId) {
+        Beat_Outlet__c bo = new Beat_Outlet__c(
+            Beat__c = beatId,
+            Account__c = accountId,
+            Is_Active__c = true,
+            Visit_Sequence__c = 1
+        );
+        return bo;
+    }
+
+    public static Beat_Outlet__c createAndInsertBeatOutlet(Id beatId, Id accountId) {
+        Beat_Outlet__c bo = createBeatOutlet(beatId, accountId);
+        insert bo;
+        return bo;
+    }
+
+    public static Journey_Plan_Day__c createJourneyPlanDay(Id journeyPlanId, Id beatId, String dayOfWeek, Integer weekNumber) {
+        Journey_Plan_Day__c jpd = new Journey_Plan_Day__c(
+            Journey_Plan__c = journeyPlanId,
+            Beat__c = beatId,
+            Day_of_Week__c = dayOfWeek,
+            Week_Number__c = 'Week ' + String.valueOf(weekNumber),
+            Planned_Outlets__c = 4,
+            Sequence_Order__c = weekNumber,
+            Status__c = 'Planned'
+        );
+        return jpd;
+    }
+
+    public static Journey_Plan_Day__c createAndInsertJourneyPlanDay(Id journeyPlanId, Id beatId, String dayOfWeek, Integer weekNumber) {
+        Journey_Plan_Day__c jpd = createJourneyPlanDay(journeyPlanId, beatId, dayOfWeek, weekNumber);
+        insert jpd;
+        return jpd;
+    }
 }
