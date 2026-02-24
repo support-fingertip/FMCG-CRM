@@ -161,7 +161,7 @@ private class BeatPlanController_Test {
             Journey_Plan__c = jp.Id,
             Beat__c = beat.Id,
             Day_of_Week__c = 'Saturday',
-            Week_Number__c = '2',
+            Week_Number__c = 'Week 2',
             Planned_Outlets__c = 3
         ));
 
@@ -224,5 +224,251 @@ private class BeatPlanController_Test {
 
         System.assert(compliance >= 0 && compliance <= 100,
             'Compliance should be between 0 and 100');
+    }
+
+    // ── Beat CRUD Tests ──────────────────────────────────────────────
+
+    @isTest
+    static void testSaveBeatNew() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c LIMIT 1];
+
+        Beat__c newBeat = new Beat__c(
+            Name = 'Test New Beat',
+            Beat_Code__c = 'BEAT-NEW01',
+            Day_of_Week__c = 'Monday;Wednesday',
+            Frequency__c = 'Weekly',
+            Territory__c = territory.Id,
+            Is_Active__c = true,
+            Assigned_User__c = UserInfo.getUserId()
+        );
+
+        Test.startTest();
+        Beat__c saved = BeatPlanController.saveBeat(newBeat);
+        Test.stopTest();
+
+        System.assertNotEquals(null, saved.Id, 'Saved beat should have an Id');
+        System.assertEquals('Test New Beat', saved.Name);
+    }
+
+    @isTest
+    static void testSaveBeatUpdate() {
+        Beat__c existing = [SELECT Id, Name FROM Beat__c LIMIT 1];
+        existing.Name = 'Updated Beat Name';
+
+        Test.startTest();
+        Beat__c saved = BeatPlanController.saveBeat(existing);
+        Test.stopTest();
+
+        System.assertEquals('Updated Beat Name', saved.Name);
+    }
+
+    @isTest
+    static void testDeleteBeat() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c LIMIT 1];
+        Beat__c beatToDelete = new Beat__c(
+            Name = 'Delete Me',
+            Beat_Code__c = 'BEAT-DEL01',
+            Territory__c = territory.Id,
+            Is_Active__c = true
+        );
+        insert beatToDelete;
+
+        Test.startTest();
+        BeatPlanController.deleteBeat(beatToDelete.Id);
+        Test.stopTest();
+
+        List<Beat__c> remaining = [SELECT Id FROM Beat__c WHERE Id = :beatToDelete.Id];
+        System.assertEquals(0, remaining.size(), 'Beat should be deleted');
+    }
+
+    // ── Beat Outlet Management Tests ──────────────────────────────────
+
+    @isTest
+    static void testGetBeatOutlets() {
+        Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'BPC Beat 0' LIMIT 1];
+
+        Test.startTest();
+        List<Beat_Outlet__c> outlets = BeatPlanController.getBeatOutlets(beat.Id);
+        Test.stopTest();
+
+        System.assert(outlets.size() > 0, 'Should return outlets for the beat');
+    }
+
+    @isTest
+    static void testAddBeatOutlets() {
+        Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'BPC Beat 0' LIMIT 1];
+
+        // Create new accounts not already in this beat
+        List<Account> newAccounts = new List<Account>();
+        for (Integer i = 0; i < 3; i++) {
+            newAccounts.add(new Account(Name = 'New Outlet ' + i, Type = 'Retailer'));
+        }
+        insert newAccounts;
+
+        List<Id> newAccountIds = new List<Id>();
+        for (Account a : newAccounts) {
+            newAccountIds.add(a.Id);
+        }
+
+        Test.startTest();
+        List<Beat_Outlet__c> result = BeatPlanController.addBeatOutlets(beat.Id, newAccountIds);
+        Test.stopTest();
+
+        System.assert(result.size() >= 3, 'Should have at least the 3 new outlets');
+    }
+
+    @isTest
+    static void testAddBeatOutletsDuplicate() {
+        Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'BPC Beat 0' LIMIT 1];
+        // Get an account already added to this beat
+        Beat_Outlet__c existingOutlet = [SELECT Account__c FROM Beat_Outlet__c WHERE Beat__c = :beat.Id LIMIT 1];
+
+        Integer countBefore = [SELECT COUNT() FROM Beat_Outlet__c WHERE Beat__c = :beat.Id];
+
+        Test.startTest();
+        List<Beat_Outlet__c> result = BeatPlanController.addBeatOutlets(beat.Id, new List<Id>{ existingOutlet.Account__c });
+        Test.stopTest();
+
+        // Count should not increase because the account is already added
+        System.assertEquals(countBefore, result.size(), 'Should not add duplicate outlet');
+    }
+
+    @isTest
+    static void testRemoveBeatOutlet() {
+        Beat_Outlet__c outlet = [SELECT Id FROM Beat_Outlet__c LIMIT 1];
+
+        Test.startTest();
+        BeatPlanController.removeBeatOutlet(outlet.Id);
+        Test.stopTest();
+
+        List<Beat_Outlet__c> remaining = [SELECT Id FROM Beat_Outlet__c WHERE Id = :outlet.Id];
+        System.assertEquals(0, remaining.size(), 'Outlet should be removed');
+    }
+
+    // ── Account Search Tests ──────────────────────────────────────────
+
+    @isTest
+    static void testSearchAccounts() {
+        Test.startTest();
+        List<Account> results = BeatPlanController.searchAccounts('BPC Outlet');
+        Test.stopTest();
+
+        System.assert(results.size() > 0, 'Should find accounts matching search term');
+    }
+
+    @isTest
+    static void testSearchAccountsTooShort() {
+        Test.startTest();
+        List<Account> results = BeatPlanController.searchAccounts('B');
+        Test.stopTest();
+
+        System.assertEquals(0, results.size(), 'Should return empty for short search term');
+    }
+
+    @isTest
+    static void testSearchAccountsBlank() {
+        Test.startTest();
+        List<Account> results = BeatPlanController.searchAccounts('');
+        Test.stopTest();
+
+        System.assertEquals(0, results.size(), 'Should return empty for blank search');
+    }
+
+    // ── Calendar Day Persistence Tests ────────────────────────────────
+
+    @isTest
+    static void testAddBeatToCalendarDay() {
+        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'BPC Beat 0' LIMIT 1];
+
+        Test.startTest();
+        Journey_Plan_Day__c result = BeatPlanController.addBeatToCalendarDay(
+            jp.Id, beat.Id, 'Monday', 'Week 2', Date.today()
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result.Id, 'Plan day should be created');
+        System.assertEquals('Monday', result.Day_of_Week__c);
+        System.assertEquals(beat.Id, result.Beat__c);
+    }
+
+    @isTest
+    static void testAddBeatToCalendarDayLockedPlan() {
+        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        jp.Status__c = 'Submitted';
+        update jp;
+        jp.Status__c = 'Approved';
+        update jp;
+
+        Beat__c beat = [SELECT Id FROM Beat__c LIMIT 1];
+
+        Test.startTest();
+        try {
+            BeatPlanController.addBeatToCalendarDay(jp.Id, beat.Id, 'Monday', 'Week 1', Date.today());
+            System.assert(false, 'Should throw exception for locked plan');
+        } catch (AuraHandledException e) {
+            System.assert(e.getMessage().contains('submitted or approved'),
+                'Error should mention plan is locked');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testRemovePlanDay() {
+        Journey_Plan_Day__c planDay = [SELECT Id FROM Journey_Plan_Day__c LIMIT 1];
+
+        Test.startTest();
+        BeatPlanController.removePlanDay(planDay.Id);
+        Test.stopTest();
+
+        List<Journey_Plan_Day__c> remaining = [SELECT Id FROM Journey_Plan_Day__c WHERE Id = :planDay.Id];
+        System.assertEquals(0, remaining.size(), 'Plan day should be removed');
+    }
+
+    @isTest
+    static void testRemovePlanDayLockedPlan() {
+        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        jp.Status__c = 'Submitted';
+        update jp;
+        jp.Status__c = 'Approved';
+        update jp;
+
+        Journey_Plan_Day__c planDay = [SELECT Id FROM Journey_Plan_Day__c WHERE Journey_Plan__c = :jp.Id LIMIT 1];
+
+        Test.startTest();
+        try {
+            BeatPlanController.removePlanDay(planDay.Id);
+            System.assert(false, 'Should throw exception for locked plan');
+        } catch (AuraHandledException e) {
+            System.assert(e.getMessage().contains('submitted or approved'),
+                'Error should mention plan is locked');
+        }
+        Test.stopTest();
+    }
+
+    // ── Generate Default Plan Test ────────────────────────────────────
+
+    @isTest
+    static void testGenerateDefaultPlan() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c LIMIT 1];
+
+        // Use a future month so there's no existing plan for it
+        Date futureDate = Date.today().addMonths(2);
+        String monthName = new List<String>{
+            'January','February','March','April','May','June',
+            'July','August','September','October','November','December'
+        }[futureDate.month() - 1];
+        String yearStr = String.valueOf(futureDate.year());
+
+        Test.startTest();
+        Id planId = BeatPlanController.generateDefaultPlan(
+            UserInfo.getUserId(), territory.Id, monthName, yearStr
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, planId, 'Should return a plan Id');
+        Journey_Plan__c plan = [SELECT Id, Month__c, Year__c FROM Journey_Plan__c WHERE Id = :planId];
+        System.assertEquals(monthName, plan.Month__c);
+        System.assertEquals(yearStr, plan.Year__c);
     }
 }

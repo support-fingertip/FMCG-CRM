@@ -180,14 +180,9 @@ public class TestDataFactory {
     public static Target__c createTarget(Id userId, Id territoryId, String month, String year, String type, Decimal value) {
         Target__c target = new Target__c(
             Salesperson__c = userId,
-            User__c = userId,
             Territory__c = territoryId,
             Period_Month__c = month,
             Period_Year__c = year,
-            Month__c = month,
-            Year__c = year,
-            Period_Start__c = Date.today().toStartOfMonth(),
-            Period_End__c = Date.today().toStartOfMonth().addMonths(1).addDays(-1),
             Target_Type__c = type,
             Target_Value__c = value,
             Achievement_Value__c = 0,
@@ -258,7 +253,7 @@ public class TestDataFactory {
             Journey_Plan__c = journeyPlanId,
             Beat__c = beatId,
             Day_of_Week__c = dayOfWeek,
-            Week_Number__c = String.valueOf(weekNumber),
+            Week_Number__c = 'Week ' + String.valueOf(weekNumber),
             Planned_Outlets__c = 4,
             Sequence_Order__c = weekNumber,
             Status__c = 'Planned'

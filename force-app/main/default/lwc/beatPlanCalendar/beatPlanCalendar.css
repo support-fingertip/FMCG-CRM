@@ -322,14 +322,30 @@
     flex-shrink: 0;
 }
 
-/* Drag-Drop Info */
-.drag-drop-info {
-    background: #f0f7ff;
-    border: 1px solid #d0e5fb;
-    border-radius: 6px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
+/* No Plan State */
+.no-plan-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #706e6b;
+}
+
+.no-plan-icon {
+    color: #c9c7c5;
+}
+
+/* Stat Value Variants */
+.stat-primary {
+    color: var(--brand-primary);
+}
+
+.stat-success {
+    color: var(--success-color);
+}
+
+/* Remove Beat Button */
+.remove-beat-btn {
+    margin-left: 8px;
+    flex-shrink: 0;
 }
 
 /* Selected Day Panel */

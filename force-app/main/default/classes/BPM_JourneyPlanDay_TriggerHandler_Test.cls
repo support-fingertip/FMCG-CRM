@@ -28,7 +28,7 @@ private class BPM_JourneyPlanDay_TriggerHandler_Test {
             Journey_Plan__c = jp.Id,
             Beat__c = beat.Id,
             Day_of_Week__c = 'Monday',
-            Week_Number__c = '1',
+            Week_Number__c = 'Week 1',
             Planned_Outlets__c = 5
         );
         insert jpd;
@@ -52,7 +52,7 @@ private class BPM_JourneyPlanDay_TriggerHandler_Test {
                 Journey_Plan__c = jp.Id,
                 Beat__c = beat.Id,
                 Day_of_Week__c = dayNames[i],
-                Week_Number__c = '1',
+                Week_Number__c = 'Week 1',
                 Planned_Outlets__c = 4
             ));
         }
@@ -73,7 +73,7 @@ private class BPM_JourneyPlanDay_TriggerHandler_Test {
             Journey_Plan__c = jp.Id,
             Beat__c = beat.Id,
             Day_of_Week__c = 'Monday',
-            Week_Number__c = '1',
+            Week_Number__c = 'Week 1',
             Planned_Outlets__c = 5
         );
         insert jpd;
