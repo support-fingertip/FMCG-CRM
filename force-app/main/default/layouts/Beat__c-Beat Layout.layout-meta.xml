@@ -104,7 +104,7 @@
         <fields>Account__c</fields>
         <fields>Is_Active__c</fields>
         <fields>Visit_Sequence__c</fields>
-        <relatedList>Beat_Outlets__r</relatedList>
+        <relatedList>Beat_Outlet__c.Beat__c</relatedList>
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>
@@ -112,7 +112,7 @@
         <fields>Day_of_Week__c</fields>
         <fields>Plan_Date__c</fields>
         <fields>Status__c</fields>
-        <relatedList>Journey_Plan_Days__r</relatedList>
+        <relatedList>Journey_Plan_Day__c.Beat__c</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>

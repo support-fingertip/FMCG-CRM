@@ -128,7 +128,7 @@
         <fields>Visited_Outlets__c</fields>
         <fields>Status__c</fields>
         <fields>Plan_Date__c</fields>
-        <relatedList>Journey_Plan_Days__r</relatedList>
+        <relatedList>Journey_Plan_Day__c.Journey_Plan__c</relatedList>
         <sortField>Day_of_Week__c</sortField>
         <sortOrder>Asc</sortOrder>
     </relatedLists>
