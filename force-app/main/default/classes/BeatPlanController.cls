@@ -22,7 +22,7 @@ public with sharing class BeatPlanController {
      * @param journeyPlanId The Journey_Plan__c record Id from the record page.
      * @return JourneyPlanResult wrapper.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static JourneyPlanResult getJourneyPlanById(Id journeyPlanId) {
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
@@ -47,10 +47,10 @@ public with sharing class BeatPlanController {
             SELECT Id, Day_of_Week__c, Week_Number__c, Beat__c,
                    Beat__r.Name, Beat__r.Beat_Code__c, Beat__r.Total_Outlets__c,
                    Planned_Outlets__c, Sequence_Order__c, Notes__c,
-                   Journey_Plan__c
+                   Plan_Date__c, Journey_Plan__c
             FROM Journey_Plan_Day__c
             WHERE Journey_Plan__c = :journeyPlanId
-            ORDER BY Week_Number__c, Sequence_Order__c
+            ORDER BY Plan_Date__c, Sequence_Order__c
         ];
         return result;
     }
@@ -64,7 +64,7 @@ public with sharing class BeatPlanController {
      * @param year   The four-digit year string (e.g. '2026').
      * @return JourneyPlanResult wrapper, or empty wrapper if no plan exists.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static JourneyPlanResult getJourneyPlan(Id userId, String month, String year) {
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
@@ -92,10 +92,10 @@ public with sharing class BeatPlanController {
             SELECT Id, Day_of_Week__c, Week_Number__c, Beat__c,
                    Beat__r.Name, Beat__r.Beat_Code__c, Beat__r.Total_Outlets__c,
                    Planned_Outlets__c, Sequence_Order__c, Notes__c,
-                   Journey_Plan__c
+                   Plan_Date__c, Journey_Plan__c
             FROM Journey_Plan_Day__c
             WHERE Journey_Plan__c = :plans[0].Id
-            ORDER BY Week_Number__c, Sequence_Order__c
+            ORDER BY Plan_Date__c, Sequence_Order__c
         ];
         return result;
     }
