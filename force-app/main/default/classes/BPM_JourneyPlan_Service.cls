@@ -78,7 +78,7 @@ public without sharing class BPM_JourneyPlan_Service {
             WHERE Territory__c = :territoryId
               AND Assigned_User__c = :userId
               AND Is_Active__c = true
-            ORDER BY Day_of_Week__c, Sequence__c
+            ORDER BY Sequence__c NULLS LAST, Name
         ];
 
         if (beats.isEmpty()) {
