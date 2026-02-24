@@ -206,11 +206,20 @@ export default class BeatPlanCalendar extends LightningElement {
                     name: beat.Name,
                     code: beat.Beat_Code__c,
                     outletCount: beat.Total_Outlets__c || 0,
+                    territoryId: beat.Territory__c || null,
                     territory: beat.Territory__r?.Name || '',
                     colorStyle: 'background-color: ' + color,
                     color
                 };
             });
+
+            // Resolve territory from beats when no journey plan has set it yet
+            if (!this.resolvedTerritoryId && this.allBeats.length > 0) {
+                const firstWithTerritory = this.allBeats.find(b => b.territoryId);
+                if (firstWithTerritory) {
+                    this.resolvedTerritoryId = firstWithTerritory.territoryId;
+                }
+            }
         } catch (error) {
             console.error('Error loading beats:', error);
         }

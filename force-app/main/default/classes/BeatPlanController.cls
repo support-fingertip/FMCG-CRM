@@ -27,6 +27,7 @@ public with sharing class BeatPlanController {
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
                    Salesperson__r.Name, Total_Planned_Visits__c,
+                   Territory__c, Territory__r.Name,
                    Effective_From__c, Effective_To__c,
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
@@ -68,6 +69,7 @@ public with sharing class BeatPlanController {
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
                    Salesperson__r.Name, Total_Planned_Visits__c,
+                   Territory__c, Territory__r.Name,
                    Effective_From__c, Effective_To__c,
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
