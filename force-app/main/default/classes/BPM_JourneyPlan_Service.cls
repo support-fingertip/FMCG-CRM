@@ -39,7 +39,7 @@ public without sharing class BPM_JourneyPlan_Service {
     ) {
         if (userId == null || territoryId == null ||
             String.isBlank(month) || String.isBlank(year)) {
-            throw new TriggerHandlerException(
+            throw new BPM_JourneyPlanServiceException(
                 'All parameters (userId, territoryId, month, year) are required.'
             );
         }
@@ -51,7 +51,7 @@ public without sharing class BPM_JourneyPlan_Service {
         List<Journey_Plan__c> existingPlans = [
             SELECT Id
             FROM Journey_Plan__c
-            WHERE User__c = :userId
+            WHERE Salesperson__c = :userId
               AND Territory__c = :territoryId
               AND Month__c = :month
               AND Year__c = :year
@@ -60,14 +60,14 @@ public without sharing class BPM_JourneyPlan_Service {
         ];
 
         if (!existingPlans.isEmpty()) {
-            throw new TriggerHandlerException(
+            throw new BPM_JourneyPlanServiceException(
                 'A journey plan already exists for this user, territory, month, and year.'
             );
         }
 
         // Fetch beat assignments for the user in this territory
         List<Beat__c> beats = [
-            SELECT Id, Name, Beat_Day__c, Beat_Frequency__c,
+            SELECT Id, Name, Day_of_Week__c, Frequency__c,
                    Territory__c, Sequence__c,
                    (SELECT Id, Account__c, Account__r.Name, Visit_Sequence__c
                     FROM Beat_Outlets__r
@@ -75,20 +75,20 @@ public without sharing class BPM_JourneyPlan_Service {
                     ORDER BY Visit_Sequence__c ASC)
             FROM Beat__c
             WHERE Territory__c = :territoryId
-              AND Assigned_User__c = :userId
+              AND Assigned_Salesperson__c = :userId
               AND Is_Active__c = true
-            ORDER BY Beat_Day__c, Sequence__c
+            ORDER BY Day_of_Week__c, Sequence__c
         ];
 
         if (beats.isEmpty()) {
-            throw new TriggerHandlerException(
+            throw new BPM_JourneyPlanServiceException(
                 'No active beat assignments found for this user in the specified territory.'
             );
         }
 
         // Create the journey plan header
         Journey_Plan__c plan = new Journey_Plan__c(
-            User__c       = userId,
+            Salesperson__c       = userId,
             Territory__c  = territoryId,
             Month__c      = month,
             Year__c       = year,
@@ -105,9 +105,9 @@ public without sharing class BPM_JourneyPlan_Service {
         // Build a map of day-of-week -> beats
         Map<String, List<Beat__c>> beatsByDay = new Map<String, List<Beat__c>>();
         for (Beat__c beat : beats) {
-            if (String.isNotBlank(beat.Beat_Day__c)) {
+            if (String.isNotBlank(beat.Day_of_Week__c)) {
                 // Handle multi-day assignments (comma-separated)
-                List<String> days = beat.Beat_Day__c.split(',');
+                List<String> days = beat.Day_of_Week__c.split(',');
                 for (String day : days) {
                     String trimmedDay = day.trim();
                     if (!beatsByDay.containsKey(trimmedDay)) {
@@ -135,7 +135,7 @@ public without sharing class BPM_JourneyPlan_Service {
 
             for (Beat__c beat : daysBeats) {
                 // Check frequency (weekly, fortnightly, monthly)
-                if (!shouldIncludeForFrequency(beat.Beat_Frequency__c, dayNum, daysInMonth)) {
+                if (!shouldIncludeForFrequency(beat.Frequency__c, dayNum, daysInMonth)) {
                     continue;
                 }
 
@@ -239,7 +239,7 @@ public without sharing class BPM_JourneyPlan_Service {
             return monthNames.get(lowerMonth);
         }
 
-        throw new TriggerHandlerException('Invalid month value: ' + month);
+        throw new BPM_JourneyPlanServiceException('Invalid month value: ' + month);
     }
 
     /**

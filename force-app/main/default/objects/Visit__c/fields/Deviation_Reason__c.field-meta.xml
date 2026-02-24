@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Deviation_Reason__c</fullName>
+    <description>Detailed reason for deviating from the planned journey. Supports longer descriptions for compliance tracking.</description>
     <label>Deviation Reason</label>
-    <type>TextArea</type>
+    <length>1000</length>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
     <required>false</required>
 </CustomField>

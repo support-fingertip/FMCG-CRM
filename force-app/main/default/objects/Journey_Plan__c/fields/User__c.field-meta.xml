@@ -2,6 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>User__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
+    <description>DEPRECATED: Use Salesperson__c instead. This field is kept for backward compatibility and is auto-synced from Salesperson__c by the Journey Plan trigger.</description>
     <label>User</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>Journey Plans</relationshipLabel>

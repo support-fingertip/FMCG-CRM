@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Beat_Frequency__c</fullName>
+    <description>DEPRECATED: Use Frequency__c instead. This field is kept for backward compatibility and is auto-synced from Frequency__c by the Beat trigger.</description>
     <label>Beat Frequency</label>
     <required>false</required>
     <trackTrending>false</trackTrending>
