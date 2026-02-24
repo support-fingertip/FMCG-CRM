@@ -46,6 +46,7 @@ public without sharing class BPM_JourneyPlan_Service {
 
         Integer monthInt = parseMonth(month);
         Integer yearInt = Integer.valueOf(year);
+        String monthName = normalizeMonthName(monthInt);
 
         // Validate no existing plan for this user/territory/month/year
         List<Journey_Plan__c> existingPlans = [
@@ -53,7 +54,7 @@ public without sharing class BPM_JourneyPlan_Service {
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
               AND Territory__c = :territoryId
-              AND Month__c = :month
+              AND Month__c = :monthName
               AND Year__c = :year
               AND Status__c != 'Cancelled'
             LIMIT 1
@@ -90,7 +91,7 @@ public without sharing class BPM_JourneyPlan_Service {
         Journey_Plan__c plan = new Journey_Plan__c(
             Salesperson__c       = userId,
             Territory__c  = territoryId,
-            Month__c      = month,
+            Month__c      = monthName,
             Year__c       = year,
             Status__c     = 'Draft',
             Plan_Date__c  = Date.today()
@@ -106,8 +107,8 @@ public without sharing class BPM_JourneyPlan_Service {
         Map<String, List<Beat__c>> beatsByDay = new Map<String, List<Beat__c>>();
         for (Beat__c beat : beats) {
             if (String.isNotBlank(beat.Day_of_Week__c)) {
-                // Handle multi-day assignments (comma-separated)
-                List<String> days = beat.Day_of_Week__c.split(',');
+                // Handle multi-day assignments (semicolon-separated multi-select picklist)
+                List<String> days = beat.Day_of_Week__c.split(';');
                 for (String day : days) {
                     String trimmedDay = day.trim();
                     if (!beatsByDay.containsKey(trimmedDay)) {
@@ -119,6 +120,7 @@ public without sharing class BPM_JourneyPlan_Service {
         }
 
         // Iterate through each day of the month
+        Integer sequenceOrder = 0;
         for (Integer dayNum = 1; dayNum <= daysInMonth; dayNum++) {
             Date currentDate = Date.newInstance(yearInt, monthInt, dayNum);
             String dayOfWeek = getDayOfWeek(currentDate);
@@ -133,12 +135,15 @@ public without sharing class BPM_JourneyPlan_Service {
                 continue;
             }
 
+            String weekNumber = getWeekNumber(dayNum);
+
             for (Beat__c beat : daysBeats) {
-                // Check frequency (weekly, fortnightly, monthly)
+                // Check frequency (daily, weekly, bi-weekly, monthly)
                 if (!shouldIncludeForFrequency(beat.Frequency__c, dayNum, daysInMonth)) {
                     continue;
                 }
 
+                sequenceOrder++;
                 Journey_Plan_Day__c planDay = new Journey_Plan_Day__c(
                     Journey_Plan__c     = plan.Id,
                     Plan_Date__c        = currentDate,
@@ -148,7 +153,9 @@ public without sharing class BPM_JourneyPlan_Service {
                     Planned_Outlets__c  = beat.Beat_Outlets__r != null
                         ? beat.Beat_Outlets__r.size() : 0,
                     Status__c           = 'Planned',
-                    Sequence__c         = beat.Sequence__c
+                    Sequence__c         = beat.Sequence__c,
+                    Week_Number__c      = weekNumber,
+                    Sequence_Order__c   = sequenceOrder
                 );
                 planDays.add(planDay);
             }
@@ -260,12 +267,12 @@ public without sharing class BPM_JourneyPlan_Service {
         Integer dayOfMonth,
         Integer daysInMonth
     ) {
-        if (String.isBlank(frequency) || frequency == 'Weekly') {
-            return true; // Weekly: include every occurrence
+        if (String.isBlank(frequency) || frequency == 'Daily' || frequency == 'Weekly') {
+            return true; // Daily/Weekly: include every occurrence
         }
 
-        if (frequency == 'Fortnightly') {
-            // Include on 1st and 3rd occurrence of the day in the month
+        if (frequency == 'Bi-Weekly') {
+            // Include in the 1st and 3rd weeks only
             return dayOfMonth <= 14;
         }
 
@@ -275,5 +282,28 @@ public without sharing class BPM_JourneyPlan_Service {
         }
 
         return true;
+    }
+
+    /**
+     * @description Returns the week number label ("Week 1" through "Week 4")
+     *              for a given day of the month.
+     */
+    private static String getWeekNumber(Integer dayOfMonth) {
+        if (dayOfMonth <= 7) return 'Week 1';
+        if (dayOfMonth <= 14) return 'Week 2';
+        if (dayOfMonth <= 21) return 'Week 3';
+        return 'Week 4';
+    }
+
+    /**
+     * @description Converts a month integer (1-12) to the standard picklist
+     *              name (e.g. "January").
+     */
+    private static String normalizeMonthName(Integer monthInt) {
+        List<String> names = new List<String>{
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        };
+        return names[monthInt - 1];
     }
 }
