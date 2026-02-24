@@ -2016,11 +2016,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Price_Change_Log__c.Price_List__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Price_Change_Log__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
