@@ -75,7 +75,7 @@ public without sharing class BPM_JourneyPlan_Service {
                     ORDER BY Visit_Sequence__c ASC)
             FROM Beat__c
             WHERE Territory__c = :territoryId
-              AND Assigned_Salesperson__c = :userId
+              AND Assigned_User__c = :userId
               AND Is_Active__c = true
             ORDER BY Day_of_Week__c, Sequence__c
         ];
