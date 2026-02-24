@@ -66,6 +66,11 @@ public without sharing class BPM_JourneyPlan_Service {
             );
         }
 
+        // Fetch user and territory names for the plan name
+        String userName = [SELECT Name FROM User WHERE Id = :userId LIMIT 1].Name;
+        String territoryName = [SELECT Name FROM Territory_Master__c WHERE Id = :territoryId LIMIT 1].Name;
+        String planName = monthName + ' ' + year + ' - ' + userName + ' - ' + territoryName;
+
         // Fetch beat assignments for the user in this territory
         List<Beat__c> beats = [
             SELECT Id, Name, Day_of_Week__c, Frequency__c,
@@ -89,6 +94,7 @@ public without sharing class BPM_JourneyPlan_Service {
 
         // Create the journey plan header
         Journey_Plan__c plan = new Journey_Plan__c(
+            Name          = planName,
             Salesperson__c       = userId,
             Territory__c  = territoryId,
             Month__c      = monthName,
