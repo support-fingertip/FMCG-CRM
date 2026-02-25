@@ -3,6 +3,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import Id from '@salesforce/user/Id';
 
 import getBeatsForUser from '@salesforce/apex/BeatPlanController.getBeatsForUser';
+import getBeatsForExecutive from '@salesforce/apex/BeatPlanController.getBeatsForExecutive';
 import saveBeat from '@salesforce/apex/BeatPlanController.saveBeat';
 import deleteBeat from '@salesforce/apex/BeatPlanController.deleteBeat';
 import getBeatOutlets from '@salesforce/apex/BeatPlanController.getBeatOutlets';
@@ -177,7 +178,7 @@ export default class BeatManager extends LightningElement {
     async loadBeats() {
         this.isLoading = true;
         try {
-            const result = await getBeatsForUser({ userId: this.selectedExecutiveId });
+            const result = await getBeatsForExecutive({ userId: this.selectedExecutiveId });
             this.beats = (result || []).map(beat => ({
                 ...beat,
                 daysDisplay: beat.Day_of_Week__c ? beat.Day_of_Week__c.replace(/;/g, ', ') : '-',

@@ -192,6 +192,25 @@ public with sharing class BeatPlanController {
         ];
     }
 
+    /**
+     * @description Retrieves beats assigned to a specific user (by Assigned_User__c).
+     *              Used by the Executive picker to show a user's assigned beats.
+     * @param userId The User Id to filter by Assigned_User__c.
+     * @return List of Beat__c records assigned to the user.
+     */
+    @AuraEnabled
+    public static List<Beat__c> getBeatsForExecutive(Id userId) {
+        return [
+            SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                   Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                   Territory__c, Territory__r.Name, Assigned_User__c,
+                   Is_Active__c, Sequence__c
+            FROM Beat__c
+            WHERE Assigned_User__c = :userId
+            ORDER BY Territory__r.Name, Beat_Code__c
+        ];
+    }
+
     // ── Submit for Approval ───────────────────────────────────────────────────
 
     @AuraEnabled
@@ -364,6 +383,9 @@ public with sharing class BeatPlanController {
     @AuraEnabled
     public static Beat__c saveBeat(Beat__c beat) {
         try {
+            if (beat.Assigned_User__c != null) {
+                beat.OwnerId = beat.Assigned_User__c;
+            }
             upsert beat;
             return [
                 SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
@@ -478,6 +500,7 @@ public with sharing class BeatPlanController {
                 LIMIT 1
             ];
 
+            Id assignTo = newAssignedUserId != null ? newAssignedUserId : source.Assigned_User__c;
             Beat__c cloned = new Beat__c(
                 Name = String.isNotBlank(newBeatName) ? newBeatName : source.Name + ' (Copy)',
                 Beat_Code__c = String.isNotBlank(newBeatCode) ? newBeatCode : source.Beat_Code__c + '-COPY',
@@ -486,7 +509,8 @@ public with sharing class BeatPlanController {
                 Territory__c = source.Territory__c,
                 Pincode_Cluster__c = source.Pincode_Cluster__c,
                 Description__c = source.Description__c,
-                Assigned_User__c = newAssignedUserId != null ? newAssignedUserId : source.Assigned_User__c,
+                Assigned_User__c = assignTo,
+                OwnerId = assignTo != null ? assignTo : UserInfo.getUserId(),
                 Sequence__c = source.Sequence__c,
                 Is_Active__c = true
             );
@@ -554,6 +578,7 @@ public with sharing class BeatPlanController {
             ];
 
             beat.Assigned_User__c = newUserId;
+            beat.OwnerId = newUserId;
             update beat;
 
             // Count affected Journey Plan Days (only in Draft/Active plans)
