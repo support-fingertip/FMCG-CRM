@@ -107,7 +107,7 @@ public with sharing class BeatPlanController {
      * @param territoryId The Territory_Master__c Id.
      * @return List of Beat__c records.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Beat__c> getBeatsForTerritory(Id territoryId) {
         return [
             SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
@@ -126,7 +126,7 @@ public with sharing class BeatPlanController {
      * @param userId The User (Salesperson) Id.
      * @return List of Beat__c records from the user's territory.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Beat__c> getBeatsForUser(Id userId) {
         // First try to find territory from user's most recent Journey Plan
         List<Journey_Plan__c> plans = [
@@ -386,7 +386,7 @@ public with sharing class BeatPlanController {
 
     // ── Beat Outlet Management ──────────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Beat_Outlet__c> getBeatOutlets(Id beatId) {
         return [
             SELECT Id, Beat__c, Account__c, Account__r.Name,
