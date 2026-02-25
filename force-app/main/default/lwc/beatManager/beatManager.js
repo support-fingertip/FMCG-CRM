@@ -9,6 +9,8 @@ import getBeatOutlets from '@salesforce/apex/BeatPlanController.getBeatOutlets';
 import addBeatOutlets from '@salesforce/apex/BeatPlanController.addBeatOutlets';
 import removeBeatOutlet from '@salesforce/apex/BeatPlanController.removeBeatOutlet';
 import getAccountsByTerritory from '@salesforce/apex/BeatPlanController.getAccountsByTerritory';
+import cloneBeat from '@salesforce/apex/BeatPlanController.cloneBeat';
+import reassignBeat from '@salesforce/apex/BeatPlanController.reassignBeat';
 
 const DAY_OPTIONS = [
     { label: 'Monday', value: 'Monday' },
@@ -30,6 +32,7 @@ const PAGE_SIZE = 10;
 
 export default class BeatManager extends LightningElement {
     currentUserId = Id;
+    @track selectedExecutiveId = Id;
     @track beats = [];
     @track selectedBeat = null;
     @track beatOutlets = [];
@@ -38,14 +41,24 @@ export default class BeatManager extends LightningElement {
     isLoading = false;
     showBeatForm = false;
     accountSearchTerm = '';
+    beatSearchTerm = '';
+
+    // Clone modal state
+    showCloneModal = false;
+    @track cloneForm = { Name: '', Beat_Code__c: '', Assigned_User__c: null };
+
+    // Reassign modal state
+    showReassignModal = false;
+    reassignUserId = null;
 
     // Pagination state
     accountPageNumber = 1;
     accountTotalPages = 1;
     accountTotalCount = 0;
 
-    // Debounce timer
+    // Debounce timers
     _searchTimer;
+    _beatSearchTimer;
 
     // Beat form fields
     @track beatForm = {
@@ -67,6 +80,26 @@ export default class BeatManager extends LightningElement {
 
     get formTitle() {
         return this.beatForm.Id ? 'Edit Beat' : 'New Beat';
+    }
+
+    get filteredBeats() {
+        if (!this.beatSearchTerm) {
+            return this.beats;
+        }
+        const term = this.beatSearchTerm.toLowerCase();
+        return this.beats.filter(beat =>
+            (beat.Name && beat.Name.toLowerCase().includes(term)) ||
+            (beat.Beat_Code__c && beat.Beat_Code__c.toLowerCase().includes(term)) ||
+            (beat.territoryName && beat.territoryName.toLowerCase().includes(term))
+        );
+    }
+
+    get filteredBeatsCount() {
+        return this.filteredBeats.length;
+    }
+
+    get hasFilteredBeats() {
+        return this.filteredBeats.length > 0;
     }
 
     get hasBeats() {
@@ -144,7 +177,7 @@ export default class BeatManager extends LightningElement {
     async loadBeats() {
         this.isLoading = true;
         try {
-            const result = await getBeatsForUser({ userId: this.currentUserId });
+            const result = await getBeatsForUser({ userId: this.selectedExecutiveId });
             this.beats = (result || []).map(beat => ({
                 ...beat,
                 daysDisplay: beat.Day_of_Week__c ? beat.Day_of_Week__c.replace(/;/g, ', ') : '-',
@@ -342,6 +375,162 @@ export default class BeatManager extends LightningElement {
             await this.loadBeats();
         } catch (error) {
             this.showToast('Error', 'Failed to delete beat: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Executive Picker ───────────────────────────────────────────
+
+    handleExecutiveChange(event) {
+        const val = event.detail.value;
+        const newId = Array.isArray(val) ? (val[0] || null) : val;
+        if (newId && newId !== this.selectedExecutiveId) {
+            this.selectedExecutiveId = newId;
+            this.selectedBeat = null;
+            this.beatOutlets = [];
+            this.territoryAccounts = [];
+            this.beatSearchTerm = '';
+            this.loadBeats();
+        }
+    }
+
+    handleResetExecutive() {
+        if (this.selectedExecutiveId !== this.currentUserId) {
+            this.selectedExecutiveId = this.currentUserId;
+            this.selectedBeat = null;
+            this.beatOutlets = [];
+            this.territoryAccounts = [];
+            this.beatSearchTerm = '';
+            this.loadBeats();
+        }
+    }
+
+    // ── Beat Search ─────────────────────────────────────────────
+
+    handleBeatSearchChange(event) {
+        this.beatSearchTerm = event.target.value;
+    }
+
+    // ── Clone Beat ──────────────────────────────────────────────
+
+    handleCloneBeat() {
+        if (!this.selectedBeat) return;
+        this.cloneForm = {
+            Name: this.selectedBeat.Name + ' (Copy)',
+            Beat_Code__c: this.selectedBeat.Beat_Code__c + '-COPY',
+            Assigned_User__c: this.selectedBeat.Assigned_User__c || this.currentUserId
+        };
+        this.showCloneModal = true;
+    }
+
+    handleCloneFormChange(event) {
+        const field = event.target.dataset.field;
+        if (field === 'CloneName') {
+            this.cloneForm = { ...this.cloneForm, Name: event.target.value };
+        } else if (field === 'CloneCode') {
+            this.cloneForm = { ...this.cloneForm, Beat_Code__c: event.target.value };
+        } else if (field === 'CloneUser') {
+            const val = event.detail.value;
+            this.cloneForm = { ...this.cloneForm, Assigned_User__c: Array.isArray(val) ? (val[0] || null) : val };
+        }
+    }
+
+    handleCancelClone() {
+        this.showCloneModal = false;
+    }
+
+    async handleSaveClone() {
+        if (!this.cloneForm.Name || !this.cloneForm.Beat_Code__c) {
+            this.showToast('Error', 'Beat Name and Beat Code are required.', 'error');
+            return;
+        }
+        if (!this.cloneForm.Assigned_User__c) {
+            this.showToast('Error', 'Assigned User is required.', 'error');
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            const cloned = await cloneBeat({
+                sourceBeatId: this.selectedBeat.Id,
+                newAssignedUserId: this.cloneForm.Assigned_User__c,
+                newBeatName: this.cloneForm.Name,
+                newBeatCode: this.cloneForm.Beat_Code__c
+            });
+            this.showCloneModal = false;
+            this.showToast('Success', 'Beat cloned successfully.', 'success');
+            await this.loadBeats();
+            // Select the cloned beat
+            this.selectedBeat = this.beats.find(b => b.Id === cloned.Id) || null;
+            if (this.selectedBeat) {
+                this.beats = this.beats.map(b => ({
+                    ...b,
+                    rowClass: b.Id === cloned.Id ? 'beat-row beat-row-selected' : 'beat-row'
+                }));
+                this.loadOutlets(cloned.Id);
+                this.accountPageNumber = 1;
+                this.loadTerritoryAccounts();
+            }
+        } catch (error) {
+            this.showToast('Error', 'Failed to clone beat: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Reassign Beat ───────────────────────────────────────────
+
+    handleReassignBeat() {
+        if (!this.selectedBeat) return;
+        this.reassignUserId = null;
+        this.showReassignModal = true;
+    }
+
+    handleReassignUserChange(event) {
+        const val = event.detail.value;
+        this.reassignUserId = Array.isArray(val) ? (val[0] || null) : val;
+    }
+
+    handleCancelReassign() {
+        this.showReassignModal = false;
+    }
+
+    async handleSaveReassign() {
+        if (!this.reassignUserId) {
+            this.showToast('Error', 'Please select a user to reassign to.', 'error');
+            return;
+        }
+        if (this.reassignUserId === this.selectedBeat.Assigned_User__c) {
+            this.showToast('Warning', 'The beat is already assigned to this user.', 'warning');
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            const result = await reassignBeat({
+                beatId: this.selectedBeat.Id,
+                newUserId: this.reassignUserId
+            });
+            this.showReassignModal = false;
+
+            let msg = 'Beat reassigned successfully.';
+            if (result.affectedPlanDays > 0) {
+                msg += ' ' + result.affectedPlanDays + ' Journey Plan day(s) in Draft/Active plans reference this beat.';
+            }
+            this.showToast('Success', msg, 'success');
+
+            await this.loadBeats();
+            const beatId = this.selectedBeat.Id;
+            this.selectedBeat = this.beats.find(b => b.Id === beatId) || null;
+            if (this.selectedBeat) {
+                this.beats = this.beats.map(b => ({
+                    ...b,
+                    rowClass: b.Id === beatId ? 'beat-row beat-row-selected' : 'beat-row'
+                }));
+            }
+        } catch (error) {
+            this.showToast('Error', 'Failed to reassign beat: ' + this.reduceErrors(error), 'error');
         } finally {
             this.isLoading = false;
         }

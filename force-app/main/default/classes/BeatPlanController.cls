@@ -455,6 +455,133 @@ public with sharing class BeatPlanController {
         }
     }
 
+    // ── Clone Beat ───────────────────────────────────────────────────────────
+
+    /**
+     * @description Clones a beat and its outlet mappings. Allows assigning to
+     *              a different user and/or territory.
+     * @param sourceBeatId The Id of the Beat__c to clone.
+     * @param newAssignedUserId The User Id for the cloned beat.
+     * @param newBeatName Optional name override. If blank, appends " (Copy)".
+     * @param newBeatCode Optional code override. If blank, appends "-COPY".
+     * @return The newly created Beat__c record.
+     */
+    @AuraEnabled
+    public static Beat__c cloneBeat(Id sourceBeatId, Id newAssignedUserId, String newBeatName, String newBeatCode) {
+        try {
+            Beat__c source = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Territory__c, Pincode_Cluster__c, Description__c,
+                       Assigned_User__c, Sequence__c, Is_Active__c
+                FROM Beat__c
+                WHERE Id = :sourceBeatId
+                LIMIT 1
+            ];
+
+            Beat__c cloned = new Beat__c(
+                Name = String.isNotBlank(newBeatName) ? newBeatName : source.Name + ' (Copy)',
+                Beat_Code__c = String.isNotBlank(newBeatCode) ? newBeatCode : source.Beat_Code__c + '-COPY',
+                Day_of_Week__c = source.Day_of_Week__c,
+                Frequency__c = source.Frequency__c,
+                Territory__c = source.Territory__c,
+                Pincode_Cluster__c = source.Pincode_Cluster__c,
+                Description__c = source.Description__c,
+                Assigned_User__c = newAssignedUserId != null ? newAssignedUserId : source.Assigned_User__c,
+                Sequence__c = source.Sequence__c,
+                Is_Active__c = true
+            );
+            insert cloned;
+
+            // Clone all active outlet mappings
+            List<Beat_Outlet__c> sourceOutlets = [
+                SELECT Account__c, Visit_Sequence__c
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :sourceBeatId AND Is_Active__c = true
+                ORDER BY Visit_Sequence__c
+            ];
+
+            List<Beat_Outlet__c> clonedOutlets = new List<Beat_Outlet__c>();
+            for (Beat_Outlet__c bo : sourceOutlets) {
+                clonedOutlets.add(new Beat_Outlet__c(
+                    Beat__c = cloned.Id,
+                    Account__c = bo.Account__c,
+                    Visit_Sequence__c = bo.Visit_Sequence__c,
+                    Is_Active__c = true
+                ));
+            }
+            if (!clonedOutlets.isEmpty()) {
+                insert clonedOutlets;
+            }
+
+            return [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Id = :cloned.Id
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Reassign Beat ────────────────────────────────────────────────────────
+
+    /**
+     * @description Wrapper to hold reassignment result including journey plan impact.
+     */
+    public class ReassignResult {
+        @AuraEnabled public Beat__c beat;
+        @AuraEnabled public Integer affectedPlanDays;
+    }
+
+    /**
+     * @description Reassigns a beat to a different user. Updates the Assigned_User__c
+     *              field and returns information about affected Journey Plan Days.
+     * @param beatId The Beat__c Id to reassign.
+     * @param newUserId The new Assigned User Id.
+     * @return ReassignResult with the updated beat and count of affected plan days.
+     */
+    @AuraEnabled
+    public static ReassignResult reassignBeat(Id beatId, Id newUserId) {
+        try {
+            Beat__c beat = [
+                SELECT Id, Assigned_User__c
+                FROM Beat__c
+                WHERE Id = :beatId
+                LIMIT 1
+            ];
+
+            beat.Assigned_User__c = newUserId;
+            update beat;
+
+            // Count affected Journey Plan Days (only in Draft/Active plans)
+            Integer affectedDays = [
+                SELECT COUNT()
+                FROM Journey_Plan_Day__c
+                WHERE Beat__c = :beatId
+                AND Journey_Plan__r.Status__c IN ('Draft', 'Active')
+            ];
+
+            Beat__c updated = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Assigned_User__r.Name, Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Id = :beatId
+            ];
+
+            ReassignResult result = new ReassignResult();
+            result.beat = updated;
+            result.affectedPlanDays = affectedDays;
+            return result;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
     @AuraEnabled
     public static List<Account> searchAccounts(String searchTerm) {
         if (String.isBlank(searchTerm) || searchTerm.length() < 2) {

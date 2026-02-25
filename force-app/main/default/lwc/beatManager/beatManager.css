@@ -386,6 +386,31 @@
     justify-content: center;
 }
 
+/* Executive Picker */
+.executive-picker-row {
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+}
+
+.executive-picker-field {
+    width: 320px;
+    flex-shrink: 0;
+}
+
+/* Beat Search Bar */
+.beat-search-bar {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: #ffffff;
+}
+
+/* Warning box */
+.slds-theme_warning {
+    background: #fef4e5;
+    border: 1px solid #f5a623;
+    border-radius: 6px;
+}
+
 /* Modal overrides */
 .slds-modal__content {
     overflow: visible;
