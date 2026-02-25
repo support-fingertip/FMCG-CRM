@@ -112,7 +112,8 @@ public with sharing class BeatPlanController {
         return [
             SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                    Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name
+                   Territory__c, Territory__r.Name, Assigned_User__c,
+                   Is_Active__c, Sequence__c
             FROM Beat__c
             WHERE Territory__c = :territoryId
             AND Is_Active__c = true
@@ -170,7 +171,8 @@ public with sharing class BeatPlanController {
             return [
                 SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                        Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                       Territory__c, Territory__r.Name
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Is_Active__c, Sequence__c
                 FROM Beat__c
                 WHERE Is_Active__c = true
                 ORDER BY Territory__r.Name, Beat_Code__c
@@ -181,7 +183,8 @@ public with sharing class BeatPlanController {
         return [
             SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                    Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name
+                   Territory__c, Territory__r.Name, Assigned_User__c,
+                   Is_Active__c, Sequence__c
             FROM Beat__c
             WHERE Territory__c IN :territoryIds
             AND Is_Active__c = true
