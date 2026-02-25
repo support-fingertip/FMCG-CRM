@@ -280,6 +280,10 @@ export default class BeatManager extends LightningElement {
             this.showToast('Error', 'Beat Name and Beat Code are required.', 'error');
             return;
         }
+        if (!this.beatForm.Assigned_User__c) {
+            this.showToast('Error', 'Assigned User is required.', 'error');
+            return;
+        }
         if (!this.beatForm.Day_of_Week__c || this.beatForm.Day_of_Week__c.length === 0) {
             this.showToast('Error', 'Please select at least one day.', 'error');
             return;
