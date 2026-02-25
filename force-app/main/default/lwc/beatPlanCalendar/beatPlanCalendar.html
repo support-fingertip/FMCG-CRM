@@ -8,7 +8,7 @@
                 <template if:true={noPlan}>
                     <div class="slds-col">
                         <lightning-button variant="brand" label="Generate Plan"
-                            icon-name="utility:magicwand" onclick={handleGeneratePlan}></lightning-button>
+                            icon-name="utility:magicwand" onclick={handleOpenGenerateModal}></lightning-button>
                     </div>
                 </template>
                 <template if:true={hasPlan}>
@@ -22,6 +22,29 @@
         </div>
 
         <div class="slds-p-around_medium">
+            <!-- Executive Picker -->
+            <template if:true={showExecutivePicker}>
+                <div class="executive-picker-row slds-m-bottom_medium">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-gutters_xx-small">
+                        <div class="slds-col">
+                            <span class="executive-label">Executive</span>
+                        </div>
+                        <div class="slds-col executive-picker-field">
+                            <lightning-record-edit-form object-api-name="Journey_Plan__c">
+                                <lightning-input-field field-name="Salesperson__c"
+                                    value={selectedExecutiveId}
+                                    onchange={handleExecutiveChange}
+                                    variant="label-hidden"></lightning-input-field>
+                            </lightning-record-edit-form>
+                        </div>
+                        <div class="slds-col">
+                            <lightning-button label="Reset to Me" variant="neutral"
+                                onclick={handleResetExecutive}></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <!-- Controls Row -->
             <div class="controls-row slds-m-bottom_medium">
                 <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
@@ -243,4 +266,49 @@
             </template>
         </div>
     </lightning-card>
+
+    <!-- Generate Plan Modal -->
+    <template if:true={showGenerateModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close"
+                        alternative-text="Close" size="large" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleCloseGenerateModal}></lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Generate Journey Plan</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                        Select the date range for which to generate journey plans. A separate plan will be created for each month in the range.
+                    </p>
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input type="date" label="From Date"
+                                value={generateFromDate} onchange={handleFromDateChange}
+                                required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input type="date" label="To Date"
+                                value={generateToDate} onchange={handleToDateChange}
+                                required></lightning-input>
+                        </div>
+                    </div>
+                    <template if:true={generateDateInfo}>
+                        <div class="slds-m-top_small">
+                            <p class="generate-info-text">{generateDateInfo}</p>
+                        </div>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" variant="neutral"
+                        onclick={handleCloseGenerateModal}></lightning-button>
+                    <lightning-button label="Generate" variant="brand"
+                        onclick={handleConfirmGenerate}
+                        disabled={generateDisabled}
+                        class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
 </template>

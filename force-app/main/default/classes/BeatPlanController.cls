@@ -863,4 +863,89 @@ public with sharing class BeatPlanController {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    // ── Generate Plans for Date Range ───────────────────────────────────────
+
+    /**
+     * @description Generates journey plans for each month within the specified
+     *              date range. Sets Effective_From__c and Effective_To__c on
+     *              each plan. Skips months where a plan already exists.
+     * @param userId      The User (Salesperson) Id.
+     * @param territoryId The Territory_Master__c Id.
+     * @param fromDate    Start date of the range.
+     * @param toDate      End date of the range.
+     * @return List of created Journey_Plan__c Ids.
+     */
+    @AuraEnabled
+    public static List<Id> generatePlansForDateRange(Id userId, Id territoryId, Date fromDate, Date toDate) {
+        try {
+            if (fromDate == null || toDate == null) {
+                throw new AuraHandledException('From Date and To Date are required.');
+            }
+            if (fromDate > toDate) {
+                throw new AuraHandledException('From Date must be before or equal to To Date.');
+            }
+
+            List<Id> planIds = new List<Id>();
+            List<String> skippedMonths = new List<String>();
+
+            Date currentMonthStart = fromDate.toStartOfMonth();
+            Date endMonthStart = toDate.toStartOfMonth();
+
+            List<String> monthNames = new List<String>{
+                'January','February','March','April','May','June',
+                'July','August','September','October','November','December'
+            };
+
+            while (currentMonthStart <= endMonthStart) {
+                Integer monthInt = currentMonthStart.month();
+                Integer yearInt = currentMonthStart.year();
+                String monthName = monthNames[monthInt - 1];
+                String yearStr = String.valueOf(yearInt);
+
+                try {
+                    Id planId = BPM_JourneyPlan_Service.generateDefaultPlan(userId, territoryId, monthName, yearStr);
+
+                    // Set Effective_From__c and Effective_To__c
+                    Date effectiveFrom = (currentMonthStart.month() == fromDate.month()
+                        && currentMonthStart.year() == fromDate.year()) ? fromDate : currentMonthStart;
+                    Integer daysInMonth = Date.daysInMonth(yearInt, monthInt);
+                    Date lastDayOfMonth = Date.newInstance(yearInt, monthInt, daysInMonth);
+                    Date effectiveTo = (currentMonthStart.month() == toDate.month()
+                        && currentMonthStart.year() == toDate.year()) ? toDate : lastDayOfMonth;
+
+                    Journey_Plan__c plan = new Journey_Plan__c(
+                        Id = planId,
+                        Effective_From__c = effectiveFrom,
+                        Effective_To__c = effectiveTo
+                    );
+                    update plan;
+
+                    planIds.add(planId);
+                } catch (BPM_JourneyPlanServiceException e) {
+                    if (e.getMessage().contains('already exists')) {
+                        skippedMonths.add(monthName + ' ' + yearStr);
+                    } else {
+                        throw new AuraHandledException(e.getMessage());
+                    }
+                }
+
+                currentMonthStart = currentMonthStart.addMonths(1);
+            }
+
+            if (planIds.isEmpty()) {
+                String msg = 'No plans could be generated.';
+                if (!skippedMonths.isEmpty()) {
+                    msg += ' Plans already exist for: ' + String.join(skippedMonths, ', ') + '.';
+                }
+                throw new AuraHandledException(msg);
+            }
+
+            return planIds;
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

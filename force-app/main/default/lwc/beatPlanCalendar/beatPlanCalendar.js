@@ -6,10 +6,12 @@ import Id from '@salesforce/user/Id';
 import getJourneyPlanById from '@salesforce/apex/BeatPlanController.getJourneyPlanById';
 import getJourneyPlan from '@salesforce/apex/BeatPlanController.getJourneyPlan';
 import getBeatsForUser from '@salesforce/apex/BeatPlanController.getBeatsForUser';
+import getBeatsForExecutive from '@salesforce/apex/BeatPlanController.getBeatsForExecutive';
 import submitForApproval from '@salesforce/apex/BeatPlanController.submitForApproval';
 import addBeatToCalendarDay from '@salesforce/apex/BeatPlanController.addBeatToCalendarDay';
 import removePlanDay from '@salesforce/apex/BeatPlanController.removePlanDay';
 import generateDefaultPlan from '@salesforce/apex/BeatPlanController.generateDefaultPlan';
+import generatePlansForDateRange from '@salesforce/apex/BeatPlanController.generatePlansForDateRange';
 
 const JP_SALESPERSON_FIELD = 'Journey_Plan__c.Salesperson__c';
 const JP_MONTH_FIELD = 'Journey_Plan__c.Month__c';
@@ -60,6 +62,10 @@ export default class BeatPlanCalendar extends LightningElement {
     allBeats = [];
     planDaysRaw = [];
     dataLoaded = false;
+    selectedExecutiveId = null;
+    showGenerateModal = false;
+    generateFromDate = '';
+    generateToDate = '';
 
     get hasPlan() {
         return this.journeyPlan && this.journeyPlan.Id;
@@ -110,6 +116,28 @@ export default class BeatPlanCalendar extends LightningElement {
         return this.availableBeats.length > 0;
     }
 
+    get showExecutivePicker() {
+        return !this.recordId;
+    }
+
+    get generateDateInfo() {
+        if (!this.generateFromDate || !this.generateToDate) return '';
+        const from = new Date(this.generateFromDate + 'T12:00:00');
+        const to = new Date(this.generateToDate + 'T12:00:00');
+        if (from > to) return 'From Date must be before To Date.';
+        let monthCount = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) + 1;
+        if (monthCount === 1) return 'Plan will be generated for 1 month.';
+        return 'Plans will be generated for ' + monthCount + ' months.';
+    }
+
+    get generateDisabled() {
+        if (!this.generateFromDate || !this.generateToDate) return true;
+        if (!this.resolvedTerritoryId) return true;
+        const from = new Date(this.generateFromDate + 'T12:00:00');
+        const to = new Date(this.generateToDate + 'T12:00:00');
+        return from > to;
+    }
+
     @wire(getRecord, { recordId: '$recordId', fields: JP_FIELDS })
     wiredJourneyPlanRecord({ error, data }) {
         if (data) {
@@ -145,6 +173,7 @@ export default class BeatPlanCalendar extends LightningElement {
         if (this.currentMonth === null) this.currentMonth = today.getMonth();
         if (this.currentYear === null) this.currentYear = today.getFullYear();
         this.currentWeekStart = this.getWeekStart(today);
+        this.selectedExecutiveId = this.currentUserId;
 
         if (!this.recordId) {
             this.resolvedUserId = this.currentUserId;
@@ -194,11 +223,12 @@ export default class BeatPlanCalendar extends LightningElement {
 
     async loadBeats() {
         try {
-            const userId = this.resolvedUserId || this.currentUserId;
+            const userId = this.selectedExecutiveId || this.resolvedUserId || this.currentUserId;
             if (!userId) return;
 
-            const result = await getBeatsForUser({ userId });
-            this.allBeats = (result || []).map((beat, index) => {
+            const result = await getBeatsForExecutive({ userId });
+            const activeBeats = (result || []).filter(beat => beat.Is_Active__c !== false);
+            this.allBeats = activeBeats.map((beat, index) => {
                 const color = BEAT_COLORS[index % BEAT_COLORS.length];
                 this.beatColorMap[beat.Id] = color;
                 return {
@@ -515,13 +545,64 @@ export default class BeatPlanCalendar extends LightningElement {
         }
     }
 
+    // ── Executive Picker ─────────────────────────────────────────────────
+
+    handleExecutiveChange(event) {
+        const value = event.detail.value;
+        const selectedId = Array.isArray(value) ? value[0] : value;
+
+        if (selectedId === this.selectedExecutiveId) return;
+
+        this.selectedExecutiveId = selectedId;
+        this.resolvedUserId = selectedId;
+        this.resolvedTerritoryId = null;
+        this.selectedDayDetail = null;
+        this.journeyPlan = {};
+        this.calendarData = {};
+        this.calculateSummaryStats([]);
+        this.buildView();
+
+        if (selectedId) {
+            this.loadBeats();
+            this.loadCalendar();
+        }
+    }
+
+    handleResetExecutive() {
+        if (this.selectedExecutiveId === this.currentUserId) return;
+        this.selectedExecutiveId = this.currentUserId;
+        this.resolvedUserId = this.currentUserId;
+        this.resolvedTerritoryId = null;
+        this.selectedDayDetail = null;
+        this.loadBeats();
+        this.loadCalendar();
+    }
+
     // ── Generate Plan ───────────────────────────────────────────────────
 
-    async handleGeneratePlan() {
-        const userId = this.resolvedUserId || this.currentUserId;
+    handleOpenGenerateModal() {
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+        const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+        this.generateFromDate = this.formatDateKey(firstDay);
+        this.generateToDate = this.formatDateKey(lastDay);
+        this.showGenerateModal = true;
+    }
+
+    handleCloseGenerateModal() {
+        this.showGenerateModal = false;
+    }
+
+    handleFromDateChange(event) {
+        this.generateFromDate = event.detail.value;
+    }
+
+    handleToDateChange(event) {
+        this.generateToDate = event.detail.value;
+    }
+
+    async handleConfirmGenerate() {
+        const userId = this.selectedExecutiveId || this.currentUserId;
         const territoryId = this.resolvedTerritoryId;
-        const monthName = MONTH_NAMES[this.currentMonth];
-        const yearStr = String(this.currentYear);
 
         if (!territoryId) {
             this.showToast('Warning', 'No territory found. Ensure beats are assigned to a territory.', 'warning');
@@ -529,9 +610,21 @@ export default class BeatPlanCalendar extends LightningElement {
         }
 
         this.isLoading = true;
+        this.showGenerateModal = false;
         try {
-            await generateDefaultPlan({ userId, territoryId, month: monthName, year: yearStr });
-            this.showToast('Success', 'Journey plan generated for ' + monthName + ' ' + yearStr + '.', 'success');
+            await generatePlansForDateRange({
+                userId,
+                territoryId,
+                fromDate: this.generateFromDate,
+                toDate: this.generateToDate
+            });
+
+            // Navigate to the from date's month
+            const from = new Date(this.generateFromDate + 'T12:00:00');
+            this.currentMonth = from.getMonth();
+            this.currentYear = from.getFullYear();
+
+            this.showToast('Success', 'Journey plan(s) generated successfully.', 'success');
             await this.loadCalendar();
         } catch (error) {
             this.showToast('Error', 'Failed to generate plan: ' + this.reduceErrors(error), 'error');

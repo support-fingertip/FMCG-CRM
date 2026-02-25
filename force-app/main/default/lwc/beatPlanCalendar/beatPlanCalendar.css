@@ -400,6 +400,40 @@
     margin-left: 8px;
 }
 
+/* Executive Picker */
+.executive-picker-row {
+    background: var(--bg-light);
+    border-radius: 8px;
+    padding: 10px 16px;
+}
+
+.executive-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #706e6b;
+}
+
+.executive-picker-field {
+    width: 320px;
+    flex-shrink: 0;
+}
+
+/* Generate Plan Modal */
+.generate-info-text {
+    font-size: 13px;
+    color: #706e6b;
+    font-weight: 600;
+    padding: 8px 12px;
+    background: #eef4ff;
+    border-radius: 6px;
+}
+
+.slds-modal__content {
+    overflow: visible;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .day-content-row {
