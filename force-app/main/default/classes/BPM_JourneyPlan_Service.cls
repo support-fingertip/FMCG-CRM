@@ -37,6 +37,31 @@ public without sharing class BPM_JourneyPlan_Service {
         String month,
         String year
     ) {
+        return generateDefaultPlan(userId, territoryId, month, year, null, null);
+    }
+
+    /**
+     * @description Overloaded version that accepts an optional date range.
+     *              Filters beats by Assigned_User__c and only generates plan days
+     *              for dates within the specified range. Sets Effective_From__c
+     *              and Effective_To__c on the plan when provided.
+     *
+     * @param userId         The user (sales rep) for whom to generate the plan.
+     * @param territoryId    The territory under which beats are assigned.
+     * @param month          The month (1-12 or name) for the plan.
+     * @param year           The four-digit year string.
+     * @param rangeStartDate Optional start date to limit plan day generation.
+     * @param rangeEndDate   Optional end date to limit plan day generation.
+     * @return The Id of the created Journey_Plan__c record.
+     */
+    public static Id generateDefaultPlan(
+        Id userId,
+        Id territoryId,
+        String month,
+        String year,
+        Date rangeStartDate,
+        Date rangeEndDate
+    ) {
         if (userId == null || territoryId == null ||
             String.isBlank(month) || String.isBlank(year)) {
             throw new BPM_JourneyPlanServiceException(
@@ -80,7 +105,8 @@ public without sharing class BPM_JourneyPlan_Service {
                     WHERE Is_Active__c = true
                     ORDER BY Visit_Sequence__c ASC)
             FROM Beat__c
-            WHERE Territory__c = :territoryId
+            WHERE Assigned_User__c = :userId
+              AND Territory__c = :territoryId
               AND Is_Active__c = true
             ORDER BY Sequence__c NULLS LAST, Name
         ];
@@ -101,6 +127,12 @@ public without sharing class BPM_JourneyPlan_Service {
             Status__c     = 'Draft',
             Plan_Date__c  = Date.today()
         );
+        if (rangeStartDate != null) {
+            plan.Effective_From__c = rangeStartDate;
+        }
+        if (rangeEndDate != null) {
+            plan.Effective_To__c = rangeEndDate;
+        }
         insert plan;
 
         // Generate journey plan days
@@ -128,6 +160,15 @@ public without sharing class BPM_JourneyPlan_Service {
         Integer sequenceOrder = 0;
         for (Integer dayNum = 1; dayNum <= daysInMonth; dayNum++) {
             Date currentDate = Date.newInstance(yearInt, monthInt, dayNum);
+
+            // Skip dates outside the specified range
+            if (rangeStartDate != null && currentDate < rangeStartDate) {
+                continue;
+            }
+            if (rangeEndDate != null && currentDate > rangeEndDate) {
+                continue;
+            }
+
             String dayOfWeek = getDayOfWeek(currentDate);
 
             // Skip Sundays (or configurable weekly off)

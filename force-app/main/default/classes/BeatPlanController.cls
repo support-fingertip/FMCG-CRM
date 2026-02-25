@@ -904,9 +904,7 @@ public with sharing class BeatPlanController {
                 String yearStr = String.valueOf(yearInt);
 
                 try {
-                    Id planId = BPM_JourneyPlan_Service.generateDefaultPlan(userId, territoryId, monthName, yearStr);
-
-                    // Set Effective_From__c and Effective_To__c
+                    // Calculate effective date boundaries for this month
                     Date effectiveFrom = (currentMonthStart.month() == fromDate.month()
                         && currentMonthStart.year() == fromDate.year()) ? fromDate : currentMonthStart;
                     Integer daysInMonth = Date.daysInMonth(yearInt, monthInt);
@@ -914,12 +912,10 @@ public with sharing class BeatPlanController {
                     Date effectiveTo = (currentMonthStart.month() == toDate.month()
                         && currentMonthStart.year() == toDate.year()) ? toDate : lastDayOfMonth;
 
-                    Journey_Plan__c plan = new Journey_Plan__c(
-                        Id = planId,
-                        Effective_From__c = effectiveFrom,
-                        Effective_To__c = effectiveTo
+                    // Pass date range to service - it filters beats by user and days by date range
+                    Id planId = BPM_JourneyPlan_Service.generateDefaultPlan(
+                        userId, territoryId, monthName, yearStr, effectiveFrom, effectiveTo
                     );
-                    update plan;
 
                     planIds.add(planId);
                 } catch (BPM_JourneyPlanServiceException e) {
