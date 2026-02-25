@@ -58,7 +58,8 @@ export default class BeatManager extends LightningElement {
         Pincode_Cluster__c: '',
         Description__c: '',
         Assigned_User__c: null,
-        Sequence__c: null
+        Sequence__c: null,
+        Is_Active__c: true
     };
 
     dayOptions = DAY_OPTIONS;
@@ -232,7 +233,8 @@ export default class BeatManager extends LightningElement {
             Pincode_Cluster__c: '',
             Description__c: '',
             Assigned_User__c: this.currentUserId,
-            Sequence__c: this.beats.length + 1
+            Sequence__c: this.beats.length + 1,
+            Is_Active__c: true
         };
         this.showBeatForm = true;
     }
@@ -250,7 +252,8 @@ export default class BeatManager extends LightningElement {
             Pincode_Cluster__c: this.selectedBeat.Pincode_Cluster__c || '',
             Description__c: this.selectedBeat.Description__c || '',
             Assigned_User__c: this.selectedBeat.Assigned_User__c,
-            Sequence__c: this.selectedBeat.Sequence__c
+            Sequence__c: this.selectedBeat.Sequence__c,
+            Is_Active__c: this.selectedBeat.Is_Active__c !== false
         };
         this.showBeatForm = true;
     }
@@ -261,6 +264,8 @@ export default class BeatManager extends LightningElement {
             this.beatForm = { ...this.beatForm, [field]: event.detail.value };
         } else if (field === 'Territory__c' || field === 'Assigned_User__c') {
             this.beatForm = { ...this.beatForm, [field]: event.detail.value[0] || null };
+        } else if (field === 'Is_Active__c') {
+            this.beatForm = { ...this.beatForm, [field]: event.target.checked };
         } else {
             this.beatForm = { ...this.beatForm, [field]: event.target.value };
         }
@@ -291,7 +296,8 @@ export default class BeatManager extends LightningElement {
                 Pincode_Cluster__c: this.beatForm.Pincode_Cluster__c,
                 Description__c: this.beatForm.Description__c,
                 Assigned_User__c: this.beatForm.Assigned_User__c,
-                Sequence__c: this.beatForm.Sequence__c
+                Sequence__c: this.beatForm.Sequence__c,
+                Is_Active__c: this.beatForm.Is_Active__c
             };
             if (this.beatForm.Id) {
                 beatRecord.Id = this.beatForm.Id;

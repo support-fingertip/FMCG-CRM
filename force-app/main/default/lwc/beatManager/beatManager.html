@@ -259,8 +259,22 @@
                                         variant="label-stacked"></lightning-input-field>
                                 </div>
                                 <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
+                                    <lightning-input-field field-name="Assigned_User__c"
+                                        value={beatForm.Assigned_User__c}
+                                        data-field="Assigned_User__c"
+                                        onchange={handleBeatFormChange}
+                                        variant="label-stacked"></lightning-input-field>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
                                     <lightning-input label="Pincode Cluster" value={beatForm.Pincode_Cluster__c}
                                         data-field="Pincode_Cluster__c" onchange={handleBeatFormChange}></lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
+                                    <lightning-input type="toggle" label="Is Active"
+                                        checked={beatForm.Is_Active__c}
+                                        data-field="Is_Active__c"
+                                        onchange={handleBeatFormChange}
+                                        class="slds-m-top_large"></lightning-input>
                                 </div>
                                 <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
                                     <lightning-textarea label="Description" value={beatForm.Description__c}
