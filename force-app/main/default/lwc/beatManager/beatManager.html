@@ -112,49 +112,88 @@
                         </div>
                     </div>
 
-                    <!-- Account Search -->
-                    <div class="panel search-panel slds-m-top_small">
+                    <!-- Territory Accounts -->
+                    <div class="panel account-panel slds-m-top_small">
                         <div class="panel-header">
-                            <h2 class="panel-title">Add Outlets to Beat</h2>
+                            <h2 class="panel-title">
+                                Accounts in: <strong>{selectedTerritoryName}</strong>
+                            </h2>
+                            <span class="panel-count">{accountListLabel}</span>
                         </div>
-                        <div class="panel-body">
-                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
-                                The same account can be mapped to multiple beats.
-                            </p>
-                            <div class="slds-grid slds-gutters_xx-small slds-grid_vertical-align-end slds-m-bottom_small">
-                                <div class="slds-col slds-grow">
+                        <div class="panel-body account-panel-body">
+                            <!-- Search + Add Bar -->
+                            <div class="account-toolbar">
+                                <div class="account-toolbar-search">
                                     <lightning-input type="search" label="Search Accounts"
-                                        placeholder="Type account name (min 2 chars)..."
-                                        value={searchTerm} onchange={handleSearchChange}
+                                        placeholder="Search by account name..."
+                                        value={accountSearchTerm}
+                                        onchange={handleAccountSearchChange}
                                         variant="label-hidden"></lightning-input>
                                 </div>
-                                <div class="slds-col slds-no-flex">
+                                <div class="account-toolbar-action">
+                                    <template if:true={hasSelectedAccounts}>
+                                        <span class="selected-count-badge">{selectedCountLabel}</span>
+                                    </template>
                                     <lightning-button variant="brand" label="Add Selected"
-                                        icon-name="utility:add" onclick={handleAddOutlets}></lightning-button>
+                                        icon-name="utility:add" onclick={handleAddOutlets}
+                                        disabled={hasSelectedAccounts}></lightning-button>
                                 </div>
                             </div>
-                            <template if:true={hasSearchResults}>
-                                <div class="search-results">
-                                    <template for:each={searchResults} for:item="acc">
-                                        <div class={acc.resultClass} key={acc.Id}
+
+                            <!-- Account List -->
+                            <template if:true={hasTerritoryAccounts}>
+                                <div class="account-table">
+                                    <div class="account-table-header">
+                                        <span class="account-col-check"></span>
+                                        <span class="account-col-name">Account Name</span>
+                                        <span class="account-col-city">City</span>
+                                        <span class="account-col-status"></span>
+                                    </div>
+                                    <template for:each={territoryAccounts} for:item="acc">
+                                        <div class={acc.rowClass} key={acc.Id}
                                             data-id={acc.Id} onclick={handleToggleAccount}>
-                                            <div class="result-check">
+                                            <span class="account-col-check">
                                                 <template if:true={acc.isSelected}>
                                                     <lightning-icon icon-name="utility:check" size="xx-small"
                                                         variant="success"></lightning-icon>
                                                 </template>
                                                 <template if:true={acc.alreadyAdded}>
                                                     <lightning-icon icon-name="utility:check" size="xx-small"
-                                                        variant="inverse"></lightning-icon>
+                                                        class="check-muted"></lightning-icon>
                                                 </template>
-                                            </div>
-                                            <span class="result-name">{acc.Name}</span>
-                                            <span class="result-meta">{acc.cityState}</span>
-                                            <template if:true={acc.alreadyAdded}>
-                                                <span class="already-badge">Already added</span>
-                                            </template>
+                                            </span>
+                                            <span class="account-col-name">{acc.Name}</span>
+                                            <span class="account-col-city">{acc.cityState}</span>
+                                            <span class="account-col-status">
+                                                <template if:true={acc.alreadyAdded}>
+                                                    <span class="already-badge">Added</span>
+                                                </template>
+                                            </span>
                                         </div>
                                     </template>
+                                </div>
+
+                                <!-- Pagination -->
+                                <template if:true={showPagination}>
+                                    <div class="pagination-bar">
+                                        <lightning-button-icon icon-name="utility:chevronleft"
+                                            alternative-text="Previous" variant="bare"
+                                            disabled={isPrevDisabled}
+                                            onclick={handlePrevPage}
+                                            class="pagination-btn"></lightning-button-icon>
+                                        <span class="pagination-label">{paginationLabel}</span>
+                                        <lightning-button-icon icon-name="utility:chevronright"
+                                            alternative-text="Next" variant="bare"
+                                            disabled={isNextDisabled}
+                                            onclick={handleNextPage}
+                                            class="pagination-btn"></lightning-button-icon>
+                                    </div>
+                                </template>
+                            </template>
+
+                            <template if:false={hasTerritoryAccounts}>
+                                <div class="empty-state-small">
+                                    <p class="slds-text-color_weak">No accounts found in this territory.</p>
                                 </div>
                             </template>
                         </div>

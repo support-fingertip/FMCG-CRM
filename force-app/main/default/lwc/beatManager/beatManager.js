@@ -8,7 +8,7 @@ import deleteBeat from '@salesforce/apex/BeatPlanController.deleteBeat';
 import getBeatOutlets from '@salesforce/apex/BeatPlanController.getBeatOutlets';
 import addBeatOutlets from '@salesforce/apex/BeatPlanController.addBeatOutlets';
 import removeBeatOutlet from '@salesforce/apex/BeatPlanController.removeBeatOutlet';
-import searchAccounts from '@salesforce/apex/BeatPlanController.searchAccounts';
+import getAccountsByTerritory from '@salesforce/apex/BeatPlanController.getAccountsByTerritory';
 
 const DAY_OPTIONS = [
     { label: 'Monday', value: 'Monday' },
@@ -26,16 +26,26 @@ const FREQUENCY_OPTIONS = [
     { label: 'Monthly', value: 'Monthly' }
 ];
 
+const PAGE_SIZE = 10;
+
 export default class BeatManager extends LightningElement {
     currentUserId = Id;
     @track beats = [];
     @track selectedBeat = null;
     @track beatOutlets = [];
-    @track searchResults = [];
+    @track territoryAccounts = [];
     @track selectedAccountIds = [];
     isLoading = false;
     showBeatForm = false;
-    searchTerm = '';
+    accountSearchTerm = '';
+
+    // Pagination state
+    accountPageNumber = 1;
+    accountTotalPages = 1;
+    accountTotalCount = 0;
+
+    // Debounce timer
+    _searchTimer;
 
     // Beat form fields
     @track beatForm = {
@@ -70,8 +80,8 @@ export default class BeatManager extends LightningElement {
         return this.beatOutlets.length > 0;
     }
 
-    get hasSearchResults() {
-        return this.searchResults.length > 0;
+    get hasTerritoryAccounts() {
+        return this.territoryAccounts.length > 0;
     }
 
     get isEditDisabled() {
@@ -84,6 +94,42 @@ export default class BeatManager extends LightningElement {
 
     get outletCountLabel() {
         return this.beatOutlets.length + ' Outlet' + (this.beatOutlets.length !== 1 ? 's' : '');
+    }
+
+    get accountListLabel() {
+        if (this.accountTotalCount > 0) {
+            return this.accountTotalCount + ' Account' + (this.accountTotalCount !== 1 ? 's' : '');
+        }
+        return '0 Accounts';
+    }
+
+    get selectedTerritoryName() {
+        return this.selectedBeat && this.selectedBeat.territoryName
+            ? this.selectedBeat.territoryName : '';
+    }
+
+    get hasSelectedAccounts() {
+        return this.selectedAccountIds.length > 0;
+    }
+
+    get selectedCountLabel() {
+        return this.selectedAccountIds.length + ' selected';
+    }
+
+    get isPrevDisabled() {
+        return this.accountPageNumber <= 1;
+    }
+
+    get isNextDisabled() {
+        return this.accountPageNumber >= this.accountTotalPages;
+    }
+
+    get paginationLabel() {
+        return 'Page ' + this.accountPageNumber + ' of ' + this.accountTotalPages;
+    }
+
+    get showPagination() {
+        return this.accountTotalPages > 1;
     }
 
     connectedCallback() {
@@ -119,6 +165,11 @@ export default class BeatManager extends LightningElement {
                 rowClass: b.Id === beatId ? 'beat-row beat-row-selected' : 'beat-row'
             }));
             this.loadOutlets(beatId);
+            // Reset and load territory accounts
+            this.accountSearchTerm = '';
+            this.accountPageNumber = 1;
+            this.selectedAccountIds = [];
+            this.loadTerritoryAccounts();
         }
     }
 
@@ -132,6 +183,35 @@ export default class BeatManager extends LightningElement {
             }));
         } catch (error) {
             this.showToast('Error', 'Failed to load outlets: ' + this.reduceErrors(error), 'error');
+        }
+    }
+
+    async loadTerritoryAccounts() {
+        if (!this.selectedBeat) return;
+        try {
+            const territoryId = this.selectedBeat.Territory__c || null;
+            const result = await getAccountsByTerritory({
+                territoryId: territoryId,
+                searchTerm: this.accountSearchTerm || '',
+                pageSize: PAGE_SIZE,
+                pageNumber: this.accountPageNumber
+            });
+
+            const existingIds = new Set(this.beatOutlets.map(o => o.Account__c));
+            this.territoryAccounts = (result.accounts || []).map(acc => ({
+                ...acc,
+                cityState: [acc.BillingCity, acc.BillingState].filter(Boolean).join(', ') || '-',
+                alreadyAdded: existingIds.has(acc.Id),
+                isSelected: this.selectedAccountIds.includes(acc.Id),
+                rowClass: existingIds.has(acc.Id)
+                    ? 'account-row account-row-disabled'
+                    : this.selectedAccountIds.includes(acc.Id)
+                        ? 'account-row account-row-selected' : 'account-row'
+            }));
+            this.accountTotalCount = result.totalCount;
+            this.accountTotalPages = result.totalPages || 1;
+        } catch (error) {
+            console.error('Error loading territory accounts:', error);
         }
     }
 
@@ -187,7 +267,6 @@ export default class BeatManager extends LightningElement {
     }
 
     async handleSaveBeat() {
-        // Validate
         if (!this.beatForm.Name || !this.beatForm.Beat_Code__c) {
             this.showToast('Error', 'Beat Name and Beat Code are required.', 'error');
             return;
@@ -218,7 +297,6 @@ export default class BeatManager extends LightningElement {
             this.showBeatForm = false;
             this.showToast('Success', 'Beat saved successfully.', 'success');
             await this.loadBeats();
-            // Reselect the saved beat
             this.selectedBeat = this.beats.find(b => b.Id === savedBeat.Id) || null;
             if (this.selectedBeat) {
                 this.beats = this.beats.map(b => ({
@@ -226,6 +304,8 @@ export default class BeatManager extends LightningElement {
                     rowClass: b.Id === savedBeat.Id ? 'beat-row beat-row-selected' : 'beat-row'
                 }));
                 this.loadOutlets(savedBeat.Id);
+                this.accountPageNumber = 1;
+                this.loadTerritoryAccounts();
             }
         } catch (error) {
             this.showToast('Error', 'Failed to save beat: ' + this.reduceErrors(error), 'error');
@@ -242,6 +322,9 @@ export default class BeatManager extends LightningElement {
             this.showToast('Success', 'Beat deleted.', 'success');
             this.selectedBeat = null;
             this.beatOutlets = [];
+            this.territoryAccounts = [];
+            this.accountTotalCount = 0;
+            this.accountTotalPages = 1;
             await this.loadBeats();
         } catch (error) {
             this.showToast('Error', 'Failed to delete beat: ' + this.reduceErrors(error), 'error');
@@ -250,50 +333,49 @@ export default class BeatManager extends LightningElement {
         }
     }
 
-    // ── Outlet Management ──────────────────────────────────────
+    // ── Account Search & Pagination ──────────────────────────────
 
-    handleSearchChange(event) {
-        this.searchTerm = event.target.value;
-        if (this.searchTerm.length >= 2) {
-            this.doSearch();
-        } else {
-            this.searchResults = [];
+    handleAccountSearchChange(event) {
+        this.accountSearchTerm = event.target.value;
+        clearTimeout(this._searchTimer);
+        this._searchTimer = setTimeout(() => {
+            this.accountPageNumber = 1;
+            this.loadTerritoryAccounts();
+        }, 300);
+    }
+
+    handlePrevPage() {
+        if (this.accountPageNumber > 1) {
+            this.accountPageNumber--;
+            this.loadTerritoryAccounts();
         }
     }
 
-    async doSearch() {
-        try {
-            const results = await searchAccounts({ searchTerm: this.searchTerm });
-            // Mark accounts already in this beat
-            const existingIds = new Set(this.beatOutlets.map(o => o.Account__c));
-            this.searchResults = (results || []).map(acc => ({
-                ...acc,
-                cityState: [acc.BillingCity, acc.BillingState].filter(Boolean).join(', ') || '-',
-                alreadyAdded: existingIds.has(acc.Id),
-                resultClass: existingIds.has(acc.Id)
-                    ? 'search-result-item search-result-disabled' : 'search-result-item'
-            }));
-        } catch (error) {
-            console.error('Search error:', error);
+    handleNextPage() {
+        if (this.accountPageNumber < this.accountTotalPages) {
+            this.accountPageNumber++;
+            this.loadTerritoryAccounts();
         }
     }
 
     handleToggleAccount(event) {
         const accId = event.currentTarget.dataset.id;
+        const account = this.territoryAccounts.find(a => a.Id === accId);
+        if (account && account.alreadyAdded) return;
+
         const idx = this.selectedAccountIds.indexOf(accId);
         if (idx >= 0) {
             this.selectedAccountIds = this.selectedAccountIds.filter(id => id !== accId);
         } else {
             this.selectedAccountIds = [...this.selectedAccountIds, accId];
         }
-        // Update visual state
-        this.searchResults = this.searchResults.map(r => ({
+        this.territoryAccounts = this.territoryAccounts.map(r => ({
             ...r,
             isSelected: this.selectedAccountIds.includes(r.Id),
-            resultClass: r.alreadyAdded
-                ? 'search-result-item search-result-disabled'
+            rowClass: r.alreadyAdded
+                ? 'account-row account-row-disabled'
                 : this.selectedAccountIds.includes(r.Id)
-                    ? 'search-result-item search-result-selected' : 'search-result-item'
+                    ? 'account-row account-row-selected' : 'account-row'
         }));
     }
 
@@ -311,10 +393,9 @@ export default class BeatManager extends LightningElement {
                 statusLabel: outlet.Is_Active__c ? 'Active' : 'Inactive'
             }));
             this.selectedAccountIds = [];
-            this.searchResults = [];
-            this.searchTerm = '';
             this.showToast('Success', 'Outlets added to beat.', 'success');
-            await this.loadBeats(); // refresh outlet count
+            await this.loadBeats();
+            this.loadTerritoryAccounts();
         } catch (error) {
             this.showToast('Error', 'Failed to add outlets: ' + this.reduceErrors(error), 'error');
         } finally {
@@ -329,7 +410,8 @@ export default class BeatManager extends LightningElement {
             await removeBeatOutlet({ beatOutletId: outletId });
             this.beatOutlets = this.beatOutlets.filter(o => o.Id !== outletId);
             this.showToast('Success', 'Outlet removed.', 'success');
-            await this.loadBeats(); // refresh outlet count
+            await this.loadBeats();
+            this.loadTerritoryAccounts();
         } catch (error) {
             this.showToast('Error', 'Failed to remove outlet: ' + this.reduceErrors(error), 'error');
         } finally {

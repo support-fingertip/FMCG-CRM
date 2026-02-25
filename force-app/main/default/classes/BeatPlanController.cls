@@ -467,6 +467,107 @@ public with sharing class BeatPlanController {
         ];
     }
 
+    /**
+     * @description Retrieves accounts filtered by territory with pagination and
+     *              optional search. Returns accounts belonging to the same territory
+     *              as the selected beat.
+     * @param territoryId The Territory_Master__c Id to filter accounts.
+     * @param searchTerm  Optional search string to filter by Account Name.
+     * @param pageSize    Number of records per page.
+     * @param pageNumber  Current page number (1-based).
+     * @return AccountPageResult wrapper with accounts and total count.
+     */
+    @AuraEnabled
+    public static AccountPageResult getAccountsByTerritory(
+        Id territoryId, String searchTerm, Integer pageSize, Integer pageNumber
+    ) {
+        if (pageSize == null || pageSize <= 0) pageSize = 10;
+        if (pageNumber == null || pageNumber <= 0) pageNumber = 1;
+        Integer offset = (pageNumber - 1) * pageSize;
+
+        String baseCondition = 'WHERE Is_Active__c = true';
+        List<String> conditions = new List<String>();
+
+        if (territoryId != null) {
+            conditions.add('Territory__c = :territoryId');
+        }
+        if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            conditions.add('Name LIKE :searchPattern');
+        }
+
+        String searchPattern = '';
+        if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        }
+
+        // Build queries with territory and search filters
+        List<Account> accounts;
+        Integer totalCount;
+
+        if (territoryId != null && String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            totalCount = [
+                SELECT COUNT() FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId AND Name LIKE :searchPattern
+            ];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId AND Name LIKE :searchPattern
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        } else if (territoryId != null) {
+            totalCount = [
+                SELECT COUNT() FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId
+            ];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        } else if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            totalCount = [
+                SELECT COUNT() FROM Account
+                WHERE Is_Active__c = true AND Name LIKE :searchPattern
+            ];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true AND Name LIKE :searchPattern
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        } else {
+            totalCount = [SELECT COUNT() FROM Account WHERE Is_Active__c = true];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        }
+
+        AccountPageResult result = new AccountPageResult();
+        result.accounts = accounts;
+        result.totalCount = totalCount;
+        result.pageNumber = pageNumber;
+        result.pageSize = pageSize;
+        result.totalPages = (Integer)Math.ceil((Double)totalCount / pageSize);
+        return result;
+    }
+
+    public class AccountPageResult {
+        @AuraEnabled public List<Account> accounts;
+        @AuraEnabled public Integer totalCount;
+        @AuraEnabled public Integer pageNumber;
+        @AuraEnabled public Integer pageSize;
+        @AuraEnabled public Integer totalPages;
+    }
+
     // ── Calendar Day Persistence ────────────────────────────────────────────
 
     @AuraEnabled
