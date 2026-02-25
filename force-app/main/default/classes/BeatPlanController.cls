@@ -477,6 +477,62 @@ public with sharing class BeatPlanController {
         }
     }
 
+    // ── Update Outlet Sequences ─────────────────────────────────────────────
+
+    /**
+     * @description Updates the Visit_Sequence__c of outlets within a beat.
+     *              Used for reordering outlets via Up/Down arrows in the UI.
+     * @param outlets List of Beat_Outlet__c with Id and Visit_Sequence__c set.
+     * @return Refreshed list of Beat_Outlet__c ordered by Visit_Sequence__c.
+     */
+    @AuraEnabled
+    public static List<Beat_Outlet__c> updateOutletSequences(List<Beat_Outlet__c> outlets) {
+        try {
+            if (outlets == null || outlets.isEmpty()) {
+                throw new AuraHandledException('No outlets provided for reordering.');
+            }
+
+            Set<Id> outletIds = new Set<Id>();
+            for (Beat_Outlet__c bo : outlets) {
+                if (bo.Id == null || bo.Visit_Sequence__c == null) {
+                    throw new AuraHandledException('Each outlet must have an Id and Visit_Sequence__c.');
+                }
+                outletIds.add(bo.Id);
+            }
+
+            // Verify all outlets belong to the same beat
+            Set<Id> beatIds = new Set<Id>();
+            for (Beat_Outlet__c bo : [SELECT Id, Beat__c FROM Beat_Outlet__c WHERE Id IN :outletIds]) {
+                beatIds.add(bo.Beat__c);
+            }
+            if (beatIds.size() != 1) {
+                throw new AuraHandledException('All outlets must belong to the same beat.');
+            }
+
+            List<Beat_Outlet__c> toUpdate = new List<Beat_Outlet__c>();
+            for (Beat_Outlet__c bo : outlets) {
+                toUpdate.add(new Beat_Outlet__c(
+                    Id = bo.Id,
+                    Visit_Sequence__c = bo.Visit_Sequence__c
+                ));
+            }
+            update toUpdate;
+
+            Id beatId = new List<Id>(beatIds)[0];
+            return [
+                SELECT Id, Beat__c, Account__c, Account__r.Name,
+                       Is_Active__c, Visit_Sequence__c
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId
+                ORDER BY Visit_Sequence__c
+            ];
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
     // ── Clone Beat ───────────────────────────────────────────────────────────
 
     /**

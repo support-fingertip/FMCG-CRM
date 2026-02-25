@@ -12,6 +12,7 @@ import removeBeatOutlet from '@salesforce/apex/BeatPlanController.removeBeatOutl
 import getAccountsByTerritory from '@salesforce/apex/BeatPlanController.getAccountsByTerritory';
 import cloneBeat from '@salesforce/apex/BeatPlanController.cloneBeat';
 import reassignBeat from '@salesforce/apex/BeatPlanController.reassignBeat';
+import updateOutletSequences from '@salesforce/apex/BeatPlanController.updateOutletSequences';
 
 const DAY_OPTIONS = [
     { label: 'Monday', value: 'Monday' },
@@ -43,6 +44,7 @@ export default class BeatManager extends LightningElement {
     showBeatForm = false;
     accountSearchTerm = '';
     beatSearchTerm = '';
+    outletOrderChanged = false;
 
     // Clone modal state
     showCloneModal = false;
@@ -171,6 +173,10 @@ export default class BeatManager extends LightningElement {
         return this.accountTotalPages > 1;
     }
 
+    get showSaveOrderButton() {
+        return this.outletOrderChanged;
+    }
+
     connectedCallback() {
         this.loadBeats();
     }
@@ -195,6 +201,12 @@ export default class BeatManager extends LightningElement {
     }
 
     handleSelectBeat(event) {
+        if (this.outletOrderChanged) {
+            // eslint-disable-next-line no-alert
+            const proceed = confirm('You have unsaved outlet order changes. Discard them?');
+            if (!proceed) return;
+            this.outletOrderChanged = false;
+        }
         const beatId = event.currentTarget.dataset.id;
         const beat = this.beats.find(b => b.Id === beatId);
         if (beat) {
@@ -212,14 +224,21 @@ export default class BeatManager extends LightningElement {
         }
     }
 
+    mapOutlets(outlets) {
+        return (outlets || []).map((outlet, index, arr) => ({
+            ...outlet,
+            accountName: outlet.Account__r ? outlet.Account__r.Name : 'Unknown',
+            statusLabel: outlet.Is_Active__c ? 'Active' : 'Inactive',
+            isFirst: index === 0,
+            isLast: index === arr.length - 1
+        }));
+    }
+
     async loadOutlets(beatId) {
         try {
             const result = await getBeatOutlets({ beatId: beatId });
-            this.beatOutlets = (result || []).map(outlet => ({
-                ...outlet,
-                accountName: outlet.Account__r ? outlet.Account__r.Name : 'Unknown',
-                statusLabel: outlet.Is_Active__c ? 'Active' : 'Inactive'
-            }));
+            this.beatOutlets = this.mapOutlets(result);
+            this.outletOrderChanged = false;
         } catch (error) {
             this.showToast('Error', 'Failed to load outlets: ' + this.reduceErrors(error), 'error');
         }
@@ -591,11 +610,8 @@ export default class BeatManager extends LightningElement {
                 beatId: this.selectedBeat.Id,
                 accountIds: this.selectedAccountIds
             });
-            this.beatOutlets = (result || []).map(outlet => ({
-                ...outlet,
-                accountName: outlet.Account__r ? outlet.Account__r.Name : 'Unknown',
-                statusLabel: outlet.Is_Active__c ? 'Active' : 'Inactive'
-            }));
+            this.beatOutlets = this.mapOutlets(result);
+            this.outletOrderChanged = false;
             this.selectedAccountIds = [];
             this.showToast('Success', 'Outlets added to beat.', 'success');
             await this.loadBeats();
@@ -618,6 +634,59 @@ export default class BeatManager extends LightningElement {
             this.loadTerritoryAccounts();
         } catch (error) {
             this.showToast('Error', 'Failed to remove outlet: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Outlet Reordering ─────────────────────────────────────────
+
+    handleMoveOutletUp(event) {
+        const outletId = event.currentTarget.dataset.id;
+        const index = this.beatOutlets.findIndex(o => o.Id === outletId);
+        if (index <= 0) return;
+
+        const outlets = [...this.beatOutlets];
+        [outlets[index - 1], outlets[index]] = [outlets[index], outlets[index - 1]];
+        this.beatOutlets = outlets.map((o, i, arr) => ({
+            ...o,
+            Visit_Sequence__c: i + 1,
+            isFirst: i === 0,
+            isLast: i === arr.length - 1
+        }));
+        this.outletOrderChanged = true;
+    }
+
+    handleMoveOutletDown(event) {
+        const outletId = event.currentTarget.dataset.id;
+        const index = this.beatOutlets.findIndex(o => o.Id === outletId);
+        if (index < 0 || index >= this.beatOutlets.length - 1) return;
+
+        const outlets = [...this.beatOutlets];
+        [outlets[index], outlets[index + 1]] = [outlets[index + 1], outlets[index]];
+        this.beatOutlets = outlets.map((o, i, arr) => ({
+            ...o,
+            Visit_Sequence__c: i + 1,
+            isFirst: i === 0,
+            isLast: i === arr.length - 1
+        }));
+        this.outletOrderChanged = true;
+    }
+
+    async handleSaveOutletOrder() {
+        if (!this.outletOrderChanged) return;
+        this.isLoading = true;
+        try {
+            const outletsToSave = this.beatOutlets.map(o => ({
+                Id: o.Id,
+                Visit_Sequence__c: o.Visit_Sequence__c
+            }));
+            const result = await updateOutletSequences({ outlets: outletsToSave });
+            this.beatOutlets = this.mapOutlets(result);
+            this.outletOrderChanged = false;
+            this.showToast('Success', 'Outlet order saved.', 'success');
+        } catch (error) {
+            this.showToast('Error', 'Failed to save outlet order: ' + this.reduceErrors(error), 'error');
         } finally {
             this.isLoading = false;
         }

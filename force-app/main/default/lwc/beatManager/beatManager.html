@@ -114,7 +114,14 @@
                             <h2 class="panel-title">
                                 Outlets for: <strong>{selectedBeatName}</strong>
                             </h2>
-                            <span class="panel-count">{outletCountLabel}</span>
+                            <div class="panel-header-actions">
+                                <template if:true={showSaveOrderButton}>
+                                    <lightning-button variant="brand" label="Save Order"
+                                        icon-name="utility:save" onclick={handleSaveOutletOrder}
+                                        class="save-order-btn"></lightning-button>
+                                </template>
+                                <span class="panel-count">{outletCountLabel}</span>
+                            </div>
                         </div>
                         <div class="panel-body">
                             <template if:true={hasOutlets}>
@@ -123,6 +130,7 @@
                                         <span class="outlet-col-seq">#</span>
                                         <span class="outlet-col-name">Account Name</span>
                                         <span class="outlet-col-status">Status</span>
+                                        <span class="outlet-col-reorder">Order</span>
                                         <span class="outlet-col-action"></span>
                                     </div>
                                     <template for:each={beatOutlets} for:item="outlet">
@@ -131,6 +139,18 @@
                                             <span class="outlet-col-name">{outlet.accountName}</span>
                                             <span class="outlet-col-status">
                                                 <span class="status-badge status-active">{outlet.statusLabel}</span>
+                                            </span>
+                                            <span class="outlet-col-reorder">
+                                                <lightning-button-icon icon-name="utility:arrowup"
+                                                    alternative-text="Move Up" size="small" variant="bare"
+                                                    data-id={outlet.Id} onclick={handleMoveOutletUp}
+                                                    disabled={outlet.isFirst}
+                                                    class="reorder-btn"></lightning-button-icon>
+                                                <lightning-button-icon icon-name="utility:arrowdown"
+                                                    alternative-text="Move Down" size="small" variant="bare"
+                                                    data-id={outlet.Id} onclick={handleMoveOutletDown}
+                                                    disabled={outlet.isLast}
+                                                    class="reorder-btn"></lightning-button-icon>
                                             </span>
                                             <span class="outlet-col-action">
                                                 <lightning-button-icon icon-name="utility:close"
