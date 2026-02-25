@@ -112,6 +112,10 @@ export default class BeatManager extends LightningElement {
         return this.selectedAccountIds.length > 0;
     }
 
+    get isAddDisabled() {
+        return this.selectedAccountIds.length === 0;
+    }
+
     get selectedCountLabel() {
         return this.selectedAccountIds.length + ' selected';
     }
