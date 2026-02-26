@@ -278,7 +278,7 @@
 
         <!-- Beat Form Modal -->
         <template if:true={showBeatForm}>
-            <section class="slds-modal slds-fade-in-open">
+            <section class="slds-modal slds-fade-in-open slds-modal_large">
                 <div class="slds-modal__container">
                     <header class="slds-modal__header">
                         <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
@@ -287,62 +287,85 @@
                         </button>
                         <h2 class="slds-modal__title">{formTitle}</h2>
                     </header>
-                    <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-modal__content slds-p-around_medium beat-form-content">
                         <lightning-record-edit-form object-api-name="Beat__c" record-id={beatForm.Id}>
-                            <div class="slds-grid slds-gutters slds-wrap">
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-input label="Beat Name" value={beatForm.Name}
-                                        data-field="Name" onchange={handleBeatFormChange} required></lightning-input>
+                            <!-- Section: Basic Info -->
+                            <div class="form-section">
+                                <h3 class="form-section-title">Basic Information</h3>
+                                <div class="slds-grid slds-gutters slds-wrap">
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-input label="Beat Name" value={beatForm.Name}
+                                            data-field="Name" onchange={handleBeatFormChange} required></lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-input label="Beat Code" value={beatForm.Beat_Code__c}
+                                            data-field="Beat_Code__c" onchange={handleBeatFormChange} required></lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-input label="Pincode Cluster" value={beatForm.Pincode_Cluster__c}
+                                            data-field="Pincode_Cluster__c" onchange={handleBeatFormChange}></lightning-input>
+                                    </div>
                                 </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-input label="Beat Code" value={beatForm.Beat_Code__c}
-                                        data-field="Beat_Code__c" onchange={handleBeatFormChange} required></lightning-input>
+                            </div>
+
+                            <!-- Section: Schedule -->
+                            <div class="form-section">
+                                <h3 class="form-section-title">Schedule</h3>
+                                <div class="slds-grid slds-gutters slds-wrap">
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-combobox label="Frequency" value={beatForm.Frequency__c}
+                                            options={frequencyOptions} data-field="Frequency__c"
+                                            onchange={handleBeatFormChange}></lightning-combobox>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-input label="Sequence" type="number"
+                                            value={beatForm.Sequence__c} data-field="Sequence__c"
+                                            onchange={handleBeatFormChange}></lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small beat-active-toggle">
+                                        <lightning-input type="toggle" label="Is Active"
+                                            checked={beatForm.Is_Active__c}
+                                            data-field="Is_Active__c"
+                                            onchange={handleBeatFormChange}></lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
+                                        <lightning-dual-listbox label="Days of Week"
+                                            source-label="Available" selected-label="Selected"
+                                            options={dayOptions} value={beatForm.Day_of_Week__c}
+                                            data-field="Day_of_Week__c" onchange={handleBeatFormChange}
+                                            size="4"
+                                            required></lightning-dual-listbox>
+                                    </div>
                                 </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-dual-listbox label="Days of Week"
-                                        source-label="Available" selected-label="Selected"
-                                        options={dayOptions} value={beatForm.Day_of_Week__c}
-                                        data-field="Day_of_Week__c" onchange={handleBeatFormChange}
-                                        required></lightning-dual-listbox>
+                            </div>
+
+                            <!-- Section: Assignment -->
+                            <div class="form-section">
+                                <h3 class="form-section-title">Assignment</h3>
+                                <div class="slds-grid slds-gutters slds-wrap">
+                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
+                                        <lightning-input-field field-name="Territory__c"
+                                            value={beatForm.Territory__c}
+                                            data-field="Territory__c"
+                                            onchange={handleBeatFormChange}
+                                            variant="label-stacked"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
+                                        <lightning-input-field field-name="Assigned_User__c"
+                                            value={beatForm.Assigned_User__c}
+                                            data-field="Assigned_User__c"
+                                            onchange={handleBeatFormChange}
+                                            required
+                                            variant="label-stacked"></lightning-input-field>
+                                    </div>
                                 </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-combobox label="Frequency" value={beatForm.Frequency__c}
-                                        options={frequencyOptions} data-field="Frequency__c"
-                                        onchange={handleBeatFormChange}></lightning-combobox>
-                                    <lightning-input label="Sequence" type="number"
-                                        value={beatForm.Sequence__c} data-field="Sequence__c"
-                                        onchange={handleBeatFormChange} class="slds-m-top_small"></lightning-input>
-                                </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-input-field field-name="Territory__c"
-                                        value={beatForm.Territory__c}
-                                        data-field="Territory__c"
-                                        onchange={handleBeatFormChange}
-                                        variant="label-stacked"></lightning-input-field>
-                                </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-input-field field-name="Assigned_User__c"
-                                        value={beatForm.Assigned_User__c}
-                                        data-field="Assigned_User__c"
-                                        onchange={handleBeatFormChange}
-                                        required
-                                        variant="label-stacked"></lightning-input-field>
-                                </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-input label="Pincode Cluster" value={beatForm.Pincode_Cluster__c}
-                                        data-field="Pincode_Cluster__c" onchange={handleBeatFormChange}></lightning-input>
-                                </div>
-                                <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                    <lightning-input type="toggle" label="Is Active"
-                                        checked={beatForm.Is_Active__c}
-                                        data-field="Is_Active__c"
-                                        onchange={handleBeatFormChange}
-                                        class="slds-m-top_large"></lightning-input>
-                                </div>
-                                <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
-                                    <lightning-textarea label="Description" value={beatForm.Description__c}
-                                        data-field="Description__c" onchange={handleBeatFormChange}></lightning-textarea>
-                                </div>
+                            </div>
+
+                            <!-- Section: Description -->
+                            <div class="form-section form-section-last">
+                                <lightning-textarea label="Description" value={beatForm.Description__c}
+                                    data-field="Description__c" onchange={handleBeatFormChange}
+                                    max-length="500"></lightning-textarea>
                             </div>
                         </lightning-record-edit-form>
                     </div>

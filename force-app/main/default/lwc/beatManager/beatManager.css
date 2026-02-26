@@ -459,3 +459,38 @@
 .slds-modal__content {
     overflow: visible;
 }
+
+/* Beat Form Modal - scrollable content */
+.beat-form-content {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Form sections */
+.form-section {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.form-section-last {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.form-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.beat-active-toggle {
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 4px;
+}
