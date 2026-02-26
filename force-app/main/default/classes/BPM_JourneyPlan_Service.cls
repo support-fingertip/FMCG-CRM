@@ -219,6 +219,171 @@ public without sharing class BPM_JourneyPlan_Service {
     }
 
     /**
+     * @description Generates a single journey plan spanning a date range.
+     *              Creates ONE Journey_Plan__c and iterates through every day
+     *              from fromDate to toDate, creating Journey_Plan_Day__c records.
+     *              Validates no overlapping plan exists for this user/territory.
+     *
+     * @param userId      The user (sales rep) for whom to generate the plan.
+     * @param territoryId The territory under which beats are assigned.
+     * @param fromDate    Start date of the plan range.
+     * @param toDate      End date of the plan range.
+     * @return The Id of the created Journey_Plan__c record.
+     */
+    public static Id generatePlanForDateRange(
+        Id userId,
+        Id territoryId,
+        Date fromDate,
+        Date toDate
+    ) {
+        if (userId == null || territoryId == null || fromDate == null || toDate == null) {
+            throw new BPM_JourneyPlanServiceException(
+                'All parameters (userId, territoryId, fromDate, toDate) are required.'
+            );
+        }
+        if (fromDate > toDate) {
+            throw new BPM_JourneyPlanServiceException('From Date must be before or equal to To Date.');
+        }
+
+        // Validate no overlapping plan exists (by date range, not month/year)
+        List<Journey_Plan__c> overlapping = [
+            SELECT Id, Name, Effective_From__c, Effective_To__c
+            FROM Journey_Plan__c
+            WHERE Salesperson__c = :userId
+              AND Territory__c = :territoryId
+              AND Status__c != 'Cancelled'
+              AND Effective_From__c != null
+              AND Effective_To__c != null
+              AND Effective_From__c <= :toDate
+              AND Effective_To__c >= :fromDate
+            LIMIT 1
+        ];
+
+        if (!overlapping.isEmpty()) {
+            Journey_Plan__c existing = overlapping[0];
+            throw new BPM_JourneyPlanServiceException(
+                'An overlapping journey plan already exists: ' + existing.Name
+                + ' (' + String.valueOf(existing.Effective_From__c)
+                + ' to ' + String.valueOf(existing.Effective_To__c) + ').'
+            );
+        }
+
+        // Fetch user and territory names
+        String userName = [SELECT Name FROM User WHERE Id = :userId LIMIT 1].Name;
+        String territoryName = [SELECT Name FROM Territory_Master__c WHERE Id = :territoryId LIMIT 1].Name;
+
+        String startMonthName = normalizeMonthName(fromDate.month());
+        String startYearStr = String.valueOf(fromDate.year());
+        String planName;
+        if (fromDate.month() == toDate.month() && fromDate.year() == toDate.year()) {
+            planName = startMonthName + ' ' + startYearStr + ' - ' + userName + ' - ' + territoryName;
+        } else {
+            String endMonthName = normalizeMonthName(toDate.month());
+            planName = startMonthName + ' ' + startYearStr + ' to '
+                + endMonthName + ' ' + String.valueOf(toDate.year())
+                + ' - ' + userName + ' - ' + territoryName;
+        }
+
+        // Fetch beats assigned to this user in the territory
+        List<Beat__c> beats = [
+            SELECT Id, Name, Day_of_Week__c, Frequency__c,
+                   Territory__c, Sequence__c,
+                   (SELECT Id, Account__c, Account__r.Name, Visit_Sequence__c
+                    FROM Beat_Outlets__r
+                    WHERE Is_Active__c = true
+                    ORDER BY Visit_Sequence__c ASC)
+            FROM Beat__c
+            WHERE Assigned_User__c = :userId
+              AND Territory__c = :territoryId
+              AND Is_Active__c = true
+            ORDER BY Sequence__c NULLS LAST, Name
+        ];
+
+        if (beats.isEmpty()) {
+            throw new BPM_JourneyPlanServiceException(
+                'No active beat assignments found for this user in the specified territory.'
+            );
+        }
+
+        // Create single journey plan header
+        Journey_Plan__c plan = new Journey_Plan__c(
+            Name             = planName,
+            Salesperson__c   = userId,
+            Territory__c     = territoryId,
+            Month__c         = startMonthName,
+            Year__c          = startYearStr,
+            Status__c        = 'Draft',
+            Plan_Date__c     = Date.today(),
+            Effective_From__c = fromDate,
+            Effective_To__c   = toDate
+        );
+        insert plan;
+
+        // Build day-of-week -> beats map
+        Map<String, List<Beat__c>> beatsByDay = new Map<String, List<Beat__c>>();
+        for (Beat__c beat : beats) {
+            if (String.isNotBlank(beat.Day_of_Week__c)) {
+                List<String> days = beat.Day_of_Week__c.split(';');
+                for (String day : days) {
+                    String trimmedDay = day.trim();
+                    if (!beatsByDay.containsKey(trimmedDay)) {
+                        beatsByDay.put(trimmedDay, new List<Beat__c>());
+                    }
+                    beatsByDay.get(trimmedDay).add(beat);
+                }
+            }
+        }
+
+        // Iterate through every day in the date range
+        List<Journey_Plan_Day__c> planDays = new List<Journey_Plan_Day__c>();
+        Integer sequenceOrder = 0;
+        Date currentDate = fromDate;
+
+        while (currentDate <= toDate) {
+            String dayOfWeek = getDayOfWeek(currentDate);
+
+            if (dayOfWeek != 'Sunday') {
+                List<Beat__c> daysBeats = beatsByDay.get(dayOfWeek);
+                if (daysBeats != null && !daysBeats.isEmpty()) {
+                    Integer dayOfMonth = currentDate.day();
+                    Integer daysInMonth = Date.daysInMonth(currentDate.year(), currentDate.month());
+                    String weekNumber = getWeekNumber(dayOfMonth);
+
+                    for (Beat__c beat : daysBeats) {
+                        if (shouldIncludeForFrequency(beat.Frequency__c, dayOfMonth, daysInMonth)) {
+                            sequenceOrder++;
+                            planDays.add(new Journey_Plan_Day__c(
+                                Journey_Plan__c     = plan.Id,
+                                Plan_Date__c        = currentDate,
+                                Day_Of_Week__c      = dayOfWeek,
+                                Beat__c             = beat.Id,
+                                Beat_Name__c        = beat.Name,
+                                Planned_Outlets__c  = beat.Beat_Outlets__r != null
+                                    ? beat.Beat_Outlets__r.size() : 0,
+                                Status__c           = 'Planned',
+                                Sequence__c         = beat.Sequence__c,
+                                Week_Number__c      = weekNumber,
+                                Sequence_Order__c   = sequenceOrder
+                            ));
+                        }
+                    }
+                }
+            }
+
+            currentDate = currentDate.addDays(1);
+        }
+
+        if (!planDays.isEmpty()) {
+            insert planDays;
+        }
+
+        plan.Total_Planned_Days__c = planDays.size();
+        update plan;
+
+        return plan.Id;
+    }
+
+    /**
      * @description Calculates the compliance percentage for a journey plan by
      *              comparing executed visits against planned visits.
      *

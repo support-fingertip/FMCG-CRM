@@ -66,6 +66,19 @@ public with sharing class BeatPlanController {
      */
     @AuraEnabled
     public static JourneyPlanResult getJourneyPlan(Id userId, String month, String year) {
+        // Calculate first/last day of the viewed month for date-range overlap matching
+        Map<String, Integer> monthMap = new Map<String, Integer>{
+            'January' => 1, 'February' => 2, 'March' => 3,
+            'April' => 4, 'May' => 5, 'June' => 6,
+            'July' => 7, 'August' => 8, 'September' => 9,
+            'October' => 10, 'November' => 11, 'December' => 12
+        };
+        Integer monthInt = monthMap.containsKey(month) ? monthMap.get(month) : 1;
+        Integer yearInt = Integer.valueOf(year);
+        Date firstDayOfMonth = Date.newInstance(yearInt, monthInt, 1);
+        Date lastDayOfMonth = Date.newInstance(yearInt, monthInt, Date.daysInMonth(yearInt, monthInt));
+
+        // Find plans matching by exact month/year OR by date-range overlap
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
                    Salesperson__r.Name, Total_Planned_Visits__c,
@@ -74,8 +87,11 @@ public with sharing class BeatPlanController {
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
-            AND Month__c = :month
-            AND Year__c = :year
+            AND Status__c != 'Cancelled'
+            AND (
+                (Month__c = :month AND Year__c = :year)
+                OR (Effective_From__c <= :lastDayOfMonth AND Effective_To__c >= :firstDayOfMonth)
+            )
             ORDER BY CreatedDate DESC
             LIMIT 1
         ];
@@ -864,83 +880,23 @@ public with sharing class BeatPlanController {
         }
     }
 
-    // ── Generate Plans for Date Range ───────────────────────────────────────
+    // ── Generate Plan for Date Range ────────────────────────────────────────
 
     /**
-     * @description Generates journey plans for each month within the specified
-     *              date range. Sets Effective_From__c and Effective_To__c on
-     *              each plan. Skips months where a plan already exists.
+     * @description Generates a single journey plan spanning the specified date
+     *              range. Creates one Journey_Plan__c with Effective_From/To
+     *              and plan days for every working day in the range.
      * @param userId      The User (Salesperson) Id.
      * @param territoryId The Territory_Master__c Id.
      * @param fromDate    Start date of the range.
      * @param toDate      End date of the range.
-     * @return List of created Journey_Plan__c Ids.
+     * @return The created Journey_Plan__c Id.
      */
     @AuraEnabled
-    public static List<Id> generatePlansForDateRange(Id userId, Id territoryId, Date fromDate, Date toDate) {
+    public static Id generatePlanForDateRange(Id userId, Id territoryId, Date fromDate, Date toDate) {
         try {
-            if (fromDate == null || toDate == null) {
-                throw new AuraHandledException('From Date and To Date are required.');
-            }
-            if (fromDate > toDate) {
-                throw new AuraHandledException('From Date must be before or equal to To Date.');
-            }
-
-            List<Id> planIds = new List<Id>();
-            List<String> skippedMonths = new List<String>();
-
-            Date currentMonthStart = fromDate.toStartOfMonth();
-            Date endMonthStart = toDate.toStartOfMonth();
-
-            List<String> monthNames = new List<String>{
-                'January','February','March','April','May','June',
-                'July','August','September','October','November','December'
-            };
-
-            while (currentMonthStart <= endMonthStart) {
-                Integer monthInt = currentMonthStart.month();
-                Integer yearInt = currentMonthStart.year();
-                String monthName = monthNames[monthInt - 1];
-                String yearStr = String.valueOf(yearInt);
-
-                try {
-                    // Calculate effective date boundaries for this month
-                    Date effectiveFrom = (currentMonthStart.month() == fromDate.month()
-                        && currentMonthStart.year() == fromDate.year()) ? fromDate : currentMonthStart;
-                    Integer daysInMonth = Date.daysInMonth(yearInt, monthInt);
-                    Date lastDayOfMonth = Date.newInstance(yearInt, monthInt, daysInMonth);
-                    Date effectiveTo = (currentMonthStart.month() == toDate.month()
-                        && currentMonthStart.year() == toDate.year()) ? toDate : lastDayOfMonth;
-
-                    // Pass date range to service - it filters beats by user and days by date range
-                    Id planId = BPM_JourneyPlan_Service.generateDefaultPlan(
-                        userId, territoryId, monthName, yearStr, effectiveFrom, effectiveTo
-                    );
-
-                    planIds.add(planId);
-                } catch (BPM_JourneyPlanServiceException e) {
-                    if (e.getMessage().contains('already exists')) {
-                        skippedMonths.add(monthName + ' ' + yearStr);
-                    } else {
-                        throw new AuraHandledException(e.getMessage());
-                    }
-                }
-
-                currentMonthStart = currentMonthStart.addMonths(1);
-            }
-
-            if (planIds.isEmpty()) {
-                String msg = 'No plans could be generated.';
-                if (!skippedMonths.isEmpty()) {
-                    msg += ' Plans already exist for: ' + String.join(skippedMonths, ', ') + '.';
-                }
-                throw new AuraHandledException(msg);
-            }
-
-            return planIds;
-        } catch (AuraHandledException ahe) {
-            throw ahe;
-        } catch (Exception e) {
+            return BPM_JourneyPlan_Service.generatePlanForDateRange(userId, territoryId, fromDate, toDate);
+        } catch (BPM_JourneyPlanServiceException e) {
             throw new AuraHandledException(e.getMessage());
         }
     }

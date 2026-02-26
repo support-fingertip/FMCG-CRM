@@ -11,7 +11,7 @@ import submitForApproval from '@salesforce/apex/BeatPlanController.submitForAppr
 import addBeatToCalendarDay from '@salesforce/apex/BeatPlanController.addBeatToCalendarDay';
 import removePlanDay from '@salesforce/apex/BeatPlanController.removePlanDay';
 import generateDefaultPlan from '@salesforce/apex/BeatPlanController.generateDefaultPlan';
-import generatePlansForDateRange from '@salesforce/apex/BeatPlanController.generatePlansForDateRange';
+import generatePlanForDateRange from '@salesforce/apex/BeatPlanController.generatePlanForDateRange';
 
 const JP_SALESPERSON_FIELD = 'Journey_Plan__c.Salesperson__c';
 const JP_MONTH_FIELD = 'Journey_Plan__c.Month__c';
@@ -125,9 +125,8 @@ export default class BeatPlanCalendar extends LightningElement {
         const from = new Date(this.generateFromDate + 'T12:00:00');
         const to = new Date(this.generateToDate + 'T12:00:00');
         if (from > to) return 'From Date must be before To Date.';
-        let monthCount = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) + 1;
-        if (monthCount === 1) return 'Plan will be generated for 1 month.';
-        return 'Plans will be generated for ' + monthCount + ' months.';
+        const days = Math.round((to - from) / (1000 * 60 * 60 * 24)) + 1;
+        return 'A single plan will be generated covering ' + days + ' days.';
     }
 
     get generateDisabled() {
@@ -201,7 +200,15 @@ export default class BeatPlanCalendar extends LightningElement {
                 this.pjpStatus = result.journeyPlan.Status__c || 'Draft';
                 this.resolvedTerritoryId = result.journeyPlan.Territory__c || this.resolvedTerritoryId;
                 this.calendarData = this.buildCalendarData(this.planDaysRaw);
-                this.calculateSummaryStats(this.planDaysRaw);
+
+                // Filter plan days to the current viewed month for accurate stats
+                const viewMonthStart = this.formatDateKey(new Date(this.currentYear, this.currentMonth, 1));
+                const viewMonthEnd = this.formatDateKey(new Date(this.currentYear, this.currentMonth + 1, 0));
+                const currentMonthDays = this.planDaysRaw.filter(day => {
+                    if (!day.Plan_Date__c) return true;
+                    return day.Plan_Date__c >= viewMonthStart && day.Plan_Date__c <= viewMonthEnd;
+                });
+                this.calculateSummaryStats(currentMonthDays);
             } else {
                 this.journeyPlan = {};
                 this.planDaysRaw = [];
@@ -612,7 +619,7 @@ export default class BeatPlanCalendar extends LightningElement {
         this.isLoading = true;
         this.showGenerateModal = false;
         try {
-            await generatePlansForDateRange({
+            await generatePlanForDateRange({
                 userId,
                 territoryId,
                 fromDate: this.generateFromDate,
@@ -624,7 +631,7 @@ export default class BeatPlanCalendar extends LightningElement {
             this.currentMonth = from.getMonth();
             this.currentYear = from.getFullYear();
 
-            this.showToast('Success', 'Journey plan(s) generated successfully.', 'success');
+            this.showToast('Success', 'Journey plan generated successfully.', 'success');
             await this.loadCalendar();
         } catch (error) {
             this.showToast('Error', 'Failed to generate plan: ' + this.reduceErrors(error), 'error');
