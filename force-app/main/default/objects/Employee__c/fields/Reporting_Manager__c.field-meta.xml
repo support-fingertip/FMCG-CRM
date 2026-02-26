@@ -7,5 +7,6 @@
     <relationshipLabel>Direct Reports</relationshipLabel>
     <relationshipName>Direct_Reports</relationshipName>
     <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
     <description>Self-referencing hierarchy for reporting structure</description>
 </CustomField>

@@ -6,6 +6,7 @@
     <referenceTo>User</referenceTo>
     <relationshipLabel>Employee Records</relationshipLabel>
     <relationshipName>Employee_Records</relationshipName>
-    <required>true</required>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
     <description>Linked Salesforce User account for this employee</description>
 </CustomField>

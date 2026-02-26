@@ -7,4 +7,5 @@
     <relationshipLabel>Employees</relationshipLabel>
     <relationshipName>Employees</relationshipName>
     <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>
