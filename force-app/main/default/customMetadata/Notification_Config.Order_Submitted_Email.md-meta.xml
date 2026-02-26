@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Order Submitted Email</label>
+    <protected>false</protected>
+    <values>
+        <field>Event_Type__c</field>
+        <value xsi:type="xsd:string">Order_Submitted</value>
+    </values>
+    <values>
+        <field>Channel__c</field>
+        <value xsi:type="xsd:string">Email</value>
+    </values>
+    <values>
+        <field>Recipient_Type__c</field>
+        <value xsi:type="xsd:string">Manager</value>
+    </values>
+    <values>
+        <field>Template__c</field>
+        <value xsi:type="xsd:string">A new sales order {!Order_Name} for amount {!Total_Amount} has been submitted by {!Owner_Name} and is pending your approval.</value>
+    </values>
+    <values>
+        <field>Is_Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>
