@@ -223,7 +223,7 @@
                                         <div class="beat-color-dot" style={beat.colorStyle}></div>
                                         <span class="beat-detail-name">{beat.name}</span>
                                         <span class="beat-detail-count">{beat.outletCount} outlets</span>
-                                        <template if:true={isPlanEditable}>
+                                        <template if:true={isSelectedDayEditable}>
                                             <lightning-button-icon icon-name="utility:close"
                                                 alternative-text="Remove from this day" title="Remove from this day"
                                                 size="small" variant="bare-inverse"
@@ -247,7 +247,7 @@
                             </template>
                         </div>
                         <!-- Available Beats -->
-                        <template if:true={isPlanEditable}>
+                        <template if:true={isSelectedDayEditable}>
                             <div class="slds-col slds-size_1-of-2">
                                 <h4 class="slds-text-title_caps slds-m-bottom_x-small">Available Beats</h4>
                                 <template if:true={hasAvailableBeats}>
@@ -292,17 +292,19 @@
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
                     <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
-                        Select the date range for which to generate journey plans. A separate plan will be created for each month in the range.
+                        Select the date range for which to generate the journey plan. Only future dates are allowed.
                     </p>
                     <div class="slds-grid slds-gutters slds-wrap">
                         <div class="slds-col slds-size_1-of-2">
                             <lightning-input type="date" label="From Date"
                                 value={generateFromDate} onchange={handleFromDateChange}
+                                min={todayFormatted}
                                 required></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2">
                             <lightning-input type="date" label="To Date"
                                 value={generateToDate} onchange={handleToDateChange}
+                                min={todayFormatted}
                                 required></lightning-input>
                         </div>
                     </div>
@@ -350,6 +352,7 @@
                         <div class="slds-col slds-size_1-of-2">
                             <lightning-input type="date" label="To Date"
                                 value={regenerateToDate} onchange={handleRegenerateToDateChange}
+                                min={todayFormatted}
                                 required></lightning-input>
                         </div>
                     </div>

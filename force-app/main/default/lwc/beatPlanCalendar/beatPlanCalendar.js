@@ -112,6 +112,15 @@ export default class BeatPlanCalendar extends LightningElement {
         return this.hasPlan && (this.pjpStatus === 'Draft' || this.pjpStatus === 'Rejected');
     }
 
+    get isSelectedDayEditable() {
+        if (!this.isPlanEditable || !this.selectedDayDetail) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(this.selectedDayDetail.dateKey + 'T12:00:00');
+        selectedDate.setHours(0, 0, 0, 0);
+        return selectedDate >= today;
+    }
+
     get hasSelectedBeats() {
         return this.selectedDayDetail && this.selectedDayDetail.beats && this.selectedDayDetail.beats.length > 0;
     }
@@ -138,7 +147,10 @@ export default class BeatPlanCalendar extends LightningElement {
         if (!this.resolvedTerritoryId) return true;
         const from = new Date(this.generateFromDate + 'T12:00:00');
         const to = new Date(this.generateToDate + 'T12:00:00');
-        return from > to;
+        if (from > to) return true;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return from < today;
     }
 
     get regenerateDisabled() {
@@ -508,8 +520,8 @@ export default class BeatPlanCalendar extends LightningElement {
         const beatId = event.currentTarget.dataset.beatId;
         if (!this.selectedDayDetail || !beatId || !this.hasPlan) return;
 
-        if (!this.isPlanEditable) {
-            this.showToast('Warning', 'This plan is not editable.', 'warning');
+        if (!this.isSelectedDayEditable) {
+            this.showToast('Warning', 'Cannot modify past dates. Only future dates can be edited.', 'warning');
             return;
         }
 
@@ -547,8 +559,8 @@ export default class BeatPlanCalendar extends LightningElement {
         const planDayId = event.currentTarget.dataset.planDayId;
         if (!planDayId) return;
 
-        if (!this.isPlanEditable) {
-            this.showToast('Warning', 'This plan is not editable.', 'warning');
+        if (!this.isSelectedDayEditable) {
+            this.showToast('Warning', 'Cannot modify past dates. Only future dates can be edited.', 'warning');
             return;
         }
 
@@ -604,10 +616,12 @@ export default class BeatPlanCalendar extends LightningElement {
     // ── Generate Plan ───────────────────────────────────────────────────
 
     handleOpenGenerateModal() {
-        const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+        const today = new Date();
         const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
-        this.generateFromDate = this.formatDateKey(firstDay);
-        this.generateToDate = this.formatDateKey(lastDay);
+        // Default from date to today (only future dates allowed)
+        this.generateFromDate = this.formatDateKey(today);
+        // Default to date to end of currently viewed month, but ensure it's >= today
+        this.generateToDate = lastDay >= today ? this.formatDateKey(lastDay) : this.formatDateKey(today);
         this.showGenerateModal = true;
     }
 
@@ -707,8 +721,8 @@ export default class BeatPlanCalendar extends LightningElement {
         const planId = this.journeyPlan?.Id;
         if (!beatId || !planId) return;
 
-        if (!this.isPlanEditable) {
-            this.showToast('Warning', 'This plan is not editable.', 'warning');
+        if (!this.isSelectedDayEditable) {
+            this.showToast('Warning', 'Cannot modify past dates. Only future dates can be edited.', 'warning');
             return;
         }
 
