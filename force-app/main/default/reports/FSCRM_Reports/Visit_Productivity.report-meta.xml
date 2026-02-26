@@ -9,7 +9,7 @@
     <showSubTotals>true</showSubTotals>
     <timeFrameFilter>
         <dateColumn>Visit__c.Visit_Date__c</dateColumn>
-        <interval>INTERVAL_CURFQ</interval>
+        <interval>INTERVAL_CURQ</interval>
     </timeFrameFilter>
     <columns>
         <field>CUST_NAME</field>

@@ -7,6 +7,7 @@
         <type>Text</type>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Trade scheme and promotion definition with budget tracking, slab configuration, and channel applicability (MOD-07 Scheme and Promotion Management)</description>
 </CustomObject>

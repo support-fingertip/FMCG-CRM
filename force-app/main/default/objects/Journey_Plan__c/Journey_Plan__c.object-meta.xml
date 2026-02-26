@@ -7,6 +7,7 @@
         <type>Text</type>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Permanent Journey Plan for salesperson route scheduling and visit planning (MOD-02 Beat Plan and Route Management)</description>
 </CustomObject>

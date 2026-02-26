@@ -7,6 +7,7 @@
         <type>Text</type>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Beat/route definition for sales territory coverage planning (MOD-02 Beat Plan and Route Management)</description>
 </CustomObject>

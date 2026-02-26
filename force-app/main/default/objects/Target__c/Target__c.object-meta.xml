@@ -8,6 +8,7 @@
         <type>AutoNumber</type>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Sales target assignment for salesperson by territory, period, and KPI type with achievement tracking (MOD-08 Target and Achievement Management)</description>
 </CustomObject>
