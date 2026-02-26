@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>GST Coffee Tea HSN 09 Inter-State</label>
+    <protected>false</protected>
+    <values>
+        <field>Tax_Type__c</field>
+        <value xsi:type="xsd:string">GST</value>
+    </values>
+    <values>
+        <field>HSN_Code_Pattern__c</field>
+        <value xsi:type="xsd:string">09</value>
+    </values>
+    <values>
+        <field>State__c</field>
+        <value xsi:type="xsd:string">Inter-State</value>
+    </values>
+    <values>
+        <field>Default_Rate__c</field>
+        <value xsi:type="xsd:double">5.0</value>
+    </values>
+    <values>
+        <field>CGST_Rate__c</field>
+        <value xsi:type="xsd:double">0.0</value>
+    </values>
+    <values>
+        <field>SGST_Rate__c</field>
+        <value xsi:type="xsd:double">0.0</value>
+    </values>
+    <values>
+        <field>IGST_Rate__c</field>
+        <value xsi:type="xsd:double">5.0</value>
+    </values>
+    <values>
+        <field>Effective_From__c</field>
+        <value xsi:type="xsd:date">2017-07-01</value>
+    </values>
+    <values>
+        <field>Is_Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>
