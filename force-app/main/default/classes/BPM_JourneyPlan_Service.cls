@@ -384,6 +384,141 @@ public without sharing class BPM_JourneyPlan_Service {
     }
 
     /**
+     * @description Regenerates a journey plan by deleting all future plan days
+     *              (from today onwards) and recreating them using the user's
+     *              current beat assignments. Preserves past plan days.
+     *
+     * @param journeyPlanId The Journey_Plan__c record to regenerate.
+     * @param toDate        The new end date for the plan.
+     */
+    public static void regeneratePlan(Id journeyPlanId, Date toDate) {
+        Journey_Plan__c plan = [
+            SELECT Id, Salesperson__c, Territory__c, Status__c,
+                   Effective_From__c, Effective_To__c
+            FROM Journey_Plan__c
+            WHERE Id = :journeyPlanId
+            LIMIT 1
+        ];
+
+        if (plan.Status__c != 'Draft' && plan.Status__c != 'Rejected') {
+            throw new BPM_JourneyPlanServiceException('Only Draft or Rejected plans can be regenerated.');
+        }
+
+        Date fromDate = Date.today();
+        if (toDate == null) {
+            toDate = plan.Effective_To__c != null ? plan.Effective_To__c : fromDate.addMonths(1).addDays(-1);
+        }
+
+        // Delete all plan days from today onwards
+        List<Journey_Plan_Day__c> futureDays = [
+            SELECT Id FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c = :journeyPlanId AND Plan_Date__c >= :fromDate
+        ];
+        if (!futureDays.isEmpty()) {
+            delete futureDays;
+        }
+
+        // Fetch current beat assignments for the user
+        Id userId = plan.Salesperson__c;
+        Id territoryId = plan.Territory__c;
+
+        List<Beat__c> beats = [
+            SELECT Id, Name, Day_of_Week__c, Frequency__c,
+                   Territory__c, Sequence__c,
+                   (SELECT Id, Account__c, Account__r.Name, Visit_Sequence__c
+                    FROM Beat_Outlets__r
+                    WHERE Is_Active__c = true
+                    ORDER BY Visit_Sequence__c ASC)
+            FROM Beat__c
+            WHERE Assigned_User__c = :userId
+              AND Territory__c = :territoryId
+              AND Is_Active__c = true
+            ORDER BY Sequence__c NULLS LAST, Name
+        ];
+
+        if (beats.isEmpty()) {
+            throw new BPM_JourneyPlanServiceException(
+                'No active beat assignments found for this user in the specified territory.'
+            );
+        }
+
+        // Build day-of-week -> beats map
+        Map<String, List<Beat__c>> beatsByDay = new Map<String, List<Beat__c>>();
+        for (Beat__c beat : beats) {
+            if (String.isNotBlank(beat.Day_of_Week__c)) {
+                List<String> days = beat.Day_of_Week__c.split(';');
+                for (String day : days) {
+                    String trimmedDay = day.trim();
+                    if (!beatsByDay.containsKey(trimmedDay)) {
+                        beatsByDay.put(trimmedDay, new List<Beat__c>());
+                    }
+                    beatsByDay.get(trimmedDay).add(beat);
+                }
+            }
+        }
+
+        // Get max sequence from remaining (past) plan days
+        List<AggregateResult> maxSeq = [
+            SELECT MAX(Sequence_Order__c) maxVal
+            FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c = :journeyPlanId
+        ];
+        Integer sequenceOrder = 0;
+        if (maxSeq[0].get('maxVal') != null) {
+            sequenceOrder = ((Decimal) maxSeq[0].get('maxVal')).intValue();
+        }
+
+        // Create new plan days from today to toDate
+        List<Journey_Plan_Day__c> planDays = new List<Journey_Plan_Day__c>();
+        Date currentDate = fromDate;
+
+        while (currentDate <= toDate) {
+            String dayOfWeek = getDayOfWeek(currentDate);
+
+            if (dayOfWeek != 'Sunday') {
+                List<Beat__c> daysBeats = beatsByDay.get(dayOfWeek);
+                if (daysBeats != null && !daysBeats.isEmpty()) {
+                    Integer dayOfMonth = currentDate.day();
+                    Integer daysInMonth = Date.daysInMonth(currentDate.year(), currentDate.month());
+                    String weekNumber = getWeekNumber(dayOfMonth);
+
+                    for (Beat__c beat : daysBeats) {
+                        if (shouldIncludeForFrequency(beat.Frequency__c, dayOfMonth, daysInMonth)) {
+                            sequenceOrder++;
+                            planDays.add(new Journey_Plan_Day__c(
+                                Journey_Plan__c     = plan.Id,
+                                Plan_Date__c        = currentDate,
+                                Day_Of_Week__c      = dayOfWeek,
+                                Beat__c             = beat.Id,
+                                Beat_Name__c        = beat.Name,
+                                Planned_Outlets__c  = beat.Beat_Outlets__r != null
+                                    ? beat.Beat_Outlets__r.size() : 0,
+                                Status__c           = 'Planned',
+                                Sequence__c         = beat.Sequence__c,
+                                Week_Number__c      = weekNumber,
+                                Sequence_Order__c   = sequenceOrder
+                            ));
+                        }
+                    }
+                }
+            }
+
+            currentDate = currentDate.addDays(1);
+        }
+
+        if (!planDays.isEmpty()) {
+            insert planDays;
+        }
+
+        // Update plan dates and total
+        plan.Effective_To__c = toDate;
+        plan.Total_Planned_Days__c = [
+            SELECT COUNT() FROM Journey_Plan_Day__c WHERE Journey_Plan__c = :journeyPlanId
+        ];
+        update plan;
+    }
+
+    /**
      * @description Calculates the compliance percentage for a journey plan by
      *              comparing executed visits against planned visits.
      *

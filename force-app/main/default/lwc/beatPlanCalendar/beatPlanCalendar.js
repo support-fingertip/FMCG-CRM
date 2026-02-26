@@ -12,6 +12,8 @@ import addBeatToCalendarDay from '@salesforce/apex/BeatPlanController.addBeatToC
 import removePlanDay from '@salesforce/apex/BeatPlanController.removePlanDay';
 import generateDefaultPlan from '@salesforce/apex/BeatPlanController.generateDefaultPlan';
 import generatePlanForDateRange from '@salesforce/apex/BeatPlanController.generatePlanForDateRange';
+import regeneratePlan from '@salesforce/apex/BeatPlanController.regeneratePlan';
+import removeBeatFromPlan from '@salesforce/apex/BeatPlanController.removeBeatFromPlan';
 
 const JP_SALESPERSON_FIELD = 'Journey_Plan__c.Salesperson__c';
 const JP_MONTH_FIELD = 'Journey_Plan__c.Month__c';
@@ -66,6 +68,8 @@ export default class BeatPlanCalendar extends LightningElement {
     showGenerateModal = false;
     generateFromDate = '';
     generateToDate = '';
+    showRegenerateModal = false;
+    regenerateToDate = '';
 
     get hasPlan() {
         return this.journeyPlan && this.journeyPlan.Id;
@@ -135,6 +139,18 @@ export default class BeatPlanCalendar extends LightningElement {
         const from = new Date(this.generateFromDate + 'T12:00:00');
         const to = new Date(this.generateToDate + 'T12:00:00');
         return from > to;
+    }
+
+    get regenerateDisabled() {
+        if (!this.regenerateToDate) return true;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const to = new Date(this.regenerateToDate + 'T12:00:00');
+        return to < today;
+    }
+
+    get todayFormatted() {
+        return this.formatDateKey(new Date());
     }
 
     @wire(getRecord, { recordId: '$recordId', fields: JP_FIELDS })
@@ -635,6 +651,85 @@ export default class BeatPlanCalendar extends LightningElement {
             await this.loadCalendar();
         } catch (error) {
             this.showToast('Error', 'Failed to generate plan: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Regenerate Plan ──────────────────────────────────────────────────
+
+    handleOpenRegenerateModal() {
+        // Default to existing plan's end date, or 1 month from today
+        if (this.journeyPlan && this.journeyPlan.Effective_To__c) {
+            this.regenerateToDate = this.journeyPlan.Effective_To__c;
+        } else {
+            const defaultEnd = new Date();
+            defaultEnd.setMonth(defaultEnd.getMonth() + 1);
+            defaultEnd.setDate(0); // last day of current month
+            this.regenerateToDate = this.formatDateKey(defaultEnd);
+        }
+        this.showRegenerateModal = true;
+    }
+
+    handleCloseRegenerateModal() {
+        this.showRegenerateModal = false;
+    }
+
+    handleRegenerateToDateChange(event) {
+        this.regenerateToDate = event.detail.value;
+    }
+
+    async handleConfirmRegenerate() {
+        const planId = this.journeyPlan?.Id;
+        if (!planId) return;
+
+        this.isLoading = true;
+        this.showRegenerateModal = false;
+        try {
+            await regeneratePlan({
+                journeyPlanId: planId,
+                toDate: this.regenerateToDate
+            });
+            this.showToast('Success', 'Journey plan regenerated successfully.', 'success');
+            await this.loadCalendar();
+            this.selectedDayDetail = null;
+        } catch (error) {
+            this.showToast('Error', 'Failed to regenerate plan: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Remove Beat from Plan ───────────────────────────────────────────
+
+    async handleRemoveBeatFromPlan(event) {
+        const beatId = event.currentTarget.dataset.beatId;
+        const planId = this.journeyPlan?.Id;
+        if (!beatId || !planId) return;
+
+        if (!this.isPlanEditable) {
+            this.showToast('Warning', 'This plan is not editable.', 'warning');
+            return;
+        }
+
+        const beatInfo = this.allBeats.find(b => b.id === beatId);
+        const beatName = beatInfo ? beatInfo.name : 'this beat';
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm('Remove "' + beatName + '" from all days in this plan?')) {
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            await removeBeatFromPlan({ journeyPlanId: planId, beatId });
+            this.showToast('Success', beatName + ' removed from the plan.', 'success');
+            const dateKey = this.selectedDayDetail?.dateKey;
+            await this.loadCalendar();
+            if (dateKey) {
+                this.selectDay({ currentTarget: { dataset: { date: dateKey } } });
+            }
+        } catch (error) {
+            this.showToast('Error', 'Failed to remove beat: ' + this.reduceErrors(error), 'error');
         } finally {
             this.isLoading = false;
         }

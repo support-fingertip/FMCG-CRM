@@ -880,6 +880,53 @@ public with sharing class BeatPlanController {
         }
     }
 
+    // ── Regenerate Plan ────────────────────────────────────────────────────
+
+    /**
+     * @description Regenerates a journey plan by deleting future plan days and
+     *              recreating them from today using the user's current beats.
+     * @param journeyPlanId The Journey_Plan__c Id.
+     * @param toDate        The new end date for the plan.
+     */
+    @AuraEnabled
+    public static void regeneratePlan(Id journeyPlanId, Date toDate) {
+        try {
+            BPM_JourneyPlan_Service.regeneratePlan(journeyPlanId, toDate);
+        } catch (BPM_JourneyPlanServiceException e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Remove Beat from Plan ────────────────────────────────────────────
+
+    /**
+     * @description Removes all occurrences of a beat from a journey plan.
+     * @param journeyPlanId The Journey_Plan__c Id.
+     * @param beatId        The Beat__c Id to remove.
+     */
+    @AuraEnabled
+    public static void removeBeatFromPlan(Id journeyPlanId, Id beatId) {
+        try {
+            Journey_Plan__c plan = [
+                SELECT Id, Status__c FROM Journey_Plan__c WHERE Id = :journeyPlanId LIMIT 1
+            ];
+            if (plan.Status__c == 'Approved' || plan.Status__c == 'Submitted') {
+                throw new AuraHandledException('Cannot modify a submitted or approved plan.');
+            }
+            List<Journey_Plan_Day__c> days = [
+                SELECT Id FROM Journey_Plan_Day__c
+                WHERE Journey_Plan__c = :journeyPlanId AND Beat__c = :beatId
+            ];
+            if (!days.isEmpty()) {
+                delete days;
+            }
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
     // ── Generate Plan for Date Range ────────────────────────────────────────
 
     /**

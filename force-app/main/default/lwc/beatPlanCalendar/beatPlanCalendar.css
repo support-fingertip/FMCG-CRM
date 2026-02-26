@@ -420,6 +420,11 @@
     flex-shrink: 0;
 }
 
+.remove-beat-plan-btn {
+    color: #c23934;
+    margin-left: 2px;
+}
+
 /* Generate Plan Modal */
 .generate-info-text {
     font-size: 13px;

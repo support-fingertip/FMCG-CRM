@@ -12,6 +12,12 @@
                     </div>
                 </template>
                 <template if:true={hasPlan}>
+                    <template if:true={isPlanEditable}>
+                        <div class="slds-col">
+                            <lightning-button variant="neutral" label="Regenerate Plan"
+                                icon-name="utility:refresh" onclick={handleOpenRegenerateModal}></lightning-button>
+                        </div>
+                    </template>
                     <div class="slds-col">
                         <lightning-button variant="brand" label="Submit for Approval"
                             icon-name="utility:approval" onclick={handleSubmitApproval}
@@ -219,10 +225,17 @@
                                         <span class="beat-detail-count">{beat.outletCount} outlets</span>
                                         <template if:true={isPlanEditable}>
                                             <lightning-button-icon icon-name="utility:close"
-                                                alternative-text="Remove" size="small" variant="bare-inverse"
+                                                alternative-text="Remove from this day" title="Remove from this day"
+                                                size="small" variant="bare-inverse"
                                                 data-plan-day-id={beat.planDayId}
                                                 onclick={handleRemoveBeat}
                                                 class="remove-beat-btn"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete"
+                                                alternative-text="Remove from entire plan" title="Remove from entire plan"
+                                                size="small" variant="bare-inverse"
+                                                data-beat-id={beat.id}
+                                                onclick={handleRemoveBeatFromPlan}
+                                                class="remove-beat-plan-btn"></lightning-button-icon>
                                         </template>
                                     </div>
                                 </template>
@@ -305,6 +318,48 @@
                     <lightning-button label="Generate" variant="brand"
                         onclick={handleConfirmGenerate}
                         disabled={generateDisabled}
+                        class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Regenerate Plan Modal -->
+    <template if:true={showRegenerateModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close"
+                        alternative-text="Close" size="large" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleCloseRegenerateModal}></lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Regenerate Journey Plan</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                        <p class="slds-text-body_small">
+                            This will delete all future plan days (from today onwards) and recreate them using your current beat assignments.
+                            Past plan days will be preserved.
+                        </p>
+                    </div>
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input type="date" label="From Date (Today)"
+                                value={todayFormatted} disabled></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input type="date" label="To Date"
+                                value={regenerateToDate} onchange={handleRegenerateToDateChange}
+                                required></lightning-input>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" variant="neutral"
+                        onclick={handleCloseRegenerateModal}></lightning-button>
+                    <lightning-button label="Regenerate" variant="brand"
+                        onclick={handleConfirmRegenerate}
+                        disabled={regenerateDisabled}
                         class="slds-m-left_x-small"></lightning-button>
                 </footer>
             </div>
