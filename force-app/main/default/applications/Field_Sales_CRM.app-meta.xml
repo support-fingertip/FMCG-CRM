@@ -20,6 +20,10 @@
     <tabs>Beat_Manager</tabs>
     <tabs>Journey_Plan__c</tabs>
     <tabs>Day_Attendance__c</tabs>
+    <tabs>Employee_Manager</tabs>
+    <tabs>Employee_360</tabs>
+    <tabs>Leave_Manager</tabs>
+    <tabs>Holiday_Manager</tabs>
     <tabs>Target__c</tabs>
     <tabs>Scheme__c</tabs>
     <tabs>Scorecard__c</tabs>

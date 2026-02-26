@@ -1,0 +1,591 @@
+import { LightningElement, track } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
+import getEmployees from '@salesforce/apex/EmployeeController.getEmployees';
+import getEmployee from '@salesforce/apex/EmployeeController.getEmployee';
+import saveEmployee from '@salesforce/apex/EmployeeController.saveEmployee';
+import deactivateEmployee from '@salesforce/apex/EmployeeController.deactivateEmployee';
+import getDepartmentOptions from '@salesforce/apex/EmployeeController.getDepartmentOptions';
+import getDesignationOptions from '@salesforce/apex/EmployeeController.getDesignationOptions';
+import getDirectReports from '@salesforce/apex/EmployeeController.getDirectReports';
+
+const PAGE_SIZE = 15;
+
+const EMPTY_EMPLOYEE_FORM = {
+    Id: null,
+    First_Name__c: '',
+    Last_Name__c: '',
+    Employee_Code__c: '',
+    Email__c: '',
+    Phone__c: '',
+    Department__c: '',
+    Designation__c: '',
+    Reporting_Manager__c: null,
+    User__c: null,
+    Date_of_Joining__c: null,
+    Zone__c: '',
+    Region__c: '',
+    Territory__c: null,
+    Is_Active__c: true,
+    Profile_Photo_URL__c: '',
+    Address__c: '',
+    CL_Balance__c: 0,
+    SL_Balance__c: 0,
+    EL_Balance__c: 0,
+    CO_Balance__c: 0
+};
+
+export default class EmployeeManager extends NavigationMixin(LightningElement) {
+    // ── State ───────────────────────────────────────────────────
+    @track employees = [];
+    @track selectedEmployee = null;
+    @track directReports = [];
+    @track departmentOptions = [];
+    @track designationOptions = [];
+    isLoading = false;
+    showEmployeeForm = false;
+    isEditMode = false;
+
+    // Search & Filter
+    searchTerm = '';
+    filterDepartment = '';
+    filterDesignation = '';
+    filterActiveOnly = true;
+
+    // Pagination
+    pageNumber = 1;
+    totalPages = 1;
+    totalCount = 0;
+
+    // Active tab
+    activeTab = 'details';
+
+    // Employee form fields
+    @track employeeForm = { ...EMPTY_EMPLOYEE_FORM };
+
+    // Debounce timer
+    _searchTimer;
+
+    // ── Getters ─────────────────────────────────────────────────
+
+    get formTitle() {
+        return this.employeeForm.Id ? 'Edit Employee' : 'New Employee';
+    }
+
+    get hasEmployees() {
+        return this.employees.length > 0;
+    }
+
+    get hasSelectedEmployee() {
+        return this.selectedEmployee != null;
+    }
+
+    get hasDirectReports() {
+        return this.directReports.length > 0;
+    }
+
+    get selectedEmployeeName() {
+        if (!this.selectedEmployee) return '';
+        return (this.selectedEmployee.First_Name__c || '') + ' ' + (this.selectedEmployee.Last_Name__c || '');
+    }
+
+    get selectedEmployeeInitials() {
+        if (!this.selectedEmployee) return '';
+        const first = this.selectedEmployee.First_Name__c ? this.selectedEmployee.First_Name__c.charAt(0) : '';
+        const last = this.selectedEmployee.Last_Name__c ? this.selectedEmployee.Last_Name__c.charAt(0) : '';
+        return (first + last).toUpperCase();
+    }
+
+    get selectedEmployeeDepartment() {
+        return this.selectedEmployee ? this.selectedEmployee.Department__c || '-' : '-';
+    }
+
+    get selectedEmployeeDesignation() {
+        return this.selectedEmployee ? this.selectedEmployee.Designation__c || '-' : '-';
+    }
+
+    get selectedEmployeeCode() {
+        return this.selectedEmployee ? this.selectedEmployee.Employee_Code__c || '-' : '-';
+    }
+
+    get selectedEmployeeEmail() {
+        return this.selectedEmployee ? this.selectedEmployee.Email__c || '-' : '-';
+    }
+
+    get selectedEmployeePhone() {
+        return this.selectedEmployee ? this.selectedEmployee.Phone__c || '-' : '-';
+    }
+
+    get selectedEmployeeJoinDate() {
+        return this.selectedEmployee ? this.selectedEmployee.Date_of_Joining__c || '-' : '-';
+    }
+
+    get selectedEmployeeZone() {
+        return this.selectedEmployee ? this.selectedEmployee.Zone__c || '-' : '-';
+    }
+
+    get selectedEmployeeRegion() {
+        return this.selectedEmployee ? this.selectedEmployee.Region__c || '-' : '-';
+    }
+
+    get selectedEmployeeTerritoryName() {
+        if (!this.selectedEmployee) return '-';
+        return this.selectedEmployee.Territory__r ? this.selectedEmployee.Territory__r.Name : '-';
+    }
+
+    get selectedEmployeeManagerName() {
+        if (!this.selectedEmployee) return '-';
+        if (this.selectedEmployee.Reporting_Manager__r) {
+            const mgr = this.selectedEmployee.Reporting_Manager__r;
+            return (mgr.First_Name__c || '') + ' ' + (mgr.Last_Name__c || '');
+        }
+        return '-';
+    }
+
+    get selectedEmployeeAddress() {
+        return this.selectedEmployee ? this.selectedEmployee.Address__c || '-' : '-';
+    }
+
+    get selectedEmployeeIsActive() {
+        return this.selectedEmployee ? this.selectedEmployee.Is_Active__c : false;
+    }
+
+    get selectedEmployeeStatusLabel() {
+        if (!this.selectedEmployee) return '';
+        return this.selectedEmployee.Is_Active__c ? 'Active' : 'Inactive';
+    }
+
+    get selectedEmployeeStatusClass() {
+        if (!this.selectedEmployee) return 'status-badge';
+        return this.selectedEmployee.Is_Active__c
+            ? 'status-badge status-active'
+            : 'status-badge status-inactive';
+    }
+
+    get selectedEmployeeUserName() {
+        if (!this.selectedEmployee) return '-';
+        return this.selectedEmployee.User__r ? this.selectedEmployee.User__r.Name : '-';
+    }
+
+    // Leave balances
+    get clBalance() {
+        return this.selectedEmployee ? this.selectedEmployee.CL_Balance__c || 0 : 0;
+    }
+
+    get slBalance() {
+        return this.selectedEmployee ? this.selectedEmployee.SL_Balance__c || 0 : 0;
+    }
+
+    get elBalance() {
+        return this.selectedEmployee ? this.selectedEmployee.EL_Balance__c || 0 : 0;
+    }
+
+    get coBalance() {
+        return this.selectedEmployee ? this.selectedEmployee.CO_Balance__c || 0 : 0;
+    }
+
+    get clProgressStyle() {
+        return 'width: ' + Math.min((this.clBalance / 12) * 100, 100) + '%';
+    }
+
+    get slProgressStyle() {
+        return 'width: ' + Math.min((this.slBalance / 12) * 100, 100) + '%';
+    }
+
+    get elProgressStyle() {
+        return 'width: ' + Math.min((this.elBalance / 30) * 100, 100) + '%';
+    }
+
+    get coProgressStyle() {
+        return 'width: ' + Math.min((this.coBalance / 5) * 100, 100) + '%';
+    }
+
+    get directReportsCount() {
+        return this.directReports.length;
+    }
+
+    // Pagination
+    get isPrevDisabled() {
+        return this.pageNumber <= 1;
+    }
+
+    get isNextDisabled() {
+        return this.pageNumber >= this.totalPages;
+    }
+
+    get paginationLabel() {
+        return 'Page ' + this.pageNumber + ' of ' + this.totalPages;
+    }
+
+    get showPagination() {
+        return this.totalPages > 1;
+    }
+
+    get employeeCountLabel() {
+        return this.totalCount + ' Employee' + (this.totalCount !== 1 ? 's' : '');
+    }
+
+    // Filter options with blank default
+    get departmentFilterOptions() {
+        const opts = [{ label: 'All Departments', value: '' }];
+        this.departmentOptions.forEach(dep => {
+            opts.push({ label: dep, value: dep });
+        });
+        return opts;
+    }
+
+    get designationFilterOptions() {
+        const opts = [{ label: 'All Designations', value: '' }];
+        this.designationOptions.forEach(des => {
+            opts.push({ label: des, value: des });
+        });
+        return opts;
+    }
+
+    // Tab state
+    get isDetailsTab() {
+        return this.activeTab === 'details';
+    }
+
+    get isTeamTab() {
+        return this.activeTab === 'team';
+    }
+
+    get isLeaveTab() {
+        return this.activeTab === 'leave';
+    }
+
+    get detailsTabClass() {
+        return this.activeTab === 'details' ? 'tab-btn tab-btn-active' : 'tab-btn';
+    }
+
+    get teamTabClass() {
+        return this.activeTab === 'team' ? 'tab-btn tab-btn-active' : 'tab-btn';
+    }
+
+    get leaveTabClass() {
+        return this.activeTab === 'leave' ? 'tab-btn tab-btn-active' : 'tab-btn';
+    }
+
+    get isDeactivateDisabled() {
+        return !this.selectedEmployee || !this.selectedEmployee.Is_Active__c;
+    }
+
+    // ── Lifecycle ───────────────────────────────────────────────
+
+    connectedCallback() {
+        this.loadEmployees();
+        this.loadFilterOptions();
+    }
+
+    // ── Data Loading ────────────────────────────────────────────
+
+    async loadFilterOptions() {
+        try {
+            const [departments, designations] = await Promise.all([
+                getDepartmentOptions(),
+                getDesignationOptions()
+            ]);
+            this.departmentOptions = departments || [];
+            this.designationOptions = designations || [];
+        } catch (error) {
+            console.error('Error loading filter options:', error);
+        }
+    }
+
+    async loadEmployees() {
+        this.isLoading = true;
+        try {
+            const result = await getEmployees({
+                searchTerm: this.searchTerm || '',
+                department: this.filterDepartment || '',
+                designation: this.filterDesignation || '',
+                activeOnly: this.filterActiveOnly
+            });
+            const allEmployees = result || [];
+            this.totalCount = allEmployees.length;
+            this.totalPages = Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE));
+            if (this.pageNumber > this.totalPages) {
+                this.pageNumber = this.totalPages;
+            }
+
+            const startIdx = (this.pageNumber - 1) * PAGE_SIZE;
+            const pageEmployees = allEmployees.slice(startIdx, startIdx + PAGE_SIZE);
+
+            this.employees = pageEmployees.map(emp => ({
+                ...emp,
+                fullName: (emp.First_Name__c || '') + ' ' + (emp.Last_Name__c || ''),
+                initials: this.getInitials(emp.First_Name__c, emp.Last_Name__c),
+                departmentDisplay: emp.Department__c || '-',
+                designationDisplay: emp.Designation__c || '-',
+                statusLabel: emp.Is_Active__c ? 'Active' : 'Inactive',
+                statusClass: emp.Is_Active__c ? 'status-badge status-active' : 'status-badge status-inactive',
+                rowClass: this.selectedEmployee && this.selectedEmployee.Id === emp.Id
+                    ? 'employee-row employee-row-selected' : 'employee-row',
+                avatarClass: 'avatar-circle avatar-gradient-' + this.getAvatarGradient(emp.First_Name__c)
+            }));
+        } catch (error) {
+            this.showToast('Error', 'Failed to load employees: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    async loadEmployeeDetail(employeeId) {
+        try {
+            const emp = await getEmployee({ employeeId: employeeId });
+            this.selectedEmployee = emp;
+        } catch (error) {
+            this.showToast('Error', 'Failed to load employee details: ' + this.reduceErrors(error), 'error');
+        }
+    }
+
+    async loadDirectReports(employeeId) {
+        try {
+            const reports = await getDirectReports({ employeeId: employeeId });
+            this.directReports = (reports || []).map(emp => ({
+                ...emp,
+                fullName: (emp.First_Name__c || '') + ' ' + (emp.Last_Name__c || ''),
+                initials: this.getInitials(emp.First_Name__c, emp.Last_Name__c),
+                designationDisplay: emp.Designation__c || '-',
+                departmentDisplay: emp.Department__c || '-',
+                avatarClass: 'avatar-circle avatar-circle-sm avatar-gradient-' + this.getAvatarGradient(emp.First_Name__c)
+            }));
+        } catch (error) {
+            console.error('Error loading direct reports:', error);
+            this.directReports = [];
+        }
+    }
+
+    // ── Event Handlers ──────────────────────────────────────────
+
+    handleSearchChange(event) {
+        this.searchTerm = event.target.value;
+        clearTimeout(this._searchTimer);
+        this._searchTimer = setTimeout(() => {
+            this.pageNumber = 1;
+            this.loadEmployees();
+        }, 300);
+    }
+
+    handleDepartmentFilter(event) {
+        this.filterDepartment = event.detail.value;
+        this.pageNumber = 1;
+        this.loadEmployees();
+    }
+
+    handleDesignationFilter(event) {
+        this.filterDesignation = event.detail.value;
+        this.pageNumber = 1;
+        this.loadEmployees();
+    }
+
+    handleActiveToggle(event) {
+        this.filterActiveOnly = event.target.checked;
+        this.pageNumber = 1;
+        this.loadEmployees();
+    }
+
+    handleSelectEmployee(event) {
+        const employeeId = event.currentTarget.dataset.id;
+        const emp = this.employees.find(e => e.Id === employeeId);
+        if (emp) {
+            this.selectedEmployee = emp;
+            this.activeTab = 'details';
+            this.employees = this.employees.map(e => ({
+                ...e,
+                rowClass: e.Id === employeeId ? 'employee-row employee-row-selected' : 'employee-row'
+            }));
+            this.loadEmployeeDetail(employeeId);
+            this.loadDirectReports(employeeId);
+        }
+    }
+
+    handleTabClick(event) {
+        this.activeTab = event.currentTarget.dataset.tab;
+    }
+
+    // ── Pagination ──────────────────────────────────────────────
+
+    handlePrevPage() {
+        if (this.pageNumber > 1) {
+            this.pageNumber--;
+            this.loadEmployees();
+        }
+    }
+
+    handleNextPage() {
+        if (this.pageNumber < this.totalPages) {
+            this.pageNumber++;
+            this.loadEmployees();
+        }
+    }
+
+    // ── Employee CRUD ───────────────────────────────────────────
+
+    handleNewEmployee() {
+        this.employeeForm = { ...EMPTY_EMPLOYEE_FORM };
+        this.isEditMode = false;
+        this.showEmployeeForm = true;
+    }
+
+    handleEditEmployee() {
+        if (!this.selectedEmployee) return;
+        this.employeeForm = {
+            Id: this.selectedEmployee.Id,
+            First_Name__c: this.selectedEmployee.First_Name__c || '',
+            Last_Name__c: this.selectedEmployee.Last_Name__c || '',
+            Employee_Code__c: this.selectedEmployee.Employee_Code__c || '',
+            Email__c: this.selectedEmployee.Email__c || '',
+            Phone__c: this.selectedEmployee.Phone__c || '',
+            Department__c: this.selectedEmployee.Department__c || '',
+            Designation__c: this.selectedEmployee.Designation__c || '',
+            Reporting_Manager__c: this.selectedEmployee.Reporting_Manager__c || null,
+            User__c: this.selectedEmployee.User__c || null,
+            Date_of_Joining__c: this.selectedEmployee.Date_of_Joining__c || null,
+            Zone__c: this.selectedEmployee.Zone__c || '',
+            Region__c: this.selectedEmployee.Region__c || '',
+            Territory__c: this.selectedEmployee.Territory__c || null,
+            Is_Active__c: this.selectedEmployee.Is_Active__c !== false,
+            Profile_Photo_URL__c: this.selectedEmployee.Profile_Photo_URL__c || '',
+            Address__c: this.selectedEmployee.Address__c || '',
+            CL_Balance__c: this.selectedEmployee.CL_Balance__c || 0,
+            SL_Balance__c: this.selectedEmployee.SL_Balance__c || 0,
+            EL_Balance__c: this.selectedEmployee.EL_Balance__c || 0,
+            CO_Balance__c: this.selectedEmployee.CO_Balance__c || 0
+        };
+        this.isEditMode = true;
+        this.showEmployeeForm = true;
+    }
+
+    handleFormChange(event) {
+        const field = event.target.dataset.field;
+        if (field === 'Territory__c' || field === 'Reporting_Manager__c' || field === 'User__c') {
+            const val = event.detail.value;
+            this.employeeForm = { ...this.employeeForm, [field]: Array.isArray(val) ? (val[0] || null) : val };
+        } else if (field === 'Is_Active__c') {
+            this.employeeForm = { ...this.employeeForm, [field]: event.target.checked };
+        } else if (field === 'Department__c' || field === 'Designation__c') {
+            this.employeeForm = { ...this.employeeForm, [field]: event.detail.value };
+        } else {
+            this.employeeForm = { ...this.employeeForm, [field]: event.target.value };
+        }
+    }
+
+    handleCancelForm() {
+        this.showEmployeeForm = false;
+    }
+
+    async handleSaveEmployee() {
+        if (!this.employeeForm.First_Name__c || !this.employeeForm.Last_Name__c) {
+            this.showToast('Error', 'First Name and Last Name are required.', 'error');
+            return;
+        }
+        if (!this.employeeForm.Email__c) {
+            this.showToast('Error', 'Email is required.', 'error');
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            const employeeRecord = {
+                First_Name__c: this.employeeForm.First_Name__c,
+                Last_Name__c: this.employeeForm.Last_Name__c,
+                Employee_Code__c: this.employeeForm.Employee_Code__c,
+                Email__c: this.employeeForm.Email__c,
+                Phone__c: this.employeeForm.Phone__c,
+                Department__c: this.employeeForm.Department__c,
+                Designation__c: this.employeeForm.Designation__c,
+                Reporting_Manager__c: this.employeeForm.Reporting_Manager__c,
+                User__c: this.employeeForm.User__c,
+                Date_of_Joining__c: this.employeeForm.Date_of_Joining__c,
+                Zone__c: this.employeeForm.Zone__c,
+                Region__c: this.employeeForm.Region__c,
+                Territory__c: this.employeeForm.Territory__c,
+                Is_Active__c: this.employeeForm.Is_Active__c,
+                Profile_Photo_URL__c: this.employeeForm.Profile_Photo_URL__c,
+                Address__c: this.employeeForm.Address__c,
+                CL_Balance__c: this.employeeForm.CL_Balance__c,
+                SL_Balance__c: this.employeeForm.SL_Balance__c,
+                EL_Balance__c: this.employeeForm.EL_Balance__c,
+                CO_Balance__c: this.employeeForm.CO_Balance__c
+            };
+            if (this.employeeForm.Id) {
+                employeeRecord.Id = this.employeeForm.Id;
+            }
+
+            const savedEmployee = await saveEmployee({ employee: employeeRecord });
+            this.showEmployeeForm = false;
+            this.showToast('Success', 'Employee saved successfully.', 'success');
+            await this.loadEmployees();
+
+            // Select the saved employee
+            this.selectedEmployee = this.employees.find(e => e.Id === savedEmployee.Id) || null;
+            if (this.selectedEmployee) {
+                this.employees = this.employees.map(e => ({
+                    ...e,
+                    rowClass: e.Id === savedEmployee.Id ? 'employee-row employee-row-selected' : 'employee-row'
+                }));
+                this.loadEmployeeDetail(savedEmployee.Id);
+                this.loadDirectReports(savedEmployee.Id);
+            }
+        } catch (error) {
+            this.showToast('Error', 'Failed to save employee: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    async handleDeactivate() {
+        if (!this.selectedEmployee) return;
+        this.isLoading = true;
+        try {
+            await deactivateEmployee({ employeeId: this.selectedEmployee.Id });
+            this.showToast('Success', 'Employee deactivated.', 'success');
+            await this.loadEmployees();
+            this.loadEmployeeDetail(this.selectedEmployee.Id);
+        } catch (error) {
+            this.showToast('Error', 'Failed to deactivate employee: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    handleView360() {
+        if (!this.selectedEmployee) return;
+        this[NavigationMixin.Navigate]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: this.selectedEmployee.Id,
+                objectApiName: 'Employee__c',
+                actionName: 'view'
+            }
+        });
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────
+
+    getInitials(firstName, lastName) {
+        const first = firstName ? firstName.charAt(0) : '';
+        const last = lastName ? lastName.charAt(0) : '';
+        return (first + last).toUpperCase();
+    }
+
+    getAvatarGradient(name) {
+        if (!name) return '1';
+        const code = name.charCodeAt(0) % 5;
+        return String(code + 1);
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+    }
+
+    reduceErrors(error) {
+        if (typeof error === 'string') return error;
+        if (error.body && error.body.message) return error.body.message;
+        if (error.message) return error.message;
+        return 'Unknown error';
+    }
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Company holiday calendar for field sales operations. Used by journey planning to exclude non-working days and by attendance module for holiday tracking.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <label>Holiday</label>
+    <nameField>
+        <label>Holiday Name</label>
+        <type>Text</type>
+        <required>true</required>
+    </nameField>
+    <pluralLabel>Holidays</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

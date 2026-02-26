@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Reporting_Manager__c</fullName>
+    <label>Reporting Manager</label>
+    <type>Lookup</type>
+    <referenceTo>Employee__c</referenceTo>
+    <relationshipLabel>Direct Reports</relationshipLabel>
+    <relationshipName>Direct_Reports</relationshipName>
+    <required>false</required>
+    <description>Self-referencing hierarchy for reporting structure</description>
+</CustomField>
