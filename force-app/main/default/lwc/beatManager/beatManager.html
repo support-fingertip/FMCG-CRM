@@ -7,6 +7,10 @@
                     <h1 class="slds-text-heading_medium header-title">
                         <lightning-icon icon-name="standard:location" size="small" class="slds-m-right_x-small"></lightning-icon>
                         Beat &amp; Outlet Manager
+                        <template if:true={hasBeatSelected}>
+                            <span class="header-beat-separator">/</span>
+                            <span class="header-beat-name">{selectedBeatName}</span>
+                        </template>
                     </h1>
                     <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
                         Create beats, map outlets (accounts) to beats, and manage assignments
