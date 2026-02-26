@@ -669,6 +669,7 @@ export default class LeaveManager extends LightningElement {
             daysDisplay: lr.Number_of_Days__c + (lr.Number_of_Days__c === 1 ? ' day' : ' days'),
             reasonPreview: lr.Reason__c ? (lr.Reason__c.length > 60 ? lr.Reason__c.substring(0, 60) + '...' : lr.Reason__c) : '-',
             isExpanded: isExpanded,
+            expandIcon: isExpanded ? 'utility:chevronup' : 'utility:chevrondown',
             canCancel: canCancel,
             cardClass: isExpanded ? 'leave-card leave-card-expanded' : 'leave-card',
             startDateFormatted: this.formatDate(lr.Start_Date__c),
