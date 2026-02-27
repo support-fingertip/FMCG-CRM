@@ -739,8 +739,8 @@ export default class LeaveManager extends LightningElement {
     // ── Utility Methods ─────────────────────────────────────
 
     getTotalForType(key) {
-        // Default totals — adjust to match your org's policy
-        const defaults = { CL: 12, SL: 12, EL: 15, CO: 5 };
+        // Default totals — must match Employee__c field defaultValue
+        const defaults = { CL: 12, SL: 7, EL: 15, CO: 0 };
         return defaults[key] || 12;
     }
 

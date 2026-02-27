@@ -18,6 +18,21 @@ public with sharing class LeaveRequestController {
         'Compensatory Off' => 'CO_Balance__c'
     };
 
+    // Default annual entitlements (must match field defaultValue on Employee__c)
+    private static final Map<String, Decimal> DEFAULT_BALANCE = new Map<String, Decimal>{
+        'CL' => 12,
+        'SL' => 7,
+        'EL' => 15,
+        'CO' => 0
+    };
+
+    private static final Map<String, Decimal> DEFAULT_BALANCE_BY_FIELD = new Map<String, Decimal>{
+        'CL_Balance__c' => 12,
+        'SL_Balance__c' => 7,
+        'EL_Balance__c' => 15,
+        'CO_Balance__c' => 0
+    };
+
     // ── Get Leave Requests ────────────────────────────────────────────────────
 
     /**
@@ -359,13 +374,6 @@ public with sharing class LeaveRequestController {
      */
     @AuraEnabled(cacheable=true)
     public static Map<String, Decimal> getLeaveBalance(Id userId) {
-        Map<String, Decimal> balances = new Map<String, Decimal>{
-            'CL' => 0,
-            'SL' => 0,
-            'EL' => 0,
-            'CO' => 0
-        };
-
         List<Employee__c> employees = [
             SELECT CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
             FROM Employee__c
@@ -375,13 +383,16 @@ public with sharing class LeaveRequestController {
 
         if (!employees.isEmpty()) {
             Employee__c emp = employees[0];
-            balances.put('CL', emp.CL_Balance__c != null ? emp.CL_Balance__c : 0);
-            balances.put('SL', emp.SL_Balance__c != null ? emp.SL_Balance__c : 0);
-            balances.put('EL', emp.EL_Balance__c != null ? emp.EL_Balance__c : 0);
-            balances.put('CO', emp.CO_Balance__c != null ? emp.CO_Balance__c : 0);
+            return new Map<String, Decimal>{
+                'CL' => emp.CL_Balance__c != null ? emp.CL_Balance__c : DEFAULT_BALANCE.get('CL'),
+                'SL' => emp.SL_Balance__c != null ? emp.SL_Balance__c : DEFAULT_BALANCE.get('SL'),
+                'EL' => emp.EL_Balance__c != null ? emp.EL_Balance__c : DEFAULT_BALANCE.get('EL'),
+                'CO' => emp.CO_Balance__c != null ? emp.CO_Balance__c : DEFAULT_BALANCE.get('CO')
+            };
         }
 
-        return balances;
+        // No Employee record linked to this user — return default entitlements
+        return new Map<String, Decimal>(DEFAULT_BALANCE);
     }
 
     // ── Get Leaves Summary ────────────────────────────────────────────────────
@@ -538,9 +549,11 @@ public with sharing class LeaveRequestController {
     private static void validateLeaveBalance(Id userId, String leaveType, Decimal days) {
         String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
         if (balanceField == null) {
-            // Leave type does not require balance validation (e.g. Half Day)
+            // Leave type does not require balance validation
             return;
         }
+
+        Decimal defaultForField = DEFAULT_BALANCE_BY_FIELD.get(balanceField);
 
         List<Employee__c> employees = [
             SELECT CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
@@ -549,23 +562,25 @@ public with sharing class LeaveRequestController {
             LIMIT 1
         ];
 
+        Decimal currentBalance;
+
         if (employees.isEmpty()) {
-            throw new AuraHandledException(
-                'Employee record not found for this user. Please contact your administrator.'
-            );
-        }
+            // No Employee record linked — use default entitlement
+            currentBalance = defaultForField != null ? defaultForField : 0;
+        } else {
+            Employee__c emp = employees[0];
 
-        Employee__c emp = employees[0];
-        Decimal currentBalance = 0;
-
-        if (balanceField == 'CL_Balance__c') {
-            currentBalance = emp.CL_Balance__c != null ? emp.CL_Balance__c : 0;
-        } else if (balanceField == 'SL_Balance__c') {
-            currentBalance = emp.SL_Balance__c != null ? emp.SL_Balance__c : 0;
-        } else if (balanceField == 'EL_Balance__c') {
-            currentBalance = emp.EL_Balance__c != null ? emp.EL_Balance__c : 0;
-        } else if (balanceField == 'CO_Balance__c') {
-            currentBalance = emp.CO_Balance__c != null ? emp.CO_Balance__c : 0;
+            if (balanceField == 'CL_Balance__c') {
+                currentBalance = emp.CL_Balance__c != null ? emp.CL_Balance__c : defaultForField;
+            } else if (balanceField == 'SL_Balance__c') {
+                currentBalance = emp.SL_Balance__c != null ? emp.SL_Balance__c : defaultForField;
+            } else if (balanceField == 'EL_Balance__c') {
+                currentBalance = emp.EL_Balance__c != null ? emp.EL_Balance__c : defaultForField;
+            } else if (balanceField == 'CO_Balance__c') {
+                currentBalance = emp.CO_Balance__c != null ? emp.CO_Balance__c : defaultForField;
+            } else {
+                currentBalance = 0;
+            }
         }
 
         if (days > currentBalance) {
