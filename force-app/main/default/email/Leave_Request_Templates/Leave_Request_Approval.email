@@ -1,5 +1,3 @@
-<messaging:emailTemplate subject="Leave Request {!Leave_Request__c.Name} - Approval Required" recipientType="User" relatedToType="Leave_Request__c">
-<messaging:htmlEmailBody>
 <html>
 <body>
 <p>Dear {!Receiving_User.FirstName},</p>
@@ -16,5 +14,3 @@
 <p>Thank you.</p>
 </body>
 </html>
-</messaging:htmlEmailBody>
-</messaging:emailTemplate>
