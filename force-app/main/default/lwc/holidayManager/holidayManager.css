@@ -775,7 +775,7 @@
 }
 
 .bulk-table-wrapper {
-    overflow-x: auto;
+    overflow: visible;
 }
 
 .bulk-table {
@@ -805,6 +805,12 @@
     padding: 6px 8px;
     border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
+}
+
+.bulk-td-territory {
+    position: relative;
+    overflow: visible;
+    min-width: 180px;
 }
 
 .bulk-td-num {

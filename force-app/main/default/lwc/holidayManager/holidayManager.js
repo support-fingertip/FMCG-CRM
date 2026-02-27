@@ -452,6 +452,21 @@ export default class HolidayManager extends LightningElement {
         this.loadAllData();
     }
 
+    handleEditTerritoryChange(event) {
+        this.editHoliday = { ...this.editHoliday, Territory__c: event.detail.value || null };
+    }
+
+    handleBulkTerritoryChange(event) {
+        const rowKey = event.target.dataset.key;
+        const value = event.detail.value;
+        this.bulkRows = this.bulkRows.map(row => {
+            if (row.key === rowKey) {
+                return { ...row, Territory__c: value || null };
+            }
+            return row;
+        });
+    }
+
     // ── List View Sorting ────────────────────────────────────────────────
 
     handleSort() {

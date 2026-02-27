@@ -54,12 +54,14 @@
                     </div>
                     <div class="filter-bar-right">
                         <c-searchable-combobox
+                            label="Territory"
                             value={selectedTerritoryFilter}
                             options={territoryFilterOptions}
-                            onchange={handleTerritoryFilterChange}
-                            variant="label-hidden"
                             placeholder="Filter by Territory"
-                            class="territory-filter-combobox"></c-searchable-combobox>
+                            variant="label-hidden"
+                            onchange={handleTerritoryFilterChange}
+                            class="territory-filter-combobox">
+                        </c-searchable-combobox>
                     </div>
                 </div>
 
@@ -289,8 +291,10 @@
                                     label="Territory"
                                     value={editHoliday.Territory__c}
                                     options={territoryComboboxOptions}
-                                    placeholder="Search territories..."
-                                    onchange={handleEditTerritoryChange}></c-searchable-combobox>
+                                    placeholder="Search territory..."
+                                    data-field="Territory__c"
+                                    onchange={handleEditTerritoryChange}>
+                                </c-searchable-combobox>
                             </div>
                             <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
                                 <lightning-textarea label="Description" value={editHoliday.Description__c}
@@ -366,14 +370,16 @@
                                                     onchange={handleBulkFieldChange}
                                                     placeholder="Select..."></lightning-combobox>
                                             </td>
-                                            <td class="bulk-td">
+                                            <td class="bulk-td bulk-td-territory">
                                                 <c-searchable-combobox
                                                     variant="label-hidden"
                                                     value={row.Territory__c}
                                                     options={territoryComboboxOptions}
-                                                    placeholder="Search territories..."
                                                     data-key={row.key}
-                                                    onchange={handleBulkTerritoryChange}></c-searchable-combobox>
+                                                    data-field="Territory__c"
+                                                    onchange={handleBulkTerritoryChange}
+                                                    placeholder="Search...">
+                                                </c-searchable-combobox>
                                             </td>
                                             <td class="bulk-td bulk-td-action">
                                                 <lightning-button-icon icon-name="utility:delete"
