@@ -31,7 +31,7 @@ public with sharing class LeaveRequestController {
     @AuraEnabled(cacheable=true)
     public static List<Leave_Request__c> getLeaveRequests(Id userId, String status, Integer year) {
         String query = 'SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c, ' +
-            'Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c, Status__c, ' +
+            'Start_Date__c, Start_Session__c, End_Date__c, End_Session__c, Number_of_Days__c, Reason__c, Status__c, ' +
             'Approved_By__c, Approved_By__r.Name, Approval_Date__c, Comments__c ' +
             'FROM Leave_Request__c WHERE Employee__c = :userId';
 
@@ -91,7 +91,7 @@ public with sharing class LeaveRequestController {
         }
 
         String query = 'SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c, ' +
-            'Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c, Status__c, ' +
+            'Start_Date__c, Start_Session__c, End_Date__c, End_Session__c, Number_of_Days__c, Reason__c, Status__c, ' +
             'Approved_By__c, Approved_By__r.Name, Approval_Date__c, Comments__c ' +
             'FROM Leave_Request__c WHERE Employee__c IN :reportUserIds';
 
@@ -108,10 +108,10 @@ public with sharing class LeaveRequestController {
 
     /**
      * @description Inserts or updates a Leave_Request__c record. Auto-calculates
-     *              Number_of_Days__c from Start_Date__c and End_Date__c counting
-     *              only business days (Mon-Fri). For Half Day leave type, sets days
-     *              to 0.5. Validates leave balance before saving. New records are
-     *              automatically set to 'Pending' status.
+     *              Number_of_Days__c from Start_Date__c/End_Date__c counting only
+     *              business days (Mon-Fri), adjusted by Start_Session__c and
+     *              End_Session__c for half-day precision. Validates leave balance
+     *              before saving. New records are automatically set to 'Pending' status.
      * @param leaveRequest The Leave_Request__c record to save.
      * @return The saved Leave_Request__c record.
      */
@@ -127,13 +127,28 @@ public with sharing class LeaveRequestController {
                 throw new AuraHandledException('End Date cannot be before Start Date.');
             }
 
-            // Calculate business days
-            Decimal numberOfDays;
-            if (leaveRequest.Leave_Type__c == 'Half Day') {
-                numberOfDays = 0.5;
-            } else {
-                numberOfDays = calculateBusinessDays(leaveRequest.Start_Date__c, leaveRequest.End_Date__c);
+            // Validate session combination for same date
+            String startSession = leaveRequest.Start_Session__c != null ? leaveRequest.Start_Session__c : 'Session 1';
+            String endSession = leaveRequest.End_Session__c != null ? leaveRequest.End_Session__c : 'Session 2';
+
+            if (leaveRequest.Start_Date__c == leaveRequest.End_Date__c &&
+                startSession == 'Session 2' && endSession == 'Session 1') {
+                throw new AuraHandledException(
+                    'Invalid session selection. To Session cannot be Session 1 when From Session is Session 2 on the same date.'
+                );
             }
+
+            // Calculate business days with session adjustments
+            Decimal numberOfDays = calculateBusinessDays(leaveRequest.Start_Date__c, leaveRequest.End_Date__c);
+
+            // Adjust for sessions: Session 2 start = subtract 0.5, Session 1 end = subtract 0.5
+            if (startSession == 'Session 2') {
+                numberOfDays -= 0.5;
+            }
+            if (endSession == 'Session 1') {
+                numberOfDays -= 0.5;
+            }
+
             leaveRequest.Number_of_Days__c = numberOfDays;
 
             if (numberOfDays <= 0) {
@@ -148,16 +163,15 @@ public with sharing class LeaveRequestController {
                 leaveRequest.Status__c = 'Pending';
             }
 
-            // Validate leave balance (skip for Half Day as it uses 0.5 from any type)
-            if (leaveRequest.Leave_Type__c != 'Half Day') {
-                validateLeaveBalance(leaveRequest.Employee__c, leaveRequest.Leave_Type__c, numberOfDays);
-            }
+            // Validate leave balance
+            validateLeaveBalance(leaveRequest.Employee__c, leaveRequest.Leave_Type__c, numberOfDays);
 
             upsert leaveRequest;
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
-                       Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c,
+                       Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                       Number_of_Days__c, Reason__c,
                        Status__c, Approved_By__c, Approved_By__r.Name,
                        Approval_Date__c, Comments__c
                 FROM Leave_Request__c
@@ -215,7 +229,8 @@ public with sharing class LeaveRequestController {
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
-                       Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c,
+                       Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                       Number_of_Days__c, Reason__c,
                        Status__c, Approved_By__c, Approved_By__r.Name,
                        Approval_Date__c, Comments__c
                 FROM Leave_Request__c
@@ -267,7 +282,8 @@ public with sharing class LeaveRequestController {
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
-                       Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c,
+                       Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                       Number_of_Days__c, Reason__c,
                        Status__c, Approved_By__c, Approved_By__r.Name,
                        Approval_Date__c, Comments__c
                 FROM Leave_Request__c
@@ -316,7 +332,8 @@ public with sharing class LeaveRequestController {
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
-                       Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c,
+                       Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                       Number_of_Days__c, Reason__c,
                        Status__c, Approved_By__c, Approved_By__r.Name,
                        Approval_Date__c, Comments__c
                 FROM Leave_Request__c
@@ -415,7 +432,8 @@ public with sharing class LeaveRequestController {
 
         return [
             SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
-                   Start_Date__c, End_Date__c, Number_of_Days__c, Reason__c,
+                   Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                   Number_of_Days__c, Reason__c,
                    Status__c, Comments__c
             FROM Leave_Request__c
             WHERE Employee__c = :userId
@@ -470,7 +488,8 @@ public with sharing class LeaveRequestController {
 
         return [
             SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
-                   Start_Date__c, End_Date__c, Number_of_Days__c, Status__c
+                   Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                   Number_of_Days__c, Status__c
             FROM Leave_Request__c
             WHERE Employee__c IN :reportUserIds
             AND Start_Date__c <= :targetDate

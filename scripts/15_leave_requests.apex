@@ -43,8 +43,9 @@ leaves.add(new Leave_Request__c(
     Status__c = 'Pending'
 ));
 leaves.add(new Leave_Request__c(
-    Leave_Type__c = 'Half Day', Start_Date__c = Date.today().addDays(3),
-    End_Date__c = Date.today().addDays(3), Number_of_Days__c = 1,
+    Leave_Type__c = 'Casual Leave', Start_Date__c = Date.today().addDays(3),
+    Start_Session__c = 'Session 2', End_Date__c = Date.today().addDays(3),
+    End_Session__c = 'Session 2', Number_of_Days__c = 0.5,
     Reason__c = 'Doctor appointment in the afternoon',
     Status__c = 'Pending'
 ));

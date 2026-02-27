@@ -20,8 +20,7 @@ const LEAVE_TYPE_CONFIG = {
     'Casual Leave': { short: 'CL', color: '#0176d3', bgColor: '#e8f4fd', key: 'CL' },
     'Sick Leave': { short: 'SL', color: '#2e844a', bgColor: '#e6f7e9', key: 'SL' },
     'Earned Leave': { short: 'EL', color: '#7b61ff', bgColor: '#f0ebff', key: 'EL' },
-    'Compensatory Off': { short: 'CO', color: '#dd7a01', bgColor: '#fff8e1', key: 'CO' },
-    'Half Day': { short: 'HD', color: '#706e6b', bgColor: '#f3f3f3', key: 'HD' }
+    'Compensatory Off': { short: 'CO', color: '#dd7a01', bgColor: '#fff8e1', key: 'CO' }
 };
 
 const STATUS_CONFIG = {
@@ -35,8 +34,12 @@ const LEAVE_TYPE_OPTIONS = [
     { label: 'Casual Leave', value: 'Casual Leave' },
     { label: 'Sick Leave', value: 'Sick Leave' },
     { label: 'Earned Leave', value: 'Earned Leave' },
-    { label: 'Compensatory Off', value: 'Compensatory Off' },
-    { label: 'Half Day', value: 'Half Day' }
+    { label: 'Compensatory Off', value: 'Compensatory Off' }
+];
+
+const SESSION_OPTIONS = [
+    { label: 'Session 1', value: 'Session 1' },
+    { label: 'Session 2', value: 'Session 2' }
 ];
 
 export default class LeaveManager extends LightningElement {
@@ -67,7 +70,9 @@ export default class LeaveManager extends LightningElement {
     @track leaveForm = {
         Leave_Type__c: '',
         Start_Date__c: '',
+        Start_Session__c: 'Session 1',
         End_Date__c: '',
+        End_Session__c: 'Session 2',
         Reason__c: ''
     };
 
@@ -77,6 +82,7 @@ export default class LeaveManager extends LightningElement {
 
     // Options
     leaveTypeOptions = LEAVE_TYPE_OPTIONS;
+    sessionOptions = SESSION_OPTIONS;
 
     get yearOptions() {
         const currentYear = new Date().getFullYear();
@@ -200,10 +206,27 @@ export default class LeaveManager extends LightningElement {
         if (!this.leaveForm.Start_Date__c || !this.leaveForm.End_Date__c) {
             return 0;
         }
-        if (this.leaveForm.Leave_Type__c === 'Half Day') {
-            return 0.5;
+        const startSession = this.leaveForm.Start_Session__c || 'Session 1';
+        const endSession = this.leaveForm.End_Session__c || 'Session 2';
+
+        // Validate: same date, start Session 2 and end Session 1 is invalid
+        if (this.leaveForm.Start_Date__c === this.leaveForm.End_Date__c &&
+            startSession === 'Session 2' && endSession === 'Session 1') {
+            return 0;
         }
-        return this.calculateBusinessDays(this.leaveForm.Start_Date__c, this.leaveForm.End_Date__c);
+
+        let days = this.calculateBusinessDays(this.leaveForm.Start_Date__c, this.leaveForm.End_Date__c);
+        if (days <= 0) return 0;
+
+        // Adjust for sessions
+        if (startSession === 'Session 2') {
+            days -= 0.5;
+        }
+        if (endSession === 'Session 1') {
+            days -= 0.5;
+        }
+
+        return days > 0 ? days : 0;
     }
 
     get calculatedDaysDisplay() {
@@ -233,8 +256,12 @@ export default class LeaveManager extends LightningElement {
             this.calculatedDays <= 0;
     }
 
-    get isHalfDay() {
-        return this.leaveForm.Leave_Type__c === 'Half Day';
+    get isInvalidSessionCombo() {
+        return this.leaveForm.Start_Date__c &&
+            this.leaveForm.End_Date__c &&
+            this.leaveForm.Start_Date__c === this.leaveForm.End_Date__c &&
+            this.leaveForm.Start_Session__c === 'Session 2' &&
+            this.leaveForm.End_Session__c === 'Session 1';
     }
 
     // Detail modal getters
@@ -510,7 +537,9 @@ export default class LeaveManager extends LightningElement {
         this.leaveForm = {
             Leave_Type__c: '',
             Start_Date__c: '',
+            Start_Session__c: 'Session 1',
             End_Date__c: '',
+            End_Session__c: 'Session 2',
             Reason__c: ''
         };
         this.showApplyModal = true;
@@ -523,14 +552,6 @@ export default class LeaveManager extends LightningElement {
     handleLeaveFormChange(event) {
         const field = event.target.dataset.field;
         this.leaveForm = { ...this.leaveForm, [field]: event.target.value };
-
-        // Auto-set End_Date for Half Day
-        if (field === 'Leave_Type__c' && event.target.value === 'Half Day' && this.leaveForm.Start_Date__c) {
-            this.leaveForm = { ...this.leaveForm, End_Date__c: this.leaveForm.Start_Date__c };
-        }
-        if (field === 'Start_Date__c' && this.leaveForm.Leave_Type__c === 'Half Day') {
-            this.leaveForm = { ...this.leaveForm, End_Date__c: event.target.value };
-        }
     }
 
     async handleSubmitLeave() {
@@ -547,6 +568,10 @@ export default class LeaveManager extends LightningElement {
             this.showToast('Error', 'End date cannot be before start date.', 'error');
             return;
         }
+        if (this.isInvalidSessionCombo) {
+            this.showToast('Error', 'Invalid session selection. End session cannot be Session 1 when start session is Session 2 on the same date.', 'error');
+            return;
+        }
         if (!this.leaveForm.Reason__c || !this.leaveForm.Reason__c.trim()) {
             this.showToast('Error', 'Please provide a reason.', 'error');
             return;
@@ -554,7 +579,7 @@ export default class LeaveManager extends LightningElement {
 
         const days = this.calculatedDays;
         const cfg = LEAVE_TYPE_CONFIG[this.leaveForm.Leave_Type__c];
-        if (cfg && cfg.key !== 'HD') {
+        if (cfg) {
             const available = this.leaveBalance[cfg.key] || 0;
             if (days > available) {
                 this.showToast('Error',
@@ -571,7 +596,9 @@ export default class LeaveManager extends LightningElement {
                 Employee__c: this.currentUserId,
                 Leave_Type__c: this.leaveForm.Leave_Type__c,
                 Start_Date__c: this.leaveForm.Start_Date__c,
+                Start_Session__c: this.leaveForm.Start_Session__c,
                 End_Date__c: this.leaveForm.End_Date__c,
+                End_Session__c: this.leaveForm.End_Session__c,
                 Number_of_Days__c: days,
                 Reason__c: this.leaveForm.Reason__c.trim(),
                 Status__c: 'Pending'
@@ -657,6 +684,8 @@ export default class LeaveManager extends LightningElement {
         const statusConfig = STATUS_CONFIG[lr.Status__c] || {};
         const isExpanded = this.expandedLeaveId === lr.Id;
         const canCancel = lr.Status__c === 'Pending' || lr.Status__c === 'Approved';
+        const startSession = lr.Start_Session__c || 'Session 1';
+        const endSession = lr.End_Session__c || 'Session 2';
 
         return {
             ...lr,
@@ -665,8 +694,8 @@ export default class LeaveManager extends LightningElement {
             typeBadgeStyle: 'background: ' + (typeConfig.bgColor || '#f3f3f3') +
                 '; color: ' + (typeConfig.color || '#706e6b'),
             statusBadgeClass: statusConfig.class || 'status-badge',
-            dateRange: this.formatDateRange(lr.Start_Date__c, lr.End_Date__c),
-            daysDisplay: lr.Number_of_Days__c + (lr.Number_of_Days__c === 1 ? ' day' : ' days'),
+            dateRange: this.formatDateRangeWithSession(lr.Start_Date__c, startSession, lr.End_Date__c, endSession),
+            daysDisplay: lr.Number_of_Days__c + (lr.Number_of_Days__c === 1 || lr.Number_of_Days__c === 0.5 ? ' day' : ' days'),
             reasonPreview: lr.Reason__c ? (lr.Reason__c.length > 60 ? lr.Reason__c.substring(0, 60) + '...' : lr.Reason__c) : '-',
             isExpanded: isExpanded,
             expandIcon: isExpanded ? 'utility:chevronup' : 'utility:chevrondown',
@@ -674,6 +703,8 @@ export default class LeaveManager extends LightningElement {
             cardClass: isExpanded ? 'leave-card leave-card-expanded' : 'leave-card',
             startDateFormatted: this.formatDate(lr.Start_Date__c),
             endDateFormatted: this.formatDate(lr.End_Date__c),
+            startSessionDisplay: startSession,
+            endSessionDisplay: endSession,
             approverName: lr.Approved_By__r ? lr.Approved_By__r.Name : '-',
             approvalDateFormatted: lr.Approval_Date__c ? this.formatDate(lr.Approval_Date__c) : '-',
             commentsDisplay: lr.Comments__c || '-'
@@ -684,6 +715,8 @@ export default class LeaveManager extends LightningElement {
         const typeConfig = LEAVE_TYPE_CONFIG[tr.Leave_Type__c] || {};
         const statusConfig = STATUS_CONFIG[tr.Status__c] || {};
         const isExpanded = this.expandedTeamRowId === tr.Id;
+        const startSession = tr.Start_Session__c || 'Session 1';
+        const endSession = tr.End_Session__c || 'Session 2';
 
         return {
             ...tr,
@@ -693,8 +726,8 @@ export default class LeaveManager extends LightningElement {
             typeBadgeStyle: 'background: ' + (typeConfig.bgColor || '#f3f3f3') +
                 '; color: ' + (typeConfig.color || '#706e6b'),
             statusBadgeClass: statusConfig.class || 'status-badge',
-            dateRange: this.formatDateRange(tr.Start_Date__c, tr.End_Date__c),
-            daysDisplay: tr.Number_of_Days__c + (tr.Number_of_Days__c === 1 ? ' day' : ' days'),
+            dateRange: this.formatDateRangeWithSession(tr.Start_Date__c, startSession, tr.End_Date__c, endSession),
+            daysDisplay: tr.Number_of_Days__c + (tr.Number_of_Days__c === 1 || tr.Number_of_Days__c === 0.5 ? ' day' : ' days'),
             reasonPreview: tr.Reason__c ? (tr.Reason__c.length > 80 ? tr.Reason__c.substring(0, 80) + '...' : tr.Reason__c) : '-',
             isExpanded: isExpanded,
             rowClass: isExpanded ? 'team-row team-row-expanded' : 'team-row',
@@ -742,6 +775,18 @@ export default class LeaveManager extends LightningElement {
         const end = this.formatDate(endStr);
         if (start === end) return start;
         return start + ' - ' + end;
+    }
+
+    formatDateRangeWithSession(startStr, startSession, endStr, endSession) {
+        const start = this.formatDate(startStr);
+        const end = this.formatDate(endStr);
+        const sLabel = startSession === 'Session 2' ? ' (S2)' : ' (S1)';
+        const eLabel = endSession === 'Session 2' ? ' (S2)' : ' (S1)';
+        if (start === end) {
+            if (startSession === endSession) return start + sLabel;
+            return start + ' (S1 - S2)';
+        }
+        return start + sLabel + ' - ' + end + eLabel;
     }
 
     showToast(title, message, variant) {

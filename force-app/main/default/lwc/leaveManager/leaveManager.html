@@ -180,14 +180,14 @@
                                             </div>
                                             <div class="slds-col slds-size_1-of-2">
                                                 <div class="detail-field">
-                                                    <span class="detail-field-label">Start Date</span>
-                                                    <span class="detail-field-value">{leave.startDateFormatted}</span>
+                                                    <span class="detail-field-label">From Date</span>
+                                                    <span class="detail-field-value">{leave.startDateFormatted} ({leave.startSessionDisplay})</span>
                                                 </div>
                                             </div>
                                             <div class="slds-col slds-size_1-of-2">
                                                 <div class="detail-field">
-                                                    <span class="detail-field-label">End Date</span>
-                                                    <span class="detail-field-value">{leave.endDateFormatted}</span>
+                                                    <span class="detail-field-label">To Date</span>
+                                                    <span class="detail-field-value">{leave.endDateFormatted} ({leave.endSessionDisplay})</span>
                                                 </div>
                                             </div>
                                             <div class="slds-col slds-size_1-of-2">
@@ -425,20 +425,43 @@
                             </div>
                         </template>
 
-                        <!-- Date Fields -->
+                        <!-- From Date and Session -->
                         <div class="slds-grid slds-gutters_small slds-m-bottom_small">
                             <div class="slds-col slds-size_1-of-2">
-                                <lightning-input type="date" label="Start Date"
+                                <lightning-input type="date" label="From Date"
                                     value={leaveForm.Start_Date__c} data-field="Start_Date__c"
                                     onchange={handleLeaveFormChange} required></lightning-input>
                             </div>
                             <div class="slds-col slds-size_1-of-2">
-                                <lightning-input type="date" label="End Date"
-                                    value={leaveForm.End_Date__c} data-field="End_Date__c"
-                                    onchange={handleLeaveFormChange} required
-                                    disabled={isHalfDay}></lightning-input>
+                                <lightning-combobox label="From Session"
+                                    value={leaveForm.Start_Session__c}
+                                    options={sessionOptions} data-field="Start_Session__c"
+                                    onchange={handleLeaveFormChange}></lightning-combobox>
                             </div>
                         </div>
+
+                        <!-- To Date and Session -->
+                        <div class="slds-grid slds-gutters_small slds-m-bottom_small">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-input type="date" label="To Date"
+                                    value={leaveForm.End_Date__c} data-field="End_Date__c"
+                                    onchange={handleLeaveFormChange} required></lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-combobox label="To Session"
+                                    value={leaveForm.End_Session__c}
+                                    options={sessionOptions} data-field="End_Session__c"
+                                    onchange={handleLeaveFormChange}></lightning-combobox>
+                            </div>
+                        </div>
+
+                        <!-- Invalid Session Warning -->
+                        <template if:true={isInvalidSessionCombo}>
+                            <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_small" role="alert" style="padding: 0.5rem 1rem; border-radius: 0.25rem; background: #fff8e1; color: #8c6900; font-size: 0.8125rem;">
+                                <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                Invalid session combination: To Session cannot be Session 1 when From Session is Session 2 on the same date.
+                            </div>
+                        </template>
 
                         <!-- Calculated Days -->
                         <div class="calculated-days-box slds-m-bottom_small">
@@ -518,14 +541,14 @@
                                 </div>
                                 <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
                                     <div class="detail-field">
-                                        <span class="detail-field-label">Start Date</span>
-                                        <span class="detail-field-value">{detailLeave.startDateFormatted}</span>
+                                        <span class="detail-field-label">From Date</span>
+                                        <span class="detail-field-value">{detailLeave.startDateFormatted} ({detailLeave.startSessionDisplay})</span>
                                     </div>
                                 </div>
                                 <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
                                     <div class="detail-field">
-                                        <span class="detail-field-label">End Date</span>
-                                        <span class="detail-field-value">{detailLeave.endDateFormatted}</span>
+                                        <span class="detail-field-label">To Date</span>
+                                        <span class="detail-field-value">{detailLeave.endDateFormatted} ({detailLeave.endSessionDisplay})</span>
                                     </div>
                                 </div>
                                 <div class="slds-col slds-size_1-of-2 slds-m-bottom_x-small">
