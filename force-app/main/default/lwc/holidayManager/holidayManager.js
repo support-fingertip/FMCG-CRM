@@ -9,6 +9,7 @@ import getUpcomingHolidays from '@salesforce/apex/HolidayController.getUpcomingH
 import getHolidaysBetweenDates from '@salesforce/apex/HolidayController.getHolidaysBetweenDates';
 import bulkCreateHolidays from '@salesforce/apex/HolidayController.bulkCreateHolidays';
 import getHolidayTypeOptions from '@salesforce/apex/HolidayController.getHolidayTypeOptions';
+import getTerritoryOptions from '@salesforce/apex/HolidayController.getTerritoryOptions';
 
 const MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -51,6 +52,10 @@ export default class HolidayManager extends LightningElement {
     @track isLoading = false;
     @track sortField = 'Holiday_Date__c';
     @track sortDirection = 'asc';
+
+    // Territory filter
+    @track territoryOptions = [];
+    @track selectedTerritoryFilter = '';
 
     // Add/Edit modal
     @track showEditModal = false;
@@ -132,7 +137,7 @@ export default class HolidayManager extends LightningElement {
                 typeBadgeClass: 'type-badge ' + (typeInfo.badge || ''),
                 statusLabel: h.Is_Active__c ? 'Active' : 'Inactive',
                 statusClass: h.Is_Active__c ? 'status-badge status-active' : 'status-badge status-inactive',
-                regionDisplay: h.Applicable_Region__c || '--'
+                territoryDisplay: (h.Territory__r && h.Territory__r.Name) ? h.Territory__r.Name : 'All Territories'
             };
         });
 
@@ -179,6 +184,23 @@ export default class HolidayManager extends LightningElement {
         ];
     }
 
+    get territoryComboboxOptions() {
+        return this.territoryOptions.map(t => ({
+            label: t.Name,
+            value: t.Id
+        }));
+    }
+
+    get territoryFilterOptions() {
+        const options = [{ label: 'All Territories', value: '' }];
+        if (this.territoryOptions && this.territoryOptions.length > 0) {
+            this.territoryOptions.forEach(t => {
+                options.push({ label: t.Name, value: t.Id });
+            });
+        }
+        return options;
+    }
+
     get sortDirectionIcon() {
         return this.sortDirection === 'asc' ? 'utility:arrowup' : 'utility:arrowdown';
     }
@@ -191,6 +213,7 @@ export default class HolidayManager extends LightningElement {
 
     connectedCallback() {
         this.loadTypeOptions();
+        this.loadTerritoryOptions();
         this.loadAllData();
     }
 
@@ -213,7 +236,8 @@ export default class HolidayManager extends LightningElement {
 
     async loadHolidays() {
         try {
-            const result = await getAllHolidaysForYear({ year: this.selectedYear });
+            const territoryId = this.selectedTerritoryFilter || null;
+            const result = await getAllHolidaysForYear({ year: this.selectedYear, territoryId: territoryId });
             this.holidays = result || [];
         } catch (error) {
             console.error('Error loading holidays:', error);
@@ -270,11 +294,20 @@ export default class HolidayManager extends LightningElement {
         }
     }
 
+    async loadTerritoryOptions() {
+        try {
+            const result = await getTerritoryOptions();
+            this.territoryOptions = result || [];
+        } catch (error) {
+            console.error('Error loading territory options:', error);
+            this.territoryOptions = [];
+        }
+    }
+
     // ── Calendar Building ────────────────────────────────────────────────
 
     buildCalendarData() {
         const holidaysByDate = {};
-        const activeFilters = this.selectedTypeFilters;
 
         this.filteredHolidays.forEach(h => {
             if (h.Holiday_Date__c) {
@@ -411,6 +444,14 @@ export default class HolidayManager extends LightningElement {
         this.buildCalendarData();
     }
 
+    // ── Territory Filter ─────────────────────────────────────────────────
+
+    handleTerritoryFilterChange(event) {
+        this.selectedTerritoryFilter = event.detail.value;
+        this.closePopover();
+        this.loadAllData();
+    }
+
     // ── List View Sorting ────────────────────────────────────────────────
 
     handleSort() {
@@ -450,7 +491,7 @@ export default class HolidayManager extends LightningElement {
                 ...h,
                 typeBadgeClass: 'type-badge type-badge-sm ' + (typeInfo.badge || ''),
                 formattedDate: this.formatDisplayDate(h.Holiday_Date__c),
-                regionDisplay: h.Applicable_Region__c || 'All Regions'
+                territoryDisplay: (h.Territory__r && h.Territory__r.Name) ? h.Territory__r.Name : 'All Territories'
             };
         });
         this.showPopover = true;
@@ -478,7 +519,7 @@ export default class HolidayManager extends LightningElement {
             Holiday_Date__c: '',
             Type__c: '',
             Description__c: '',
-            Applicable_Region__c: '',
+            Territory__c: '',
             Is_Active__c: true
         };
         this.showEditModal = true;
@@ -535,7 +576,7 @@ export default class HolidayManager extends LightningElement {
                 Holiday_Date__c: this.editHoliday.Holiday_Date__c,
                 Type__c: this.editHoliday.Type__c,
                 Description__c: this.editHoliday.Description__c || '',
-                Applicable_Region__c: this.editHoliday.Applicable_Region__c || '',
+                Territory__c: this.editHoliday.Territory__c || null,
                 Is_Active__c: this.editHoliday.Is_Active__c !== false
             };
 
@@ -543,8 +584,6 @@ export default class HolidayManager extends LightningElement {
                 holidayRecord.Id = this.editHoliday.Id;
             }
 
-            // Wrap in the sObject format Apex expects
-            const payload = { holiday: holidayRecord };
             // Handle sobjectType for Apex serialization
             holidayRecord.sobjectType = 'Holiday__c';
 
@@ -611,7 +650,7 @@ export default class HolidayManager extends LightningElement {
             Name: '',
             Holiday_Date__c: '',
             Type__c: '',
-            Applicable_Region__c: ''
+            Territory__c: ''
         };
     }
 
@@ -653,7 +692,7 @@ export default class HolidayManager extends LightningElement {
                 Name: r.Name,
                 Holiday_Date__c: r.Holiday_Date__c,
                 Type__c: r.Type__c,
-                Applicable_Region__c: r.Applicable_Region__c || '',
+                Territory__c: r.Territory__c || null,
                 Is_Active__c: true
             }));
 

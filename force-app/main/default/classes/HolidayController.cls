@@ -1,6 +1,6 @@
 /**
  * @description Controller for the Holiday Management LWC component.
- *              Manages Holiday__c records: querying by year/type/date range,
+ *              Manages Holiday__c records: querying by year/type/territory/date range,
  *              CRUD operations, bulk import, and picklist value retrieval.
  *              Supports journey plan integration via date-range queries.
  *
@@ -9,43 +9,43 @@
  */
 public with sharing class HolidayController {
 
+    private static final String HOLIDAY_QUERY_FIELDS =
+        'Id, Name, Holiday_Date__c, Type__c, Description__c, ' +
+        'Is_Active__c, Year__c, Territory__c, Territory__r.Name';
+
     // ── Get Holidays (filtered) ───────────────────────────────────────────────
 
     /**
      * @description Retrieves active holidays for a given year, optionally filtered
-     *              by holiday type. Results are ordered by Holiday_Date__c ascending.
+     *              by holiday type and/or territory. Results are ordered by Holiday_Date__c ascending.
      * @param year        The four-digit year to query holidays for.
      * @param holidayType Optional Type__c picklist value to filter by (e.g. 'National Holiday').
      *                    Pass null or blank to return all types.
+     * @param territoryId Optional Territory__c Id to filter by.
+     *                    Pass null or blank to return all territories.
      * @return List of active Holiday__c records matching the criteria.
      */
     @AuraEnabled(cacheable=true)
-    public static List<Holiday__c> getHolidays(Integer year, String holidayType) {
+    public static List<Holiday__c> getHolidays(Integer year, String holidayType, Id territoryId) {
         try {
             if (year == null) {
                 throw new AuraHandledException('Year is required.');
             }
 
+            String query = 'SELECT ' + HOLIDAY_QUERY_FIELDS +
+                ' FROM Holiday__c WHERE Year__c = :year AND Is_Active__c = true';
+
             if (String.isNotBlank(holidayType)) {
-                return [
-                    SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                           Is_Active__c, Year__c, Applicable_Region__c
-                    FROM Holiday__c
-                    WHERE Year__c = :year
-                    AND Type__c = :holidayType
-                    AND Is_Active__c = true
-                    ORDER BY Holiday_Date__c ASC
-                ];
+                query += ' AND Type__c = :holidayType';
             }
 
-            return [
-                SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c
-                FROM Holiday__c
-                WHERE Year__c = :year
-                AND Is_Active__c = true
-                ORDER BY Holiday_Date__c ASC
-            ];
+            if (territoryId != null) {
+                query += ' AND Territory__c = :territoryId';
+            }
+
+            query += ' ORDER BY Holiday_Date__c ASC';
+
+            return Database.query(query);
         } catch (AuraHandledException ahe) {
             throw ahe;
         } catch (Exception e) {
@@ -58,24 +58,28 @@ public with sharing class HolidayController {
     /**
      * @description Retrieves all holidays for a given year regardless of active status.
      *              Intended for admin management views where inactive records must
-     *              also be visible.
+     *              also be visible. Optionally filtered by territory.
      * @param year The four-digit year to query holidays for.
+     * @param territoryId Optional Territory__c Id to filter by.
      * @return List of all Holiday__c records for the year, ordered by date.
      */
     @AuraEnabled(cacheable=true)
-    public static List<Holiday__c> getAllHolidaysForYear(Integer year) {
+    public static List<Holiday__c> getAllHolidaysForYear(Integer year, Id territoryId) {
         try {
             if (year == null) {
                 throw new AuraHandledException('Year is required.');
             }
 
-            return [
-                SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c
-                FROM Holiday__c
-                WHERE Year__c = :year
-                ORDER BY Holiday_Date__c ASC
-            ];
+            String query = 'SELECT ' + HOLIDAY_QUERY_FIELDS +
+                ' FROM Holiday__c WHERE Year__c = :year';
+
+            if (territoryId != null) {
+                query += ' AND Territory__c = :territoryId';
+            }
+
+            query += ' ORDER BY Holiday_Date__c ASC';
+
+            return Database.query(query);
         } catch (AuraHandledException ahe) {
             throw ahe;
         } catch (Exception e) {
@@ -106,7 +110,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Id = :holiday.Id
                 LIMIT 1
@@ -159,7 +163,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Holiday_Date__c >= :today
                 AND Is_Active__c = true
@@ -194,7 +198,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Holiday_Date__c >= :startDate
                 AND Holiday_Date__c <= :endDate
@@ -244,7 +248,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Id IN :holidayIds
                 ORDER BY Holiday_Date__c ASC
@@ -282,6 +286,27 @@ public with sharing class HolidayController {
             }
 
             return options;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Get Territory Options ─────────────────────────────────────────────────
+
+    /**
+     * @description Retrieves active territories from Territory_Master__c for use
+     *              in combobox/filter dropdowns. Returns Id and Name.
+     * @return List of active Territory_Master__c records ordered by Name.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Territory_Master__c> getTerritoryOptions() {
+        try {
+            return [
+                SELECT Id, Name
+                FROM Territory_Master__c
+                WHERE Is_Active__c = true
+                ORDER BY Name ASC
+            ];
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

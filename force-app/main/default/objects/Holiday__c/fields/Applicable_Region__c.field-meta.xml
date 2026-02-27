@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CustomField xmlns="http://soap.sforce.com/2006/metadata">
-    <fullName>Applicable_Region__c</fullName>
-    <label>Applicable Region</label>
-    <type>Text</type>
-    <length>255</length>
-    <required>false</required>
-    <description>Comma-separated regions where this holiday applies. Leave blank for all regions.</description>
-</CustomField>

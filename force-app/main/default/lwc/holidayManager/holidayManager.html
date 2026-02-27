@@ -40,16 +40,26 @@
                     </div>
                 </div>
 
-                <!-- ── Filter Chips ──────────────────────────────────── -->
+                <!-- ── Filter Bar ──────────────────────────────────── -->
                 <div class="filter-bar">
-                    <span class="filter-label">Filter by type:</span>
-                    <template for:each={typeFilterChips} for:item="chip">
-                        <button key={chip.key} class={chip.chipClass}
-                            data-type={chip.key} onclick={handleFilterChipClick}>
-                            <span class={chip.dotClass}></span>
-                            <span class="chip-label">{chip.label}</span>
-                        </button>
-                    </template>
+                    <div class="filter-bar-left">
+                        <span class="filter-label">Filter by type:</span>
+                        <template for:each={typeFilterChips} for:item="chip">
+                            <button key={chip.key} class={chip.chipClass}
+                                data-type={chip.key} onclick={handleFilterChipClick}>
+                                <span class={chip.dotClass}></span>
+                                <span class="chip-label">{chip.label}</span>
+                            </button>
+                        </template>
+                    </div>
+                    <div class="filter-bar-right">
+                        <lightning-combobox label="Territory" value={selectedTerritoryFilter}
+                            options={territoryFilterOptions}
+                            onchange={handleTerritoryFilterChange}
+                            variant="label-hidden"
+                            placeholder="Filter by Territory"
+                            class="territory-filter-combobox"></lightning-combobox>
+                    </div>
                 </div>
 
                 <!-- ── Calendar View ─────────────────────────────────── -->
@@ -123,7 +133,7 @@
                                     </th>
                                     <th>Holiday Name</th>
                                     <th>Type</th>
-                                    <th>Region</th>
+                                    <th>Territory</th>
                                     <th>Status</th>
                                     <th class="th-actions">Actions</th>
                                 </tr>
@@ -136,7 +146,7 @@
                                         <td>
                                             <span class={holiday.typeBadgeClass}>{holiday.Type__c}</span>
                                         </td>
-                                        <td class="td-region">{holiday.regionDisplay}</td>
+                                        <td class="td-territory">{holiday.territoryDisplay}</td>
                                         <td>
                                             <span class={holiday.statusClass}>{holiday.statusLabel}</span>
                                         </td>
@@ -225,7 +235,7 @@
                             </div>
                             <div class="popover-item-detail">
                                 <lightning-icon icon-name="utility:location" size="xx-small" class="popover-detail-icon"></lightning-icon>
-                                <span>{h.regionDisplay}</span>
+                                <span>{h.territoryDisplay}</span>
                             </div>
                             <template if:true={h.Description__c}>
                                 <div class="popover-item-desc">{h.Description__c}</div>
@@ -274,9 +284,10 @@
                                     required placeholder="Select type..."></lightning-combobox>
                             </div>
                             <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                                <lightning-input label="Applicable Region" value={editHoliday.Applicable_Region__c}
-                                    data-field="Applicable_Region__c" onchange={handleEditFieldChange}
-                                    placeholder="e.g., North India, Maharashtra"></lightning-input>
+                                <lightning-combobox label="Territory" value={editHoliday.Territory__c}
+                                    options={territoryComboboxOptions} data-field="Territory__c"
+                                    onchange={handleEditFieldChange}
+                                    placeholder="Select territory (optional)"></lightning-combobox>
                             </div>
                             <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
                                 <lightning-textarea label="Description" value={editHoliday.Description__c}
@@ -325,7 +336,7 @@
                                         <th class="bulk-th">Holiday Name *</th>
                                         <th class="bulk-th">Date *</th>
                                         <th class="bulk-th">Type *</th>
-                                        <th class="bulk-th">Region</th>
+                                        <th class="bulk-th">Territory</th>
                                         <th class="bulk-th bulk-th-action"></th>
                                     </tr>
                                 </thead>
@@ -353,10 +364,11 @@
                                                     placeholder="Select..."></lightning-combobox>
                                             </td>
                                             <td class="bulk-td">
-                                                <lightning-input variant="label-hidden" value={row.Applicable_Region__c}
-                                                    data-key={row.key} data-field="Applicable_Region__c"
+                                                <lightning-combobox variant="label-hidden"
+                                                    value={row.Territory__c} options={territoryComboboxOptions}
+                                                    data-key={row.key} data-field="Territory__c"
                                                     onchange={handleBulkFieldChange}
-                                                    placeholder="Region"></lightning-input>
+                                                    placeholder="Select..."></lightning-combobox>
                                             </td>
                                             <td class="bulk-td bulk-td-action">
                                                 <lightning-button-icon icon-name="utility:delete"
