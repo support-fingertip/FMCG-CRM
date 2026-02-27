@@ -19,6 +19,11 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default class EmployeeThreeSixty extends NavigationMixin(LightningElement) {
     @api employeeId;
+    @api recordId;
+
+    get effectiveEmployeeId() {
+        return this.employeeId || this.recordId;
+    }
 
     // ── Core Data ────────────────────────────────────────────────
     @track employee = {};
@@ -81,7 +86,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     async loadEmployeeDetails() {
         try {
-            const result = await getEmployeeDetails({ employeeId: this.employeeId });
+            const result = await getEmployeeDetails({ employeeId: this.effectiveEmployeeId });
             if (result) {
                 this.employee = result;
             }
@@ -93,7 +98,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     async loadKPIs() {
         try {
-            const result = await getEmployeeKPIs({ employeeId: this.employeeId });
+            const result = await getEmployeeKPIs({ employeeId: this.effectiveEmployeeId });
             if (result) {
                 this.kpis = result;
             }
@@ -104,7 +109,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     async loadPerformanceTrend() {
         try {
-            const result = await getPerformanceTrend({ employeeId: this.employeeId, months: 6 });
+            const result = await getPerformanceTrend({ employeeId: this.effectiveEmployeeId, months: 6 });
             this.performanceTrend = result || [];
         } catch (error) {
             console.error('Error loading performance trend:', error);
@@ -114,7 +119,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     async loadRecentActivity() {
         try {
-            const result = await getRecentActivity({ employeeId: this.employeeId, limitCount: 10 });
+            const result = await getRecentActivity({ employeeId: this.effectiveEmployeeId, limitCount: 10 });
             this.recentActivity = (result || []).map((item, idx) => ({
                 ...item,
                 key: item.Id || 'act-' + idx,
@@ -142,7 +147,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
         this.isTabLoading = true;
         try {
             const result = await getAttendanceHistory({
-                employeeId: this.employeeId,
+                employeeId: this.effectiveEmployeeId,
                 year: this.calendarYear,
                 month: this.calendarMonth + 1
             });
@@ -161,7 +166,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
         this.isTabLoading = true;
         try {
             const result = await getLeaveHistory({
-                employeeId: this.employeeId,
+                employeeId: this.effectiveEmployeeId,
                 year: this.leaveYear
             });
             this.leaveHistory = (result || []).map(leave => ({
@@ -184,7 +189,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadBeatsData() {
         this.isTabLoading = true;
         try {
-            const result = await getAssignedBeats({ employeeId: this.employeeId });
+            const result = await getAssignedBeats({ employeeId: this.effectiveEmployeeId });
             this.beats = (result || []).map(beat => ({
                 ...beat,
                 key: beat.Id,
@@ -207,7 +212,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadTeamData() {
         this.isTabLoading = true;
         try {
-            const result = await getDirectReports({ employeeId: this.employeeId });
+            const result = await getDirectReports({ employeeId: this.effectiveEmployeeId });
             this.teamMembers = (result || []).map(member => ({
                 ...member,
                 key: member.employeeId || member.Id,
