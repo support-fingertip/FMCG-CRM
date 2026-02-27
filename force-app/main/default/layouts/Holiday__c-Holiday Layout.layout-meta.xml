@@ -26,7 +26,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Applicable_Region__c</field>
+                <field>Territory__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
