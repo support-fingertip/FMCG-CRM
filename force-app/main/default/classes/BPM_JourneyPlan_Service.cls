@@ -398,14 +398,31 @@ public without sharing class BPM_JourneyPlan_Service {
     }
 
     /**
-     * @description Regenerates a journey plan by deleting all future plan days
-     *              (from today onwards) and recreating them using the user's
-     *              current beat assignments. Respects the plan's exclusion settings.
+     * @description Backward-compatible overload that reads exclusion preferences
+     *              from the plan's stored settings.
      *
      * @param journeyPlanId The Journey_Plan__c record to regenerate.
      * @param toDate        The new end date for the plan.
      */
     public static void regeneratePlan(Id journeyPlanId, Date toDate) {
+        regeneratePlan(journeyPlanId, toDate, null, null, null);
+    }
+
+    /**
+     * @description Regenerates a journey plan by deleting all future plan days
+     *              (from today onwards) and recreating them using the user's
+     *              current beat assignments. When exclusion parameters are provided
+     *              they override the plan's stored settings and the plan record is
+     *              updated with the new preferences.
+     *
+     * @param journeyPlanId   The Journey_Plan__c record to regenerate.
+     * @param toDate          The new end date for the plan.
+     * @param excludeHolidays When true, holiday dates are excluded. Null falls back to stored preference.
+     * @param excludeLeaves   When true, leave dates are excluded. Null falls back to stored preference.
+     * @param excludeWeekOffs When true, week-off days are excluded. Null falls back to stored preference.
+     */
+    public static void regeneratePlan(Id journeyPlanId, Date toDate,
+            Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs) {
         Journey_Plan__c plan = [
             SELECT Id, Salesperson__c, Territory__c, Status__c,
                    Effective_From__c, Effective_To__c,
@@ -457,11 +474,18 @@ public without sharing class BPM_JourneyPlan_Service {
             );
         }
 
-        // Build exclusion sets based on the plan's stored preferences
-        Boolean excludeHolidays = plan.Exclude_Holidays__c != null ? plan.Exclude_Holidays__c : true;
-        Boolean excludeLeaves = plan.Exclude_Leaves__c != null ? plan.Exclude_Leaves__c : true;
-        Boolean excludeWeekOffs = plan.Exclude_Week_Offs__c != null ? plan.Exclude_Week_Offs__c : true;
+        // Resolve exclusion flags: use provided values or fall back to stored preferences
+        if (excludeHolidays == null) {
+            excludeHolidays = plan.Exclude_Holidays__c != null ? plan.Exclude_Holidays__c : true;
+        }
+        if (excludeLeaves == null) {
+            excludeLeaves = plan.Exclude_Leaves__c != null ? plan.Exclude_Leaves__c : true;
+        }
+        if (excludeWeekOffs == null) {
+            excludeWeekOffs = plan.Exclude_Week_Offs__c != null ? plan.Exclude_Week_Offs__c : true;
+        }
 
+        // Build exclusion sets based on resolved preferences
         Set<Date> holidayDates = excludeHolidays ? getHolidayDates(fromDate, toDate, territoryId, userId) : new Set<Date>();
         Set<Date> leaveDates = excludeLeaves ? getLeaveDates(userId, fromDate, toDate) : new Set<Date>();
         Set<String> weekOffDays = excludeWeekOffs ? getEmployeeWeekOffDays(userId) : new Set<String>();
@@ -525,8 +549,11 @@ public without sharing class BPM_JourneyPlan_Service {
             insert planDays;
         }
 
-        // Update plan dates and total
+        // Update plan dates, exclusion preferences, and total
         plan.Effective_To__c = toDate;
+        plan.Exclude_Holidays__c = excludeHolidays;
+        plan.Exclude_Leaves__c = excludeLeaves;
+        plan.Exclude_Week_Offs__c = excludeWeekOffs;
         plan.Total_Planned_Days__c = [
             SELECT COUNT() FROM Journey_Plan_Day__c WHERE Journey_Plan__c = :journeyPlanId
         ];

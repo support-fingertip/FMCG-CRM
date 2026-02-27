@@ -701,6 +701,10 @@ export default class BeatPlanCalendar extends LightningElement {
             defaultEnd.setDate(0); // last day of current month
             this.regenerateToDate = this.formatDateKey(defaultEnd);
         }
+        // Initialize exclusion toggles from the plan's stored preferences
+        this.excludeHolidays = this.journeyPlan.Exclude_Holidays__c !== false;
+        this.excludeLeaves = this.journeyPlan.Exclude_Leaves__c !== false;
+        this.excludeWeekOffs = this.journeyPlan.Exclude_Week_Offs__c !== false;
         this.showRegenerateModal = true;
     }
 
@@ -721,7 +725,10 @@ export default class BeatPlanCalendar extends LightningElement {
         try {
             await regeneratePlan({
                 journeyPlanId: planId,
-                toDate: this.regenerateToDate
+                toDate: this.regenerateToDate,
+                excludeHolidays: this.excludeHolidays,
+                excludeLeaves: this.excludeLeaves,
+                excludeWeekOffs: this.excludeWeekOffs
             });
             this.showToast('Success', 'Journey plan regenerated successfully.', 'success');
             await this.loadCalendar();

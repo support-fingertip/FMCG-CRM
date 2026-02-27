@@ -887,13 +887,19 @@ public with sharing class BeatPlanController {
     /**
      * @description Regenerates a journey plan by deleting future plan days and
      *              recreating them from today using the user's current beats.
-     * @param journeyPlanId The Journey_Plan__c Id.
-     * @param toDate        The new end date for the plan.
+     * @param journeyPlanId  The Journey_Plan__c Id.
+     * @param toDate         The new end date for the plan.
+     * @param excludeHolidays  When true, exclude holiday dates from the plan.
+     * @param excludeLeaves    When true, exclude approved/pending leave dates.
+     * @param excludeWeekOffs  When true, exclude employee's week-off days.
      */
     @AuraEnabled
-    public static void regeneratePlan(Id journeyPlanId, Date toDate) {
+    public static void regeneratePlan(Id journeyPlanId, Date toDate,
+            Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs) {
         try {
-            BPM_JourneyPlan_Service.regeneratePlan(journeyPlanId, toDate);
+            BPM_JourneyPlan_Service.regeneratePlan(
+                journeyPlanId, toDate, excludeHolidays, excludeLeaves, excludeWeekOffs
+            );
         } catch (BPM_JourneyPlanServiceException e) {
             throw new AuraHandledException(e.getMessage());
         }
