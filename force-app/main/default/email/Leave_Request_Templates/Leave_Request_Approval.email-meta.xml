@@ -7,5 +7,4 @@
     <style>none</style>
     <subject>Leave Request {!Leave_Request__c.Name} - Approval Required</subject>
     <type>html</type>
-    <relatedEntityType>Leave_Request__c</relatedEntityType>
 </EmailTemplate>
