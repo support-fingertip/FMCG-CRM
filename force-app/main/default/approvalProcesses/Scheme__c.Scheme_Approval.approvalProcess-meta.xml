@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
     <active>true</active>
     <allowRecall>true</allowRecall>
     <allowedSubmitters>
@@ -19,20 +19,22 @@
         <allowDelegate>true</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>ManagerId</name>
-                <type>userHierarchyField</type>
+                <name>Approved_By__c</name>
+                <type>relatedUserField</type>
             </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
-        <label>Regional Manager Approval</label>
-        <name>Regional_Manager_Approval</name>
+        <label>Regional Approval</label>
+        <name>Regional_Approval</name>
     </approvalStep>
     <approvalStep>
         <allowDelegate>false</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>Trade_Marketing_Manager</name>
-                <type>queue</type>
+                <name>Approved_By__c</name>
+                <type>relatedUserField</type>
             </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
         <entryCriteria>
             <criteriaItems>
@@ -48,30 +50,18 @@
         </rejectBehavior>
     </approvalStep>
     <description>Approval process for trade schemes and promotions requiring regional and trade marketing sign-off</description>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
     <entryCriteria>
         <criteriaItems>
             <field>Scheme__c.Status__c</field>
             <operation>equals</operation>
-            <value>Pending Approval</value>
+            <value>Submitted</value>
         </criteriaItems>
     </entryCriteria>
-    <finalApprovalActions>
-        <action>
-            <name>Approve_Scheme</name>
-            <type>FieldUpdate</type>
-        </action>
-    </finalApprovalActions>
-    <finalRejectionActions>
-        <action>
-            <name>Reject_Scheme</name>
-            <type>FieldUpdate</type>
-        </action>
-    </finalRejectionActions>
+    <finalApprovalRecordLock>false</finalApprovalRecordLock>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
     <label>Scheme Approval</label>
-    <nextAutomatedApprover>
-        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
-        <userHierarchyField>ManagerId</userHierarchyField>
-    </nextAutomatedApprover>
+    <processOrder>1</processOrder>
     <recordEditability>AdminOnly</recordEditability>
     <showApprovalHistory>true</showApprovalHistory>
 </ApprovalProcess>

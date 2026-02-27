@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
     <active>true</active>
     <allowRecall>true</allowRecall>
     <allowedSubmitters>
@@ -17,14 +17,16 @@
         <allowDelegate>true</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>ManagerId</name>
-                <type>userHierarchyField</type>
+                <name>Approved_By__c</name>
+                <type>relatedUserField</type>
             </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
         <label>Manager Approval</label>
         <name>Manager_Approval</name>
     </approvalStep>
     <description>Approval process for sales orders exceeding auto-approval threshold</description>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
     <entryCriteria>
         <criteriaItems>
             <field>Sales_Order__c.Status__c</field>
@@ -37,23 +39,10 @@
             <value>50000</value>
         </criteriaItems>
     </entryCriteria>
-    <finalApprovalActions>
-        <action>
-            <name>Approve_Order</name>
-            <type>FieldUpdate</type>
-        </action>
-    </finalApprovalActions>
-    <finalRejectionActions>
-        <action>
-            <name>Reject_Order</name>
-            <type>FieldUpdate</type>
-        </action>
-    </finalRejectionActions>
+    <finalApprovalRecordLock>false</finalApprovalRecordLock>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
     <label>Order Approval</label>
-    <nextAutomatedApprover>
-        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
-        <userHierarchyField>ManagerId</userHierarchyField>
-    </nextAutomatedApprover>
+    <processOrder>1</processOrder>
     <recordEditability>AdminOnly</recordEditability>
     <showApprovalHistory>true</showApprovalHistory>
 </ApprovalProcess>

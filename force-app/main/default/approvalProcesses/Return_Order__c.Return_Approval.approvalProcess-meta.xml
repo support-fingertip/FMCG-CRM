@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
     <active>true</active>
     <allowRecall>true</allowRecall>
     <allowedSubmitters>
@@ -18,9 +18,10 @@
         <allowDelegate>true</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>ManagerId</name>
-                <type>userHierarchyField</type>
+                <name>Approved_By__c</name>
+                <type>relatedUserField</type>
             </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
         <label>Manager Approval</label>
         <name>Manager_Approval</name>
@@ -29,9 +30,10 @@
         <allowDelegate>false</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>Distribution_Manager</name>
-                <type>queue</type>
+                <name>Approved_By__c</name>
+                <type>relatedUserField</type>
             </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
         <entryCriteria>
             <criteriaItems>
@@ -47,6 +49,7 @@
         </rejectBehavior>
     </approvalStep>
     <description>Approval process for return orders requiring manager and distribution manager sign-off</description>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
     <entryCriteria>
         <criteriaItems>
             <field>Return_Order__c.Status__c</field>
@@ -54,23 +57,10 @@
             <value>Submitted</value>
         </criteriaItems>
     </entryCriteria>
-    <finalApprovalActions>
-        <action>
-            <name>Approve_Return</name>
-            <type>FieldUpdate</type>
-        </action>
-    </finalApprovalActions>
-    <finalRejectionActions>
-        <action>
-            <name>Reject_Return</name>
-            <type>FieldUpdate</type>
-        </action>
-    </finalRejectionActions>
+    <finalApprovalRecordLock>false</finalApprovalRecordLock>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
     <label>Return Approval</label>
-    <nextAutomatedApprover>
-        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
-        <userHierarchyField>ManagerId</userHierarchyField>
-    </nextAutomatedApprover>
+    <processOrder>1</processOrder>
     <recordEditability>AdminOnly</recordEditability>
     <showApprovalHistory>true</showApprovalHistory>
 </ApprovalProcess>
