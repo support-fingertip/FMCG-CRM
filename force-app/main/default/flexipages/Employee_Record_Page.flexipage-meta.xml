@@ -28,7 +28,7 @@
             </componentInstance>
         </itemInstances>
         <name>main</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <flexiPageRegions>
         <itemInstances>
@@ -38,7 +38,7 @@
             </componentInstance>
         </itemInstances>
         <name>sidebar</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Employee Record Page</masterLabel>
     <sobjectType>Employee__c</sobjectType>
