@@ -447,7 +447,7 @@ export default class HolidayManager extends LightningElement {
     // ── Territory Filter ─────────────────────────────────────────────────
 
     handleTerritoryFilterChange(event) {
-        this.selectedTerritoryFilter = event.detail.value;
+        this.selectedTerritoryFilter = event.detail.value || '';
         this.closePopover();
         this.loadAllData();
     }
@@ -562,6 +562,10 @@ export default class HolidayManager extends LightningElement {
         }
     }
 
+    handleEditTerritoryChange(event) {
+        this.editHoliday = { ...this.editHoliday, Territory__c: event.detail.value || null };
+    }
+
     async handleSaveHoliday() {
         // Validate required fields
         if (!this.editHoliday.Name || !this.editHoliday.Holiday_Date__c || !this.editHoliday.Type__c) {
@@ -672,6 +676,18 @@ export default class HolidayManager extends LightningElement {
         this.bulkRows = this.bulkRows.map(row => {
             if (row.key === rowKey) {
                 return { ...row, [field]: value };
+            }
+            return row;
+        });
+    }
+
+    handleBulkTerritoryChange(event) {
+        const rowKey = event.currentTarget.dataset.key;
+        const value = event.detail.value || '';
+
+        this.bulkRows = this.bulkRows.map(row => {
+            if (row.key === rowKey) {
+                return { ...row, Territory__c: value };
             }
             return row;
         });

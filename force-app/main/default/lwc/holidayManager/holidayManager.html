@@ -53,12 +53,13 @@
                         </template>
                     </div>
                     <div class="filter-bar-right">
-                        <lightning-combobox label="Territory" value={selectedTerritoryFilter}
+                        <c-searchable-combobox
+                            value={selectedTerritoryFilter}
                             options={territoryFilterOptions}
                             onchange={handleTerritoryFilterChange}
                             variant="label-hidden"
                             placeholder="Filter by Territory"
-                            class="territory-filter-combobox"></lightning-combobox>
+                            class="territory-filter-combobox"></c-searchable-combobox>
                     </div>
                 </div>
 
@@ -284,10 +285,12 @@
                                     required placeholder="Select type..."></lightning-combobox>
                             </div>
                             <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                                <lightning-combobox label="Territory" value={editHoliday.Territory__c}
-                                    options={territoryComboboxOptions} data-field="Territory__c"
-                                    onchange={handleEditFieldChange}
-                                    placeholder="Select territory (optional)"></lightning-combobox>
+                                <c-searchable-combobox
+                                    label="Territory"
+                                    value={editHoliday.Territory__c}
+                                    options={territoryComboboxOptions}
+                                    placeholder="Search territories..."
+                                    onchange={handleEditTerritoryChange}></c-searchable-combobox>
                             </div>
                             <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
                                 <lightning-textarea label="Description" value={editHoliday.Description__c}
@@ -364,11 +367,13 @@
                                                     placeholder="Select..."></lightning-combobox>
                                             </td>
                                             <td class="bulk-td">
-                                                <lightning-combobox variant="label-hidden"
-                                                    value={row.Territory__c} options={territoryComboboxOptions}
-                                                    data-key={row.key} data-field="Territory__c"
-                                                    onchange={handleBulkFieldChange}
-                                                    placeholder="Select..."></lightning-combobox>
+                                                <c-searchable-combobox
+                                                    variant="label-hidden"
+                                                    value={row.Territory__c}
+                                                    options={territoryComboboxOptions}
+                                                    placeholder="Search territories..."
+                                                    data-key={row.key}
+                                                    onchange={handleBulkTerritoryChange}></c-searchable-combobox>
                                             </td>
                                             <td class="bulk-td bulk-td-action">
                                                 <lightning-button-icon icon-name="utility:delete"
