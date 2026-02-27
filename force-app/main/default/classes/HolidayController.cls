@@ -11,7 +11,7 @@ public with sharing class HolidayController {
 
     private static final String HOLIDAY_QUERY_FIELDS =
         'Id, Name, Holiday_Date__c, Type__c, Description__c, ' +
-        'Is_Active__c, Year__c, Applicable_Region__c, Territory__c, Territory__r.Name';
+        'Is_Active__c, Year__c, Territory__c, Territory__r.Name';
 
     // ── Get Holidays (filtered) ───────────────────────────────────────────────
 
@@ -110,7 +110,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c, Territory__c, Territory__r.Name
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Id = :holiday.Id
                 LIMIT 1
@@ -163,7 +163,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c, Territory__c, Territory__r.Name
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Holiday_Date__c >= :today
                 AND Is_Active__c = true
@@ -198,7 +198,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c, Territory__c, Territory__r.Name
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Holiday_Date__c >= :startDate
                 AND Holiday_Date__c <= :endDate
@@ -248,7 +248,7 @@ public with sharing class HolidayController {
 
             return [
                 SELECT Id, Name, Holiday_Date__c, Type__c, Description__c,
-                       Is_Active__c, Year__c, Applicable_Region__c, Territory__c, Territory__r.Name
+                       Is_Active__c, Year__c, Territory__c, Territory__r.Name
                 FROM Holiday__c
                 WHERE Id IN :holidayIds
                 ORDER BY Holiday_Date__c ASC

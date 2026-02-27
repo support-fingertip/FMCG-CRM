@@ -1422,11 +1422,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Holiday__c.Applicable_Region__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Holiday__c.Description__c</field>
         <readable>true</readable>
     </fieldPermissions>

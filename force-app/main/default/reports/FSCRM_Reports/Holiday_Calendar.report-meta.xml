@@ -17,7 +17,7 @@
         <field>Holiday__c.Description__c</field>
     </columns>
     <columns>
-        <field>Holiday__c.Applicable_Region__c</field>
+        <field>Holiday__c.Territory__c</field>
     </columns>
     <columns>
         <field>Holiday__c.Is_Active__c</field>

@@ -606,7 +606,7 @@ public without sharing class BPM_JourneyPlan_Service {
 
         // Fetch all active holidays in the date range
         List<Holiday__c> holidayRecords = [
-            SELECT Id, Holiday_Date__c, Applicable_Region__c, Territory__c, Type__c
+            SELECT Id, Holiday_Date__c, Territory__c, Type__c
             FROM Holiday__c
             WHERE Holiday_Date__c >= :fromDate
             AND Holiday_Date__c <= :toDate
@@ -624,26 +624,8 @@ public without sharing class BPM_JourneyPlan_Service {
             else if (h.Territory__c != null && h.Territory__c == territoryId) {
                 applies = true;
             }
-            // Region-based matching via Applicable_Region__c
-            else if (String.isNotBlank(h.Applicable_Region__c)) {
-                String region = h.Applicable_Region__c;
-                if (region == 'All') {
-                    applies = true;
-                } else {
-                    // Check if employee's region or zone matches any of the comma-separated regions
-                    List<String> regions = region.split(',');
-                    for (String r : regions) {
-                        String trimmed = r.trim();
-                        if ((String.isNotBlank(employeeRegion) && trimmed.equalsIgnoreCase(employeeRegion)) ||
-                            (String.isNotBlank(employeeZone) && trimmed.equalsIgnoreCase(employeeZone))) {
-                            applies = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            // If no territory and no region specified, treat as org-wide
-            else if (h.Territory__c == null && String.isBlank(h.Applicable_Region__c)) {
+            // If no territory specified, treat as org-wide
+            else if (h.Territory__c == null) {
                 applies = true;
             }
 
