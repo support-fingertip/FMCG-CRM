@@ -18,6 +18,7 @@ employees.add(new Employee__c(
     Department__c = 'Sales', Designation__c = 'National Sales Manager',
     Date_of_Joining__c = Date.newInstance(2018, 4, 1), Is_Active__c = true,
     Zone__c = 'All India', Region__c = 'National',
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 2
 ));
 
@@ -29,6 +30,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2019, 6, 15), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
     Territory__c = terMap.get('TER-MUM-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 10, SL_Balance__c = 5, EL_Balance__c = 12, CO_Balance__c = 1
 ));
 employees.add(new Employee__c(
@@ -38,6 +40,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2019, 8, 1), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
     Territory__c = terMap.get('TER-DEL-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 11, SL_Balance__c = 6, EL_Balance__c = 14, CO_Balance__c = 0
 ));
 
@@ -49,6 +52,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2020, 3, 10), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
     Territory__c = terMap.get('TER-MUM-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 8, SL_Balance__c = 4, EL_Balance__c = 10, CO_Balance__c = 3
 ));
 employees.add(new Employee__c(
@@ -58,6 +62,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2020, 5, 20), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
     Territory__c = terMap.get('TER-BLR-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 9, SL_Balance__c = 7, EL_Balance__c = 11, CO_Balance__c = 1
 ));
 employees.add(new Employee__c(
@@ -67,6 +72,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2020, 7, 1), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
     Territory__c = terMap.get('TER-DEL-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 0
 ));
 employees.add(new Employee__c(
@@ -76,10 +82,11 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2021, 1, 5), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
     Territory__c = terMap.get('TER-CHN-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 10, SL_Balance__c = 6, EL_Balance__c = 13, CO_Balance__c = 2
 ));
 
-// Sales Representatives (8)
+// Sales Representatives (8) - varied week-off patterns
 employees.add(new Employee__c(
     First_Name__c = 'Rahul', Last_Name__c = 'Verma', Employee_Code__c = 'EMP-SR-001',
     Email__c = 'rahul.verma@freshfields.com', Phone__c = '9810000010',
@@ -87,6 +94,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2021, 6, 1), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
     Territory__c = terMap.get('TER-DEL-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 6, SL_Balance__c = 3, EL_Balance__c = 8, CO_Balance__c = 1
 ));
 employees.add(new Employee__c(
@@ -96,6 +104,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2021, 8, 15), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
     Territory__c = terMap.get('TER-DEL-001'),
+    Week_Off_Days__c = 'Saturday;Sunday',
     CL_Balance__c = 10, SL_Balance__c = 5, EL_Balance__c = 12, CO_Balance__c = 0
 ));
 employees.add(new Employee__c(
@@ -105,6 +114,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2022, 1, 10), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
     Territory__c = terMap.get('TER-MUM-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 2
 ));
 employees.add(new Employee__c(
@@ -114,6 +124,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2022, 3, 1), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
     Territory__c = terMap.get('TER-PUN-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 9, SL_Balance__c = 4, EL_Balance__c = 10, CO_Balance__c = 1
 ));
 employees.add(new Employee__c(
@@ -123,6 +134,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2022, 5, 15), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
     Territory__c = terMap.get('TER-BLR-001'),
+    Week_Off_Days__c = 'Saturday;Sunday',
     CL_Balance__c = 11, SL_Balance__c = 6, EL_Balance__c = 14, CO_Balance__c = 0
 ));
 employees.add(new Employee__c(
@@ -132,6 +144,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2022, 7, 1), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
     Territory__c = terMap.get('TER-CHN-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 3
 ));
 employees.add(new Employee__c(
@@ -141,6 +154,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2023, 2, 1), Is_Active__c = true,
     Zone__c = 'East', Region__c = 'East',
     Territory__c = terMap.get('TER-KOL-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 8, SL_Balance__c = 5, EL_Balance__c = 9, CO_Balance__c = 0
 ));
 employees.add(new Employee__c(
@@ -150,6 +164,7 @@ employees.add(new Employee__c(
     Date_of_Joining__c = Date.newInstance(2023, 4, 15), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
     Territory__c = terMap.get('TER-HYD-001'),
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 1
 ));
 

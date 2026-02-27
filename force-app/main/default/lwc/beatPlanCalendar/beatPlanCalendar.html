@@ -313,6 +313,37 @@
                             <p class="generate-info-text">{generateDateInfo}</p>
                         </div>
                     </template>
+
+                    <!-- Exclusion Options -->
+                    <div class="slds-m-top_medium">
+                        <h3 class="slds-text-title_caps slds-m-bottom_x-small">Exclusion Options</h3>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                            Select which types of non-working days to exclude from the journey plan.
+                        </p>
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+                            <div class="slds-col slds-size_1-of-3">
+                                <lightning-input type="toggle" label="Exclude Holidays"
+                                    checked={excludeHolidays}
+                                    onchange={handleExcludeHolidaysChange}
+                                    message-toggle-active="Yes"
+                                    message-toggle-inactive="No"></lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <lightning-input type="toggle" label="Exclude Leaves"
+                                    checked={excludeLeaves}
+                                    onchange={handleExcludeLeavesChange}
+                                    message-toggle-active="Yes"
+                                    message-toggle-inactive="No"></lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <lightning-input type="toggle" label="Exclude Week Offs"
+                                    checked={excludeWeekOffs}
+                                    onchange={handleExcludeWeekOffsChange}
+                                    message-toggle-active="Yes"
+                                    message-toggle-inactive="No"></lightning-input>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <footer class="slds-modal__footer">
                     <lightning-button label="Cancel" variant="neutral"

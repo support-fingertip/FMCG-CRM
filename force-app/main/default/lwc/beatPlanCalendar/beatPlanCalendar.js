@@ -70,6 +70,9 @@ export default class BeatPlanCalendar extends LightningElement {
     generateToDate = '';
     showRegenerateModal = false;
     regenerateToDate = '';
+    excludeHolidays = true;
+    excludeLeaves = true;
+    excludeWeekOffs = true;
 
     get hasPlan() {
         return this.journeyPlan && this.journeyPlan.Id;
@@ -618,10 +621,11 @@ export default class BeatPlanCalendar extends LightningElement {
     handleOpenGenerateModal() {
         const today = new Date();
         const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
-        // Default from date to today (only future dates allowed)
         this.generateFromDate = this.formatDateKey(today);
-        // Default to date to end of currently viewed month, but ensure it's >= today
         this.generateToDate = lastDay >= today ? this.formatDateKey(lastDay) : this.formatDateKey(today);
+        this.excludeHolidays = true;
+        this.excludeLeaves = true;
+        this.excludeWeekOffs = true;
         this.showGenerateModal = true;
     }
 
@@ -635,6 +639,18 @@ export default class BeatPlanCalendar extends LightningElement {
 
     handleToDateChange(event) {
         this.generateToDate = event.detail.value;
+    }
+
+    handleExcludeHolidaysChange(event) {
+        this.excludeHolidays = event.target.checked;
+    }
+
+    handleExcludeLeavesChange(event) {
+        this.excludeLeaves = event.target.checked;
+    }
+
+    handleExcludeWeekOffsChange(event) {
+        this.excludeWeekOffs = event.target.checked;
     }
 
     async handleConfirmGenerate() {
@@ -653,7 +669,10 @@ export default class BeatPlanCalendar extends LightningElement {
                 userId,
                 territoryId,
                 fromDate: this.generateFromDate,
-                toDate: this.generateToDate
+                toDate: this.generateToDate,
+                excludeHolidays: this.excludeHolidays,
+                excludeLeaves: this.excludeLeaves,
+                excludeWeekOffs: this.excludeWeekOffs
             });
 
             // Navigate to the from date's month

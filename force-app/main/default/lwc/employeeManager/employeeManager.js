@@ -12,6 +12,16 @@ import getDirectReports from '@salesforce/apex/EmployeeController.getDirectRepor
 
 const PAGE_SIZE = 15;
 
+const WEEK_DAY_OPTIONS = [
+    { label: 'Monday', value: 'Monday' },
+    { label: 'Tuesday', value: 'Tuesday' },
+    { label: 'Wednesday', value: 'Wednesday' },
+    { label: 'Thursday', value: 'Thursday' },
+    { label: 'Friday', value: 'Friday' },
+    { label: 'Saturday', value: 'Saturday' },
+    { label: 'Sunday', value: 'Sunday' }
+];
+
 const EMPTY_EMPLOYEE_FORM = {
     Id: null,
     First_Name__c: '',
@@ -33,7 +43,8 @@ const EMPTY_EMPLOYEE_FORM = {
     CL_Balance__c: 0,
     SL_Balance__c: 0,
     EL_Balance__c: 0,
-    CO_Balance__c: 0
+    CO_Balance__c: 0,
+    Week_Off_Days__c: 'Sunday'
 };
 
 export default class EmployeeManager extends NavigationMixin(LightningElement) {
@@ -145,6 +156,20 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
 
     get selectedEmployeeAddress() {
         return this.selectedEmployee ? this.selectedEmployee.Address__c || '-' : '-';
+    }
+
+    get selectedEmployeeWeekOffDays() {
+        if (!this.selectedEmployee || !this.selectedEmployee.Week_Off_Days__c) return '-';
+        return this.selectedEmployee.Week_Off_Days__c.replace(/;/g, ', ');
+    }
+
+    get weekDayOptions() {
+        return WEEK_DAY_OPTIONS;
+    }
+
+    get weekOffDaysFormValue() {
+        if (!this.employeeForm.Week_Off_Days__c) return [];
+        return this.employeeForm.Week_Off_Days__c.split(';');
     }
 
     get selectedEmployeeIsActive() {
@@ -453,7 +478,8 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             CL_Balance__c: this.selectedEmployee.CL_Balance__c || 0,
             SL_Balance__c: this.selectedEmployee.SL_Balance__c || 0,
             EL_Balance__c: this.selectedEmployee.EL_Balance__c || 0,
-            CO_Balance__c: this.selectedEmployee.CO_Balance__c || 0
+            CO_Balance__c: this.selectedEmployee.CO_Balance__c || 0,
+            Week_Off_Days__c: this.selectedEmployee.Week_Off_Days__c || 'Sunday'
         };
         this.isEditMode = true;
         this.showEmployeeForm = true;
@@ -468,6 +494,9 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             this.employeeForm = { ...this.employeeForm, [field]: event.target.checked };
         } else if (field === 'Department__c' || field === 'Designation__c') {
             this.employeeForm = { ...this.employeeForm, [field]: event.detail.value };
+        } else if (field === 'Week_Off_Days__c') {
+            const selectedValues = event.detail.value;
+            this.employeeForm = { ...this.employeeForm, [field]: Array.isArray(selectedValues) ? selectedValues.join(';') : selectedValues };
         } else {
             this.employeeForm = { ...this.employeeForm, [field]: event.target.value };
         }
@@ -509,7 +538,8 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
                 CL_Balance__c: this.employeeForm.CL_Balance__c,
                 SL_Balance__c: this.employeeForm.SL_Balance__c,
                 EL_Balance__c: this.employeeForm.EL_Balance__c,
-                CO_Balance__c: this.employeeForm.CO_Balance__c
+                CO_Balance__c: this.employeeForm.CO_Balance__c,
+                Week_Off_Days__c: this.employeeForm.Week_Off_Days__c
             };
             if (this.employeeForm.Id) {
                 employeeRecord.Id = this.employeeForm.Id;

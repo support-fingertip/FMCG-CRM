@@ -29,6 +29,7 @@ public with sharing class BeatPlanController {
                    Salesperson__r.Name, Total_Planned_Visits__c,
                    Territory__c, Territory__r.Name,
                    Effective_From__c, Effective_To__c,
+                   Exclude_Holidays__c, Exclude_Leaves__c, Exclude_Week_Offs__c,
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
             WHERE Id = :journeyPlanId
@@ -84,6 +85,7 @@ public with sharing class BeatPlanController {
                    Salesperson__r.Name, Total_Planned_Visits__c,
                    Territory__c, Territory__r.Name,
                    Effective_From__c, Effective_To__c,
+                   Exclude_Holidays__c, Exclude_Leaves__c, Exclude_Week_Offs__c,
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
@@ -931,18 +933,28 @@ public with sharing class BeatPlanController {
 
     /**
      * @description Generates a single journey plan spanning the specified date
-     *              range. Creates one Journey_Plan__c with Effective_From/To
-     *              and plan days for every working day in the range.
-     * @param userId      The User (Salesperson) Id.
-     * @param territoryId The Territory_Master__c Id.
-     * @param fromDate    Start date of the range.
-     * @param toDate      End date of the range.
+     *              range with configurable exclusion options. Creates one
+     *              Journey_Plan__c with Effective_From/To and plan days for
+     *              every working day in the range.
+     * @param userId           The User (Salesperson) Id.
+     * @param territoryId      The Territory_Master__c Id.
+     * @param fromDate         Start date of the range.
+     * @param toDate           End date of the range.
+     * @param excludeHolidays  When true, exclude holiday dates from the plan.
+     * @param excludeLeaves    When true, exclude approved/pending leave dates.
+     * @param excludeWeekOffs  When true, exclude employee's week-off days.
      * @return The created Journey_Plan__c Id.
      */
     @AuraEnabled
-    public static Id generatePlanForDateRange(Id userId, Id territoryId, Date fromDate, Date toDate) {
+    public static Id generatePlanForDateRange(
+        Id userId, Id territoryId, Date fromDate, Date toDate,
+        Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs
+    ) {
         try {
-            return BPM_JourneyPlan_Service.generatePlanForDateRange(userId, territoryId, fromDate, toDate);
+            return BPM_JourneyPlan_Service.generatePlanForDateRange(
+                userId, territoryId, fromDate, toDate,
+                excludeHolidays, excludeLeaves, excludeWeekOffs
+            );
         } catch (BPM_JourneyPlanServiceException e) {
             throw new AuraHandledException(e.getMessage());
         }

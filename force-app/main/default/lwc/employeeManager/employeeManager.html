@@ -262,6 +262,16 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="detail-section">
+                                    <h3 class="detail-section-title">Week Off Configuration</h3>
+                                    <div class="slds-grid slds-wrap slds-gutters_small">
+                                        <div class="slds-col slds-size_1-of-1 detail-field">
+                                            <span class="detail-label">Week Off Days</span>
+                                            <span class="detail-value">{selectedEmployeeWeekOffDays}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </template>
 
@@ -483,6 +493,22 @@
                                             data-field="Territory__c"
                                             onchange={handleFormChange}
                                             variant="label-stacked"></lightning-input-field>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section: Week Off Configuration -->
+                            <div class="form-section">
+                                <h3 class="form-section-title">Week Off Configuration</h3>
+                                <div class="slds-grid slds-gutters slds-wrap">
+                                    <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
+                                        <lightning-dual-listbox label="Week Off Days"
+                                            source-label="Working Days"
+                                            selected-label="Week Off Days"
+                                            options={weekDayOptions}
+                                            value={weekOffDaysFormValue}
+                                            data-field="Week_Off_Days__c"
+                                            onchange={handleFormChange}></lightning-dual-listbox>
                                     </div>
                                 </div>
                             </div>

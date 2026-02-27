@@ -27,6 +27,7 @@ Date firstDay = Date.newInstance(currentYear, currentMonth, 1);
 Date lastDay = firstDay.addMonths(1).addDays(-1);
 
 // Create Journey Plans for Delhi and Mumbai territories
+// Each plan now tracks exclusion preferences used during generation
 List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
     new Journey_Plan__c(
         Name = 'PJP - Delhi - ' + monthName + ' ' + currentYear,
@@ -36,7 +37,10 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Status__c = 'Active',
         Plan_Date__c = firstDay,
         Effective_From__c = firstDay,
-        Effective_To__c = lastDay
+        Effective_To__c = lastDay,
+        Exclude_Holidays__c = true,
+        Exclude_Leaves__c = true,
+        Exclude_Week_Offs__c = true
     ),
     new Journey_Plan__c(
         Name = 'PJP - Mumbai - ' + monthName + ' ' + currentYear,
@@ -46,7 +50,10 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Status__c = 'Approved',
         Plan_Date__c = firstDay,
         Effective_From__c = firstDay,
-        Effective_To__c = lastDay
+        Effective_To__c = lastDay,
+        Exclude_Holidays__c = true,
+        Exclude_Leaves__c = true,
+        Exclude_Week_Offs__c = true
     ),
     new Journey_Plan__c(
         Name = 'PJP - Bengaluru - ' + monthName + ' ' + currentYear,
@@ -56,7 +63,10 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Status__c = 'Draft',
         Plan_Date__c = firstDay,
         Effective_From__c = firstDay,
-        Effective_To__c = lastDay
+        Effective_To__c = lastDay,
+        Exclude_Holidays__c = true,
+        Exclude_Leaves__c = false,
+        Exclude_Week_Offs__c = true
     )
 };
 insert plans;
