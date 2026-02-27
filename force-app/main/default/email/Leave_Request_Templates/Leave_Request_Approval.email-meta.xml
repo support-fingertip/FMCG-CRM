@@ -4,7 +4,7 @@
     <description>Email template for leave request approval notifications</description>
     <encodingKey>UTF-8</encodingKey>
     <name>Leave Request Approval</name>
-    <style>freeForm</style>
+    <style>none</style>
     <subject>Leave Request {!Leave_Request__c.Name} - Approval Required</subject>
-    <type>html</type>
+    <type>custom</type>
 </EmailTemplate>
