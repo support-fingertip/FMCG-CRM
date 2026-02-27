@@ -16,7 +16,6 @@
         <field>Owner</field>
     </approvalPageFields>
     <approvalStep>
-        <stepNumber>1</stepNumber>
         <allowDelegate>true</allowDelegate>
         <assignedApprover>
             <approver>
@@ -31,7 +30,6 @@
         </rejectBehavior>
     </approvalStep>
     <approvalStep>
-        <stepNumber>2</stepNumber>
         <allowDelegate>false</allowDelegate>
         <assignedApprover>
             <approver>
