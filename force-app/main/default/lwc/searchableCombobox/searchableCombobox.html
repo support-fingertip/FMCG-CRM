@@ -1,5 +1,5 @@
 <template>
-    <div class="searchable-combobox-container" onblur={handleBlur}>
+    <div class="searchable-combobox-container" onfocusout={handleBlur}>
         <template if:true={showLabel}>
             <label class="combobox-label">
                 {label}

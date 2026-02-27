@@ -491,13 +491,35 @@ export default class HolidayManager extends LightningElement {
             return;
         }
 
-        // Position popover near the clicked element
+        // Position popover near the clicked element (using viewport coords for position:fixed)
         const rect = event.currentTarget.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const popoverEstimatedHeight = 200;
+        const popoverMaxWidth = 360;
 
-        const popoverTop = rect.bottom + scrollTop + 4;
-        const popoverLeft = rect.left + scrollLeft;
+        // Check if popover would overflow the bottom of the viewport
+        let popoverTop;
+        if (rect.bottom + popoverEstimatedHeight + 4 > viewportHeight) {
+            // Show above the clicked element
+            popoverTop = rect.top - popoverEstimatedHeight - 4;
+            // If it would also go above viewport, clamp to top
+            if (popoverTop < 4) {
+                popoverTop = 4;
+            }
+        } else {
+            // Show below the clicked element
+            popoverTop = rect.bottom + 4;
+        }
+
+        // Check if popover would overflow the right edge
+        let popoverLeft = rect.left;
+        if (popoverLeft + popoverMaxWidth > viewportWidth) {
+            popoverLeft = viewportWidth - popoverMaxWidth - 8;
+        }
+        if (popoverLeft < 4) {
+            popoverLeft = 4;
+        }
 
         this.popoverStyle = 'top: ' + popoverTop + 'px; left: ' + popoverLeft + 'px;';
         this.popoverHoliday = dayHolidays.map(h => {
