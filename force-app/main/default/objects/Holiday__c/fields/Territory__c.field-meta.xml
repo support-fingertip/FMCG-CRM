@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Territory__c</fullName>
+    <label>Territory</label>
+    <type>Lookup</type>
+    <referenceTo>Territory_Master__c</referenceTo>
+    <relationshipLabel>Holidays</relationshipLabel>
+    <relationshipName>Holidays</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Territory from Territory Master where this holiday applies. Leave blank for all territories.</description>
+</CustomField>
