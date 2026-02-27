@@ -25,7 +25,7 @@ public with sharing class HolidayController {
      *                    Pass null or blank to return all territories.
      * @return List of active Holiday__c records matching the criteria.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Holiday__c> getHolidays(Integer year, String holidayType, Id territoryId) {
         try {
             if (year == null) {
@@ -63,7 +63,7 @@ public with sharing class HolidayController {
      * @param territoryId Optional Territory__c Id to filter by.
      * @return List of all Holiday__c records for the year, ordered by date.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Holiday__c> getAllHolidaysForYear(Integer year, Id territoryId) {
         try {
             if (year == null) {
@@ -152,7 +152,7 @@ public with sharing class HolidayController {
      *                   if null or less than 1.
      * @return List of upcoming active Holiday__c records ordered by date.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Holiday__c> getUpcomingHolidays(Integer limitCount) {
         try {
             if (limitCount == null || limitCount < 1) {
@@ -185,7 +185,7 @@ public with sharing class HolidayController {
      * @param endDate   The end of the date range (inclusive).
      * @return List of active Holiday__c records within the range, ordered by date.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Holiday__c> getHolidaysBetweenDates(Date startDate, Date endDate) {
         try {
             if (startDate == null || endDate == null) {

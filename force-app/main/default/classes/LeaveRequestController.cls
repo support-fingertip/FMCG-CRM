@@ -43,7 +43,7 @@ public with sharing class LeaveRequestController {
      * @param year   Optional year filter. Pass null or 0 to skip.
      * @return List of Leave_Request__c records ordered by Start_Date__c DESC.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Leave_Request__c> getLeaveRequests(Id userId, String status, Integer year) {
         String query = 'SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c, ' +
             'Start_Date__c, Start_Session__c, End_Date__c, End_Session__c, Number_of_Days__c, Reason__c, Status__c, ' +
@@ -72,7 +72,7 @@ public with sharing class LeaveRequestController {
      * @param status    Optional status filter. Pass null to skip.
      * @return List of Leave_Request__c records for the manager's team.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Leave_Request__c> getTeamLeaveRequests(Id managerId, String status) {
         // Find the manager's Employee__c record
         List<Employee__c> managerEmployees = [
@@ -372,7 +372,7 @@ public with sharing class LeaveRequestController {
      * @param userId The User Id to look up leave balances for.
      * @return Map with leave type abbreviation keys and Decimal balance values.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Map<String, Decimal> getLeaveBalance(Id userId) {
         List<Employee__c> employees = [
             SELECT CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
@@ -404,7 +404,7 @@ public with sharing class LeaveRequestController {
      * @param year   The calendar year to summarise.
      * @return Map with composite keys (e.g. 'Casual Leave_Approved') and count values.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Map<String, Integer> getLeavesSummary(Id userId, Integer year) {
         Map<String, Integer> summary = new Map<String, Integer>();
 
@@ -435,7 +435,7 @@ public with sharing class LeaveRequestController {
      * @param limitCount Maximum number of records to return.
      * @return List of upcoming Leave_Request__c records.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Leave_Request__c> getUpcomingLeaves(Id userId, Integer limitCount) {
         if (limitCount == null || limitCount <= 0) {
             limitCount = 10;
@@ -464,7 +464,7 @@ public with sharing class LeaveRequestController {
      * @param managerId  The User Id of the manager.
      * @return List of Leave_Request__c records for team members on leave that date.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Leave_Request__c> getTeamLeavesOnDate(Date targetDate, Id managerId) {
         // Find the manager's Employee__c record
         List<Employee__c> managerEmployees = [

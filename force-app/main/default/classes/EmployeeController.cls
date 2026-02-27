@@ -20,7 +20,7 @@ public with sharing class EmployeeController {
      * @param activeOnly  When true (default), returns only active employees.
      * @return List of Employee__c records with related Territory and Reporting Manager fields.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Employee__c> getEmployees(
         String searchTerm, String department, String designation, Boolean activeOnly
     ) {
@@ -67,7 +67,7 @@ public with sharing class EmployeeController {
      * @param employeeId The Employee__c record Id.
      * @return The Employee__c record, or null if not found.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Employee__c getEmployee(Id employeeId) {
         List<Employee__c> employees = [
             SELECT Id, Name, Employee_Code__c, First_Name__c, Last_Name__c,
@@ -153,7 +153,7 @@ public with sharing class EmployeeController {
      * @param userId The User Id to look up.
      * @return The matching Employee__c record, or null if no link exists.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Employee__c getEmployeeByUserId(Id userId) {
         List<Employee__c> employees = [
             SELECT Id, Name, Employee_Code__c, First_Name__c, Last_Name__c,
@@ -220,7 +220,7 @@ public with sharing class EmployeeController {
      * @param employeeId The manager's Employee__c record Id.
      * @return List of Employee__c records reporting to this manager.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Employee__c> getDirectReports(Id employeeId) {
         return [
             SELECT Id, Name, Employee_Code__c, First_Name__c, Last_Name__c,
