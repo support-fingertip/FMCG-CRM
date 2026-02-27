@@ -43,7 +43,7 @@
     <masterLabel>Employee Record Page</masterLabel>
     <sobjectType>Employee__c</sobjectType>
     <template>
-        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
+        <name>flexipage:recordHomeTemplateDesktop</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>
