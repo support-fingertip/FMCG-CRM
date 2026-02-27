@@ -344,11 +344,12 @@
                                 <h3 class="form-section-title">Assignment</h3>
                                 <div class="slds-grid slds-gutters slds-wrap">
                                     <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
-                                        <lightning-input-field field-name="Territory__c"
+                                        <c-searchable-combobox
+                                            label="Territory"
                                             value={beatForm.Territory__c}
-                                            data-field="Territory__c"
-                                            onchange={handleBeatFormChange}
-                                            variant="label-stacked"></lightning-input-field>
+                                            options={territoryComboboxOptions}
+                                            placeholder="Search territories..."
+                                            onchange={handleTerritoryChange}></c-searchable-combobox>
                                     </div>
                                     <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
                                         <lightning-input-field field-name="Assigned_User__c"

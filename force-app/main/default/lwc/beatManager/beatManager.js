@@ -13,6 +13,7 @@ import getAccountsByTerritory from '@salesforce/apex/BeatPlanController.getAccou
 import cloneBeat from '@salesforce/apex/BeatPlanController.cloneBeat';
 import reassignBeat from '@salesforce/apex/BeatPlanController.reassignBeat';
 import updateOutletSequences from '@salesforce/apex/BeatPlanController.updateOutletSequences';
+import getTerritoryOptions from '@salesforce/apex/HolidayController.getTerritoryOptions';
 
 const DAY_OPTIONS = [
     { label: 'Monday', value: 'Monday' },
@@ -58,6 +59,9 @@ export default class BeatManager extends LightningElement {
     accountPageNumber = 1;
     accountTotalPages = 1;
     accountTotalCount = 0;
+
+    // Territory options for searchable combobox
+    @track territoryOptions = [];
 
     // Debounce timers
     _searchTimer;
@@ -177,8 +181,25 @@ export default class BeatManager extends LightningElement {
         return this.outletOrderChanged;
     }
 
+    get territoryComboboxOptions() {
+        return this.territoryOptions.map(t => ({
+            label: t.Name,
+            value: t.Id
+        }));
+    }
+
     connectedCallback() {
         this.loadBeats();
+        this.loadTerritoryOptions();
+    }
+
+    async loadTerritoryOptions() {
+        try {
+            const result = await getTerritoryOptions();
+            this.territoryOptions = result || [];
+        } catch (error) {
+            console.error('Error loading territory options:', error);
+        }
     }
 
     async loadBeats() {
@@ -315,13 +336,17 @@ export default class BeatManager extends LightningElement {
         const field = event.target.dataset.field;
         if (field === 'Day_of_Week__c') {
             this.beatForm = { ...this.beatForm, [field]: event.detail.value };
-        } else if (field === 'Territory__c' || field === 'Assigned_User__c') {
+        } else if (field === 'Assigned_User__c') {
             this.beatForm = { ...this.beatForm, [field]: event.detail.value[0] || null };
         } else if (field === 'Is_Active__c') {
             this.beatForm = { ...this.beatForm, [field]: event.target.checked };
         } else {
             this.beatForm = { ...this.beatForm, [field]: event.target.value };
         }
+    }
+
+    handleTerritoryChange(event) {
+        this.beatForm = { ...this.beatForm, Territory__c: event.detail.value || null };
     }
 
     handleCancelBeatForm() {
