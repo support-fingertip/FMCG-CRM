@@ -25,6 +25,10 @@
         </assignedApprover>
         <label>Reporting Manager Approval</label>
         <name>Reporting_Manager_Approval</name>
+        <rejectBehavior>
+            <type>RejectRequest</type>
+        </rejectBehavior>
+        <stepNumber>1</stepNumber>
     </approvalStep>
     <approvalStep>
         <allowDelegate>false</allowDelegate>
@@ -46,8 +50,10 @@
         <rejectBehavior>
             <type>RejectRequest</type>
         </rejectBehavior>
+        <stepNumber>2</stepNumber>
     </approvalStep>
     <description>Approval process for employee leave requests requiring reporting manager and HR sign-off for extended leaves</description>
+    <emailTemplate>Leave_Request_Templates/Leave_Request_Approval</emailTemplate>
     <entryCriteria>
         <criteriaItems>
             <field>Leave_Request__c.Status__c</field>
