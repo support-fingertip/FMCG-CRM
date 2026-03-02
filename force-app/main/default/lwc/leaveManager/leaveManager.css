@@ -300,6 +300,11 @@
     color: var(--warning-color);
 }
 
+.status-submitted {
+    background: #e8f4fd;
+    color: var(--brand-primary);
+}
+
 .status-approved {
     background: #e6f7e9;
     color: var(--success-color);

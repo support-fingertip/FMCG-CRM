@@ -33,6 +33,111 @@ public with sharing class LeaveRequestController {
         'CO_Balance__c' => 0
     };
 
+    // ── Check if User is a Manager ──────────────────────────────────────────
+
+    /**
+     * @description Checks whether the given user is a manager by looking for
+     *              active employees who have this user's Employee record as
+     *              their Reporting_Manager__c.
+     * @param userId The User Id to check.
+     * @return True if the user has at least one direct report.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Boolean checkIsManager(Id userId) {
+        List<Employee__c> managerEmployees = [
+            SELECT Id
+            FROM Employee__c
+            WHERE User__c = :userId
+            LIMIT 1
+        ];
+
+        if (managerEmployees.isEmpty()) {
+            return false;
+        }
+
+        Id managerEmployeeId = managerEmployees[0].Id;
+
+        Integer directReportCount = [
+            SELECT COUNT()
+            FROM Employee__c
+            WHERE Reporting_Manager__c = :managerEmployeeId
+            AND Is_Active__c = true
+        ];
+
+        return directReportCount > 0;
+    }
+
+    // ── Get Reporting Manager User Id ───────────────────────────────────────
+
+    /**
+     * @description Retrieves the User Id of the reporting manager for a given
+     *              employee (User Id). Traverses Employee__c -> Reporting_Manager__c -> User__c.
+     * @param userId The User Id of the employee.
+     * @return The User Id of the reporting manager, or null if not found.
+     */
+    @AuraEnabled
+    public static Id getReportingManagerUserId(Id userId) {
+        List<Employee__c> employees = [
+            SELECT Reporting_Manager__c, Reporting_Manager__r.User__c
+            FROM Employee__c
+            WHERE User__c = :userId
+            LIMIT 1
+        ];
+
+        if (employees.isEmpty() || employees[0].Reporting_Manager__c == null) {
+            return null;
+        }
+
+        return employees[0].Reporting_Manager__r.User__c;
+    }
+
+    // ── Get Pending Approvals for Manager ───────────────────────────────────
+
+    /**
+     * @description Retrieves all pending leave requests that are assigned to the
+     *              given manager for approval (where Approved_By__c = managerId
+     *              and Status is Pending or Submitted).
+     * @param managerId The User Id of the manager/approver.
+     * @return List of Leave_Request__c records pending this manager's approval.
+     */
+    @AuraEnabled
+    public static List<Leave_Request__c> getPendingApprovalsForManager(Id managerId) {
+        return [
+            SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
+                   Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                   Number_of_Days__c, Reason__c, Status__c,
+                   Approved_By__c, Approved_By__r.Name, Approval_Date__c, Comments__c,
+                   CreatedDate
+            FROM Leave_Request__c
+            WHERE Approved_By__c = :managerId
+            AND Status__c IN ('Pending', 'Submitted')
+            ORDER BY CreatedDate DESC
+        ];
+    }
+
+    // ── Get Approval History for Manager ────────────────────────────────────
+
+    /**
+     * @description Retrieves recently decided leave requests (Approved/Rejected)
+     *              where the given manager was the approver.
+     * @param managerId The User Id of the manager/approver.
+     * @return List of recently decided Leave_Request__c records.
+     */
+    @AuraEnabled
+    public static List<Leave_Request__c> getApprovalHistoryForManager(Id managerId) {
+        return [
+            SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
+                   Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                   Number_of_Days__c, Reason__c, Status__c,
+                   Approved_By__c, Approved_By__r.Name, Approval_Date__c, Comments__c
+            FROM Leave_Request__c
+            WHERE Approved_By__c = :managerId
+            AND Status__c IN ('Approved', 'Rejected')
+            ORDER BY Approval_Date__c DESC
+            LIMIT 50
+        ];
+    }
+
     // ── Get Leave Requests ────────────────────────────────────────────────────
 
     /**
@@ -126,7 +231,8 @@ public with sharing class LeaveRequestController {
      *              Number_of_Days__c from Start_Date__c/End_Date__c counting only
      *              business days (Mon-Fri), adjusted by Start_Session__c and
      *              End_Session__c for half-day precision. Validates leave balance
-     *              before saving. New records are automatically set to 'Pending' status.
+     *              before saving. New records automatically populate Approved_By__c
+     *              with the reporting manager and set Status to 'Submitted'.
      * @param leaveRequest The Leave_Request__c record to save.
      * @return The saved Leave_Request__c record.
      */
@@ -172,10 +278,16 @@ public with sharing class LeaveRequestController {
                 );
             }
 
-            // Set status to Pending for new records
             Boolean isNew = leaveRequest.Id == null;
             if (isNew) {
-                leaveRequest.Status__c = 'Pending';
+                // Auto-populate Approved_By__c with reporting manager
+                Id reportingManagerUserId = getReportingManagerUserId(leaveRequest.Employee__c);
+                if (reportingManagerUserId != null) {
+                    leaveRequest.Approved_By__c = reportingManagerUserId;
+                }
+
+                // Set status to Submitted (sent for approval)
+                leaveRequest.Status__c = 'Submitted';
             }
 
             // Validate leave balance
@@ -218,7 +330,7 @@ public with sharing class LeaveRequestController {
         try {
             Leave_Request__c request = [
                 SELECT Id, Employee__c, Leave_Type__c, Number_of_Days__c, Status__c,
-                       Comments__c
+                       Approved_By__c, Comments__c
                 FROM Leave_Request__c
                 WHERE Id = :leaveRequestId
                 LIMIT 1
@@ -274,7 +386,7 @@ public with sharing class LeaveRequestController {
     public static Leave_Request__c rejectLeaveRequest(Id leaveRequestId, String comments) {
         try {
             Leave_Request__c request = [
-                SELECT Id, Status__c
+                SELECT Id, Status__c, Approved_By__c
                 FROM Leave_Request__c
                 WHERE Id = :leaveRequestId
                 LIMIT 1
@@ -449,7 +561,7 @@ public with sharing class LeaveRequestController {
             FROM Leave_Request__c
             WHERE Employee__c = :userId
             AND Start_Date__c >= :Date.today()
-            AND Status__c IN ('Approved', 'Pending')
+            AND Status__c IN ('Approved', 'Pending', 'Submitted')
             ORDER BY Start_Date__c ASC
             LIMIT :limitCount
         ];
@@ -512,20 +624,11 @@ public with sharing class LeaveRequestController {
 
     // ── Private Helper: Calculate Business Days ───────────────────────────────
 
-    /**
-     * @description Calculates the number of business days (Monday through Friday)
-     *              between two dates, inclusive of both start and end dates.
-     * @param startDate The start date.
-     * @param endDate   The end date.
-     * @return The count of business days as a Decimal.
-     */
     private static Decimal calculateBusinessDays(Date startDate, Date endDate) {
         Integer businessDays = 0;
         Date current = startDate;
 
         while (current <= endDate) {
-            // DateTime.format('u') returns day-of-week where Monday=1, Sunday=7
-            // We use the daysBetween approach to determine the weekday
             DateTime dt = DateTime.newInstance(current, Time.newInstance(0, 0, 0, 0));
             String dayOfWeek = dt.format('EEEE');
             if (dayOfWeek != 'Saturday' && dayOfWeek != 'Sunday') {
@@ -539,17 +642,9 @@ public with sharing class LeaveRequestController {
 
     // ── Private Helper: Validate Leave Balance ────────────────────────────────
 
-    /**
-     * @description Validates that the employee has sufficient leave balance for
-     *              the requested leave type and number of days.
-     * @param userId    The User Id of the employee.
-     * @param leaveType The leave type picklist value.
-     * @param days      The number of days requested.
-     */
     private static void validateLeaveBalance(Id userId, String leaveType, Decimal days) {
         String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
         if (balanceField == null) {
-            // Leave type does not require balance validation
             return;
         }
 
@@ -565,7 +660,6 @@ public with sharing class LeaveRequestController {
         Decimal currentBalance;
 
         if (employees.isEmpty()) {
-            // No Employee record linked — use default entitlement
             currentBalance = defaultForField != null ? defaultForField : 0;
         } else {
             Employee__c emp = employees[0];
@@ -594,13 +688,6 @@ public with sharing class LeaveRequestController {
 
     // ── Private Helper: Deduct Leave Balance ──────────────────────────────────
 
-    /**
-     * @description Deducts the specified number of days from the employee's leave
-     *              balance for the given leave type.
-     * @param userId    The User Id of the employee.
-     * @param leaveType The leave type picklist value.
-     * @param days      The number of days to deduct.
-     */
     private static void deductLeaveBalance(Id userId, String leaveType, Decimal days) {
         String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
         if (balanceField == null) {
@@ -635,14 +722,6 @@ public with sharing class LeaveRequestController {
 
     // ── Private Helper: Restore Leave Balance ─────────────────────────────────
 
-    /**
-     * @description Restores the specified number of days to the employee's leave
-     *              balance for the given leave type. Used when cancelling a previously
-     *              approved leave request.
-     * @param userId    The User Id of the employee.
-     * @param leaveType The leave type picklist value.
-     * @param days      The number of days to restore.
-     */
     private static void restoreLeaveBalance(Id userId, String leaveType, Decimal days) {
         String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
         if (balanceField == null) {

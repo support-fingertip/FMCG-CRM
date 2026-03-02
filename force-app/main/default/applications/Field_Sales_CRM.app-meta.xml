@@ -23,6 +23,7 @@
     <tabs>Employee_Manager</tabs>
     <tabs>Employee_360</tabs>
     <tabs>Leave_Manager</tabs>
+    <tabs>Leave_Approval</tabs>
     <tabs>Holiday_Manager</tabs>
     <tabs>Target__c</tabs>
     <tabs>Scheme__c</tabs>

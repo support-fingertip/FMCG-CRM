@@ -12,6 +12,9 @@ import getLeaveBalance from '@salesforce/apex/LeaveRequestController.getLeaveBal
 import getLeavesSummary from '@salesforce/apex/LeaveRequestController.getLeavesSummary';
 import getUpcomingLeaves from '@salesforce/apex/LeaveRequestController.getUpcomingLeaves';
 import getTeamLeavesOnDate from '@salesforce/apex/LeaveRequestController.getTeamLeavesOnDate';
+import checkIsManager from '@salesforce/apex/LeaveRequestController.checkIsManager';
+import getPendingApprovalsForManager from '@salesforce/apex/LeaveRequestController.getPendingApprovalsForManager';
+import getApprovalHistoryForManager from '@salesforce/apex/LeaveRequestController.getApprovalHistoryForManager';
 
 const RING_RADIUS = 30;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -25,6 +28,7 @@ const LEAVE_TYPE_CONFIG = {
 
 const STATUS_CONFIG = {
     'Pending': { class: 'status-badge status-pending', icon: 'utility:clock', variant: 'warning' },
+    'Submitted': { class: 'status-badge status-submitted', icon: 'utility:routing_offline', variant: 'warning' },
     'Approved': { class: 'status-badge status-approved', icon: 'utility:check', variant: 'success' },
     'Rejected': { class: 'status-badge status-rejected', icon: 'utility:close', variant: 'error' },
     'Cancelled': { class: 'status-badge status-cancelled', icon: 'utility:ban', variant: 'default' }
@@ -100,7 +104,7 @@ export default class LeaveManager extends LightningElement {
             counts[s] = (counts[s] || 0) + 1;
         });
 
-        return ['All', 'Pending', 'Approved', 'Rejected', 'Cancelled'].map(status => ({
+        return ['All', 'Submitted', 'Pending', 'Approved', 'Rejected', 'Cancelled'].map(status => ({
             label: status,
             value: status,
             count: counts[status] || 0,
@@ -128,7 +132,7 @@ export default class LeaveManager extends LightningElement {
     // Team view getters
     get pendingTeamRequests() {
         return this.teamRequests
-            .filter(tr => tr.Status__c === 'Pending')
+            .filter(tr => tr.Status__c === 'Pending' || tr.Status__c === 'Submitted')
             .map(tr => this.enrichTeamRequest(tr));
     }
 
@@ -272,6 +276,7 @@ export default class LeaveManager extends LightningElement {
 
     get detailTimelineSteps() {
         if (!this.selectedLeave) return [];
+        const isPendingOrSubmitted = this.selectedLeave.Status__c === 'Pending' || this.selectedLeave.Status__c === 'Submitted';
         const steps = [
             {
                 label: 'Applied',
@@ -280,10 +285,10 @@ export default class LeaveManager extends LightningElement {
                 stepClass: 'timeline-step step-complete'
             },
             {
-                label: 'Pending Review',
-                isComplete: this.selectedLeave.Status__c !== 'Pending',
-                isCurrent: this.selectedLeave.Status__c === 'Pending',
-                stepClass: this.selectedLeave.Status__c === 'Pending'
+                label: this.selectedLeave.Status__c === 'Submitted' ? 'Submitted for Approval' : 'Pending Review',
+                isComplete: !isPendingOrSubmitted,
+                isCurrent: isPendingOrSubmitted,
+                stepClass: isPendingOrSubmitted
                     ? 'timeline-step step-current'
                     : 'timeline-step step-complete'
             }
@@ -323,8 +328,23 @@ export default class LeaveManager extends LightningElement {
     }
 
     get hasApprovalInfo() {
-        return this.selectedLeave &&
-            (this.selectedLeave.Status__c === 'Approved' || this.selectedLeave.Status__c === 'Rejected');
+        return this.selectedLeave && this.selectedLeave.Approved_By__c != null;
+    }
+
+    get approvalInfoLabel() {
+        if (!this.selectedLeave) return 'Approval Information';
+        if (this.selectedLeave.Status__c === 'Submitted' || this.selectedLeave.Status__c === 'Pending') {
+            return 'Pending Approval From';
+        }
+        return 'Approval Information';
+    }
+
+    get approverFieldLabel() {
+        if (!this.selectedLeave) return 'Approved/Rejected By';
+        if (this.selectedLeave.Status__c === 'Submitted' || this.selectedLeave.Status__c === 'Pending') {
+            return 'Assigned Approver';
+        }
+        return 'Approved/Rejected By';
     }
 
     get approverName() {
@@ -337,13 +357,18 @@ export default class LeaveManager extends LightningElement {
         return this.formatDate(this.selectedLeave.Approval_Date__c);
     }
 
+    get showDecisionDate() {
+        return this.selectedLeave &&
+            (this.selectedLeave.Status__c === 'Approved' || this.selectedLeave.Status__c === 'Rejected');
+    }
+
     get detailComments() {
         return this.selectedLeave ? (this.selectedLeave.Comments__c || '-') : '-';
     }
 
     get canCancelSelected() {
         return this.selectedLeave &&
-            (this.selectedLeave.Status__c === 'Pending' || this.selectedLeave.Status__c === 'Approved');
+            (this.selectedLeave.Status__c === 'Pending' || this.selectedLeave.Status__c === 'Submitted' || this.selectedLeave.Status__c === 'Approved');
     }
 
     // ── Lifecycle ───────────────────────────────────────────
@@ -355,17 +380,28 @@ export default class LeaveManager extends LightningElement {
     async loadAllData() {
         this.isLoading = true;
         try {
+            // Check manager status first, then load everything
+            await this.checkManagerStatus();
             await Promise.all([
                 this.loadLeaveBalance(),
                 this.loadLeaveRequests(),
                 this.loadLeaveSummary(),
                 this.loadUpcomingLeaves(),
-                this.loadTeamRequests()
+                this.isManager ? this.loadTeamRequests() : Promise.resolve()
             ]);
         } catch (error) {
             console.error('Leave Manager load error:', error);
         } finally {
             this.isLoading = false;
+        }
+    }
+
+    async checkManagerStatus() {
+        try {
+            this.isManager = await checkIsManager({ userId: this.currentUserId });
+        } catch (error) {
+            console.error('Error checking manager status:', error);
+            this.isManager = false;
         }
     }
 
@@ -419,31 +455,18 @@ export default class LeaveManager extends LightningElement {
 
     async loadTeamRequests() {
         try {
-            const pendingResult = await getTeamLeaveRequests({
-                managerId: this.currentUserId,
-                status: 'Pending'
+            // Load pending approvals assigned to this manager
+            const pendingResult = await getPendingApprovalsForManager({
+                managerId: this.currentUserId
             });
             this.teamRequests = pendingResult || [];
 
-            // If we got team requests back, user is a manager
-            if (this.teamRequests.length > 0) {
-                this.isManager = true;
-            }
-
-            // Load recent decisions (approved/rejected)
-            const recentResult = await getTeamLeaveRequests({
-                managerId: this.currentUserId,
-                status: ''
+            // Load recent decisions (approved/rejected) by this manager
+            const recentResult = await getApprovalHistoryForManager({
+                managerId: this.currentUserId
             });
-            this.recentDecisions = (recentResult || [])
-                .filter(r => r.Status__c === 'Approved' || r.Status__c === 'Rejected')
-                .slice(0, 10);
-
-            if (this.recentDecisions.length > 0 || this.teamRequests.length > 0) {
-                this.isManager = true;
-            }
+            this.recentDecisions = (recentResult || []).slice(0, 10);
         } catch (error) {
-            // If the call fails it might mean user is not a manager — that's okay
             console.error('Error loading team requests:', error);
         }
     }
@@ -605,7 +628,7 @@ export default class LeaveManager extends LightningElement {
             };
 
             await saveLeaveRequest({ leaveRequest: leaveRecord });
-            this.showToast('Success', 'Leave request submitted successfully.', 'success');
+            this.showToast('Success', 'Leave request submitted for approval successfully.', 'success');
             this.showApplyModal = false;
             await Promise.all([
                 this.loadLeaveRequests(),
@@ -683,7 +706,7 @@ export default class LeaveManager extends LightningElement {
         const typeConfig = LEAVE_TYPE_CONFIG[lr.Leave_Type__c] || {};
         const statusConfig = STATUS_CONFIG[lr.Status__c] || {};
         const isExpanded = this.expandedLeaveId === lr.Id;
-        const canCancel = lr.Status__c === 'Pending' || lr.Status__c === 'Approved';
+        const canCancel = lr.Status__c === 'Pending' || lr.Status__c === 'Submitted' || lr.Status__c === 'Approved';
         const startSession = lr.Start_Session__c || 'Session 1';
         const endSession = lr.End_Session__c || 'Session 2';
 
