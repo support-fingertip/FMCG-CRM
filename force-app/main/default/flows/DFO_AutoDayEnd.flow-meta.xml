@@ -2,7 +2,7 @@
 <Flow xmlns="http://soap.sforce.com/2006/metadata">
     <apiVersion>59.0</apiVersion>
     <label>DFO - Auto Day End</label>
-    <description>Automatically closes day attendance records that were not manually ended by cutoff time</description>
+    <description>Automatically closes day attendance records that were not manually ended by cutoff time. Handles both Started and In_Progress statuses, sets Auto_Closed flag, and updates end time.</description>
     <processType>AutoLaunchedFlow</processType>
     <status>Active</status>
     <interviewLabel>Auto Day End {!$Flow.CurrentDateTime}</interviewLabel>
@@ -19,62 +19,124 @@
         <locationX>176</locationX>
         <locationY>134</locationY>
         <connector>
-            <targetReference>Update_Open_Records</targetReference>
+            <targetReference>Check_Records_Found</targetReference>
         </connector>
         <object>Day_Attendance__c</object>
         <filterLogic>and</filterLogic>
         <filters>
             <field>Status__c</field>
-            <operator>EqualTo</operator>
+            <operator>In</operator>
             <value>
                 <stringValue>Started</stringValue>
+            </value>
+            <value>
+                <stringValue>In_Progress</stringValue>
             </value>
         </filters>
         <filters>
             <field>Attendance_Date__c</field>
-            <operator>EqualTo</operator>
+            <operator>LessThanOrEqualTo</operator>
             <value>
                 <elementReference>$Flow.CurrentDate</elementReference>
             </value>
         </filters>
         <outputReference>OpenAttendanceRecords</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Status__c</queriedFields>
+        <queriedFields>Attendance_Date__c</queriedFields>
+        <queriedFields>End_Time__c</queriedFields>
+        <queriedFields>Auto_Closed__c</queriedFields>
     </recordLookups>
-    <recordUpdates>
-        <name>Update_Open_Records</name>
-        <label>Close Open Attendance</label>
+    <decisions>
+        <name>Check_Records_Found</name>
+        <label>Records Found?</label>
         <locationX>176</locationX>
         <locationY>276</locationY>
-        <object>Day_Attendance__c</object>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Status__c</field>
-            <operator>EqualTo</operator>
+        <defaultConnectorLabel>No Records</defaultConnectorLabel>
+        <rules>
+            <name>Has_Open_Records</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>OpenAttendanceRecords</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Loop_Records</targetReference>
+            </connector>
+            <label>Has Records</label>
+        </rules>
+    </decisions>
+    <loops>
+        <name>Loop_Records</name>
+        <label>Loop Through Open Records</label>
+        <locationX>176</locationX>
+        <locationY>418</locationY>
+        <collectionReference>OpenAttendanceRecords</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Assign_Auto_Close_Fields</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Update_Auto_Closed_Records</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <assignments>
+        <name>Assign_Auto_Close_Fields</name>
+        <label>Set Auto-Close Fields</label>
+        <locationX>352</locationX>
+        <locationY>418</locationY>
+        <assignmentItems>
+            <assignToReference>Loop_Records.Status__c</assignToReference>
+            <operator>Assign</operator>
             <value>
-                <stringValue>Started</stringValue>
+                <stringValue>Ended</stringValue>
             </value>
-        </filters>
-        <filters>
-            <field>Attendance_Date__c</field>
-            <operator>EqualTo</operator>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>Loop_Records.Auto_Closed__c</assignToReference>
+            <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.CurrentDate</elementReference>
+                <booleanValue>true</booleanValue>
             </value>
-        </filters>
-        <inputAssignments>
-            <field>Status__c</field>
-            <value>
-                <stringValue>Auto-Closed</stringValue>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Day_End_Time__c</field>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>Loop_Records.End_Time__c</assignToReference>
+            <operator>Assign</operator>
             <value>
                 <elementReference>$Flow.CurrentDateTime</elementReference>
             </value>
-        </inputAssignments>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>RecordsToUpdate</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Loop_Records</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Loop_Records</targetReference>
+        </connector>
+    </assignments>
+    <recordUpdates>
+        <name>Update_Auto_Closed_Records</name>
+        <label>Update Auto-Closed Records</label>
+        <locationX>176</locationX>
+        <locationY>560</locationY>
+        <inputReference>RecordsToUpdate</inputReference>
     </recordUpdates>
     <variables>
         <name>OpenAttendanceRecords</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Day_Attendance__c</objectType>
+    </variables>
+    <variables>
+        <name>RecordsToUpdate</name>
         <dataType>SObject</dataType>
         <isCollection>true</isCollection>
         <isInput>false</isInput>

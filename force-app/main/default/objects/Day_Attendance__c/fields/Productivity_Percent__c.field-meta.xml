@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Productivity_Percent__c</fullName>
+    <label>Productivity %</label>
+    <type>Percent</type>
+    <precision>5</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <description>Calculated productivity rate: Productive Calls / Total Visits * 100</description>
+</CustomField>

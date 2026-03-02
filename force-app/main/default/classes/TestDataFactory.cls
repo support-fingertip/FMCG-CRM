@@ -266,4 +266,120 @@ public class TestDataFactory {
         insert jpd;
         return jpd;
     }
+
+    // ── New Helper Methods for DFO / OVE Service Tests ───────────────────────
+
+    /**
+     * @description Creates a Day_Attendance__c with all new service-layer fields populated.
+     * @param userId The salesperson User Id.
+     * @return An unsaved Day_Attendance__c record with extended defaults.
+     */
+    public static Day_Attendance__c createDayAttendanceWithDefaults(Id userId) {
+        Day_Attendance__c da = new Day_Attendance__c(
+            User__c = userId,
+            Salesperson__c = userId,
+            Attendance_Date__c = Date.today(),
+            Day_Start_Time__c = DateTime.now(),
+            Start_Time__c = DateTime.now(),
+            Start_Location_Lat__c = 19.0760,
+            Start_Location_Long__c = 72.8777,
+            Start_Accuracy__c = 10.0,
+            Status__c = 'Started',
+            Battery_Level__c = '85%',
+            Network_Status__c = '4G',
+            Device_Info__c = 'Android 13 / Samsung Galaxy S23',
+            Week_Day__c = DateTime.newInstance(Date.today(), Time.newInstance(0, 0, 0, 0)).format('EEEE'),
+            Total_Visits__c = 0,
+            Productive_Calls__c = 0,
+            Non_Productive_Visits__c = 0,
+            Total_Orders__c = 0,
+            Total_Order_Value__c = 0,
+            Total_Collection__c = 0,
+            Total_Distance__c = 0,
+            Distance_Traveled_Km__c = 0,
+            Productivity_Percent__c = 0
+        );
+        return da;
+    }
+
+    /**
+     * @description Creates a Visit__c with the new service-layer accuracy/battery/network fields.
+     * @param accountId  The outlet Account Id.
+     * @param userId     The salesperson User Id.
+     * @param dayAttendanceId The Day_Attendance__c Id.
+     * @param beatId     The Beat__c Id.
+     * @return An unsaved Visit__c record with extended defaults.
+     */
+    public static Visit__c createVisitWithDefaults(Id accountId, Id userId, Id dayAttendanceId, Id beatId) {
+        Visit__c visit = new Visit__c(
+            Account__c = accountId,
+            Outlet__c = accountId,
+            Salesperson__c = userId,
+            User__c = userId,
+            Day_Attendance__c = dayAttendanceId,
+            Beat__c = beatId,
+            Visit_Date__c = Date.today(),
+            Check_In_Time__c = DateTime.now(),
+            Check_In_Lat__c = 19.0760,
+            Check_In_Long__c = 72.8777,
+            Check_In_Accuracy__c = 10.0,
+            Check_In_Battery__c = '80%',
+            Check_In_Network__c = '4G',
+            Visit_Status__c = 'Checked In',
+            Is_Planned__c = true,
+            Order_Value__c = 0,
+            Collection_Amount__c = 0,
+            Total_Orders_Count__c = 0
+        );
+        return visit;
+    }
+
+    /**
+     * @description Creates a GPS_Log__c record with all fields populated.
+     * @param userId          The salesperson User Id.
+     * @param dayAttendanceId The Day_Attendance__c Id.
+     * @param lat             Latitude value.
+     * @param lng             Longitude value.
+     * @return An unsaved GPS_Log__c record.
+     */
+    public static GPS_Log__c createGPSLog(Id userId, Id dayAttendanceId, Decimal lat, Decimal lng) {
+        GPS_Log__c gps = new GPS_Log__c(
+            Salesperson__c = userId,
+            Day_Attendance__c = dayAttendanceId,
+            Latitude__c = lat,
+            Longitude__c = lng,
+            Accuracy__c = 10.0,
+            Captured_At__c = DateTime.now(),
+            Battery_Level__c = '75%',
+            Network_Status__c = '4G',
+            Log_Type__c = 'Breadcrumb'
+        );
+        return gps;
+    }
+
+    /**
+     * @description Creates an Account with geo-location data suitable for geo-fence testing.
+     * @param name  Account name.
+     * @param type  Account type (e.g. 'Retailer').
+     * @param lat   Outlet latitude.
+     * @param lng   Outlet longitude.
+     * @return An unsaved Account with geo fields populated.
+     */
+    public static Account createAccountWithGeoData(String name, String type, Decimal lat, Decimal lng) {
+        Account acc = new Account(
+            Name = name,
+            Type = type,
+            BillingStreet = '123 Test Street',
+            BillingCity = 'Mumbai',
+            BillingState = 'Maharashtra',
+            BillingPostalCode = '400001',
+            BillingCountry = 'India',
+            BillingLatitude = lat,
+            BillingLongitude = lng,
+            Outlet_Latitude__c = lat,
+            Outlet_Longitude__c = lng,
+            Geofence_Radius__c = 200
+        );
+        return acc;
+    }
 }

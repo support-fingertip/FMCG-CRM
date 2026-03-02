@@ -1,0 +1,308 @@
+<template>
+    <!-- Loading Spinner -->
+    <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading visits..." size="medium"></lightning-spinner>
+    </template>
+
+    <!-- Main Board Container -->
+    <lightning-card title="Today's Visit Plan" icon-name="standard:visit">
+        <!-- Header Actions -->
+        <div slot="actions">
+            <lightning-button
+                variant="neutral"
+                label="Refresh"
+                icon-name="utility:refresh"
+                onclick={handleRefresh}
+                class="slds-m-right_x-small">
+            </lightning-button>
+        </div>
+
+        <div class="slds-p-around_medium">
+            <!-- Stats Bar -->
+            <div class="stats-bar slds-m-bottom_medium">
+                <div class="slds-grid slds-gutters slds-wrap">
+                    <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
+                        <div class="stat-tile stat-completed">
+                            <span class="stat-label">Completed</span>
+                            <span class="stat-value">{completedCount} / {totalVisitCount}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
+                        <div class="stat-tile stat-productivity">
+                            <span class="stat-label">Productivity</span>
+                            <span class="stat-value">{productivityPercent}%</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
+                        <div class="stat-tile stat-time">
+                            <span class="stat-label">Time Spent</span>
+                            <span class="stat-value">{totalTimeSpent}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
+                        <div class="stat-tile stat-orders">
+                            <span class="stat-label">Orders</span>
+                            <span class="stat-value">{totalOrdersFormatted}</span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
+                        <div class="stat-tile stat-collection">
+                            <span class="stat-label">Collection</span>
+                            <span class="stat-value">{totalCollectionFormatted}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <template if:true={hasNoVisits}>
+                <div class="empty-state">
+                    <div class="empty-state-inner">
+                        <lightning-icon
+                            icon-name="standard:today"
+                            size="large"
+                            class="slds-m-bottom_medium">
+                        </lightning-icon>
+                        <h3 class="slds-text-heading_medium slds-m-bottom_small">No visits planned for today</h3>
+                        <p class="slds-text-body_regular slds-text-color_weak">
+                            There are no scheduled visits for today. Contact your manager or add an ad-hoc visit to get started.
+                        </p>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Kanban Board -->
+            <template if:false={hasNoVisits}>
+                <div class="kanban-board">
+                    <div class="slds-grid slds-gutters slds-wrap">
+
+                        <!-- Planned Column -->
+                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
+                            <div class="kanban-column column-planned">
+                                <div class="column-header header-planned">
+                                    <div class="column-header-content">
+                                        <span class="column-title">Planned</span>
+                                        <span class="column-count">{plannedVisits.length}</span>
+                                    </div>
+                                </div>
+                                <div class="column-body">
+                                    <template if:true={plannedVisits.length}>
+                                        <template for:each={plannedVisits} for:item="visit">
+                                            <div class="visit-card card-planned" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                                <div class="card-header">
+                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
+                                                    <div class="card-badges">
+                                                        <template if:true={visit.Is_Ad_Hoc__c}>
+                                                            <span class="badge badge-adhoc">Ad-hoc</span>
+                                                        </template>
+                                                        <span class="badge badge-planned">Planned</span>
+                                                    </div>
+                                                </div>
+                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
+                                                <div class="card-footer">
+                                                    <button class="skip-button" data-id={visit.Id} onclick={handleSkipClick}>
+                                                        <lightning-icon icon-name="utility:ban" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        Skip
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:false={plannedVisits.length}>
+                                        <div class="column-empty">
+                                            <p class="slds-text-body_small slds-text-color_weak">No planned visits</p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Column -->
+                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
+                            <div class="kanban-column column-active">
+                                <div class="column-header header-active">
+                                    <div class="column-header-content">
+                                        <span class="column-title">Active</span>
+                                        <span class="column-count">{activeVisits.length}</span>
+                                    </div>
+                                </div>
+                                <div class="column-body">
+                                    <template if:true={activeVisits.length}>
+                                        <template for:each={activeVisits} for:item="visit">
+                                            <div class="visit-card card-active" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                                <div class="card-header">
+                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
+                                                    <div class="card-badges">
+                                                        <template if:true={visit.Is_Ad_Hoc__c}>
+                                                            <span class="badge badge-adhoc">Ad-hoc</span>
+                                                        </template>
+                                                        <span class="badge badge-active">In Progress</span>
+                                                    </div>
+                                                </div>
+                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
+                                                <div class="card-footer">
+                                                    <div class="card-time">
+                                                        <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <span>In: {visit.checkInTimeDisplay}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:false={activeVisits.length}>
+                                        <div class="column-empty">
+                                            <p class="slds-text-body_small slds-text-color_weak">No active visits</p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Completed Column -->
+                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
+                            <div class="kanban-column column-completed">
+                                <div class="column-header header-completed">
+                                    <div class="column-header-content">
+                                        <span class="column-title">Completed</span>
+                                        <span class="column-count">{completedVisits.length}</span>
+                                    </div>
+                                </div>
+                                <div class="column-body">
+                                    <template if:true={completedVisits.length}>
+                                        <template for:each={completedVisits} for:item="visit">
+                                            <div class="visit-card card-completed" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                                <div class="card-header">
+                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
+                                                    <div class="card-badges">
+                                                        <template if:true={visit.Is_Ad_Hoc__c}>
+                                                            <span class="badge badge-adhoc">Ad-hoc</span>
+                                                        </template>
+                                                        <template if:true={visit.Is_Productive__c}>
+                                                            <span class="badge badge-productive">Productive</span>
+                                                        </template>
+                                                        <template if:false={visit.Is_Productive__c}>
+                                                            <span class="badge badge-nonproductive">Non-Productive</span>
+                                                        </template>
+                                                        <span class="badge badge-completed">Completed</span>
+                                                    </div>
+                                                </div>
+                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
+                                                <div class="card-footer">
+                                                    <div class="card-time">
+                                                        <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <span>{visit.durationDisplay}</span>
+                                                    </div>
+                                                    <template if:true={visit.Order_Value__c}>
+                                                        <div class="card-metric">
+                                                            <lightning-icon icon-name="utility:cart" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                            <span>{visit.orderValueFormatted}</span>
+                                                        </div>
+                                                    </template>
+                                                    <template if:true={visit.Collection_Amount__c}>
+                                                        <div class="card-metric">
+                                                            <lightning-icon icon-name="utility:moneybag" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                            <span>{visit.collectionFormatted}</span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:false={completedVisits.length}>
+                                        <div class="column-empty">
+                                            <p class="slds-text-body_small slds-text-color_weak">No completed visits</p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Skipped Column -->
+                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
+                            <div class="kanban-column column-skipped">
+                                <div class="column-header header-skipped">
+                                    <div class="column-header-content">
+                                        <span class="column-title">Skipped</span>
+                                        <span class="column-count">{skippedVisits.length}</span>
+                                    </div>
+                                </div>
+                                <div class="column-body">
+                                    <template if:true={skippedVisits.length}>
+                                        <template for:each={skippedVisits} for:item="visit">
+                                            <div class="visit-card card-skipped" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                                <div class="card-header">
+                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
+                                                    <div class="card-badges">
+                                                        <template if:true={visit.Is_Ad_Hoc__c}>
+                                                            <span class="badge badge-adhoc">Ad-hoc</span>
+                                                        </template>
+                                                        <span class="badge badge-skipped">Skipped</span>
+                                                    </div>
+                                                </div>
+                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:false={skippedVisits.length}>
+                                        <div class="column-empty">
+                                            <p class="slds-text-body_small slds-text-color_weak">No skipped visits</p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+
+    <!-- Skip Visit Modal -->
+    <template if:true={isSkipModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="skip-modal-heading" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleSkipModalClose}>
+                        <lightning-icon icon-name="utility:close" alternative-text="Close" size="small" variant="inverse"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="skip-modal-heading" class="slds-text-heading_medium slds-hyphenate">Skip Visit</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p class="slds-m-bottom_medium slds-text-color_weak">
+                        Please select a reason for skipping this visit.
+                    </p>
+                    <lightning-combobox
+                        name="skipReason"
+                        label="Skip Reason"
+                        value={selectedSkipReason}
+                        placeholder="Select a reason..."
+                        options={skipReasonOptions}
+                        onchange={handleSkipReasonChange}
+                        required>
+                    </lightning-combobox>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button
+                        variant="neutral"
+                        label="Cancel"
+                        onclick={handleSkipModalClose}
+                        class="slds-m-right_x-small">
+                    </lightning-button>
+                    <lightning-button
+                        variant="destructive"
+                        label="Skip Visit"
+                        onclick={handleSkipConfirm}
+                        disabled={isSkipDisabled}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

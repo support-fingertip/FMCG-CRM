@@ -1,0 +1,818 @@
+/**
+ * @description Service class for Visit Management (Outlet Visit Execution) module.
+ *              Encapsulates all business logic for visit check-in/check-out lifecycle,
+ *              geo-fence validation, planned visit management, outlet 360 summary,
+ *              and team visit queries.
+ *
+ * @author  SFA Development Team
+ * @date    2026
+ */
+public without sharing class OVE_Visit_Service {
+
+    // ── Feature Codes ───────────────────────────────────────────────────────
+    public static final String FEATURE_VISIT_EXECUTION  = 'OVE-001';
+    public static final String FEATURE_GEOFENCE         = 'OVE-002';
+    public static final String FEATURE_AD_HOC_VISITS    = 'OVE-003';
+
+    // ── Config Keys ─────────────────────────────────────────────────────────
+    private static final String CFG_MIN_VISIT_DURATION  = 'MIN_VISIT_DURATION_SEC';
+    private static final String CFG_MAX_VISITS_PER_DAY  = 'MAX_VISITS_PER_DAY';
+    private static final String CFG_ALLOW_GEO_OVERRIDE  = 'ALLOW_GEOFENCE_OVERRIDE';
+    private static final String CFG_REQUIRE_PHOTO       = 'REQUIRE_PHOTO_CHECKIN';
+
+    private static final Double DEFAULT_GEOFENCE_RADIUS = 500.0;
+
+    // ── Inner DTO Classes ───────────────────────────────────────────────────
+
+    /**
+     * @description Request DTO for visit check-in.
+     */
+    public class CheckInRequest {
+        public Id      accountId;
+        public Id      beatId;
+        public Id      dayAttendanceId;
+        public Id      journeyPlanDayId;
+        public Decimal latitude;
+        public Decimal longitude;
+        public Decimal accuracy;
+        public String  photoBase64;
+        public String  batteryLevel;
+        public String  networkStatus;
+        public Boolean isPlanned;
+        public String  adHocReason;
+        public String  geoOverrideReason;
+    }
+
+    /**
+     * @description Request DTO for visit check-out / completion.
+     */
+    public class CheckOutRequest {
+        public Id      visitId;
+        public Decimal latitude;
+        public Decimal longitude;
+        public Decimal accuracy;
+        public String  photoBase64;
+        public Boolean isProductive;
+        public String  nonProductiveReason;
+        public String  notes;
+        public String  completedActivities;
+    }
+
+    /**
+     * @description Result DTO for geo-fence validation.
+     */
+    public class GeoValidationResult {
+        @AuraEnabled public Boolean isWithinRadius;
+        @AuraEnabled public Double  distanceMeters;
+        @AuraEnabled public Double  allowedRadius;
+        @AuraEnabled public Boolean canOverride;
+        @AuraEnabled public String  message;
+    }
+
+    // ── Visit Lifecycle ─────────────────────────────────────────────────────
+
+    /**
+     * @description Creates a new visit (check-in) at an outlet. Validates feature toggle,
+     *              active attendance, geo-fence, and max visits limit.
+     * @param request The CheckInRequest DTO.
+     * @return The created Visit__c record.
+     */
+    public static Visit__c checkIn(CheckInRequest request) {
+        if (!BPM_FeatureToggle_Util.isEnabled(FEATURE_VISIT_EXECUTION)) {
+            throw new AuraHandledException('Visit Execution feature is currently disabled.');
+        }
+
+        Id currentUserId = UserInfo.getUserId();
+        Date today = Date.today();
+
+        // Validate active day attendance
+        if (request.dayAttendanceId == null) {
+            Day_Attendance__c currentAttendance = DFO_DayAttendance_Service.getCurrentAttendance(currentUserId);
+            if (currentAttendance == null) {
+                throw new AuraHandledException('Please start your day before checking in to an outlet.');
+            }
+            request.dayAttendanceId = currentAttendance.Id;
+        }
+
+        // Check max visits per day limit
+        Integer maxVisits = DFO_DayAttendance_Service.getConfigInteger(CFG_MAX_VISITS_PER_DAY, 30);
+        Integer todaysVisitCount = [
+            SELECT COUNT() FROM Visit__c
+            WHERE Day_Attendance__c = :request.dayAttendanceId
+        ];
+        if (todaysVisitCount >= maxVisits) {
+            throw new AuraHandledException('You have reached the maximum number of visits (' + maxVisits + ') for today.');
+        }
+
+        // Check no other visit is currently in progress
+        List<Visit__c> activeVisits = [
+            SELECT Id, Account__c, Account__r.Name FROM Visit__c
+            WHERE Day_Attendance__c = :request.dayAttendanceId
+              AND Visit_Status__c IN ('Checked In', 'In Progress')
+            LIMIT 1
+        ];
+        if (!activeVisits.isEmpty()) {
+            throw new AuraHandledException('You have an active visit at ' +
+                activeVisits[0].Account__r.Name + '. Please complete it before checking in to another outlet.');
+        }
+
+        // Validate ad-hoc visit
+        Boolean isAdHoc = request.isPlanned != null ? !request.isPlanned : true;
+        if (isAdHoc && !BPM_FeatureToggle_Util.isEnabled(FEATURE_AD_HOC_VISITS)) {
+            throw new AuraHandledException('Ad-hoc visits are not allowed. Only planned visits from your journey plan can be checked in.');
+        }
+
+        // Geo-fence validation
+        GeoValidationResult geoResult = null;
+        if (BPM_FeatureToggle_Util.isEnabled(FEATURE_GEOFENCE) &&
+            request.latitude != null && request.longitude != null) {
+            geoResult = validateGeoFence(request.latitude, request.longitude, request.accountId);
+            if (!geoResult.isWithinRadius) {
+                Boolean allowOverride = DFO_DayAttendance_Service.getConfigBoolean(CFG_ALLOW_GEO_OVERRIDE, true);
+                if (!allowOverride || String.isBlank(request.geoOverrideReason)) {
+                    throw new AuraHandledException(geoResult.message);
+                }
+            }
+        }
+
+        // Photo requirement check
+        Boolean requirePhoto = DFO_DayAttendance_Service.getConfigBoolean(CFG_REQUIRE_PHOTO, false);
+        if (requirePhoto && String.isBlank(request.photoBase64)) {
+            throw new AuraHandledException('A photo is required for check-in. Please capture a photo and try again.');
+        }
+
+        // Calculate visit sequence
+        Integer sequence = todaysVisitCount + 1;
+
+        Savepoint sp = Database.setSavepoint();
+        try {
+            Visit__c visit = new Visit__c();
+            visit.Account__c = request.accountId;
+            visit.Outlet__c = request.accountId;
+            visit.Salesperson__c = currentUserId;
+            visit.User__c = currentUserId;
+            visit.Beat__c = request.beatId;
+            visit.Day_Attendance__c = request.dayAttendanceId;
+            visit.Journey_Plan_Day__c = request.journeyPlanDayId;
+            visit.Visit_Date__c = today;
+            visit.Visit_Status__c = 'Checked In';
+            visit.Check_In_Time__c = DateTime.now();
+            visit.Check_In_Latitude__c = request.latitude;
+            visit.Check_In_Longitude__c = request.longitude;
+            visit.Check_In_Lat__c = request.latitude;
+            visit.Check_In_Long__c = request.longitude;
+            visit.Check_In_Accuracy__c = request.accuracy;
+            visit.Check_In_Battery__c = request.batteryLevel;
+            visit.Check_In_Network__c = request.networkStatus;
+            visit.Visit_Sequence__c = sequence;
+            visit.Is_Planned__c = !isAdHoc;
+            visit.Is_Ad_Hoc__c = isAdHoc;
+
+            if (isAdHoc && String.isNotBlank(request.adHocReason)) {
+                visit.Ad_Hoc_Reason__c = request.adHocReason;
+            }
+
+            // Geo-fence data
+            if (geoResult != null) {
+                visit.Distance_To_Outlet__c = geoResult.distanceMeters;
+                visit.Is_Geo_Fenced__c = geoResult.isWithinRadius;
+                if (!geoResult.isWithinRadius && String.isNotBlank(request.geoOverrideReason)) {
+                    visit.Geo_Fence_Override_Reason__c = request.geoOverrideReason;
+                }
+            }
+
+            // Handle check-in photo
+            if (String.isNotBlank(request.photoBase64)) {
+                visit.Check_In_Photo_URL__c = saveVisitPhoto(request.photoBase64, 'CheckIn_' + request.accountId);
+            }
+
+            // Initialize counters
+            visit.Order_Value__c = 0;
+            visit.Collection_Amount__c = 0;
+            visit.Total_Orders_Count__c = 0;
+
+            insert visit;
+
+            // Log GPS for visit check-in
+            if (BPM_FeatureToggle_Util.isEnabled(DFO_DayAttendance_Service.FEATURE_GPS_TRACKING) &&
+                request.latitude != null && request.longitude != null) {
+                GPS_Log__c gpsLog = new GPS_Log__c();
+                gpsLog.Day_Attendance__c = request.dayAttendanceId;
+                gpsLog.Visit__c = visit.Id;
+                gpsLog.Salesperson__c = currentUserId;
+                gpsLog.Latitude__c = request.latitude;
+                gpsLog.Longitude__c = request.longitude;
+                gpsLog.Accuracy__c = request.accuracy;
+                gpsLog.Captured_At__c = DateTime.now();
+                gpsLog.Log_Type__c = 'Visit_CheckIn';
+                gpsLog.Battery_Level__c = request.batteryLevel;
+                gpsLog.Network_Status__c = request.networkStatus;
+                gpsLog.Is_Offline_Captured__c = false;
+                insert gpsLog;
+            }
+
+            return visit;
+        } catch (AuraHandledException e) {
+            Database.rollback(sp);
+            throw e;
+        } catch (Exception e) {
+            Database.rollback(sp);
+            throw new AuraHandledException('Failed to check in: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Completes a visit (check-out). Validates status transition,
+     *              calculates duration, marks productivity, and updates attendance.
+     * @param request The CheckOutRequest DTO.
+     * @return The updated Visit__c record.
+     */
+    public static Visit__c checkOut(CheckOutRequest request) {
+        if (!BPM_FeatureToggle_Util.isEnabled(FEATURE_VISIT_EXECUTION)) {
+            throw new AuraHandledException('Visit Execution feature is currently disabled.');
+        }
+
+        List<Visit__c> visits = [
+            SELECT Id, Visit_Status__c, Check_In_Time__c, Day_Attendance__c,
+                   Account__c, Salesperson__c, User__c,
+                   Check_In_Latitude__c, Check_In_Longitude__c
+            FROM Visit__c
+            WHERE Id = :request.visitId
+            LIMIT 1
+        ];
+
+        if (visits.isEmpty()) {
+            throw new AuraHandledException('Visit record not found.');
+        }
+
+        Visit__c visit = visits[0];
+
+        // Validate status transition
+        if (!DFO_DayAttendance_Service.isValidStatusTransition('Visit__c', visit.Visit_Status__c, 'Completed')) {
+            throw new AuraHandledException('Cannot complete visit from current status: ' + visit.Visit_Status__c);
+        }
+
+        // Check minimum visit duration
+        Integer minDurationSec = DFO_DayAttendance_Service.getConfigInteger(CFG_MIN_VISIT_DURATION, 60);
+        DateTime now = DateTime.now();
+        Long durationMs = now.getTime() - visit.Check_In_Time__c.getTime();
+        Decimal durationMinutes = Decimal.valueOf(durationMs) / 60000.0;
+
+        if (durationMs / 1000 < minDurationSec) {
+            throw new AuraHandledException('Minimum visit duration is ' + minDurationSec +
+                ' seconds. Please spend more time at the outlet.');
+        }
+
+        Savepoint sp = Database.setSavepoint();
+        try {
+            visit.Visit_Status__c = 'Completed';
+            visit.Check_Out_Time__c = now;
+            visit.Check_Out_Lat__c = request.latitude;
+            visit.Check_Out_Long__c = request.longitude;
+            visit.Check_Out_Accuracy__c = request.accuracy;
+            visit.Duration_Minutes__c = durationMinutes.setScale(1, RoundingMode.HALF_UP);
+            visit.Is_Productive__c = request.isProductive != null ? request.isProductive : true;
+            visit.Notes__c = request.notes;
+
+            if (request.isProductive == false && String.isNotBlank(request.nonProductiveReason)) {
+                visit.Non_Productive_Reason__c = request.nonProductiveReason;
+            }
+
+            if (String.isNotBlank(request.completedActivities)) {
+                visit.Completion_Activities__c = request.completedActivities;
+            }
+
+            // Handle check-out photo
+            if (String.isNotBlank(request.photoBase64)) {
+                visit.Check_Out_Photo_URL__c = saveVisitPhoto(request.photoBase64, 'CheckOut_' + visit.Account__c);
+            }
+
+            // Aggregate order and collection totals from this visit
+            aggregateVisitTotals(visit);
+
+            update visit;
+
+            // Log GPS for visit check-out
+            if (BPM_FeatureToggle_Util.isEnabled(DFO_DayAttendance_Service.FEATURE_GPS_TRACKING) &&
+                request.latitude != null && request.longitude != null) {
+                GPS_Log__c gpsLog = new GPS_Log__c();
+                gpsLog.Day_Attendance__c = visit.Day_Attendance__c;
+                gpsLog.Visit__c = visit.Id;
+                gpsLog.Salesperson__c = visit.User__c;
+                gpsLog.Latitude__c = request.latitude;
+                gpsLog.Longitude__c = request.longitude;
+                gpsLog.Accuracy__c = request.accuracy;
+                gpsLog.Captured_At__c = DateTime.now();
+                gpsLog.Log_Type__c = 'Visit_CheckOut';
+                gpsLog.Is_Offline_Captured__c = false;
+                insert gpsLog;
+            }
+
+            // Recalculate Day Attendance summary
+            if (visit.Day_Attendance__c != null) {
+                DFO_DayAttendance_Service.recalculateSummary(visit.Day_Attendance__c);
+            }
+
+            return visit;
+        } catch (AuraHandledException e) {
+            Database.rollback(sp);
+            throw e;
+        } catch (Exception e) {
+            Database.rollback(sp);
+            throw new AuraHandledException('Failed to check out: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Skips a planned visit with a reason.
+     * @param visitId The Visit__c Id to skip.
+     * @param skipReason The reason for skipping.
+     * @return The updated Visit__c record.
+     */
+    public static Visit__c skipVisit(Id visitId, String skipReason) {
+        List<Visit__c> visits = [
+            SELECT Id, Visit_Status__c, Day_Attendance__c
+            FROM Visit__c WHERE Id = :visitId LIMIT 1
+        ];
+
+        if (visits.isEmpty()) {
+            throw new AuraHandledException('Visit record not found.');
+        }
+
+        Visit__c visit = visits[0];
+        if (!DFO_DayAttendance_Service.isValidStatusTransition('Visit__c', visit.Visit_Status__c, 'Skipped')) {
+            throw new AuraHandledException('Cannot skip visit from current status: ' + visit.Visit_Status__c);
+        }
+
+        visit.Visit_Status__c = 'Skipped';
+        visit.Deviation_Reason__c = skipReason;
+        visit.Is_Productive__c = false;
+        visit.Non_Productive_Reason__c = 'Visit Skipped';
+        update visit;
+
+        return visit;
+    }
+
+    // ── Geo-Fence Validation ────────────────────────────────────────────────
+
+    /**
+     * @description Validates check-in location against outlet's registered location.
+     * @param latitude Check-in latitude.
+     * @param longitude Check-in longitude.
+     * @param accountId The outlet Account Id.
+     * @return GeoValidationResult with distance and status.
+     */
+    public static GeoValidationResult validateGeoFence(Decimal latitude, Decimal longitude, Id accountId) {
+        GeoValidationResult result = new GeoValidationResult();
+        result.canOverride = DFO_DayAttendance_Service.getConfigBoolean(CFG_ALLOW_GEO_OVERRIDE, true);
+
+        if (accountId == null || latitude == null || longitude == null) {
+            result.isWithinRadius = true;
+            result.distanceMeters = 0;
+            result.allowedRadius = DEFAULT_GEOFENCE_RADIUS;
+            result.message = 'Location data unavailable, check-in allowed.';
+            return result;
+        }
+
+        List<Account> outlets = [
+            SELECT Id, Outlet_Latitude__c, Outlet_Longitude__c, Geofence_Radius__c
+            FROM Account WHERE Id = :accountId LIMIT 1
+        ];
+
+        if (outlets.isEmpty() || outlets[0].Outlet_Latitude__c == null || outlets[0].Outlet_Longitude__c == null) {
+            result.isWithinRadius = true;
+            result.distanceMeters = 0;
+            result.allowedRadius = DEFAULT_GEOFENCE_RADIUS;
+            result.message = 'Outlet location not registered, check-in allowed.';
+            return result;
+        }
+
+        Account outlet = outlets[0];
+
+        // Get configured default radius
+        Double configuredRadius = DEFAULT_GEOFENCE_RADIUS;
+        try {
+            List<Geo_Config__mdt> configs = [
+                SELECT Value__c FROM Geo_Config__mdt
+                WHERE DeveloperName = 'Default_Geofence_Radius' LIMIT 1
+            ];
+            if (!configs.isEmpty() && configs[0].Value__c != null) {
+                configuredRadius = Double.valueOf(configs[0].Value__c);
+            }
+        } catch (Exception e) {
+            // Use default
+        }
+
+        Double allowedRadius = outlet.Geofence_Radius__c != null
+            ? outlet.Geofence_Radius__c : configuredRadius;
+
+        Double distance = OVE_GeoValidation_Service.calculateDistance(
+            (Double)latitude, (Double)longitude,
+            (Double)outlet.Outlet_Latitude__c, (Double)outlet.Outlet_Longitude__c
+        );
+
+        result.distanceMeters = distance;
+        result.allowedRadius = allowedRadius;
+        result.isWithinRadius = distance <= allowedRadius;
+
+        if (result.isWithinRadius) {
+            result.message = 'You are within the allowed radius (' + Math.round(distance) + 'm / ' + Math.round(allowedRadius) + 'm).';
+        } else {
+            result.message = 'You are ' + Math.round(distance) + 'm from the outlet, which exceeds the allowed radius of ' + Math.round(allowedRadius) + 'm.';
+            if (result.canOverride) {
+                result.message += ' You may override with a reason.';
+            }
+        }
+
+        return result;
+    }
+
+    // ── Query Methods ───────────────────────────────────────────────────────
+
+    /**
+     * @description Gets today's visits for a user.
+     * @param userId The User Id (null = current user).
+     * @return List of Visit__c records ordered by sequence.
+     */
+    public static List<Visit__c> getTodaysVisits(Id userId) {
+        Id targetUserId = userId != null ? userId : UserInfo.getUserId();
+        Date today = Date.today();
+
+        return [
+            SELECT Id, Name, Account__c, Account__r.Name, Account__r.Type,
+                   Beat__c, Beat__r.Name, Visit_Date__c, Visit_Status__c,
+                   Check_In_Time__c, Check_Out_Time__c, Duration_Minutes__c,
+                   Visit_Sequence__c, Is_Planned__c, Is_Ad_Hoc__c,
+                   Is_Productive__c, Non_Productive_Reason__c,
+                   Order_Value__c, Collection_Amount__c, Total_Orders_Count__c,
+                   Notes__c, Completion_Activities__c,
+                   Check_In_Photo_URL__c, Check_Out_Photo_URL__c,
+                   Distance_To_Outlet__c, Is_Geo_Fenced__c,
+                   Day_Attendance__c
+            FROM Visit__c
+            WHERE Salesperson__c = :targetUserId
+              AND Visit_Date__c = :today
+            ORDER BY Visit_Sequence__c ASC NULLS LAST, Check_In_Time__c ASC
+        ];
+    }
+
+    /**
+     * @description Gets planned visits from today's journey plan for a user.
+     * @param userId The User Id.
+     * @param visitDate The date.
+     * @return List of maps with outlet info and visit status.
+     */
+    public static List<Map<String, Object>> getPlannedVisits(Id userId, Date visitDate) {
+        Id targetUserId = userId != null ? userId : UserInfo.getUserId();
+        String dayOfWeek = getDayOfWeek(visitDate);
+        List<Map<String, Object>> planned = new List<Map<String, Object>>();
+
+        // Get active journey plan day for this user and day of week
+        List<Journey_Plan_Day__c> jpDays = [
+            SELECT Id, Beat__c, Beat__r.Name
+            FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c IN (
+                SELECT Id FROM Journey_Plan__c
+                WHERE Salesperson__c = :targetUserId
+                  AND Status__c = 'Active'
+                  AND Effective_From__c <= :visitDate
+                  AND Effective_To__c >= :visitDate
+            )
+            AND Day_of_Week__c = :dayOfWeek
+        ];
+
+        if (jpDays.isEmpty()) {
+            return planned;
+        }
+
+        Set<Id> beatIds = new Set<Id>();
+        Map<Id, Id> beatToJpDay = new Map<Id, Id>();
+        for (Journey_Plan_Day__c jpd : jpDays) {
+            beatIds.add(jpd.Beat__c);
+            beatToJpDay.put(jpd.Beat__c, jpd.Id);
+        }
+
+        // Get beat outlets
+        List<Beat_Outlet__c> beatOutlets = [
+            SELECT Id, Beat__c, Beat__r.Name, Account__c,
+                   Account__r.Name, Account__r.Type, Account__r.BillingCity,
+                   Account__r.Outlet_Latitude__c, Account__r.Outlet_Longitude__c,
+                   Visit_Sequence__c
+            FROM Beat_Outlet__c
+            WHERE Beat__c IN :beatIds
+              AND Is_Active__c = true
+            ORDER BY Visit_Sequence__c ASC
+        ];
+
+        // Check existing visits for today
+        Set<Id> accountIds = new Set<Id>();
+        for (Beat_Outlet__c bo : beatOutlets) {
+            accountIds.add(bo.Account__c);
+        }
+
+        Map<Id, Visit__c> existingVisitsByAccount = new Map<Id, Visit__c>();
+        for (Visit__c v : [
+            SELECT Id, Account__c, Visit_Status__c, Check_In_Time__c, Check_Out_Time__c,
+                   Is_Productive__c, Order_Value__c
+            FROM Visit__c
+            WHERE Salesperson__c = :targetUserId
+              AND Visit_Date__c = :visitDate
+              AND Account__c IN :accountIds
+        ]) {
+            existingVisitsByAccount.put(v.Account__c, v);
+        }
+
+        // Build planned visits list
+        for (Beat_Outlet__c bo : beatOutlets) {
+            Map<String, Object> pv = new Map<String, Object>();
+            pv.put('beatOutletId', bo.Id);
+            pv.put('accountId', bo.Account__c);
+            pv.put('accountName', bo.Account__r.Name);
+            pv.put('accountType', bo.Account__r.Type);
+            pv.put('city', bo.Account__r.BillingCity);
+            pv.put('beatId', bo.Beat__c);
+            pv.put('beatName', bo.Beat__r.Name);
+            pv.put('journeyPlanDayId', beatToJpDay.get(bo.Beat__c));
+            pv.put('sequence', bo.Visit_Sequence__c);
+            pv.put('outletLatitude', bo.Account__r.Outlet_Latitude__c);
+            pv.put('outletLongitude', bo.Account__r.Outlet_Longitude__c);
+
+            Visit__c existingVisit = existingVisitsByAccount.get(bo.Account__c);
+            if (existingVisit != null) {
+                pv.put('visitId', existingVisit.Id);
+                pv.put('visitStatus', existingVisit.Visit_Status__c);
+                pv.put('checkInTime', existingVisit.Check_In_Time__c);
+                pv.put('checkOutTime', existingVisit.Check_Out_Time__c);
+                pv.put('isProductive', existingVisit.Is_Productive__c);
+                pv.put('orderValue', existingVisit.Order_Value__c);
+            } else {
+                pv.put('visitStatus', 'Planned');
+            }
+
+            planned.add(pv);
+        }
+
+        return planned;
+    }
+
+    /**
+     * @description Gets a 360-degree view of an outlet for the visit screen.
+     * @param accountId The Account Id.
+     * @return Map of outlet summary data.
+     */
+    public static Map<String, Object> getOutletSummary(Id accountId) {
+        Map<String, Object> summary = new Map<String, Object>();
+
+        if (accountId == null) {
+            return summary;
+        }
+
+        // Basic outlet info
+        List<Account> outlets = [
+            SELECT Id, Name, Type, Channel__c, BillingCity, BillingState,
+                   Credit_Limit__c, Outlet_Latitude__c, Outlet_Longitude__c,
+                   Geofence_Radius__c
+            FROM Account WHERE Id = :accountId LIMIT 1
+        ];
+
+        if (!outlets.isEmpty()) {
+            Account outlet = outlets[0];
+            summary.put('outletName', outlet.Name);
+            summary.put('outletType', outlet.Type);
+            summary.put('channel', outlet.Channel__c);
+            summary.put('city', outlet.BillingCity);
+            summary.put('creditLimit', outlet.Credit_Limit__c);
+        }
+
+        // Last visit
+        List<Visit__c> lastVisits = [
+            SELECT Visit_Date__c, Visit_Status__c, Is_Productive__c
+            FROM Visit__c
+            WHERE Account__c = :accountId
+              AND Visit_Status__c = 'Completed'
+            ORDER BY Visit_Date__c DESC LIMIT 1
+        ];
+        summary.put('lastVisitDate', !lastVisits.isEmpty() ?
+            String.valueOf(lastVisits[0].Visit_Date__c) : 'No previous visit');
+
+        // Pending orders
+        Integer pendingOrders = [
+            SELECT COUNT() FROM Sales_Order__c
+            WHERE Account__c = :accountId
+              AND Status__c NOT IN ('Delivered', 'Cancelled')
+        ];
+        summary.put('pendingOrders', pendingOrders);
+
+        // Outstanding balance
+        Decimal outstandingBalance = 0;
+        for (AggregateResult ar : [
+            SELECT SUM(Balance_Due__c) totalDue
+            FROM Invoice__c
+            WHERE Account__c = :accountId
+              AND Balance_Due__c > 0
+              AND Status__c NOT IN ('Cancelled', 'Credit Note')
+        ]) {
+            if (ar.get('totalDue') != null) {
+                outstandingBalance = (Decimal) ar.get('totalDue');
+            }
+        }
+        summary.put('outstandingBalance', outstandingBalance);
+        summary.put('outstandingBalanceFormatted', formatCurrency(outstandingBalance));
+
+        // Active schemes count
+        Date today = Date.today();
+        Integer activeSchemes = [
+            SELECT COUNT() FROM Scheme__c
+            WHERE Status__c = 'Active'
+              AND Start_Date__c <= :today
+              AND End_Date__c >= :today
+        ];
+        summary.put('activeSchemes', activeSchemes);
+
+        return summary;
+    }
+
+    /**
+     * @description Gets a visit completion summary (activities during visit).
+     * @param visitId The Visit__c Id.
+     * @return Map of completion data.
+     */
+    public static Map<String, Object> getVisitCompletionSummary(Id visitId) {
+        Map<String, Object> summary = new Map<String, Object>();
+
+        List<Visit__c> visits = [
+            SELECT Id, Account__c, Visit_Status__c, Check_In_Time__c, Check_Out_Time__c,
+                   Duration_Minutes__c, Is_Productive__c, Order_Value__c, Collection_Amount__c,
+                   Total_Orders_Count__c, Notes__c, Completion_Activities__c
+            FROM Visit__c WHERE Id = :visitId LIMIT 1
+        ];
+
+        if (visits.isEmpty()) {
+            return summary;
+        }
+
+        Visit__c visit = visits[0];
+        summary.put('duration', visit.Duration_Minutes__c);
+        summary.put('isProductive', visit.Is_Productive__c);
+        summary.put('orderValue', visit.Order_Value__c);
+        summary.put('collectionAmount', visit.Collection_Amount__c);
+        summary.put('ordersCount', visit.Total_Orders_Count__c);
+        summary.put('activities', visit.Completion_Activities__c);
+
+        // Get orders placed during this visit
+        List<Sales_Order__c> orders = [
+            SELECT Id, Name, Total_Net_Amount__c, Status__c, Total_Items__c
+            FROM Sales_Order__c
+            WHERE Visit__c = :visitId
+            ORDER BY CreatedDate DESC
+        ];
+        summary.put('orders', orders);
+
+        // Get collections during this visit
+        List<Collection__c> collections = [
+            SELECT Id, Name, Amount__c, Payment_Mode__c, Status__c
+            FROM Collection__c
+            WHERE Visit__c = :visitId
+            ORDER BY CreatedDate DESC
+        ];
+        summary.put('collections', collections);
+
+        return summary;
+    }
+
+    /**
+     * @description Gets configurable visit activities list.
+     * @return List of activity definitions.
+     */
+    public static List<Map<String, Object>> getVisitActivities() {
+        List<Map<String, Object>> activities = new List<Map<String, Object>>();
+
+        activities.add(createActivity('order', 'Order', 'standard:orders', true));
+        activities.add(createActivity('collection', 'Collection', 'standard:payment_gateway', true));
+        activities.add(createActivity('merchandising', 'Merchandising', 'standard:product_item', BPM_FeatureToggle_Util.isEnabled('OVE-004')));
+        activities.add(createActivity('survey', 'Survey', 'standard:survey', BPM_FeatureToggle_Util.isEnabled('OVE-005')));
+        activities.add(createActivity('returns', 'Returns', 'standard:return_order', true));
+        activities.add(createActivity('scheme', 'Scheme Info', 'standard:reward', BPM_FeatureToggle_Util.isEnabled('SPM-001')));
+
+        // Filter only enabled activities
+        List<Map<String, Object>> enabled = new List<Map<String, Object>>();
+        for (Map<String, Object> act : activities) {
+            if ((Boolean)act.get('enabled')) {
+                enabled.add(act);
+            }
+        }
+        return enabled;
+    }
+
+    /**
+     * @description Gets team visits for a manager on a given date.
+     */
+    public static List<Map<String, Object>> getTeamVisits(Id managerId, Date visitDate) {
+        Set<Id> reportUserIds = getDirectReportUserIds(managerId);
+        if (reportUserIds.isEmpty()) {
+            return new List<Map<String, Object>>();
+        }
+
+        List<Map<String, Object>> teamVisits = new List<Map<String, Object>>();
+        for (AggregateResult ar : [
+            SELECT Salesperson__c userId,
+                   COUNT(Id) totalVisits,
+                   SUM(CASE WHEN Visit_Status__c = 'Completed' THEN 1 ELSE 0 END) completedVisits,
+                   SUM(CASE WHEN Is_Productive__c = true THEN 1 ELSE 0 END) productiveVisits,
+                   SUM(Order_Value__c) totalOrderValue,
+                   SUM(Collection_Amount__c) totalCollection
+            FROM Visit__c
+            WHERE Salesperson__c IN :reportUserIds
+              AND Visit_Date__c = :visitDate
+            GROUP BY Salesperson__c
+        ]) {
+            Map<String, Object> row = new Map<String, Object>();
+            row.put('userId', ar.get('userId'));
+            row.put('totalVisits', ar.get('totalVisits'));
+            row.put('completedVisits', ar.get('completedVisits'));
+            row.put('productiveVisits', ar.get('productiveVisits'));
+            row.put('totalOrderValue', ar.get('totalOrderValue'));
+            row.put('totalCollection', ar.get('totalCollection'));
+            teamVisits.add(row);
+        }
+
+        return teamVisits;
+    }
+
+    // ── Private Helpers ─────────────────────────────────────────────────────
+
+    private static void aggregateVisitTotals(Visit__c visit) {
+        // Aggregate orders for this visit
+        for (AggregateResult ar : [
+            SELECT COUNT(Id) orderCount, SUM(Total_Net_Amount__c) totalValue
+            FROM Sales_Order__c
+            WHERE Visit__c = :visit.Id
+              AND Status__c != 'Cancelled'
+        ]) {
+            visit.Total_Orders_Count__c = ar.get('orderCount') != null ? (Integer)ar.get('orderCount') : 0;
+            Decimal orderVal = (Decimal)ar.get('totalValue');
+            visit.Order_Value__c = orderVal != null ? orderVal : 0;
+        }
+
+        // Aggregate collections for this visit
+        for (AggregateResult ar : [
+            SELECT SUM(Amount__c) totalAmount
+            FROM Collection__c
+            WHERE Visit__c = :visit.Id
+              AND Status__c NOT IN ('Cancelled', 'Bounced')
+        ]) {
+            Decimal collVal = (Decimal)ar.get('totalAmount');
+            visit.Collection_Amount__c = collVal != null ? collVal : 0;
+        }
+    }
+
+    private static String saveVisitPhoto(String base64Data, String fileName) {
+        if (String.isBlank(base64Data)) return null;
+        try {
+            ContentVersion cv = new ContentVersion();
+            cv.Title = fileName;
+            cv.PathOnClient = fileName + '.jpg';
+            cv.VersionData = EncodingUtil.base64Decode(base64Data);
+            cv.IsMajorVersion = true;
+            insert cv;
+            cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
+            return '/sfc/servlet.shepherd/document/download/' + cv.ContentDocumentId;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Failed to save visit photo: ' + e.getMessage());
+            return null;
+        }
+    }
+
+    private static Map<String, Object> createActivity(String id, String label, String icon, Boolean enabled) {
+        Map<String, Object> activity = new Map<String, Object>();
+        activity.put('id', id);
+        activity.put('label', label);
+        activity.put('icon', icon);
+        activity.put('enabled', enabled);
+        activity.put('completed', false);
+        activity.put('cardClass', 'activity-card');
+        return activity;
+    }
+
+    private static Set<Id> getDirectReportUserIds(Id managerId) {
+        Set<Id> userIds = new Set<Id>();
+        for (Employee__c emp : [
+            SELECT User__c FROM Employee__c
+            WHERE Reporting_Manager__r.User__c = :managerId
+              AND Is_Active__c = true AND User__c != null
+        ]) {
+            userIds.add(emp.User__c);
+        }
+        return userIds;
+    }
+
+    private static String getDayOfWeek(Date d) {
+        DateTime dt = DateTime.newInstance(d, Time.newInstance(0, 0, 0, 0));
+        return dt.format('EEEE');
+    }
+
+    private static String formatCurrency(Decimal value) {
+        if (value == null || value == 0) return '₹0';
+        return '₹' + String.valueOf(value.setScale(0, RoundingMode.HALF_UP).format());
+    }
+}
