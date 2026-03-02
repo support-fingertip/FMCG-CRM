@@ -44,7 +44,7 @@ private class DFO_DayAttendance_TriggerHandler_Test {
             Start_Location_Lat__c = 19.0760,
             Start_Location_Long__c = 72.8777,
             Status__c = 'Started',
-            Battery_Level__c = '90%',
+            Battery_Level__c = 90,
             Network_Status__c = 'WiFi'
             // Intentionally leave Week_Day__c and counters null to test defaults
         );
@@ -63,7 +63,7 @@ private class DFO_DayAttendance_TriggerHandler_Test {
         ];
 
         System.assertEquals('Started', inserted.Status__c, 'Status should remain Started');
-        System.assertEquals('90%', inserted.Battery_Level__c, 'Battery level should be saved');
+        System.assertEquals(90, inserted.Battery_Level__c, 'Battery level should be saved');
 
         // Defaults may or may not be set depending on feature toggle
         // When feature is enabled, Week_Day__c should be populated

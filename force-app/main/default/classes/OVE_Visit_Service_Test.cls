@@ -81,7 +81,7 @@ private class OVE_Visit_Service_Test {
         request.latitude = 19.0760;
         request.longitude = 72.8777;
         request.accuracy = 10.0;
-        request.batteryLevel = '80%';
+        request.batteryLevel = 80;
         request.networkStatus = '4G';
         request.isPlanned = true;
 
@@ -376,7 +376,7 @@ private class OVE_Visit_Service_Test {
         request.latitude = 19.0760;
         request.longitude = 72.8777;
         request.accuracy = 10.0;
-        request.batteryLevel = '85%';
+        request.batteryLevel = 85;
         request.networkStatus = '4G';
         request.isPlanned = true;
         request.adHocReason = null;
@@ -388,7 +388,7 @@ private class OVE_Visit_Service_Test {
 
         System.assertEquals(19.0760, deserialized.latitude, 'Latitude should survive serialization');
         System.assertEquals(72.8777, deserialized.longitude, 'Longitude should survive serialization');
-        System.assertEquals('85%', deserialized.batteryLevel, 'Battery should survive serialization');
+        System.assertEquals(85, deserialized.batteryLevel, 'Battery should survive serialization');
         System.assertEquals(true, deserialized.isPlanned, 'isPlanned should survive serialization');
     }
 

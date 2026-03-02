@@ -162,7 +162,7 @@ public without sharing class OVE_Visit_Service {
             visit.Check_In_Lat__c = request.latitude;
             visit.Check_In_Long__c = request.longitude;
             visit.Check_In_Accuracy__c = request.accuracy;
-            visit.Check_In_Battery__c = request.batteryLevel;
+            visit.Check_In_Battery__c = request.batteryLevel != null ? String.valueOf(request.batteryLevel.intValue()) : null;
             visit.Check_In_Network__c = request.networkStatus;
             visit.Visit_Sequence__c = sequence;
             visit.Is_Planned__c = !isAdHoc;

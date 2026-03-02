@@ -41,7 +41,7 @@ private class DFO_DayAttendance_Service_Test {
         request.startLatitude = 19.0760;
         request.startLongitude = 72.8777;
         request.startAccuracy = 10.0;
-        request.batteryLevel = '85%';
+        request.batteryLevel = 85;
         request.networkStatus = '4G';
         request.deviceInfo = 'Android 13 / Test Device';
 
@@ -71,7 +71,7 @@ private class DFO_DayAttendance_Service_Test {
             WHERE Id = :directDA.Id
         ];
         System.assertEquals('Started', created.Status__c, 'Status should be Started');
-        System.assertEquals('85%', created.Battery_Level__c, 'Battery level should be populated');
+        System.assertEquals(85, created.Battery_Level__c, 'Battery level should be populated');
         System.assertEquals('4G', created.Network_Status__c, 'Network status should be populated');
         System.assertNotEquals(null, created.Week_Day__c, 'Week day should be populated');
         System.assertEquals(0, created.Total_Visits__c, 'Total visits should initialize to 0');
@@ -94,7 +94,7 @@ private class DFO_DayAttendance_Service_Test {
         request.startLatitude = 19.0760;
         request.startLongitude = 72.8777;
         request.startAccuracy = 10.0;
-        request.batteryLevel = '80%';
+        request.batteryLevel = 80;
         request.networkStatus = 'WiFi';
         request.deviceInfo = 'Test Device';
 

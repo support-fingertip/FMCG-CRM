@@ -71,7 +71,7 @@ private class VisitCheckInController_Test {
             'latitude' => 19.0760,
             'longitude' => 72.8777,
             'accuracy' => 10.0,
-            'batteryLevel' => '85%',
+            'batteryLevel' => 85,
             'networkStatus' => '4G',
             'isPlanned' => true
         };

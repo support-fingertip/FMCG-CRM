@@ -285,7 +285,7 @@ public class TestDataFactory {
             Start_Location_Long__c = 72.8777,
             Start_Accuracy__c = 10.0,
             Status__c = 'Started',
-            Battery_Level__c = '85%',
+            Battery_Level__c = 85,
             Network_Status__c = '4G',
             Device_Info__c = 'Android 13 / Samsung Galaxy S23',
             Week_Day__c = DateTime.newInstance(Date.today(), Time.newInstance(0, 0, 0, 0)).format('EEEE'),
@@ -350,7 +350,7 @@ public class TestDataFactory {
             Longitude__c = lng,
             Accuracy__c = 10.0,
             Captured_At__c = DateTime.now(),
-            Battery_Level__c = '75%',
+            Battery_Level__c = 75,
             Network_Status__c = '4G',
             Log_Type__c = 'Breadcrumb'
         );

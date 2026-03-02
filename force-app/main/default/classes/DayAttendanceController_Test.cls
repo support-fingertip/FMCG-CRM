@@ -56,7 +56,7 @@ private class DayAttendanceController_Test {
             'startLatitude' => 19.0760,
             'startLongitude' => 72.8777,
             'startAccuracy' => 10.0,
-            'batteryLevel' => '90%',
+            'batteryLevel' => 90,
             'networkStatus' => 'WiFi',
             'deviceInfo' => 'Test Device'
         };
@@ -180,7 +180,7 @@ private class DayAttendanceController_Test {
                 'Longitude__c' => 72.8777 + (i * 0.001),
                 'Accuracy__c' => 10.0,
                 'Captured_At__c' => DateTime.now().addMinutes(-i),
-                'Battery_Level__c' => '80%',
+                'Battery_Level__c' => 80,
                 'Network_Status__c' => 'Offline',
                 'Log_Type__c' => 'Breadcrumb'
             };
