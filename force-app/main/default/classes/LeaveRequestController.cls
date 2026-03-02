@@ -33,17 +33,21 @@ public with sharing class LeaveRequestController {
         'CO_Balance__c' => 0
     };
 
-    // ── Check if User is a Manager ──────────────────────────────────────────
+    // ── Check if User is a Manager or Admin ──────────────────────────────────
 
     /**
-     * @description Checks whether the given user is a manager by looking for
-     *              active employees who have this user's Employee record as
-     *              their Reporting_Manager__c.
+     * @description Checks whether the given user is a manager (has direct reports)
+     *              or a System Administrator. Both roles can access leave approvals.
      * @param userId The User Id to check.
-     * @return True if the user has at least one direct report.
+     * @return True if the user has at least one direct report or is an Admin.
      */
     @AuraEnabled(cacheable=true)
     public static Boolean checkIsManager(Id userId) {
+        // Admins can always access leave approvals
+        if (checkIsAdmin(userId)) {
+            return true;
+        }
+
         List<Employee__c> managerEmployees = [
             SELECT Id
             FROM Employee__c
@@ -65,6 +69,29 @@ public with sharing class LeaveRequestController {
         ];
 
         return directReportCount > 0;
+    }
+
+    // ── Check if User is an Admin ─────────────────────────────────────────
+
+    /**
+     * @description Checks whether the given user has the System Administrator profile.
+     * @param userId The User Id to check.
+     * @return True if the user is a System Administrator.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Boolean checkIsAdmin(Id userId) {
+        List<User> users = [
+            SELECT Profile.Name
+            FROM User
+            WHERE Id = :userId
+            LIMIT 1
+        ];
+
+        if (users.isEmpty()) {
+            return false;
+        }
+
+        return users[0].Profile.Name == 'System Administrator';
     }
 
     // ── Get Reporting Manager User Id ───────────────────────────────────────
@@ -94,14 +121,26 @@ public with sharing class LeaveRequestController {
     // ── Get Pending Approvals for Manager ───────────────────────────────────
 
     /**
-     * @description Retrieves all pending leave requests that are assigned to the
-     *              given manager for approval (where Approved_By__c = managerId
-     *              and Status is Pending or Submitted).
+     * @description Retrieves pending leave requests for approval. For managers,
+     *              returns only requests assigned to them. For admins, returns
+     *              all pending/submitted requests across the organization.
      * @param managerId The User Id of the manager/approver.
-     * @return List of Leave_Request__c records pending this manager's approval.
+     * @return List of Leave_Request__c records pending approval.
      */
     @AuraEnabled
     public static List<Leave_Request__c> getPendingApprovalsForManager(Id managerId) {
+        if (checkIsAdmin(managerId)) {
+            return [
+                SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
+                       Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                       Number_of_Days__c, Reason__c, Status__c,
+                       Approved_By__c, Approved_By__r.Name, Approval_Date__c, Comments__c,
+                       CreatedDate
+                FROM Leave_Request__c
+                WHERE Status__c IN ('Pending', 'Submitted')
+                ORDER BY CreatedDate DESC
+            ];
+        }
         return [
             SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
                    Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
@@ -118,13 +157,26 @@ public with sharing class LeaveRequestController {
     // ── Get Approval History for Manager ────────────────────────────────────
 
     /**
-     * @description Retrieves recently decided leave requests (Approved/Rejected)
-     *              where the given manager was the approver.
+     * @description Retrieves recently decided leave requests (Approved/Rejected).
+     *              For managers, returns only their decisions. For admins, returns
+     *              all recent decisions across the organization.
      * @param managerId The User Id of the manager/approver.
      * @return List of recently decided Leave_Request__c records.
      */
     @AuraEnabled
     public static List<Leave_Request__c> getApprovalHistoryForManager(Id managerId) {
+        if (checkIsAdmin(managerId)) {
+            return [
+                SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
+                       Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
+                       Number_of_Days__c, Reason__c, Status__c,
+                       Approved_By__c, Approved_By__r.Name, Approval_Date__c, Comments__c
+                FROM Leave_Request__c
+                WHERE Status__c IN ('Approved', 'Rejected')
+                ORDER BY Approval_Date__c DESC
+                LIMIT 50
+            ];
+        }
         return [
             SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
                    Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
