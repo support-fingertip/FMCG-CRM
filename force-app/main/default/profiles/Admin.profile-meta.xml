@@ -587,22 +587,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Batch_Master__c.Batch_Number__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Batch_Master__c.Expiry_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Batch_Master__c.Is_Near_Expiry__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Batch_Master__c.Manufacturing_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -623,11 +608,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Batch_Master__c.Shelf_Life_Remaining_Pct__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Batch_Master__c.Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
