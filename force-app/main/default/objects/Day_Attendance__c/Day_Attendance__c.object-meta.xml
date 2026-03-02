@@ -8,6 +8,7 @@
         <displayFormat>ATT-{0000}</displayFormat>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Daily attendance check-in and check-out tracking for field salespersons with geo-location capture (MOD-03 Daily Field Operations)</description>
 </CustomObject>

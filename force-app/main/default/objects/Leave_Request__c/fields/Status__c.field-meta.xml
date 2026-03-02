@@ -14,6 +14,11 @@
                 <label>Pending</label>
             </value>
             <value>
+                <fullName>Submitted</fullName>
+                <default>false</default>
+                <label>Submitted</label>
+            </value>
+            <value>
                 <fullName>Approved</fullName>
                 <default>false</default>
                 <label>Approved</label>

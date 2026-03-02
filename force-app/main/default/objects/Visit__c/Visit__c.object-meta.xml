@@ -8,6 +8,7 @@
         <displayFormat>VIS-{00000}</displayFormat>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Individual outlet visit execution tracking with geo-location, duration and productivity metrics (MOD-04 Outlet Visit Execution)</description>
 </CustomObject>

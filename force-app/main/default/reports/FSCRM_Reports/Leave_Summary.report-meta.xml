@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Leave Summary</name>
+    <description>Leave requests by Type, Status and Employee</description>
+    <reportType>CustomEntity$Leave_Request__c</reportType>
+    <format>Summary</format>
+    <showDetails>true</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <timeFrameFilter>
+        <dateColumn>Leave_Request__c.Start_Date__c</dateColumn>
+        <interval>INTERVAL_CURFY</interval>
+    </timeFrameFilter>
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
+    <columns>
+        <field>Leave_Request__c.Start_Date__c</field>
+    </columns>
+    <columns>
+        <field>Leave_Request__c.End_Date__c</field>
+    </columns>
+    <columns>
+        <field>Leave_Request__c.Number_of_Days__c</field>
+        <aggregateTypes>Sum</aggregateTypes>
+    </columns>
+    <columns>
+        <field>Leave_Request__c.Reason__c</field>
+    </columns>
+    <columns>
+        <field>Leave_Request__c.Approved_By__c</field>
+    </columns>
+    <columns>
+        <field>Leave_Request__c.Comments__c</field>
+    </columns>
+    <columns>
+        <field>CUST_OWNER_NAME</field>
+    </columns>
+    <groupingsDown>
+        <dateGranularity>Day</dateGranularity>
+        <field>Leave_Request__c.Leave_Type__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <groupingsDown>
+        <dateGranularity>Day</dateGranularity>
+        <field>Leave_Request__c.Status__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+</Report>

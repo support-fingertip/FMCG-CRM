@@ -22,12 +22,14 @@ public with sharing class BeatPlanController {
      * @param journeyPlanId The Journey_Plan__c record Id from the record page.
      * @return JourneyPlanResult wrapper.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static JourneyPlanResult getJourneyPlanById(Id journeyPlanId) {
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
                    Salesperson__r.Name, Total_Planned_Visits__c,
+                   Territory__c, Territory__r.Name,
                    Effective_From__c, Effective_To__c,
+                   Exclude_Holidays__c, Exclude_Leaves__c, Exclude_Week_Offs__c,
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
             WHERE Id = :journeyPlanId
@@ -46,10 +48,10 @@ public with sharing class BeatPlanController {
             SELECT Id, Day_of_Week__c, Week_Number__c, Beat__c,
                    Beat__r.Name, Beat__r.Beat_Code__c, Beat__r.Total_Outlets__c,
                    Planned_Outlets__c, Sequence_Order__c, Notes__c,
-                   Journey_Plan__c
+                   Plan_Date__c, Journey_Plan__c
             FROM Journey_Plan_Day__c
             WHERE Journey_Plan__c = :journeyPlanId
-            ORDER BY Week_Number__c, Sequence_Order__c
+            ORDER BY Plan_Date__c, Sequence_Order__c
         ];
         return result;
     }
@@ -63,17 +65,35 @@ public with sharing class BeatPlanController {
      * @param year   The four-digit year string (e.g. '2026').
      * @return JourneyPlanResult wrapper, or empty wrapper if no plan exists.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static JourneyPlanResult getJourneyPlan(Id userId, String month, String year) {
+        // Calculate first/last day of the viewed month for date-range overlap matching
+        Map<String, Integer> monthMap = new Map<String, Integer>{
+            'January' => 1, 'February' => 2, 'March' => 3,
+            'April' => 4, 'May' => 5, 'June' => 6,
+            'July' => 7, 'August' => 8, 'September' => 9,
+            'October' => 10, 'November' => 11, 'December' => 12
+        };
+        Integer monthInt = monthMap.containsKey(month) ? monthMap.get(month) : 1;
+        Integer yearInt = Integer.valueOf(year);
+        Date firstDayOfMonth = Date.newInstance(yearInt, monthInt, 1);
+        Date lastDayOfMonth = Date.newInstance(yearInt, monthInt, Date.daysInMonth(yearInt, monthInt));
+
+        // Find plans matching by exact month/year OR by date-range overlap
         List<Journey_Plan__c> plans = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Salesperson__c,
                    Salesperson__r.Name, Total_Planned_Visits__c,
+                   Territory__c, Territory__r.Name,
                    Effective_From__c, Effective_To__c,
+                   Exclude_Holidays__c, Exclude_Leaves__c, Exclude_Week_Offs__c,
                    Approval_Date__c, Approved_By__c, Approved_By__r.Name
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
-            AND Month__c = :month
-            AND Year__c = :year
+            AND Status__c != 'Cancelled'
+            AND (
+                (Month__c = :month AND Year__c = :year)
+                OR (Effective_From__c <= :lastDayOfMonth AND Effective_To__c >= :firstDayOfMonth)
+            )
             ORDER BY CreatedDate DESC
             LIMIT 1
         ];
@@ -90,10 +110,10 @@ public with sharing class BeatPlanController {
             SELECT Id, Day_of_Week__c, Week_Number__c, Beat__c,
                    Beat__r.Name, Beat__r.Beat_Code__c, Beat__r.Total_Outlets__c,
                    Planned_Outlets__c, Sequence_Order__c, Notes__c,
-                   Journey_Plan__c
+                   Plan_Date__c, Journey_Plan__c
             FROM Journey_Plan_Day__c
             WHERE Journey_Plan__c = :plans[0].Id
-            ORDER BY Week_Number__c, Sequence_Order__c
+            ORDER BY Plan_Date__c, Sequence_Order__c
         ];
         return result;
     }
@@ -105,12 +125,13 @@ public with sharing class BeatPlanController {
      * @param territoryId The Territory_Master__c Id.
      * @return List of Beat__c records.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Beat__c> getBeatsForTerritory(Id territoryId) {
         return [
             SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                    Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name
+                   Territory__c, Territory__r.Name, Assigned_User__c,
+                   Is_Active__c, Sequence__c
             FROM Beat__c
             WHERE Territory__c = :territoryId
             AND Is_Active__c = true
@@ -124,7 +145,7 @@ public with sharing class BeatPlanController {
      * @param userId The User (Salesperson) Id.
      * @return List of Beat__c records from the user's territory.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Beat__c> getBeatsForUser(Id userId) {
         // First try to find territory from user's most recent Journey Plan
         List<Journey_Plan__c> plans = [
@@ -168,7 +189,8 @@ public with sharing class BeatPlanController {
             return [
                 SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                        Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                       Territory__c, Territory__r.Name
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Is_Active__c, Sequence__c
                 FROM Beat__c
                 WHERE Is_Active__c = true
                 ORDER BY Territory__r.Name, Beat_Code__c
@@ -179,11 +201,31 @@ public with sharing class BeatPlanController {
         return [
             SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                    Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name
+                   Territory__c, Territory__r.Name, Assigned_User__c,
+                   Is_Active__c, Sequence__c
             FROM Beat__c
             WHERE Territory__c IN :territoryIds
             AND Is_Active__c = true
             ORDER BY Beat_Code__c
+        ];
+    }
+
+    /**
+     * @description Retrieves beats assigned to a specific user (by Assigned_User__c).
+     *              Used by the Executive picker to show a user's assigned beats.
+     * @param userId The User Id to filter by Assigned_User__c.
+     * @return List of Beat__c records assigned to the user.
+     */
+    @AuraEnabled
+    public static List<Beat__c> getBeatsForExecutive(Id userId) {
+        return [
+            SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                   Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                   Territory__c, Territory__r.Name, Assigned_User__c,
+                   Is_Active__c, Sequence__c
+            FROM Beat__c
+            WHERE Assigned_User__c = :userId
+            ORDER BY Territory__r.Name, Beat_Code__c
         ];
     }
 
@@ -351,6 +393,576 @@ public with sharing class BeatPlanController {
         }
         if (!plansToUpdate.isEmpty()) {
             update plansToUpdate;
+        }
+    }
+
+    // ── Beat CRUD ───────────────────────────────────────────────────────────
+
+    @AuraEnabled
+    public static Beat__c saveBeat(Beat__c beat) {
+        try {
+            if (beat.Assigned_User__c != null) {
+                beat.OwnerId = beat.Assigned_User__c;
+            }
+            upsert beat;
+            return [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Id = :beat.Id
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void deleteBeat(Id beatId) {
+        try {
+            delete [SELECT Id FROM Beat__c WHERE Id = :beatId];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Beat Outlet Management ──────────────────────────────────────────────
+
+    @AuraEnabled
+    public static List<Beat_Outlet__c> getBeatOutlets(Id beatId) {
+        return [
+            SELECT Id, Beat__c, Account__c, Account__r.Name,
+                   Is_Active__c, Visit_Sequence__c
+            FROM Beat_Outlet__c
+            WHERE Beat__c = :beatId
+            ORDER BY Visit_Sequence__c
+        ];
+    }
+
+    @AuraEnabled
+    public static List<Beat_Outlet__c> addBeatOutlets(Id beatId, List<Id> accountIds) {
+        try {
+            Set<Id> existingAccountIds = new Set<Id>();
+            for (Beat_Outlet__c bo : [SELECT Account__c FROM Beat_Outlet__c WHERE Beat__c = :beatId]) {
+                existingAccountIds.add(bo.Account__c);
+            }
+
+            List<AggregateResult> maxSeqResult = [
+                SELECT MAX(Visit_Sequence__c) maxVal
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId
+            ];
+            Integer nextSeq = 1;
+            if (maxSeqResult[0].get('maxVal') != null) {
+                nextSeq = ((Decimal)maxSeqResult[0].get('maxVal')).intValue() + 1;
+            }
+
+            List<Beat_Outlet__c> newOutlets = new List<Beat_Outlet__c>();
+            for (Id accId : accountIds) {
+                if (!existingAccountIds.contains(accId)) {
+                    newOutlets.add(new Beat_Outlet__c(
+                        Beat__c = beatId,
+                        Account__c = accId,
+                        Is_Active__c = true,
+                        Visit_Sequence__c = nextSeq++
+                    ));
+                }
+            }
+
+            if (!newOutlets.isEmpty()) {
+                insert newOutlets;
+            }
+
+            return [
+                SELECT Id, Beat__c, Account__c, Account__r.Name,
+                       Is_Active__c, Visit_Sequence__c
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId
+                ORDER BY Visit_Sequence__c
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void removeBeatOutlet(Id beatOutletId) {
+        try {
+            delete [SELECT Id FROM Beat_Outlet__c WHERE Id = :beatOutletId];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Update Outlet Sequences ─────────────────────────────────────────────
+
+    /**
+     * @description Updates the Visit_Sequence__c of outlets within a beat.
+     *              Used for reordering outlets via Up/Down arrows in the UI.
+     * @param outlets List of Beat_Outlet__c with Id and Visit_Sequence__c set.
+     * @return Refreshed list of Beat_Outlet__c ordered by Visit_Sequence__c.
+     */
+    @AuraEnabled
+    public static List<Beat_Outlet__c> updateOutletSequences(List<Beat_Outlet__c> outlets) {
+        try {
+            if (outlets == null || outlets.isEmpty()) {
+                throw new AuraHandledException('No outlets provided for reordering.');
+            }
+
+            Set<Id> outletIds = new Set<Id>();
+            for (Beat_Outlet__c bo : outlets) {
+                if (bo.Id == null || bo.Visit_Sequence__c == null) {
+                    throw new AuraHandledException('Each outlet must have an Id and Visit_Sequence__c.');
+                }
+                outletIds.add(bo.Id);
+            }
+
+            // Verify all outlets belong to the same beat
+            Set<Id> beatIds = new Set<Id>();
+            for (Beat_Outlet__c bo : [SELECT Id, Beat__c FROM Beat_Outlet__c WHERE Id IN :outletIds]) {
+                beatIds.add(bo.Beat__c);
+            }
+            if (beatIds.size() != 1) {
+                throw new AuraHandledException('All outlets must belong to the same beat.');
+            }
+
+            List<Beat_Outlet__c> toUpdate = new List<Beat_Outlet__c>();
+            for (Beat_Outlet__c bo : outlets) {
+                toUpdate.add(new Beat_Outlet__c(
+                    Id = bo.Id,
+                    Visit_Sequence__c = bo.Visit_Sequence__c
+                ));
+            }
+            update toUpdate;
+
+            Id beatId = new List<Id>(beatIds)[0];
+            return [
+                SELECT Id, Beat__c, Account__c, Account__r.Name,
+                       Is_Active__c, Visit_Sequence__c
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId
+                ORDER BY Visit_Sequence__c
+            ];
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Clone Beat ───────────────────────────────────────────────────────────
+
+    /**
+     * @description Clones a beat and its outlet mappings. Allows assigning to
+     *              a different user and/or territory.
+     * @param sourceBeatId The Id of the Beat__c to clone.
+     * @param newAssignedUserId The User Id for the cloned beat.
+     * @param newBeatName Optional name override. If blank, appends " (Copy)".
+     * @param newBeatCode Optional code override. If blank, appends "-COPY".
+     * @return The newly created Beat__c record.
+     */
+    @AuraEnabled
+    public static Beat__c cloneBeat(Id sourceBeatId, Id newAssignedUserId, String newBeatName, String newBeatCode) {
+        try {
+            Beat__c source = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Territory__c, Pincode_Cluster__c, Description__c,
+                       Assigned_User__c, Sequence__c, Is_Active__c
+                FROM Beat__c
+                WHERE Id = :sourceBeatId
+                LIMIT 1
+            ];
+
+            Id assignTo = newAssignedUserId != null ? newAssignedUserId : source.Assigned_User__c;
+            Beat__c cloned = new Beat__c(
+                Name = String.isNotBlank(newBeatName) ? newBeatName : source.Name + ' (Copy)',
+                Beat_Code__c = String.isNotBlank(newBeatCode) ? newBeatCode : source.Beat_Code__c + '-COPY',
+                Day_of_Week__c = source.Day_of_Week__c,
+                Frequency__c = source.Frequency__c,
+                Territory__c = source.Territory__c,
+                Pincode_Cluster__c = source.Pincode_Cluster__c,
+                Description__c = source.Description__c,
+                Assigned_User__c = assignTo,
+                OwnerId = assignTo != null ? assignTo : UserInfo.getUserId(),
+                Sequence__c = source.Sequence__c,
+                Is_Active__c = true
+            );
+            insert cloned;
+
+            // Clone all active outlet mappings
+            List<Beat_Outlet__c> sourceOutlets = [
+                SELECT Account__c, Visit_Sequence__c
+                FROM Beat_Outlet__c
+                WHERE Beat__c = :sourceBeatId AND Is_Active__c = true
+                ORDER BY Visit_Sequence__c
+            ];
+
+            List<Beat_Outlet__c> clonedOutlets = new List<Beat_Outlet__c>();
+            for (Beat_Outlet__c bo : sourceOutlets) {
+                clonedOutlets.add(new Beat_Outlet__c(
+                    Beat__c = cloned.Id,
+                    Account__c = bo.Account__c,
+                    Visit_Sequence__c = bo.Visit_Sequence__c,
+                    Is_Active__c = true
+                ));
+            }
+            if (!clonedOutlets.isEmpty()) {
+                insert clonedOutlets;
+            }
+
+            return [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Id = :cloned.Id
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Reassign Beat ────────────────────────────────────────────────────────
+
+    /**
+     * @description Wrapper to hold reassignment result including journey plan impact.
+     */
+    public class ReassignResult {
+        @AuraEnabled public Beat__c beat;
+        @AuraEnabled public Integer affectedPlanDays;
+    }
+
+    /**
+     * @description Reassigns a beat to a different user. Updates the Assigned_User__c
+     *              field and returns information about affected Journey Plan Days.
+     * @param beatId The Beat__c Id to reassign.
+     * @param newUserId The new Assigned User Id.
+     * @return ReassignResult with the updated beat and count of affected plan days.
+     */
+    @AuraEnabled
+    public static ReassignResult reassignBeat(Id beatId, Id newUserId) {
+        try {
+            Beat__c beat = [
+                SELECT Id, Assigned_User__c
+                FROM Beat__c
+                WHERE Id = :beatId
+                LIMIT 1
+            ];
+
+            beat.Assigned_User__c = newUserId;
+            beat.OwnerId = newUserId;
+            update beat;
+
+            // Count affected Journey Plan Days (only in Draft/Active plans)
+            Integer affectedDays = [
+                SELECT COUNT()
+                FROM Journey_Plan_Day__c
+                WHERE Beat__c = :beatId
+                AND Journey_Plan__r.Status__c IN ('Draft', 'Active')
+            ];
+
+            Beat__c updated = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name, Assigned_User__c,
+                       Assigned_User__r.Name, Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Id = :beatId
+            ];
+
+            ReassignResult result = new ReassignResult();
+            result.beat = updated;
+            result.affectedPlanDays = affectedDays;
+            return result;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static List<Account> searchAccounts(String searchTerm) {
+        if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
+            return new List<Account>();
+        }
+        String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        return [
+            SELECT Id, Name, Type, BillingCity, BillingState
+            FROM Account
+            WHERE Name LIKE :searchPattern
+            ORDER BY Name
+            LIMIT 50
+        ];
+    }
+
+    /**
+     * @description Retrieves accounts filtered by territory with pagination and
+     *              optional search. Returns accounts belonging to the same territory
+     *              as the selected beat.
+     * @param territoryId The Territory_Master__c Id to filter accounts.
+     * @param searchTerm  Optional search string to filter by Account Name.
+     * @param pageSize    Number of records per page.
+     * @param pageNumber  Current page number (1-based).
+     * @return AccountPageResult wrapper with accounts and total count.
+     */
+    @AuraEnabled
+    public static AccountPageResult getAccountsByTerritory(
+        Id territoryId, String searchTerm, Integer pageSize, Integer pageNumber
+    ) {
+        if (pageSize == null || pageSize <= 0) pageSize = 10;
+        if (pageNumber == null || pageNumber <= 0) pageNumber = 1;
+        Integer offset = (pageNumber - 1) * pageSize;
+
+        String baseCondition = 'WHERE Is_Active__c = true';
+        List<String> conditions = new List<String>();
+
+        if (territoryId != null) {
+            conditions.add('Territory__c = :territoryId');
+        }
+        if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            conditions.add('Name LIKE :searchPattern');
+        }
+
+        String searchPattern = '';
+        if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        }
+
+        // Build queries with territory and search filters
+        List<Account> accounts;
+        Integer totalCount;
+
+        if (territoryId != null && String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            totalCount = [
+                SELECT COUNT() FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId AND Name LIKE :searchPattern
+            ];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId AND Name LIKE :searchPattern
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        } else if (territoryId != null) {
+            totalCount = [
+                SELECT COUNT() FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId
+            ];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true AND Territory__c = :territoryId
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        } else if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+            totalCount = [
+                SELECT COUNT() FROM Account
+                WHERE Is_Active__c = true AND Name LIKE :searchPattern
+            ];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true AND Name LIKE :searchPattern
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        } else {
+            totalCount = [SELECT COUNT() FROM Account WHERE Is_Active__c = true];
+            accounts = [
+                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
+                FROM Account
+                WHERE Is_Active__c = true
+                ORDER BY Name
+                LIMIT :pageSize OFFSET :offset
+            ];
+        }
+
+        AccountPageResult result = new AccountPageResult();
+        result.accounts = accounts;
+        result.totalCount = totalCount;
+        result.pageNumber = pageNumber;
+        result.pageSize = pageSize;
+        result.totalPages = (Integer)Math.ceil((Double)totalCount / pageSize);
+        return result;
+    }
+
+    public class AccountPageResult {
+        @AuraEnabled public List<Account> accounts;
+        @AuraEnabled public Integer totalCount;
+        @AuraEnabled public Integer pageNumber;
+        @AuraEnabled public Integer pageSize;
+        @AuraEnabled public Integer totalPages;
+    }
+
+    // ── Calendar Day Persistence ────────────────────────────────────────────
+
+    @AuraEnabled
+    public static Journey_Plan_Day__c addBeatToCalendarDay(
+        Id journeyPlanId, Id beatId, String dayOfWeek, String weekNumber, Date planDate
+    ) {
+        try {
+            Journey_Plan__c plan = [
+                SELECT Id, Status__c FROM Journey_Plan__c WHERE Id = :journeyPlanId LIMIT 1
+            ];
+            if (plan.Status__c == 'Approved' || plan.Status__c == 'Submitted') {
+                throw new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+            }
+
+            Integer outletCount = [
+                SELECT COUNT() FROM Beat_Outlet__c
+                WHERE Beat__c = :beatId AND Is_Active__c = true
+            ];
+
+            List<AggregateResult> maxSeq = [
+                SELECT MAX(Sequence_Order__c) maxVal
+                FROM Journey_Plan_Day__c
+                WHERE Journey_Plan__c = :journeyPlanId
+            ];
+            Integer nextSeq = 1;
+            if (maxSeq[0].get('maxVal') != null) {
+                nextSeq = ((Decimal)maxSeq[0].get('maxVal')).intValue() + 1;
+            }
+
+            Journey_Plan_Day__c planDay = new Journey_Plan_Day__c(
+                Journey_Plan__c = journeyPlanId,
+                Beat__c = beatId,
+                Day_of_Week__c = dayOfWeek,
+                Week_Number__c = weekNumber,
+                Plan_Date__c = planDate,
+                Planned_Outlets__c = outletCount,
+                Status__c = 'Planned',
+                Sequence_Order__c = nextSeq
+            );
+            insert planDay;
+
+            return [
+                SELECT Id, Day_of_Week__c, Week_Number__c, Beat__c,
+                       Beat__r.Name, Beat__r.Beat_Code__c, Beat__r.Total_Outlets__c,
+                       Planned_Outlets__c, Sequence_Order__c, Plan_Date__c, Notes__c,
+                       Journey_Plan__c
+                FROM Journey_Plan_Day__c
+                WHERE Id = :planDay.Id
+            ];
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void removePlanDay(Id planDayId) {
+        try {
+            Journey_Plan_Day__c day = [
+                SELECT Id, Journey_Plan__r.Status__c
+                FROM Journey_Plan_Day__c WHERE Id = :planDayId LIMIT 1
+            ];
+            if (day.Journey_Plan__r.Status__c == 'Approved' || day.Journey_Plan__r.Status__c == 'Submitted') {
+                throw new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+            }
+            delete day;
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Generate Default Plan ───────────────────────────────────────────────
+
+    @AuraEnabled
+    public static Id generateDefaultPlan(Id userId, Id territoryId, String month, String year) {
+        try {
+            return BPM_JourneyPlan_Service.generateDefaultPlan(userId, territoryId, month, year);
+        } catch (BPM_JourneyPlanServiceException e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Regenerate Plan ────────────────────────────────────────────────────
+
+    /**
+     * @description Regenerates a journey plan by deleting future plan days and
+     *              recreating them from today using the user's current beats.
+     * @param journeyPlanId  The Journey_Plan__c Id.
+     * @param toDate         The new end date for the plan.
+     * @param excludeHolidays  When true, exclude holiday dates from the plan.
+     * @param excludeLeaves    When true, exclude approved/pending leave dates.
+     * @param excludeWeekOffs  When true, exclude employee's week-off days.
+     */
+    @AuraEnabled
+    public static void regeneratePlan(Id journeyPlanId, Date toDate,
+            Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs) {
+        try {
+            BPM_JourneyPlan_Service.regeneratePlan(
+                journeyPlanId, toDate, excludeHolidays, excludeLeaves, excludeWeekOffs
+            );
+        } catch (BPM_JourneyPlanServiceException e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Remove Beat from Plan ────────────────────────────────────────────
+
+    /**
+     * @description Removes all occurrences of a beat from a journey plan.
+     * @param journeyPlanId The Journey_Plan__c Id.
+     * @param beatId        The Beat__c Id to remove.
+     */
+    @AuraEnabled
+    public static void removeBeatFromPlan(Id journeyPlanId, Id beatId) {
+        try {
+            Journey_Plan__c plan = [
+                SELECT Id, Status__c FROM Journey_Plan__c WHERE Id = :journeyPlanId LIMIT 1
+            ];
+            if (plan.Status__c == 'Approved' || plan.Status__c == 'Submitted') {
+                throw new AuraHandledException('Cannot modify a submitted or approved plan.');
+            }
+            List<Journey_Plan_Day__c> days = [
+                SELECT Id FROM Journey_Plan_Day__c
+                WHERE Journey_Plan__c = :journeyPlanId AND Beat__c = :beatId
+            ];
+            if (!days.isEmpty()) {
+                delete days;
+            }
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ── Generate Plan for Date Range ────────────────────────────────────────
+
+    /**
+     * @description Generates a single journey plan spanning the specified date
+     *              range with configurable exclusion options. Creates one
+     *              Journey_Plan__c with Effective_From/To and plan days for
+     *              every working day in the range.
+     * @param userId           The User (Salesperson) Id.
+     * @param territoryId      The Territory_Master__c Id.
+     * @param fromDate         Start date of the range.
+     * @param toDate           End date of the range.
+     * @param excludeHolidays  When true, exclude holiday dates from the plan.
+     * @param excludeLeaves    When true, exclude approved/pending leave dates.
+     * @param excludeWeekOffs  When true, exclude employee's week-off days.
+     * @return The created Journey_Plan__c Id.
+     */
+    @AuraEnabled
+    public static Id generatePlanForDateRange(
+        Id userId, Id territoryId, Date fromDate, Date toDate,
+        Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs
+    ) {
+        try {
+            return BPM_JourneyPlan_Service.generatePlanForDateRange(
+                userId, territoryId, fromDate, toDate,
+                excludeHolidays, excludeLeaves, excludeWeekOffs
+            );
+        } catch (BPM_JourneyPlanServiceException e) {
+            throw new AuraHandledException(e.getMessage());
         }
     }
 }

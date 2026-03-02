@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Stock Alert</name>
+    <description>Low Stock and Near-Expiry Items across Warehouses</description>
+    <reportType>CustomEntity$Warehouse_Stock__c</reportType>
+    <format>Tabular</format>
+    <showDetails>true</showDetails>
+    <showGrandTotal>false</showGrandTotal>
+    <showSubTotals>false</showSubTotals>
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
+    <columns>
+        <field>Warehouse_Stock__c.Warehouse__c</field>
+    </columns>
+    <columns>
+        <field>Warehouse_Stock__c.Qty_On_Hand__c</field>
+    </columns>
+    <columns>
+        <field>Warehouse_Stock__c.Min_Stock_Level__c</field>
+    </columns>
+    <columns>
+        <field>Warehouse_Stock__c.Is_Low_Stock__c</field>
+    </columns>
+    <columns>
+        <field>Warehouse_Stock__c.Is_Zero_Stock__c</field>
+    </columns>
+    <columns>
+        <field>Warehouse_Stock__c.Expiry_Date__c</field>
+    </columns>
+    <filter>
+        <booleanFilter>1 OR 2</booleanFilter>
+        <criteriaItems>
+            <column>Warehouse_Stock__c.Is_Low_Stock__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>equals</operator>
+            <value>1</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>Warehouse_Stock__c.Is_Zero_Stock__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>equals</operator>
+            <value>1</value>
+        </criteriaItems>
+    </filter>
+    <sortColumn>Warehouse_Stock__c.Qty_On_Hand__c</sortColumn>
+    <sortOrder>Asc</sortOrder>
+</Report>

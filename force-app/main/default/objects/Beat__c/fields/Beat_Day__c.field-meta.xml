@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Beat_Day__c</fullName>
+    <description>DEPRECATED: Use Day_of_Week__c instead. This field is kept for backward compatibility and is auto-synced from Day_of_Week__c by the Beat trigger.</description>
     <label>Beat Day</label>
     <required>false</required>
     <trackTrending>false</trackTrending>

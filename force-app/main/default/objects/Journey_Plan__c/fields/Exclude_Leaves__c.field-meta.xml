@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Exclude_Leaves__c</fullName>
+    <label>Exclude Leaves</label>
+    <description>When checked, approved/pending leave dates for the salesperson are excluded from plan day generation.</description>
+    <type>Checkbox</type>
+    <defaultValue>true</defaultValue>
+</CustomField>

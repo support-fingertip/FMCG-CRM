@@ -28,11 +28,6 @@
                 <default>false</default>
                 <label>Compensatory Off</label>
             </value>
-            <value>
-                <fullName>Half Day</fullName>
-                <default>false</default>
-                <label>Half Day</label>
-            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

@@ -18,4 +18,13 @@
         <operation>Literal</operation>
         <protected>false</protected>
     </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Set_Approval_Date</fullName>
+        <field>Approval_Date__c</field>
+        <formula>NOW()</formula>
+        <name>Set Approval Date</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+    </fieldUpdates>
 </Workflow>

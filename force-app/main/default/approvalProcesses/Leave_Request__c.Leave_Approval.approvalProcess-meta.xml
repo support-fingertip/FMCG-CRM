@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ApprovalProcess xmlns="http://soap.sforce.com/2006/metadata">
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
     <active>true</active>
     <allowRecall>true</allowRecall>
     <allowedSubmitters>
@@ -13,46 +13,28 @@
         <field>End_Date__c</field>
         <field>Number_of_Days__c</field>
         <field>Reason__c</field>
+        <field>Approved_By__c</field>
         <field>Owner</field>
     </approvalPageFields>
     <approvalStep>
         <allowDelegate>true</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>ManagerId</name>
-                <type>userHierarchyField</type>
+                <name>Approved_By__c</name>
+                <type>relatedUserField</type>
             </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
         <label>Reporting Manager Approval</label>
         <name>Reporting_Manager_Approval</name>
     </approvalStep>
-    <approvalStep>
-        <allowDelegate>false</allowDelegate>
-        <assignedApprover>
-            <approver>
-                <name>HR_Team</name>
-                <type>queue</type>
-            </approver>
-        </assignedApprover>
-        <entryCriteria>
-            <criteriaItems>
-                <field>Leave_Request__c.Number_of_Days__c</field>
-                <operation>greaterThan</operation>
-                <value>5</value>
-            </criteriaItems>
-        </entryCriteria>
-        <label>HR Approval</label>
-        <name>HR_Approval</name>
-        <rejectBehavior>
-            <type>RejectRequest</type>
-        </rejectBehavior>
-    </approvalStep>
-    <description>Approval process for employee leave requests requiring reporting manager and HR sign-off for extended leaves</description>
+    <description>Approval process for employee leave requests. When a leave is submitted, it is routed to the reporting manager (Approved_By__c) for approval. The Approved_By field is auto-populated from the employee reporting hierarchy.</description>
+    <enableMobileDeviceAccess>true</enableMobileDeviceAccess>
     <entryCriteria>
         <criteriaItems>
             <field>Leave_Request__c.Status__c</field>
             <operation>equals</operation>
-            <value>Pending</value>
+            <value>Submitted,Pending</value>
         </criteriaItems>
     </entryCriteria>
     <finalApprovalActions>
@@ -60,18 +42,25 @@
             <name>Approve_Leave</name>
             <type>FieldUpdate</type>
         </action>
+        <action>
+            <name>Set_Approval_Date</name>
+            <type>FieldUpdate</type>
+        </action>
     </finalApprovalActions>
+    <finalApprovalRecordLock>true</finalApprovalRecordLock>
     <finalRejectionActions>
         <action>
             <name>Reject_Leave</name>
             <type>FieldUpdate</type>
         </action>
+        <action>
+            <name>Set_Approval_Date</name>
+            <type>FieldUpdate</type>
+        </action>
     </finalRejectionActions>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
     <label>Leave Approval</label>
-    <nextAutomatedApprover>
-        <useApproverFieldOfRecordOwner>true</useApproverFieldOfRecordOwner>
-        <userHierarchyField>ManagerId</userHierarchyField>
-    </nextAutomatedApprover>
+    <processOrder>0</processOrder>
     <recordEditability>AdminOnly</recordEditability>
     <showApprovalHistory>true</showApprovalHistory>
 </ApprovalProcess>

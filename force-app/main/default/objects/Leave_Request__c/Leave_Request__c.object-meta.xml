@@ -8,6 +8,7 @@
         <displayFormat>LR-{0000}</displayFormat>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
     <sharingModel>ReadWrite</sharingModel>
     <description>Leave management for field salespersons with approval workflow support (MOD-03 Daily Field Operations)</description>
 </CustomObject>
