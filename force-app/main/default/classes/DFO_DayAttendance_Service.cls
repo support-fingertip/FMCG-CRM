@@ -35,7 +35,7 @@ public without sharing class DFO_DayAttendance_Service {
         public Decimal startLongitude;
         public Decimal startAccuracy;
         public String  selfieBase64;
-        public String  batteryLevel;
+        public Decimal batteryLevel;
         public String  networkStatus;
         public String  deviceInfo;
     }
@@ -84,7 +84,7 @@ public without sharing class DFO_DayAttendance_Service {
         // Check for active leave
         List<Leave_Request__c> activeLeave = [
             SELECT Id FROM Leave_Request__c
-            WHERE Employee__r.User__c = :currentUserId
+            WHERE Employee__c = :currentUserId
               AND Status__c = 'Approved'
               AND Start_Date__c <= :today
               AND End_Date__c >= :today
@@ -279,13 +279,13 @@ public without sharing class DFO_DayAttendance_Service {
             return new List<Day_Attendance__c>();
         }
 
-        // Aggregate visit data
+        // Aggregate visit data using separate queries (SOQL does not support CASE WHEN)
         Map<Id, Map<String, Object>> visitAggregates = new Map<Id, Map<String, Object>>();
+
+        // Query 1: Total visits + order/collection aggregates
         for (AggregateResult ar : [
             SELECT Day_Attendance__c attId,
                    COUNT(Id) totalVisits,
-                   SUM(CASE WHEN Is_Productive__c = true AND Visit_Status__c = 'Completed' THEN 1 ELSE 0 END) productiveCount,
-                   SUM(CASE WHEN Is_Productive__c = false AND Visit_Status__c = 'Completed' THEN 1 ELSE 0 END) nonProductiveCount,
                    SUM(Order_Value__c) totalOrderValue,
                    SUM(Collection_Amount__c) totalCollection,
                    SUM(Total_Orders_Count__c) totalOrders
@@ -295,12 +295,42 @@ public without sharing class DFO_DayAttendance_Service {
         ]) {
             Map<String, Object> agg = new Map<String, Object>();
             agg.put('totalVisits', ar.get('totalVisits'));
-            agg.put('productiveCount', ar.get('productiveCount'));
-            agg.put('nonProductiveCount', ar.get('nonProductiveCount'));
             agg.put('totalOrderValue', ar.get('totalOrderValue'));
             agg.put('totalCollection', ar.get('totalCollection'));
             agg.put('totalOrders', ar.get('totalOrders'));
             visitAggregates.put((Id)ar.get('attId'), agg);
+        }
+
+        // Query 2: Productive visit count
+        for (AggregateResult ar : [
+            SELECT Day_Attendance__c attId, COUNT(Id) cnt
+            FROM Visit__c
+            WHERE Day_Attendance__c IN :attendanceIds
+              AND Is_Productive__c = true
+              AND Visit_Status__c = 'Completed'
+            GROUP BY Day_Attendance__c
+        ]) {
+            Id attId = (Id) ar.get('attId');
+            if (!visitAggregates.containsKey(attId)) {
+                visitAggregates.put(attId, new Map<String, Object>());
+            }
+            visitAggregates.get(attId).put('productiveCount', ar.get('cnt'));
+        }
+
+        // Query 3: Non-productive visit count
+        for (AggregateResult ar : [
+            SELECT Day_Attendance__c attId, COUNT(Id) cnt
+            FROM Visit__c
+            WHERE Day_Attendance__c IN :attendanceIds
+              AND Is_Productive__c = false
+              AND Visit_Status__c = 'Completed'
+            GROUP BY Day_Attendance__c
+        ]) {
+            Id attId = (Id) ar.get('attId');
+            if (!visitAggregates.containsKey(attId)) {
+                visitAggregates.put(attId, new Map<String, Object>());
+            }
+            visitAggregates.get(attId).put('nonProductiveCount', ar.get('cnt'));
         }
 
         List<Day_Attendance__c> updates = new List<Day_Attendance__c>();

@@ -36,7 +36,7 @@ public without sharing class OVE_Visit_Service {
         public Decimal longitude;
         public Decimal accuracy;
         public String  photoBase64;
-        public String  batteryLevel;
+        public Decimal batteryLevel;
         public String  networkStatus;
         public Boolean isPlanned;
         public String  adHocReason;
@@ -713,12 +713,13 @@ public without sharing class OVE_Visit_Service {
             return new List<Map<String, Object>>();
         }
 
-        List<Map<String, Object>> teamVisits = new List<Map<String, Object>>();
+        // Use separate queries since SOQL does not support CASE WHEN
+        Map<Id, Map<String, Object>> userAggregates = new Map<Id, Map<String, Object>>();
+
+        // Query 1: Total visits + order/collection aggregates per user
         for (AggregateResult ar : [
             SELECT Salesperson__c userId,
                    COUNT(Id) totalVisits,
-                   SUM(CASE WHEN Visit_Status__c = 'Completed' THEN 1 ELSE 0 END) completedVisits,
-                   SUM(CASE WHEN Is_Productive__c = true THEN 1 ELSE 0 END) productiveVisits,
                    SUM(Order_Value__c) totalOrderValue,
                    SUM(Collection_Amount__c) totalCollection
             FROM Visit__c
@@ -729,10 +730,50 @@ public without sharing class OVE_Visit_Service {
             Map<String, Object> row = new Map<String, Object>();
             row.put('userId', ar.get('userId'));
             row.put('totalVisits', ar.get('totalVisits'));
-            row.put('completedVisits', ar.get('completedVisits'));
-            row.put('productiveVisits', ar.get('productiveVisits'));
             row.put('totalOrderValue', ar.get('totalOrderValue'));
             row.put('totalCollection', ar.get('totalCollection'));
+            userAggregates.put((Id)ar.get('userId'), row);
+        }
+
+        // Query 2: Completed visits per user
+        for (AggregateResult ar : [
+            SELECT Salesperson__c userId, COUNT(Id) cnt
+            FROM Visit__c
+            WHERE Salesperson__c IN :reportUserIds
+              AND Visit_Date__c = :visitDate
+              AND Visit_Status__c = 'Completed'
+            GROUP BY Salesperson__c
+        ]) {
+            Id userId = (Id) ar.get('userId');
+            if (userAggregates.containsKey(userId)) {
+                userAggregates.get(userId).put('completedVisits', ar.get('cnt'));
+            }
+        }
+
+        // Query 3: Productive visits per user
+        for (AggregateResult ar : [
+            SELECT Salesperson__c userId, COUNT(Id) cnt
+            FROM Visit__c
+            WHERE Salesperson__c IN :reportUserIds
+              AND Visit_Date__c = :visitDate
+              AND Is_Productive__c = true
+            GROUP BY Salesperson__c
+        ]) {
+            Id userId = (Id) ar.get('userId');
+            if (userAggregates.containsKey(userId)) {
+                userAggregates.get(userId).put('productiveVisits', ar.get('cnt'));
+            }
+        }
+
+        // Build result list with defaults for missing counts
+        List<Map<String, Object>> teamVisits = new List<Map<String, Object>>();
+        for (Map<String, Object> row : userAggregates.values()) {
+            if (!row.containsKey('completedVisits')) {
+                row.put('completedVisits', 0);
+            }
+            if (!row.containsKey('productiveVisits')) {
+                row.put('productiveVisits', 0);
+            }
             teamVisits.add(row);
         }
 
