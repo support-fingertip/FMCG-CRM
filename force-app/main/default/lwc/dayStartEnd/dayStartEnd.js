@@ -720,7 +720,7 @@ export default class DayStartEnd extends LightningElement {
             const results = await searchEmployees({ searchTerm: term });
             this.companionSearchResults = (results || []).map(emp => ({
                 id: emp.Id,
-                name: emp.Name,
+                name: [emp.First_Name__c, emp.Last_Name__c].filter(Boolean).join(' '),
                 subtitle: [emp.Employee_Code__c, emp.Designation__c].filter(Boolean).join(' - ')
             }));
             this.showCompanionDropdown = this.companionSearchResults.length > 0;

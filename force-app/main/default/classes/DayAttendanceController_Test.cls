@@ -247,18 +247,19 @@ private class DayAttendanceController_Test {
     static void testSearchEmployees() {
         // Create an active employee for search
         Employee__c emp = new Employee__c(
-            Name = 'John Test Companion',
+            First_Name__c = 'John',
+            Last_Name__c = 'TestCompanion',
             Employee_Code__c = 'EMP-COMP01',
             Is_Active__c = true
         );
         insert emp;
 
         Test.startTest();
-        // Valid search
-        List<Employee__c> results = DayAttendanceController.searchEmployees('John Test');
+        // Valid search by first name
+        List<Employee__c> results = DayAttendanceController.searchEmployees('John');
         System.assertNotEquals(null, results, 'Results should not be null');
         System.assertEquals(1, results.size(), 'Should find one matching employee');
-        System.assertEquals('John Test Companion', results[0].Name, 'Name should match');
+        System.assertEquals('John', results[0].First_Name__c, 'First name should match');
 
         // Short search term (< 2 chars)
         List<Employee__c> shortResults = DayAttendanceController.searchEmployees('J');

@@ -168,11 +168,13 @@ public with sharing class DayAttendanceController {
             }
             String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
             return [
-                SELECT Id, Name, Employee_Code__c, Designation__c
+                SELECT Id, Name, First_Name__c, Last_Name__c, Employee_Code__c, Designation__c
                 FROM Employee__c
-                WHERE Name LIKE :searchPattern
+                WHERE (First_Name__c LIKE :searchPattern
+                       OR Last_Name__c LIKE :searchPattern
+                       OR Employee_Code__c LIKE :searchPattern)
                   AND Is_Active__c = true
-                ORDER BY Name ASC
+                ORDER BY First_Name__c ASC
                 LIMIT 20
             ];
         } catch (Exception e) {
