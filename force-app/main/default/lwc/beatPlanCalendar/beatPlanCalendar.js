@@ -137,23 +137,21 @@ export default class BeatPlanCalendar extends LightningElement {
     }
 
     get generateDateInfo() {
-        if (!this.generateFromDate || !this.generateToDate) return '';
-        const from = new Date(this.generateFromDate + 'T12:00:00');
+        if (!this.generateToDate) return '';
+        const from = new Date(this.todayFormatted + 'T12:00:00');
         const to = new Date(this.generateToDate + 'T12:00:00');
-        if (from > to) return 'From Date must be before To Date.';
+        if (from > to) return 'To Date must be today or later.';
         const days = Math.round((to - from) / (1000 * 60 * 60 * 24)) + 1;
         return 'A single plan will be generated covering ' + days + ' days.';
     }
 
     get generateDisabled() {
-        if (!this.generateFromDate || !this.generateToDate) return true;
+        if (!this.generateToDate) return true;
         if (!this.resolvedTerritoryId) return true;
-        const from = new Date(this.generateFromDate + 'T12:00:00');
-        const to = new Date(this.generateToDate + 'T12:00:00');
-        if (from > to) return true;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        return from < today;
+        const to = new Date(this.generateToDate + 'T12:00:00');
+        return to < today;
     }
 
     get regenerateDisabled() {
@@ -662,21 +660,22 @@ export default class BeatPlanCalendar extends LightningElement {
             return;
         }
 
+        const fromDate = this.todayFormatted;
         this.isLoading = true;
         this.showGenerateModal = false;
         try {
             await generatePlanForDateRange({
                 userId,
                 territoryId,
-                fromDate: this.generateFromDate,
+                fromDate,
                 toDate: this.generateToDate,
-                excludeHolidays: this.excludeHolidays,
-                excludeLeaves: this.excludeLeaves,
-                excludeWeekOffs: this.excludeWeekOffs
+                excludeHolidays: this.excludeHolidays === true,
+                excludeLeaves: this.excludeLeaves === true,
+                excludeWeekOffs: this.excludeWeekOffs === true
             });
 
-            // Navigate to the from date's month
-            const from = new Date(this.generateFromDate + 'T12:00:00');
+            // Navigate to today's month
+            const from = new Date(fromDate + 'T12:00:00');
             this.currentMonth = from.getMonth();
             this.currentYear = from.getFullYear();
 
@@ -726,9 +725,9 @@ export default class BeatPlanCalendar extends LightningElement {
             await regeneratePlan({
                 journeyPlanId: planId,
                 toDate: this.regenerateToDate,
-                excludeHolidays: this.excludeHolidays,
-                excludeLeaves: this.excludeLeaves,
-                excludeWeekOffs: this.excludeWeekOffs
+                excludeHolidays: this.excludeHolidays === true,
+                excludeLeaves: this.excludeLeaves === true,
+                excludeWeekOffs: this.excludeWeekOffs === true
             });
             this.showToast('Success', 'Journey plan regenerated successfully.', 'success');
             await this.loadCalendar();

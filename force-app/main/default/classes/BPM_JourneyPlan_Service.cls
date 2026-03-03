@@ -328,6 +328,17 @@ public without sharing class BPM_JourneyPlan_Service {
         // Build day-of-week -> beats map
         Map<String, List<Beat__c>> beatsByDay = buildBeatsByDayMap(beats);
 
+        // When week-offs are NOT excluded, ensure weekoff days also have beats assigned.
+        // If a weekoff day has no beats in the map, distribute all available beats to it.
+        if (!excludeWeekOffs) {
+            Set<String> employeeWeekOffs = getEmployeeWeekOffDays(userId);
+            for (String weekOffDay : employeeWeekOffs) {
+                if (!beatsByDay.containsKey(weekOffDay) || beatsByDay.get(weekOffDay).isEmpty()) {
+                    beatsByDay.put(weekOffDay, beats);
+                }
+            }
+        }
+
         // Iterate through every day in the date range
         List<Journey_Plan_Day__c> planDays = new List<Journey_Plan_Day__c>();
         Integer sequenceOrder = 0;
@@ -492,6 +503,16 @@ public without sharing class BPM_JourneyPlan_Service {
 
         // Build day-of-week -> beats map
         Map<String, List<Beat__c>> beatsByDay = buildBeatsByDayMap(beats);
+
+        // When week-offs are NOT excluded, ensure weekoff days also have beats assigned.
+        if (!excludeWeekOffs) {
+            Set<String> employeeWeekOffs = getEmployeeWeekOffDays(userId);
+            for (String weekOffDay : employeeWeekOffs) {
+                if (!beatsByDay.containsKey(weekOffDay) || beatsByDay.get(weekOffDay).isEmpty()) {
+                    beatsByDay.put(weekOffDay, beats);
+                }
+            }
+        }
 
         // Get max sequence from remaining (past) plan days
         List<AggregateResult> maxSeq = [

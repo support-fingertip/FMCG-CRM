@@ -292,14 +292,12 @@
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
                     <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
-                        Select the date range for which to generate the journey plan. Only future dates are allowed.
+                        Generate a journey plan starting from today. Select the end date for the plan.
                     </p>
                     <div class="slds-grid slds-gutters slds-wrap">
                         <div class="slds-col slds-size_1-of-2">
-                            <lightning-input type="date" label="From Date"
-                                value={generateFromDate} onchange={handleFromDateChange}
-                                min={todayFormatted}
-                                required></lightning-input>
+                            <lightning-input type="date" label="From Date (Today)"
+                                value={todayFormatted} disabled></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2">
                             <lightning-input type="date" label="To Date"
