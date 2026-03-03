@@ -5073,6 +5073,10 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
+        <tab>Day_Start_End</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Distributor_Stock__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
@@ -5177,6 +5181,14 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
+        <tab>Team_Attendance_Dashboard</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Team_Visit_Dashboard</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Target__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
@@ -5186,6 +5198,10 @@
     </tabVisibilities>
     <tabVisibilities>
         <tab>Visit__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Visit_Plan_Board</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>

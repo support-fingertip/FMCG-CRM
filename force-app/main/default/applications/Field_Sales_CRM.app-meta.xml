@@ -13,6 +13,8 @@
     <tabs>standard-home</tabs>
     <tabs>FSCRM_Dashboard</tabs>
     <tabs>Visit__c</tabs>
+    <tabs>Visit_Plan_Board</tabs>
+    <tabs>Team_Visit_Dashboard</tabs>
     <tabs>Merchandising__c</tabs>
     <tabs>Survey__c</tabs>
     <tabs>Survey_Response__c</tabs>
@@ -23,6 +25,8 @@
     <tabs>Beat_Manager</tabs>
     <tabs>Journey_Plan__c</tabs>
     <tabs>Day_Attendance__c</tabs>
+    <tabs>Day_Start_End</tabs>
+    <tabs>Team_Attendance_Dashboard</tabs>
     <tabs>Employee_Manager</tabs>
     <tabs>Employee_360</tabs>
     <tabs>Leave_Manager</tabs>
