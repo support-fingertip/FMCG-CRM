@@ -221,7 +221,11 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     }
 
     get isAdHocEnabled() {
-        return this.visitConfig && this.visitConfig.adHocVisitsEnabled === true;
+        // Show ad-hoc button by default; hide only if config explicitly disables it
+        if (!this.visitConfig || this.visitConfig.adHocVisitsEnabled === undefined) {
+            return true;
+        }
+        return this.visitConfig.adHocVisitsEnabled === true;
     }
 
     get isAdHocSubmitDisabled() {

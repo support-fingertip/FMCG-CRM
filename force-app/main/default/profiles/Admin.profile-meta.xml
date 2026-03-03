@@ -5221,10 +5221,6 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>Visit_Plan_Board</tab>
-        <visibility>DefaultOn</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
         <tab>Warehouse_Stock_Dashboard</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
