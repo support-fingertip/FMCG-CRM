@@ -345,6 +345,43 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         }
     }
 
+    // ----- Event Handlers: Planned Visit Check-In -----
+    async handlePlannedCheckIn(event) {
+        event.stopPropagation();
+        const accountId = event.currentTarget.dataset.accountId;
+        const beatId = event.currentTarget.dataset.beatId;
+        const jpdayId = event.currentTarget.dataset.jpdayId;
+
+        if (!accountId) {
+            this.showToast('Error', 'No outlet found for this planned visit.', 'error');
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            const visitData = {
+                accountId: accountId,
+                beatId: beatId || null,
+                dayAttendanceId: this.dayAttendanceId,
+                journeyPlanDayId: jpdayId || null,
+                latitude: 0,
+                longitude: 0,
+                accuracy: 0,
+                batteryLevel: 0,
+                networkStatus: 'Online',
+                isPlanned: true
+            };
+
+            await createVisit({ visitJson: JSON.stringify(visitData) });
+            this.showToast('Success', 'Checked in successfully.', 'success');
+            await this.refreshVisits();
+        } catch (error) {
+            this.showToast('Error', 'Check-in failed: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
     // ----- Event Handlers: Skip Visit -----
     handleSkipClick(event) {
         event.stopPropagation();
@@ -431,7 +468,7 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     }
 
     handleAdHocSearch(event) {
-        const term = event.target.value;
+        const term = event.detail.value || '';
         this.adHocSearchTerm = term;
 
         if (this._adHocSearchTimer) {

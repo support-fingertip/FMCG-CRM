@@ -97,7 +97,7 @@
                                 <div class="column-body">
                                     <template if:true={plannedVisits.length}>
                                         <template for:each={plannedVisits} for:item="visit">
-                                            <div class="visit-card card-planned" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                            <div class="visit-card card-planned" key={visit.Id} data-id={visit.Id}>
                                                 <div class="card-header">
                                                     <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
                                                     <div class="card-badges">
@@ -109,9 +109,19 @@
                                                 </div>
                                                 <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
                                                 <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
-                                                <div class="card-footer">
-                                                    <template if:true={visit.beatName}>
-                                                        <span class="slds-text-body_small slds-text-color_weak">{visit.beatName}</span>
+                                                <template if:true={visit.beatName}>
+                                                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">{visit.beatName}</p>
+                                                </template>
+                                                <div class="card-footer slds-m-top_x-small">
+                                                    <template if:true={visit._isFromPlan}>
+                                                        <button class="slds-button slds-button_brand slds-button_stretch"
+                                                            data-account-id={visit.Account__c}
+                                                            data-beat-id={visit.Beat__c}
+                                                            data-jpday-id={visit._journeyPlanDayId}
+                                                            onclick={handlePlannedCheckIn}>
+                                                            <lightning-icon icon-name="utility:checkin" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                            Check In
+                                                        </button>
                                                     </template>
                                                     <template if:false={visit._isFromPlan}>
                                                         <button class="skip-button" data-id={visit.Id} onclick={handleSkipClick}>
@@ -337,41 +347,34 @@
                 <div class="slds-modal__content slds-p-around_medium">
                     <!-- Outlet Search -->
                     <div class="slds-form-element slds-m-bottom_medium">
-                        <label class="slds-form-element__label">Search Outlet</label>
-                        <div class="slds-combobox_container">
-                            <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
-                                <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_left">
-                                    <lightning-icon icon-name="utility:search" size="x-small"
-                                        class="slds-input__icon slds-input__icon_left"></lightning-icon>
-                                    <input type="text"
-                                        class="slds-input slds-combobox__input"
-                                        value={adHocSearchTerm}
-                                        oninput={handleAdHocSearch}
-                                        placeholder="Search outlet by name..."
-                                        autocomplete="off" />
-                                </div>
-                                <template if:true={showAdHocDropdown}>
-                                    <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox">
-                                        <ul class="slds-listbox slds-listbox_vertical" role="presentation">
-                                            <template for:each={adHocSearchResults} for:item="acct">
-                                                <li key={acct.id} role="presentation"
-                                                    class="slds-listbox__item"
-                                                    data-id={acct.id}
-                                                    onclick={handleAdHocOutletSelect}>
-                                                    <div class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small"
-                                                        role="option">
-                                                        <span class="slds-media__body">
-                                                            <span class="slds-truncate">{acct.name}</span>
-                                                            <span class="slds-text-body_small slds-text-color_weak">{acct.address}</span>
-                                                        </span>
-                                                    </div>
-                                                </li>
-                                            </template>
-                                        </ul>
-                                    </div>
-                                </template>
+                        <lightning-input
+                            type="search"
+                            label="Search Outlet"
+                            value={adHocSearchTerm}
+                            onchange={handleAdHocSearch}
+                            placeholder="Type at least 2 characters to search...">
+                        </lightning-input>
+                        <template if:true={showAdHocDropdown}>
+                            <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid slds-is-open" role="listbox"
+                                style="position:relative; z-index:9999; max-height:200px; overflow-y:auto; border:1px solid #dddbda; border-radius:0.25rem; margin-top:2px;">
+                                <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                    <template for:each={adHocSearchResults} for:item="acct">
+                                        <li key={acct.id} role="presentation"
+                                            class="slds-listbox__item"
+                                            data-id={acct.id}
+                                            onclick={handleAdHocOutletSelect}>
+                                            <div class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-p-around_xx-small"
+                                                role="option" style="cursor:pointer;">
+                                                <span class="slds-media__body">
+                                                    <span class="slds-truncate slds-text-title_bold">{acct.name}</span>
+                                                    <span class="slds-text-body_small slds-text-color_weak">{acct.address}</span>
+                                                </span>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
                             </div>
-                        </div>
+                        </template>
                     </div>
 
                     <!-- Selected Outlet Display -->
