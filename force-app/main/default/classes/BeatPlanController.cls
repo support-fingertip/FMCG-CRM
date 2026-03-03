@@ -957,6 +957,8 @@ public with sharing class BeatPlanController {
         Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs
     ) {
         try {
+            // Always use server-side today to avoid browser/server timezone mismatch
+            fromDate = Date.today();
             return BPM_JourneyPlan_Service.generatePlanForDateRange(
                 userId, territoryId, fromDate, toDate,
                 excludeHolidays, excludeLeaves, excludeWeekOffs

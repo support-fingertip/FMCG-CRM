@@ -679,8 +679,13 @@ export default class BeatPlanCalendar extends LightningElement {
             this.currentMonth = from.getMonth();
             this.currentYear = from.getFullYear();
 
-            this.showToast('Success', 'Journey plan generated successfully.', 'success');
             await this.loadCalendar();
+            const totalDays = this.planDaysRaw ? this.planDaysRaw.length : 0;
+            if (totalDays > 0) {
+                this.showToast('Success', 'Journey plan generated with ' + totalDays + ' beat assignments.', 'success');
+            } else {
+                this.showToast('Warning', 'Journey plan created but no beat assignments found. Verify beats are assigned to working days in the date range.', 'warning');
+            }
         } catch (error) {
             this.showToast('Error', 'Failed to generate plan: ' + this.reduceErrors(error), 'error');
         } finally {
@@ -729,9 +734,14 @@ export default class BeatPlanCalendar extends LightningElement {
                 excludeLeaves: this.excludeLeaves === true,
                 excludeWeekOffs: this.excludeWeekOffs === true
             });
-            this.showToast('Success', 'Journey plan regenerated successfully.', 'success');
             await this.loadCalendar();
             this.selectedDayDetail = null;
+            const totalDays = this.planDaysRaw ? this.planDaysRaw.length : 0;
+            if (totalDays > 0) {
+                this.showToast('Success', 'Journey plan regenerated with ' + totalDays + ' beat assignments.', 'success');
+            } else {
+                this.showToast('Warning', 'Journey plan regenerated but no beat assignments found. Verify beats are assigned to working days in the date range.', 'warning');
+            }
         } catch (error) {
             this.showToast('Error', 'Failed to regenerate plan: ' + this.reduceErrors(error), 'error');
         } finally {

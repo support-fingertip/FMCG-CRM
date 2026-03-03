@@ -190,7 +190,7 @@ public with sharing class VisitCheckInController {
      * @param searchTerm The search string to match against account names.
      * @return List of matching Account records.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Account> searchOutlets(String searchTerm) {
         try {
             if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
@@ -198,10 +198,9 @@ public with sharing class VisitCheckInController {
             }
             String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
             return [
-                SELECT Id, Name, BillingStreet, BillingCity, Active__c
+                SELECT Id, Name, BillingStreet, BillingCity
                 FROM Account
                 WHERE Name LIKE :searchPattern
-                  AND Active__c != 'No'
                 ORDER BY Name ASC
                 LIMIT 20
             ];

@@ -243,26 +243,33 @@ public without sharing class BPM_JourneyPlan_Service {
         if (excludeLeaves == null) excludeLeaves = true;
         if (excludeWeekOffs == null) excludeWeekOffs = true;
 
-        // Validate no overlapping plan exists (by date range, not month/year)
+        // Validate no overlapping plan exists — check both date-range and month/year matches
+        String startMonthCheck = normalizeMonthName(fromDate.month());
+        String startYearCheck = String.valueOf(fromDate.year());
+
         List<Journey_Plan__c> overlapping = [
-            SELECT Id, Name, Effective_From__c, Effective_To__c
+            SELECT Id, Name, Effective_From__c, Effective_To__c, Month__c, Year__c
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
               AND Territory__c = :territoryId
               AND Status__c != 'Cancelled'
-              AND Effective_From__c != null
-              AND Effective_To__c != null
-              AND Effective_From__c <= :toDate
-              AND Effective_To__c >= :fromDate
+              AND (
+                  (Effective_From__c != null AND Effective_To__c != null
+                   AND Effective_From__c <= :toDate AND Effective_To__c >= :fromDate)
+                  OR (Month__c = :startMonthCheck AND Year__c = :startYearCheck)
+              )
             LIMIT 1
         ];
 
         if (!overlapping.isEmpty()) {
             Journey_Plan__c existing = overlapping[0];
+            String detail = existing.Effective_From__c != null && existing.Effective_To__c != null
+                ? ' (' + String.valueOf(existing.Effective_From__c)
+                  + ' to ' + String.valueOf(existing.Effective_To__c) + ')'
+                : ' (' + existing.Month__c + ' ' + existing.Year__c + ')';
             throw new BPM_JourneyPlanServiceException(
-                'An overlapping journey plan already exists: ' + existing.Name
-                + ' (' + String.valueOf(existing.Effective_From__c)
-                + ' to ' + String.valueOf(existing.Effective_To__c) + ').'
+                'An overlapping journey plan already exists: ' + existing.Name + detail
+                + '. Use Regenerate to update the existing plan.'
             );
         }
 
