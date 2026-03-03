@@ -201,7 +201,7 @@ public with sharing class VisitCheckInController {
                 SELECT Id, Name, BillingStreet, BillingCity, Active__c
                 FROM Account
                 WHERE Name LIKE :searchPattern
-                  AND Active__c = 'Yes'
+                  AND Active__c != 'No'
                 ORDER BY Name ASC
                 LIMIT 20
             ];

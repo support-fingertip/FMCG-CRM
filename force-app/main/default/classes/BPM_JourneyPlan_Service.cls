@@ -328,17 +328,6 @@ public without sharing class BPM_JourneyPlan_Service {
         // Build day-of-week -> beats map
         Map<String, List<Beat__c>> beatsByDay = buildBeatsByDayMap(beats);
 
-        // When week-offs are NOT excluded, ensure weekoff days also have beats assigned.
-        // If a weekoff day has no beats in the map, distribute all available beats to it.
-        if (!excludeWeekOffs) {
-            Set<String> employeeWeekOffs = getEmployeeWeekOffDays(userId);
-            for (String weekOffDay : employeeWeekOffs) {
-                if (!beatsByDay.containsKey(weekOffDay) || beatsByDay.get(weekOffDay).isEmpty()) {
-                    beatsByDay.put(weekOffDay, beats);
-                }
-            }
-        }
-
         // Iterate through every day in the date range
         List<Journey_Plan_Day__c> planDays = new List<Journey_Plan_Day__c>();
         Integer sequenceOrder = 0;
@@ -503,16 +492,6 @@ public without sharing class BPM_JourneyPlan_Service {
 
         // Build day-of-week -> beats map
         Map<String, List<Beat__c>> beatsByDay = buildBeatsByDayMap(beats);
-
-        // When week-offs are NOT excluded, ensure weekoff days also have beats assigned.
-        if (!excludeWeekOffs) {
-            Set<String> employeeWeekOffs = getEmployeeWeekOffDays(userId);
-            for (String weekOffDay : employeeWeekOffs) {
-                if (!beatsByDay.containsKey(weekOffDay) || beatsByDay.get(weekOffDay).isEmpty()) {
-                    beatsByDay.put(weekOffDay, beats);
-                }
-            }
-        }
 
         // Get max sequence from remaining (past) plan days
         List<AggregateResult> maxSeq = [
@@ -801,8 +780,15 @@ public without sharing class BPM_JourneyPlan_Service {
      * @description Returns the day-of-week name for a given date.
      */
     private static String getDayOfWeek(Date d) {
-        DateTime dt = DateTime.newInstance(d, Time.newInstance(12, 0, 0, 0));
-        return dt.format('EEEE');
+        // Locale-independent calculation — dt.format('EEEE') returns localized
+        // day names (e.g. Hindi) which won't match English picklist values.
+        Date refDate = Date.newInstance(2000, 1, 1); // January 1, 2000 was a Saturday
+        Integer dayIndex = Math.mod(refDate.daysBetween(d), 7);
+        if (dayIndex < 0) dayIndex += 7;
+        List<String> dayNames = new List<String>{
+            'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
+        };
+        return dayNames[dayIndex];
     }
 
     /**
