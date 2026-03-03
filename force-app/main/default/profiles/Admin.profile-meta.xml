@@ -1012,6 +1012,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Day_Attendance__c.Companion__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Day_Attendance__c.Day_End_Time__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1078,6 +1083,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Day_Attendance__c.Network_Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Day_Attendance__c.Odometer_End__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Day_Attendance__c.Odometer_Start__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1183,6 +1198,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Day_Attendance__c.Week_Day__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Day_Attendance__c.With_Companion__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

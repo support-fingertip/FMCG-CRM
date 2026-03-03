@@ -292,6 +292,36 @@ private class VisitCheckInController_Test {
     }
 
     /**
+     * @description Tests searchOutlets() controller wrapper.
+     */
+    @isTest
+    static void testSearchOutlets() {
+        // Ensure outlet is active for search
+        Account acct = [SELECT Id, Active__c FROM Account WHERE Name = 'CI Geo Outlet' LIMIT 1];
+        acct.Active__c = 'Yes';
+        update acct;
+
+        Test.startTest();
+        // Valid search matching existing outlet
+        List<Account> results = VisitCheckInController.searchOutlets('CI Geo');
+        System.assertNotEquals(null, results, 'Results should not be null');
+        System.assert(results.size() >= 1, 'Should find at least one matching outlet');
+
+        // Short search term (< 2 chars)
+        List<Account> shortResults = VisitCheckInController.searchOutlets('C');
+        System.assertEquals(0, shortResults.size(), 'Short search term should return empty list');
+
+        // Blank search
+        List<Account> blankResults = VisitCheckInController.searchOutlets('');
+        System.assertEquals(0, blankResults.size(), 'Blank search should return empty list');
+
+        // Non-matching search
+        List<Account> noResults = VisitCheckInController.searchOutlets('ZZZZNONEXISTENT');
+        System.assertEquals(0, noResults.size(), 'Non-matching search should return empty list');
+        Test.stopTest();
+    }
+
+    /**
      * @description Tests getVisitConfig() controller wrapper.
      */
     @isTest

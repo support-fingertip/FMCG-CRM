@@ -154,4 +154,29 @@ public with sharing class DayAttendanceController {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    /**
+     * @description Searches employees by name for the companion lookup.
+     * @param searchTerm The search string to match against employee names.
+     * @return List of matching Employee__c records.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Employee__c> searchEmployees(String searchTerm) {
+        try {
+            if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
+                return new List<Employee__c>();
+            }
+            String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+            return [
+                SELECT Id, Name, Employee_Code__c, Designation__c
+                FROM Employee__c
+                WHERE Name LIKE :searchPattern
+                  AND Is_Active__c = true
+                ORDER BY Name ASC
+                LIMIT 20
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

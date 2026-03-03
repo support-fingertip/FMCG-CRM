@@ -38,6 +38,9 @@ public without sharing class DFO_DayAttendance_Service {
         public Decimal batteryLevel;
         public String  networkStatus;
         public String  deviceInfo;
+        public Decimal odometerStart;
+        public Boolean withCompanion;
+        public Id      companionId;
     }
 
     /**
@@ -50,6 +53,7 @@ public without sharing class DFO_DayAttendance_Service {
         public Decimal endAccuracy;
         public String  selfieBase64;
         public String  remarks;
+        public Decimal odometerEnd;
     }
 
     // ── Day Lifecycle ───────────────────────────────────────────────────────
@@ -140,6 +144,9 @@ public without sharing class DFO_DayAttendance_Service {
             dayRecord.Beat__c = beatId;
             dayRecord.Journey_Plan_Day__c = journeyPlanDayId;
             dayRecord.Is_Leave_Day__c = !activeLeave.isEmpty();
+            dayRecord.Odometer_Start__c = request.odometerStart;
+            dayRecord.With_Companion__c = request.withCompanion == true;
+            dayRecord.Companion__c = request.withCompanion == true ? request.companionId : null;
 
             // Initialize counters
             dayRecord.Total_Visits__c = 0;
@@ -232,6 +239,7 @@ public without sharing class DFO_DayAttendance_Service {
             dayRecord.Distance_Traveled_Km__c = totalDistanceKm;
             dayRecord.Total_Distance__c = totalDistanceKm;
             dayRecord.Remarks__c = request.remarks;
+            dayRecord.Odometer_End__c = request.odometerEnd;
             dayRecord.Is_Finalized__c = true;
 
             // Handle end selfie

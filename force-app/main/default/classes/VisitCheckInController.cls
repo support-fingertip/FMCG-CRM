@@ -184,4 +184,29 @@ public with sharing class VisitCheckInController {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    /**
+     * @description Searches outlet accounts for ad-hoc visit creation.
+     * @param searchTerm The search string to match against account names.
+     * @return List of matching Account records.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Account> searchOutlets(String searchTerm) {
+        try {
+            if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
+                return new List<Account>();
+            }
+            String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+            return [
+                SELECT Id, Name, BillingStreet, BillingCity, Active__c
+                FROM Account
+                WHERE Name LIKE :searchPattern
+                  AND Active__c = 'Yes'
+                ORDER BY Name ASC
+                LIMIT 20
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

@@ -118,6 +118,79 @@
                         </div>
                     </template>
 
+                    <!-- Odometer Reading -->
+                    <div class="slds-m-top_medium">
+                        <lightning-input
+                            type="number"
+                            label="Odometer Reading (km)"
+                            value={odometerStart}
+                            onchange={handleOdometerStartChange}
+                            placeholder="Enter current odometer reading"
+                            min="0"
+                            step="0.1"
+                            field-level-help="Enter your vehicle's odometer reading before starting the day">
+                        </lightning-input>
+                    </div>
+
+                    <!-- Companion Selection -->
+                    <div class="slds-m-top_medium">
+                        <lightning-input
+                            type="toggle"
+                            label="With Companion"
+                            checked={withCompanion}
+                            onchange={handleCompanionToggle}
+                            message-toggle-active="Yes"
+                            message-toggle-inactive="No">
+                        </lightning-input>
+                        <template if:true={withCompanion}>
+                            <div class="companion-lookup slds-m-top_small">
+                                <label class="slds-form-element__label">Companion</label>
+                                <div class="slds-combobox_container">
+                                    <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
+                                        <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right">
+                                            <input type="text"
+                                                class="slds-input slds-combobox__input"
+                                                value={companionSearchTerm}
+                                                oninput={handleCompanionSearch}
+                                                placeholder="Search employees by name..."
+                                                autocomplete="off" />
+                                            <template if:true={companionId}>
+                                                <lightning-button-icon
+                                                    icon-name="utility:close"
+                                                    alternative-text="Clear"
+                                                    variant="bare"
+                                                    size="small"
+                                                    class="companion-clear-btn"
+                                                    onclick={clearCompanion}>
+                                                </lightning-button-icon>
+                                            </template>
+                                        </div>
+                                        <template if:true={showCompanionDropdown}>
+                                            <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox">
+                                                <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                                    <template for:each={companionSearchResults} for:item="emp">
+                                                        <li key={emp.id} role="presentation"
+                                                            class="slds-listbox__item"
+                                                            data-id={emp.id}
+                                                            onclick={handleCompanionSelect}>
+                                                            <div class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small"
+                                                                role="option">
+                                                                <span class="slds-media__body">
+                                                                    <span class="slds-truncate">{emp.name}</span>
+                                                                    <span class="slds-text-body_small slds-text-color_weak">{emp.subtitle}</span>
+                                                                </span>
+                                                            </div>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
                     <!-- Start Day Button -->
                     <div class="slds-m-top_large slds-text-align_center">
                         <lightning-button
@@ -263,6 +336,11 @@
                     </div>
                 </template>
 
+                <!-- Embedded Visit Plan Board -->
+                <div class="slds-m-top_medium">
+                    <c-visit-plan-board></c-visit-plan-board>
+                </div>
+
                 <!-- End Day Button -->
                 <div class="slds-m-top_large slds-text-align_center">
                     <lightning-button
@@ -366,6 +444,18 @@
                                     </template>
                                 </div>
                             </div>
+
+                            <!-- Odometer End Reading -->
+                            <lightning-input
+                                type="number"
+                                label="Odometer End Reading (km)"
+                                value={odometerEnd}
+                                onchange={handleOdometerEndChange}
+                                placeholder="Enter odometer reading at end of day"
+                                min="0"
+                                step="0.1"
+                                class="slds-m-top_small">
+                            </lightning-input>
 
                             <!-- End Day Remarks -->
                             <lightning-textarea

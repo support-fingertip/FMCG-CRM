@@ -297,7 +297,9 @@ public class TestDataFactory {
             Total_Collection__c = 0,
             Total_Distance__c = 0,
             Distance_Traveled_Km__c = 0,
-            Productivity_Percent__c = 0
+            Productivity_Percent__c = 0,
+            Odometer_Start__c = 12500.0,
+            With_Companion__c = false
         );
         return da;
     }

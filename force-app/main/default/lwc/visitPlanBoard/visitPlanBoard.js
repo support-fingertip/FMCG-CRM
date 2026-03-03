@@ -6,6 +6,9 @@ import getTodaysVisits from '@salesforce/apex/VisitCheckInController.getTodaysVi
 import getPlannedVisits from '@salesforce/apex/VisitCheckInController.getPlannedVisits';
 import skipVisit from '@salesforce/apex/VisitCheckInController.skipVisit';
 import getVisitConfig from '@salesforce/apex/VisitCheckInController.getVisitConfig';
+import createVisit from '@salesforce/apex/VisitCheckInController.createVisit';
+import searchOutlets from '@salesforce/apex/VisitCheckInController.searchOutlets';
+import getCurrentDayAttendance from '@salesforce/apex/DayAttendanceController.getCurrentDayAttendance';
 
 import Id from '@salesforce/user/Id';
 
@@ -45,8 +48,18 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     @track selectedSkipReason = '';
     @track skipVisitId = null;
 
+    // Ad-hoc visit state
+    @track isAdHocModalOpen = false;
+    @track adHocSearchTerm = '';
+    @track adHocSearchResults = [];
+    @track adHocSelectedAccount = null;
+    @track adHocReason = '';
+    @track showAdHocDropdown = false;
+    @track dayAttendanceId = null;
+
     refreshInterval = null;
     hasLoadedOnce = false;
+    _adHocSearchTimer = null;
 
     // ----- Skip Reason Options -----
     get skipReasonOptions() {
@@ -76,13 +89,15 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     async loadAllData() {
         this.isLoading = true;
         try {
-            const [visitsResult, configResult] = await Promise.all([
+            const [visitsResult, configResult, dayAttendance] = await Promise.all([
                 getTodaysVisits({ userId: this.currentUserId }),
-                getVisitConfig()
+                getVisitConfig(),
+                getCurrentDayAttendance({ userId: this.currentUserId })
             ]);
 
             this.visits = this.processVisits(visitsResult || []);
             this.visitConfig = configResult || {};
+            this.dayAttendanceId = dayAttendance ? dayAttendance.Id : null;
             this.hasLoadedOnce = true;
         } catch (error) {
             this.showToast('Error', 'Failed to load visits: ' + this.reduceErrors(error), 'error');
@@ -205,6 +220,14 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         return this.hasLoadedOnce && this.visits.length === 0;
     }
 
+    get isAdHocEnabled() {
+        return this.visitConfig && this.visitConfig.adHocVisitsEnabled === true;
+    }
+
+    get isAdHocSubmitDisabled() {
+        return !this.adHocSelectedAccount;
+    }
+
     // ----- Formatting Helpers -----
     formatTime(dateTimeValue) {
         if (!dateTimeValue) return '--';
@@ -320,6 +343,119 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
             this.showToast('Success', 'Visit board refreshed.', 'success');
         } catch (error) {
             this.showToast('Error', 'Failed to refresh: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ----- Event Handlers: Ad-Hoc Visit -----
+    handleAdHocClick() {
+        this.adHocSearchTerm = '';
+        this.adHocSearchResults = [];
+        this.adHocSelectedAccount = null;
+        this.adHocReason = '';
+        this.showAdHocDropdown = false;
+        this.isAdHocModalOpen = true;
+    }
+
+    handleAdHocModalClose() {
+        this.isAdHocModalOpen = false;
+        this.adHocSelectedAccount = null;
+        this.adHocSearchTerm = '';
+        this.adHocReason = '';
+    }
+
+    handleAdHocSearch(event) {
+        const term = event.target.value;
+        this.adHocSearchTerm = term;
+
+        if (this._adHocSearchTimer) {
+            clearTimeout(this._adHocSearchTimer);
+        }
+
+        if (!term || term.length < 2) {
+            this.adHocSearchResults = [];
+            this.showAdHocDropdown = false;
+            return;
+        }
+
+        this._adHocSearchTimer = setTimeout(() => {
+            this._doOutletSearch(term);
+        }, 300);
+    }
+
+    async _doOutletSearch(term) {
+        try {
+            const results = await searchOutlets({ searchTerm: term });
+            this.adHocSearchResults = (results || []).map(acct => ({
+                id: acct.Id,
+                name: acct.Name,
+                address: [acct.BillingStreet, acct.BillingCity].filter(Boolean).join(', ') || 'No address'
+            }));
+            this.showAdHocDropdown = this.adHocSearchResults.length > 0;
+        } catch (error) {
+            console.error('VisitPlanBoard: Outlet search error', error);
+            this.adHocSearchResults = [];
+            this.showAdHocDropdown = false;
+        }
+    }
+
+    handleAdHocOutletSelect(event) {
+        const selectedId = event.currentTarget.dataset.id;
+        const selected = this.adHocSearchResults.find(a => a.id === selectedId);
+        if (selected) {
+            this.adHocSelectedAccount = selected;
+            this.adHocSearchTerm = selected.name;
+            this.showAdHocDropdown = false;
+        }
+    }
+
+    handleAdHocReasonChange(event) {
+        this.adHocReason = event.detail.value;
+    }
+
+    get adHocReasonOptions() {
+        return [
+            { label: 'New Outlet', value: 'New Outlet' },
+            { label: 'Manager Request', value: 'Manager Request' },
+            { label: 'Customer Request', value: 'Customer Request' },
+            { label: 'Nearby Outlet', value: 'Nearby Outlet' },
+            { label: 'Other', value: 'Other' }
+        ];
+    }
+
+    async handleAdHocConfirm() {
+        if (!this.adHocSelectedAccount) {
+            this.showToast('Warning', 'Please select an outlet.', 'warning');
+            return;
+        }
+
+        this.isLoading = true;
+        this.isAdHocModalOpen = false;
+
+        try {
+            const visitData = {
+                accountId: this.adHocSelectedAccount.id,
+                dayAttendanceId: this.dayAttendanceId,
+                latitude: 0,
+                longitude: 0,
+                accuracy: 0,
+                batteryLevel: 0,
+                networkStatus: 'Online',
+                isPlanned: false,
+                adHocReason: this.adHocReason || 'Ad-hoc visit'
+            };
+
+            await createVisit({ visitJson: JSON.stringify(visitData) });
+            this.showToast('Success', 'Ad-hoc visit created for ' + this.adHocSelectedAccount.name, 'success');
+
+            this.adHocSelectedAccount = null;
+            this.adHocSearchTerm = '';
+            this.adHocReason = '';
+
+            await this.refreshVisits();
+        } catch (error) {
+            this.showToast('Error', 'Failed to create ad-hoc visit: ' + this.reduceErrors(error), 'error');
         } finally {
             this.isLoading = false;
         }

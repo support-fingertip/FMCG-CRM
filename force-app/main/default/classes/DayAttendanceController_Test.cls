@@ -58,7 +58,9 @@ private class DayAttendanceController_Test {
             'startAccuracy' => 10.0,
             'batteryLevel' => 90,
             'networkStatus' => 'WiFi',
-            'deviceInfo' => 'Test Device'
+            'deviceInfo' => 'Test Device',
+            'odometerStart' => 12500.0,
+            'withCompanion' => false
         };
         String dayJson = JSON.serialize(requestMap);
 
@@ -88,7 +90,8 @@ private class DayAttendanceController_Test {
             'endLatitude' => 19.0800,
             'endLongitude' => 72.8800,
             'endAccuracy' => 15.0,
-            'remarks' => 'Good day'
+            'remarks' => 'Good day',
+            'odometerEnd' => 12650.0
         };
         String dayJson = JSON.serialize(requestMap);
 
@@ -234,6 +237,36 @@ private class DayAttendanceController_Test {
                 'Should indicate Manager Dashboard feature is disabled. Got: ' + e.getMessage()
             );
         }
+        Test.stopTest();
+    }
+
+    /**
+     * @description Tests searchEmployees() controller wrapper.
+     */
+    @isTest
+    static void testSearchEmployees() {
+        // Create an active employee for search
+        Employee__c emp = new Employee__c(
+            Name = 'John Test Companion',
+            Employee_Code__c = 'EMP-COMP01',
+            Is_Active__c = true
+        );
+        insert emp;
+
+        Test.startTest();
+        // Valid search
+        List<Employee__c> results = DayAttendanceController.searchEmployees('John Test');
+        System.assertNotEquals(null, results, 'Results should not be null');
+        System.assertEquals(1, results.size(), 'Should find one matching employee');
+        System.assertEquals('John Test Companion', results[0].Name, 'Name should match');
+
+        // Short search term (< 2 chars)
+        List<Employee__c> shortResults = DayAttendanceController.searchEmployees('J');
+        System.assertEquals(0, shortResults.size(), 'Short search term should return empty list');
+
+        // Blank search
+        List<Employee__c> blankResults = DayAttendanceController.searchEmployees('');
+        System.assertEquals(0, blankResults.size(), 'Blank search should return empty list');
         Test.stopTest();
     }
 

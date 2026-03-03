@@ -9,6 +9,7 @@ import getCurrentDayAttendance from '@salesforce/apex/DayAttendanceController.ge
 import logGPS from '@salesforce/apex/DayAttendanceController.logGPS';
 import syncOfflineGPSLogs from '@salesforce/apex/DayAttendanceController.syncOfflineGPSLogs';
 import getAttendanceConfig from '@salesforce/apex/DayAttendanceController.getAttendanceConfig';
+import searchEmployees from '@salesforce/apex/DayAttendanceController.searchEmployees';
 
 /** Local storage key for offline GPS queue */
 const GPS_QUEUE_STORAGE_KEY = 'dayStartEnd_offlineGpsQueue';
@@ -57,6 +58,18 @@ export default class DayStartEnd extends LightningElement {
     // GPS tracking
     @track offlineGpsQueueCount = 0;
 
+    // Odometer
+    @track odometerStart = null;
+    @track odometerEnd = null;
+
+    // Companion
+    @track withCompanion = false;
+    @track companionId = null;
+    @track companionName = '';
+    @track companionSearchTerm = '';
+    @track companionSearchResults = [];
+    @track showCompanionDropdown = false;
+
     // ── Non-reactive internal state ──────────────────────────────────
     startSelfieBase64 = null;
     endSelfieBase64 = null;
@@ -65,6 +78,7 @@ export default class DayStartEnd extends LightningElement {
     dayDuration = 0;
     batteryLevelRaw = null;
     deviceInfo = '';
+    _companionSearchTimer = null;
 
     // Configuration (from getAttendanceConfig)
     configSelfieRequired = false;
@@ -294,7 +308,10 @@ export default class DayStartEnd extends LightningElement {
                 selfieBase64: this.startSelfieBase64,
                 batteryLevel: this.batteryLevelRaw,
                 networkStatus: this.networkStatusText,
-                deviceInfo: this.deviceInfo
+                deviceInfo: this.deviceInfo,
+                odometerStart: this.odometerStart,
+                withCompanion: this.withCompanion,
+                companionId: this.withCompanion ? this.companionId : null
             };
 
             const result = await startDay({ dayJson: JSON.stringify(dayData) });
@@ -346,7 +363,8 @@ export default class DayStartEnd extends LightningElement {
                 endLongitude: this.locationLongitude,
                 endAccuracy: this.locationAccuracy,
                 selfieBase64: this.endSelfieBase64,
-                remarks: this.endDayRemarks
+                remarks: this.endDayRemarks,
+                odometerEnd: this.odometerEnd
             };
 
             await endDay({ dayJson: JSON.stringify(endData) });
@@ -652,6 +670,84 @@ export default class DayStartEnd extends LightningElement {
 
         window.addEventListener('online', this._handleOnline);
         window.addEventListener('offline', this._handleOffline);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  ODOMETER & COMPANION HANDLERS
+    // ══════════════════════════════════════════════════════════════════
+
+    handleOdometerStartChange(event) {
+        this.odometerStart = event.target.value ? Number(event.target.value) : null;
+    }
+
+    handleOdometerEndChange(event) {
+        this.odometerEnd = event.target.value ? Number(event.target.value) : null;
+    }
+
+    handleCompanionToggle(event) {
+        this.withCompanion = event.target.checked;
+        if (!this.withCompanion) {
+            this.companionId = null;
+            this.companionName = '';
+            this.companionSearchTerm = '';
+            this.companionSearchResults = [];
+            this.showCompanionDropdown = false;
+        }
+    }
+
+    handleCompanionSearch(event) {
+        const term = event.target.value;
+        this.companionSearchTerm = term;
+
+        if (this._companionSearchTimer) {
+            clearTimeout(this._companionSearchTimer);
+        }
+
+        if (!term || term.length < 2) {
+            this.companionSearchResults = [];
+            this.showCompanionDropdown = false;
+            return;
+        }
+
+        // Debounce 300ms
+        this._companionSearchTimer = setTimeout(() => {
+            this._doCompanionSearch(term);
+        }, 300);
+    }
+
+    async _doCompanionSearch(term) {
+        try {
+            const results = await searchEmployees({ searchTerm: term });
+            this.companionSearchResults = (results || []).map(emp => ({
+                id: emp.Id,
+                name: emp.Name,
+                subtitle: [emp.Employee_Code__c, emp.Designation__c].filter(Boolean).join(' - ')
+            }));
+            this.showCompanionDropdown = this.companionSearchResults.length > 0;
+        } catch (error) {
+            console.error('DayStartEnd: Companion search error', error);
+            this.companionSearchResults = [];
+            this.showCompanionDropdown = false;
+        }
+    }
+
+    handleCompanionSelect(event) {
+        const selectedId = event.currentTarget.dataset.id;
+        const selected = this.companionSearchResults.find(e => e.id === selectedId);
+        if (selected) {
+            this.companionId = selected.id;
+            this.companionName = selected.name;
+            this.companionSearchTerm = selected.name;
+            this.showCompanionDropdown = false;
+        }
+    }
+
+    clearCompanion() {
+        this.companionId = null;
+        this.companionName = '';
+        this.companionSearchTerm = '';
+        this.companionSearchResults = [];
+        this.showCompanionDropdown = false;
     }
 
     // ══════════════════════════════════════════════════════════════════

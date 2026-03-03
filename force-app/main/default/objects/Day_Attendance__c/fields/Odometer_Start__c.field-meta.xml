@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Odometer_Start__c</fullName>
+    <label>Odometer Start</label>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>1</scale>
+    <required>false</required>
+    <description>Vehicle odometer reading at the start of the day (km)</description>
+</CustomField>

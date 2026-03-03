@@ -44,6 +44,8 @@ private class DFO_DayAttendance_Service_Test {
         request.batteryLevel = 85;
         request.networkStatus = '4G';
         request.deviceInfo = 'Android 13 / Test Device';
+        request.odometerStart = 12500.0;
+        request.withCompanion = false;
 
         Test.startTest();
         try {
@@ -97,6 +99,8 @@ private class DFO_DayAttendance_Service_Test {
         request.batteryLevel = 80;
         request.networkStatus = 'WiFi';
         request.deviceInfo = 'Test Device';
+        request.odometerStart = 12600.0;
+        request.withCompanion = false;
 
         try {
             DFO_DayAttendance_Service.startDay(request);
@@ -140,6 +144,7 @@ private class DFO_DayAttendance_Service_Test {
         request.endLongitude = 72.8800;
         request.endAccuracy = 15.0;
         request.remarks = 'Good day, all outlets covered.';
+        request.odometerEnd = 12650.0;
 
         Test.startTest();
         try {

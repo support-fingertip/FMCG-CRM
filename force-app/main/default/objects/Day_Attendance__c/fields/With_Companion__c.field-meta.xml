@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>With_Companion__c</fullName>
+    <label>With Companion</label>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>Indicates whether the salesperson is accompanied by a companion for the day</description>
+</CustomField>
