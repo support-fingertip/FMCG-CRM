@@ -16,7 +16,7 @@
     </values>
     <values>
         <field>Package_Tier__c</field>
-        <value xsi:type="xsd:string">Professional</value>
+        <value xsi:type="xsd:string">Pro</value>
     </values>
     <values>
         <field>Description__c</field>
