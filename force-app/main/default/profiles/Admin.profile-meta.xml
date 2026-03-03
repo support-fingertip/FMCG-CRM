@@ -5040,6 +5040,42 @@
         <apexPage>InvoicePDF</apexPage>
         <enabled>true</enabled>
     </pageAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>BPM_JourneyPlan_Effective_Dates</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>BPM_Visit_AdHoc_Detection</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>DFO_AutoDayEnd</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>OMS_Collection_Ledger_Entry</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>OMS_Invoice_Generation</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>OMS_SalesOrder_AutoApproval</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>OVE_NewOutlet_Onboarding</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>OVE_Visit_Completion_Summary</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>SPM_Scheme_Auto_Deactivation</flow>
+    </flowAccesses>
     <recordTypeVisibilities>
         <default>false</default>
         <recordType>Account.Distributor</recordType>
