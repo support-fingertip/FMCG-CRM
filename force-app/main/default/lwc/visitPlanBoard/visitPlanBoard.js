@@ -95,9 +95,12 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
                 getCurrentDayAttendance({ userId: this.currentUserId })
             ]);
 
-            this.visits = this.processVisits(visitsResult || []);
             this.visitConfig = configResult || {};
             this.dayAttendanceId = dayAttendance ? dayAttendance.Id : null;
+
+            // Merge actual visits with planned outlets from journey plan
+            const actualVisits = visitsResult || [];
+            await this._mergeWithPlannedVisits(actualVisits);
             this.hasLoadedOnce = true;
         } catch (error) {
             this.showToast('Error', 'Failed to load visits: ' + this.reduceErrors(error), 'error');
@@ -109,9 +112,66 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     async refreshVisits() {
         try {
             const visitsResult = await getTodaysVisits({ userId: this.currentUserId });
-            this.visits = this.processVisits(visitsResult || []);
+            const actualVisits = visitsResult || [];
+            await this._mergeWithPlannedVisits(actualVisits);
         } catch (error) {
             console.error('Auto-refresh failed:', error);
+        }
+    }
+
+    async _mergeWithPlannedVisits(actualVisits) {
+        const processedVisits = this.processVisits(actualVisits);
+
+        // Load planned outlets from journey plan
+        try {
+            const today = new Date();
+            const todayStr = today.getFullYear() + '-' +
+                String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                String(today.getDate()).padStart(2, '0');
+            const plannedResult = await getPlannedVisits({
+                userId: this.currentUserId,
+                visitDate: todayStr
+            });
+
+            if (plannedResult && plannedResult.length > 0) {
+                // Find accounts that already have a Visit__c record today
+                const visitedAccountIds = new Set(
+                    actualVisits.map(v => v.Account__c)
+                );
+
+                // Add planned outlets that don't have visits yet as synthetic 'Planned' entries
+                const plannedEntries = plannedResult
+                    .filter(po => !visitedAccountIds.has(po.accountId))
+                    .map((po, idx) => ({
+                        Id: 'planned_' + po.accountId + '_' + idx,
+                        Account__c: po.accountId,
+                        Account__r: { Name: po.accountName, BillingCity: po.city || '' },
+                        Beat__c: po.beatId,
+                        Beat__r: { Name: po.beatName },
+                        Visit_Status__c: VISIT_STATUS.PLANNED,
+                        Visit_Sequence__c: po.sequence || (idx + 1),
+                        Is_Planned__c: true,
+                        Is_Ad_Hoc__c: false,
+                        _journeyPlanDayId: po.journeyPlanDayId,
+                        _isFromPlan: true,
+                        beatName: po.beatName || '',
+                        outletName: po.accountName || 'Unknown Outlet',
+                        fullAddress: po.city || '',
+                        truncatedAddress: po.city || 'No address',
+                        checkInTimeDisplay: '--',
+                        checkOutTimeDisplay: '--',
+                        durationDisplay: '--',
+                        orderValueFormatted: '',
+                        collectionFormatted: ''
+                    }));
+
+                this.visits = [...plannedEntries, ...processedVisits];
+            } else {
+                this.visits = processedVisits;
+            }
+        } catch (err) {
+            console.error('Failed to load planned visits:', err);
+            this.visits = processedVisits;
         }
     }
 
@@ -131,6 +191,7 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
                 outletName: accountName,
                 fullAddress: fullAddress,
                 truncatedAddress: truncatedAddress,
+                beatName: visit.Beat__r ? visit.Beat__r.Name : '',
                 checkInTimeDisplay: this.formatTime(visit.Check_In_Time__c),
                 checkOutTimeDisplay: this.formatTime(visit.Check_Out_Time__c),
                 durationDisplay: this.formatDuration(visit.Duration_Minutes__c),
@@ -397,8 +458,11 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
                 address: [acct.BillingStreet, acct.BillingCity].filter(Boolean).join(', ') || 'No address'
             }));
             this.showAdHocDropdown = this.adHocSearchResults.length > 0;
+            if (!this.showAdHocDropdown) {
+                this.showToast('Info', 'No outlets found matching "' + term + '"', 'info');
+            }
         } catch (error) {
-            console.error('VisitPlanBoard: Outlet search error', error);
+            this.showToast('Error', 'Outlet search failed: ' + this.reduceErrors(error), 'error');
             this.adHocSearchResults = [];
             this.showAdHocDropdown = false;
         }

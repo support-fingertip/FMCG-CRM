@@ -110,10 +110,15 @@
                                                 <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
                                                 <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
                                                 <div class="card-footer">
-                                                    <button class="skip-button" data-id={visit.Id} onclick={handleSkipClick}>
-                                                        <lightning-icon icon-name="utility:ban" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                        Skip
-                                                    </button>
+                                                    <template if:true={visit.beatName}>
+                                                        <span class="slds-text-body_small slds-text-color_weak">{visit.beatName}</span>
+                                                    </template>
+                                                    <template if:false={visit._isFromPlan}>
+                                                        <button class="skip-button" data-id={visit.Id} onclick={handleSkipClick}>
+                                                            <lightning-icon icon-name="utility:ban" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                            Skip
+                                                        </button>
+                                                    </template>
                                                 </div>
                                             </div>
                                         </template>

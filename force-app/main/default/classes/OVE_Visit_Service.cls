@@ -467,18 +467,18 @@ public without sharing class OVE_Visit_Service {
         String dayOfWeek = getDayOfWeek(visitDate);
         List<Map<String, Object>> planned = new List<Map<String, Object>>();
 
-        // Get active journey plan day for this user and day of week
+        // Get journey plan days for this user and date — include Draft, Approved, and Active plans
         List<Journey_Plan_Day__c> jpDays = [
             SELECT Id, Beat__c, Beat__r.Name
             FROM Journey_Plan_Day__c
             WHERE Journey_Plan__c IN (
                 SELECT Id FROM Journey_Plan__c
                 WHERE Salesperson__c = :targetUserId
-                  AND Status__c = 'Active'
+                  AND Status__c IN ('Draft', 'Approved', 'Active')
                   AND Effective_From__c <= :visitDate
                   AND Effective_To__c >= :visitDate
             )
-            AND Day_of_Week__c = :dayOfWeek
+            AND (Plan_Date__c = :visitDate OR Day_of_Week__c = :dayOfWeek)
         ];
 
         if (jpDays.isEmpty()) {
@@ -848,8 +848,15 @@ public without sharing class OVE_Visit_Service {
     }
 
     private static String getDayOfWeek(Date d) {
-        DateTime dt = DateTime.newInstance(d, Time.newInstance(0, 0, 0, 0));
-        return dt.format('EEEE');
+        // Locale-independent calculation — dt.format('EEEE') returns localized
+        // day names (e.g. Hindi) which won't match English picklist values.
+        Date refDate = Date.newInstance(2000, 1, 1); // January 1, 2000 was a Saturday
+        Integer dayIndex = Math.mod(refDate.daysBetween(d), 7);
+        if (dayIndex < 0) dayIndex += 7;
+        List<String> dayNames = new List<String>{
+            'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
+        };
+        return dayNames[dayIndex];
     }
 
     private static String formatCurrency(Decimal value) {
