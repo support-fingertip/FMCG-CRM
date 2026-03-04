@@ -132,7 +132,7 @@ public without sharing class VisitManagerController {
     // 9. EMPLOYEE SEARCH (companion)
     // ──────────────────────────────────────────────────
     @AuraEnabled
-    public static List<Map<String, Object>> searchEmployees(String searchTerm) {
+    public static List<Employee__c> searchEmployees(String searchTerm) {
         return DayAttendanceController.searchEmployees(searchTerm);
     }
 
@@ -252,7 +252,7 @@ public without sharing class VisitManagerController {
 
         // Return orders for this visit
         List<Return_Order__c> returns = [
-            SELECT Id, Name, Total_Amount__c, Status__c, Return_Reason__c, CreatedDate
+            SELECT Id, Name, Total_Return_Amount__c, Status__c, Return_Reason__c, CreatedDate
             FROM Return_Order__c
             WHERE Visit__c = :visitId AND Status__c != 'Cancelled'
             ORDER BY CreatedDate DESC

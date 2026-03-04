@@ -632,7 +632,7 @@ export default class VisitManager extends LightningElement {
     get activeReturns() {
         return (this.activeVisitSummary.returns || []).map(r => ({
             ...r,
-            amountFormatted: INR.format(r.Total_Amount__c || 0)
+            amountFormatted: INR.format(r.Total_Return_Amount__c || 0)
         }));
     }
     get hasActiveOrders() { return this.activeOrders.length > 0; }
@@ -704,10 +704,10 @@ export default class VisitManager extends LightningElement {
     handleCheckoutClick() {
         // Mandatory checklist
         this.checklistItems = [
-            { id: 'stock', label: 'Stock check completed', checked: false },
-            { id: 'display', label: 'Product display verified', checked: false },
-            { id: 'feedback', label: 'Retailer feedback captured', checked: false },
-            { id: 'scheme', label: 'Scheme communication done', checked: false }
+            { id: 'stock', label: 'Stock check completed', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
+            { id: 'display', label: 'Product display verified', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
+            { id: 'feedback', label: 'Retailer feedback captured', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
+            { id: 'scheme', label: 'Scheme communication done', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' }
         ];
         this.isProductive = true;
         this.nonProductiveReason = '';
@@ -719,9 +719,18 @@ export default class VisitManager extends LightningElement {
 
     handleChecklistToggle(e) {
         const id = e.currentTarget.dataset.id;
-        this.checklistItems = this.checklistItems.map(c =>
-            c.id === id ? { ...c, checked: !c.checked } : c
-        );
+        this.checklistItems = this.checklistItems.map(c => {
+            if (c.id === id) {
+                const checked = !c.checked;
+                return {
+                    ...c,
+                    checked,
+                    boxClass: checked ? 'vm-check-box vm-check-done' : 'vm-check-box',
+                    labelClass: checked ? 'vm-check-label vm-check-label-done' : 'vm-check-label'
+                };
+            }
+            return c;
+        });
     }
 
     handleProductiveChange(e) {

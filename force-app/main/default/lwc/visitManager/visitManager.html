@@ -574,12 +574,12 @@
                         <template for:each={checklistItems} for:item="item">
                             <div class="vm-checklist-item" key={item.id}
                                 data-id={item.id} onclick={handleChecklistToggle}>
-                                <span class={item.checked ? 'vm-check-box vm-check-done' : 'vm-check-box'}>
+                                <span class={item.boxClass}>
                                     <template if:true={item.checked}>
                                         <lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon>
                                     </template>
                                 </span>
-                                <span class={item.checked ? 'vm-check-label vm-check-label-done' : 'vm-check-label'}>
+                                <span class={item.labelClass}>
                                     {item.label}
                                 </span>
                             </div>
