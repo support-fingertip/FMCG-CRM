@@ -322,6 +322,7 @@ public without sharing class VisitManagerController {
         // Create a Visit record in Skipped status for this planned outlet
         Visit__c visit = new Visit__c();
         visit.Account__c = accountId;
+        visit.Outlet__c = accountId;
         visit.Salesperson__c = userId;
         visit.Beat__c = beatId;
         visit.Day_Attendance__c = attendanceId;
