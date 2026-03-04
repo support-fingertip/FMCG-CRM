@@ -4,6 +4,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getInitialContext from '@salesforce/apex/VisitManagerController.getInitialContext';
 import startDayApex from '@salesforce/apex/VisitManagerController.startDay';
 import endDayApex from '@salesforce/apex/VisitManagerController.endDay';
+import selectBeatApex from '@salesforce/apex/VisitManagerController.selectBeat';
 import switchBeatApex from '@salesforce/apex/VisitManagerController.switchBeat';
 import checkInVisitApex from '@salesforce/apex/VisitManagerController.checkInVisit';
 import checkOutVisitApex from '@salesforce/apex/VisitManagerController.checkOutVisit';
@@ -18,6 +19,7 @@ import getOutletSummaryApex from '@salesforce/apex/VisitManagerController.getOut
 const SCREEN = {
     LOADING: 'loading',
     DAY_START: 'day_start',
+    BEAT_SELECT: 'beat_select',
     VISIT_BOARD: 'visit_board',
     VISIT_ACTIVE: 'visit_active'
 };
@@ -169,21 +171,28 @@ export default class VisitManager extends LightningElement {
                 this.activeBeatId = ctx.currentBeatId || null;
                 this.dayStartTime = new Date(ctx.dayAttendance.Day_Start_Time__c || ctx.dayAttendance.Start_Time__c);
 
-                this._processVisits(ctx.todaysVisits || [], ctx.plannedVisits || []);
-
-                // Auto-redirect to in-progress visit
-                if (ctx.hasActiveVisit && ctx.activeVisit) {
-                    this.activeVisit = ctx.activeVisit;
-                    this.activeVisitSummary = ctx.activeVisitSummary || {};
-                    this.visitActivities = this._processActivities(ctx.visitActivities || []);
-                    this._startVisitTimer();
-                    this._loadOutletSummary(ctx.activeVisit.Account__c);
-                    this.currentScreen = SCREEN.VISIT_ACTIVE;
+                // If day started but user hasn't explicitly selected a beat yet
+                // (Original_Beat__c is set by selectBeat to confirm user's choice)
+                const beatConfirmed = ctx.dayAttendance.Original_Beat__c != null;
+                if (!beatConfirmed) {
+                    this.currentScreen = SCREEN.BEAT_SELECT;
                 } else {
-                    this.currentScreen = SCREEN.VISIT_BOARD;
-                }
+                    this._processVisits(ctx.todaysVisits || [], ctx.plannedVisits || []);
 
-                this._startStatsRefresh();
+                    // Auto-redirect to in-progress visit
+                    if (ctx.hasActiveVisit && ctx.activeVisit) {
+                        this.activeVisit = ctx.activeVisit;
+                        this.activeVisitSummary = ctx.activeVisitSummary || {};
+                        this.visitActivities = this._processActivities(ctx.visitActivities || []);
+                        this._startVisitTimer();
+                        this._loadOutletSummary(ctx.activeVisit.Account__c);
+                        this.currentScreen = SCREEN.VISIT_ACTIVE;
+                    } else {
+                        this.currentScreen = SCREEN.VISIT_BOARD;
+                    }
+
+                    this._startStatsRefresh();
+                }
             } else {
                 this.currentScreen = SCREEN.DAY_START;
             }
@@ -200,6 +209,7 @@ export default class VisitManager extends LightningElement {
     // ═══════════════════════════════════════════════════
     get isLoadingScreen() { return this.currentScreen === SCREEN.LOADING; }
     get isDayStartScreen() { return this.currentScreen === SCREEN.DAY_START; }
+    get isBeatSelectScreen() { return this.currentScreen === SCREEN.BEAT_SELECT; }
     get isVisitBoardScreen() { return this.currentScreen === SCREEN.VISIT_BOARD; }
     get isVisitActiveScreen() { return this.currentScreen === SCREEN.VISIT_ACTIVE; }
 
@@ -297,47 +307,10 @@ export default class VisitManager extends LightningElement {
     }
 
     // ═══════════════════════════════════════════════════
-    // BEAT SELECTION (Day Start Screen)
-    // ═══════════════════════════════════════════════════
-    get hasBeats() { return this.todaysBeats.length > 0; }
-    get selectedBeatName() {
-        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
-        return b ? b.beatName : '';
-    }
-    get selectedBeatOutletCount() {
-        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
-        return b ? (b.outletCount || 0) : 0;
-    }
-
-    get beatsWithSelection() {
-        return this.todaysBeats.map(b => ({
-            ...b,
-            cardClass: b.beatId === this.selectedBeatId ? 'vm-beat-card vm-beat-selected' : 'vm-beat-card',
-            isSelected: b.beatId === this.selectedBeatId
-        }));
-    }
-
-    handleBeatSelect(e) {
-        this.selectedBeatId = e.currentTarget.dataset.beatId;
-    }
-
-    handleBeatConfirm() {
-        if (!this.selectedBeatId) {
-            this._toast('Warning', 'Please select a beat first.', 'warning');
-            return;
-        }
-        this.showBeatConfirmModal = true;
-    }
-
-    handleBeatConfirmClose() {
-        this.showBeatConfirmModal = false;
-    }
-
-    // ═══════════════════════════════════════════════════
     // DAY START
     // ═══════════════════════════════════════════════════
     get startDayDisabled() {
-        return this.isProcessing || !this.locationCaptured || !this.selectedBeatId ||
+        return this.isProcessing || !this.locationCaptured ||
             (this.config.selfieRequired && !this._startSelfieBase64);
     }
 
@@ -404,7 +377,6 @@ export default class VisitManager extends LightningElement {
 
     async handleStartDay() {
         if (this.startDayDisabled) return;
-        this.showBeatConfirmModal = false;
         this.isProcessing = true;
         try {
             await this._captureLocationAsync();
@@ -423,15 +395,108 @@ export default class VisitManager extends LightningElement {
 
             const result = await startDayApex({ dayJson: JSON.stringify(dayData) });
             this.dayAttendance = result;
-            this.activeBeatId = result.Beat__c || this.selectedBeatId;
             this.dayStartTime = new Date(result.Day_Start_Time__c || result.Start_Time__c);
+
+            this._toast('Success', 'Day started! Now select your beat.', 'success');
+            this.currentScreen = SCREEN.BEAT_SELECT;
+        } catch (err) {
+            this._toast('Error', 'Failed to start day: ' + this._err(err), 'error');
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // BEAT SELECTION (after day start)
+    // ═══════════════════════════════════════════════════
+    get hasBeats() { return this.todaysBeats.length > 0; }
+
+    get assignedBeats() {
+        return this.todaysBeats.filter(b => b.isAssigned);
+    }
+
+    get otherBeats() {
+        return this.todaysBeats.filter(b => !b.isAssigned);
+    }
+
+    get hasOtherBeats() { return this.otherBeats.length > 0; }
+
+    get selectedBeatName() {
+        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
+        return b ? b.beatName : '';
+    }
+
+    get selectedBeatOutletCount() {
+        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
+        return b ? (b.outletCount || 0) : 0;
+    }
+
+    get selectedBeatIsAssigned() {
+        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
+        return b ? b.isAssigned : false;
+    }
+
+    get beatsWithSelection() {
+        return this.todaysBeats.map(b => ({
+            ...b,
+            cardClass: b.beatId === this.selectedBeatId
+                ? 'vm-beat-card vm-beat-selected'
+                : b.isAssigned ? 'vm-beat-card vm-beat-assigned' : 'vm-beat-card',
+            isSelected: b.beatId === this.selectedBeatId
+        }));
+    }
+
+    get assignedBeatsWithSelection() {
+        return this.beatsWithSelection.filter(b => b.isAssigned);
+    }
+
+    get otherBeatsWithSelection() {
+        return this.beatsWithSelection.filter(b => !b.isAssigned);
+    }
+
+    get selectBeatDisabled() {
+        return this.isProcessing || !this.selectedBeatId;
+    }
+
+    handleBeatSelect(e) {
+        this.selectedBeatId = e.currentTarget.dataset.beatId;
+    }
+
+    handleBeatConfirm() {
+        if (!this.selectedBeatId) {
+            this._toast('Warning', 'Please select a beat first.', 'warning');
+            return;
+        }
+        this.showBeatConfirmModal = true;
+    }
+
+    handleBeatConfirmClose() {
+        this.showBeatConfirmModal = false;
+    }
+
+    async handleSelectBeatConfirm() {
+        if (!this.selectedBeatId || !this.dayAttendance) return;
+        this.showBeatConfirmModal = false;
+        this.isProcessing = true;
+        try {
+            const selectedBeat = this.todaysBeats.find(b => b.beatId === this.selectedBeatId);
+            const jpDayId = selectedBeat ? selectedBeat.journeyPlanDayId : null;
+
+            const result = await selectBeatApex({
+                attendanceId: this.dayAttendance.Id,
+                beatId: this.selectedBeatId,
+                journeyPlanDayId: jpDayId
+            });
+
+            this.dayAttendance = result;
+            this.activeBeatId = this.selectedBeatId;
 
             await this._refreshAllData();
             this._startStatsRefresh();
             this.currentScreen = SCREEN.VISIT_BOARD;
-            this._toast('Success', 'Day started! Beat: ' + this.selectedBeatName, 'success');
+            this._toast('Success', 'Beat selected: ' + this.selectedBeatName, 'success');
         } catch (err) {
-            this._toast('Error', 'Failed to start day: ' + this._err(err), 'error');
+            this._toast('Error', 'Failed to select beat: ' + this._err(err), 'error');
         } finally {
             this.isProcessing = false;
         }
@@ -952,13 +1017,13 @@ export default class VisitManager extends LightningElement {
                 newBeatId: this.switchBeatId,
                 reason: this.switchBeatReason
             });
-            this.dayAttendance = { ...this.dayAttendance, ...result };
+            this.dayAttendance = result;
             this.activeBeatId = this.switchBeatId;
 
             await this._refreshAllData();
             this.boardTab = 'planned';
-            const beatName = this.todaysBeats.find(b => b.beatId === this.switchBeatId);
-            this._toast('Success', 'Switched to ' + (beatName ? beatName.beatName : 'new beat'), 'success');
+            const beatObj = this.todaysBeats.find(b => b.beatId === this.switchBeatId);
+            this._toast('Success', 'Switched to ' + (beatObj ? beatObj.beatName : 'new beat'), 'success');
         } catch (err) {
             this._toast('Error', 'Failed to switch beat: ' + this._err(err), 'error');
         } finally {

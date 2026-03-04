@@ -195,6 +195,33 @@
     border-radius: 50%;
 }
 
+.vm-beat-assigned {
+    border-color: var(--vm-success);
+    background: var(--vm-green-tint);
+}
+
+.vm-beat-assigned-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--vm-success);
+    background: var(--vm-green-tint);
+    border: 1px solid var(--vm-success);
+    padding: 2px 8px;
+    border-radius: 10px;
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+}
+
+.vm-beat-jp {
+    font-size: 11px;
+    color: var(--vm-text-weak);
+    font-style: italic;
+}
+
 /* ================================================================
    BEAT CONFIRM MODAL
    ================================================================ */

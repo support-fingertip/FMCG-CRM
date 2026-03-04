@@ -55,7 +55,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 2. GET TODAY'S BEATS from Journey Plan
+    // 2. GET TODAY'S BEATS from Journey Plan + other user beats
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static List<Map<String, Object>> getTodaysBeats() {
@@ -64,7 +64,7 @@ public without sharing class VisitManagerController {
         String dayOfWeek = getDayOfWeek(today);
         List<Map<String, Object>> beats = new List<Map<String, Object>>();
 
-        // Get journey plan days for today
+        // Get journey plan days for today (assigned beats)
         List<Journey_Plan_Day__c> jpDays = [
             SELECT Id, Beat__c, Beat__r.Name, Beat__r.Beat_Code__c,
                    Journey_Plan__c, Journey_Plan__r.Name
@@ -80,29 +80,63 @@ public without sharing class VisitManagerController {
             AND Beat__c != null
         ];
 
-        if (jpDays.isEmpty()) {
-            return beats;
+        // Track assigned beat IDs (deduplicated)
+        Set<Id> assignedBeatIds = new Set<Id>();
+        Map<Id, Journey_Plan_Day__c> beatToJpDay = new Map<Id, Journey_Plan_Day__c>();
+        for (Journey_Plan_Day__c jpd : jpDays) {
+            if (!assignedBeatIds.contains(jpd.Beat__c)) {
+                assignedBeatIds.add(jpd.Beat__c);
+                beatToJpDay.put(jpd.Beat__c, jpd);
+            }
         }
 
-        // Get outlet counts per beat
-        Set<Id> beatIds = new Set<Id>();
-        Map<Id, Id> beatToJpDay = new Map<Id, Id>();
-        for (Journey_Plan_Day__c jpd : jpDays) {
-            beatIds.add(jpd.Beat__c);
-            beatToJpDay.put(jpd.Beat__c, jpd.Id);
+        // Get other unique beats from ALL journey plan days for this user
+        // (not just today — gives option to switch to other beats)
+        List<Journey_Plan_Day__c> allJpDays = [
+            SELECT Id, Beat__c, Beat__r.Name, Beat__r.Beat_Code__c,
+                   Journey_Plan__c, Journey_Plan__r.Name
+            FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c IN (
+                SELECT Id FROM Journey_Plan__c
+                WHERE Salesperson__c = :userId
+                  AND Status__c IN ('Draft', 'Approved', 'Active')
+                  AND Effective_From__c <= :today
+                  AND Effective_To__c >= :today
+            )
+            AND Beat__c != null
+            AND Beat__c NOT IN :assignedBeatIds
+        ];
+
+        // Deduplicate other beats
+        Set<Id> otherBeatIds = new Set<Id>();
+        Map<Id, Journey_Plan_Day__c> otherBeatToJpDay = new Map<Id, Journey_Plan_Day__c>();
+        for (Journey_Plan_Day__c jpd : allJpDays) {
+            if (!otherBeatIds.contains(jpd.Beat__c)) {
+                otherBeatIds.add(jpd.Beat__c);
+                otherBeatToJpDay.put(jpd.Beat__c, jpd);
+            }
         }
+
+        // Get outlet counts for all beats
+        Set<Id> allBeatIds = new Set<Id>();
+        allBeatIds.addAll(assignedBeatIds);
+        allBeatIds.addAll(otherBeatIds);
 
         Map<Id, Integer> beatOutletCounts = new Map<Id, Integer>();
-        for (AggregateResult ar : [
-            SELECT Beat__c beatId, COUNT(Id) cnt
-            FROM Beat_Outlet__c
-            WHERE Beat__c IN :beatIds AND Is_Active__c = true
-            GROUP BY Beat__c
-        ]) {
-            beatOutletCounts.put((Id)ar.get('beatId'), (Integer)ar.get('cnt'));
+        if (!allBeatIds.isEmpty()) {
+            for (AggregateResult ar : [
+                SELECT Beat__c beatId, COUNT(Id) cnt
+                FROM Beat_Outlet__c
+                WHERE Beat__c IN :allBeatIds AND Is_Active__c = true
+                GROUP BY Beat__c
+            ]) {
+                beatOutletCounts.put((Id)ar.get('beatId'), (Integer)ar.get('cnt'));
+            }
         }
 
-        for (Journey_Plan_Day__c jpd : jpDays) {
+        // Build assigned beats (isAssigned = true)
+        for (Id beatId : assignedBeatIds) {
+            Journey_Plan_Day__c jpd = beatToJpDay.get(beatId);
             Map<String, Object> beat = new Map<String, Object>();
             beat.put('beatId', jpd.Beat__c);
             beat.put('beatName', jpd.Beat__r.Name);
@@ -111,6 +145,22 @@ public without sharing class VisitManagerController {
             beat.put('journeyPlanName', jpd.Journey_Plan__r.Name);
             beat.put('outletCount', beatOutletCounts.containsKey(jpd.Beat__c)
                 ? beatOutletCounts.get(jpd.Beat__c) : 0);
+            beat.put('isAssigned', true);
+            beats.add(beat);
+        }
+
+        // Build other beats (isAssigned = false)
+        for (Id beatId : otherBeatIds) {
+            Journey_Plan_Day__c jpd = otherBeatToJpDay.get(beatId);
+            Map<String, Object> beat = new Map<String, Object>();
+            beat.put('beatId', jpd.Beat__c);
+            beat.put('beatName', jpd.Beat__r.Name);
+            beat.put('beatCode', jpd.Beat__r.Beat_Code__c);
+            beat.put('journeyPlanDayId', jpd.Id);
+            beat.put('journeyPlanName', jpd.Journey_Plan__r.Name);
+            beat.put('outletCount', beatOutletCounts.containsKey(jpd.Beat__c)
+                ? beatOutletCounts.get(jpd.Beat__c) : 0);
+            beat.put('isAssigned', false);
             beats.add(beat);
         }
 
@@ -134,6 +184,44 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
+    // 4B. SELECT BEAT (after day start)
+    // ──────────────────────────────────────────────────
+    @AuraEnabled
+    public static Day_Attendance__c selectBeat(Id attendanceId, Id beatId, Id journeyPlanDayId) {
+        if (beatId == null) {
+            throw new AuraHandledException('Please select a beat.');
+        }
+
+        List<Day_Attendance__c> records = [
+            SELECT Id, Beat__c, Original_Beat__c, Journey_Plan_Day__c,
+                   Beat_Switched__c, Beat_Switch_Reason__c
+            FROM Day_Attendance__c WHERE Id = :attendanceId LIMIT 1
+        ];
+        if (records.isEmpty()) {
+            throw new AuraHandledException('Day Attendance record not found.');
+        }
+
+        Day_Attendance__c da = records[0];
+        da.Beat__c = beatId;
+        da.Original_Beat__c = beatId;
+        da.Beat_Switched__c = false;
+        da.Beat_Switch_Reason__c = null;
+        if (journeyPlanDayId != null) {
+            da.Journey_Plan_Day__c = journeyPlanDayId;
+        }
+        update da;
+
+        // Re-query to get relationship fields
+        return [
+            SELECT Id, Beat__c, Beat__r.Name, Original_Beat__c, Original_Beat__r.Name,
+                   Beat_Switched__c, Beat_Switch_Reason__c, Journey_Plan_Day__c,
+                   Journey_Plan_Day__r.Name, Journey_Plan_Day__r.Journey_Plan__c,
+                   Journey_Plan_Day__r.Journey_Plan__r.Name
+            FROM Day_Attendance__c WHERE Id = :attendanceId LIMIT 1
+        ];
+    }
+
+    // ──────────────────────────────────────────────────
     // 5. SWITCH BEAT
     // ──────────────────────────────────────────────────
     @AuraEnabled
@@ -143,7 +231,8 @@ public without sharing class VisitManagerController {
         }
 
         List<Day_Attendance__c> records = [
-            SELECT Id, Beat__c, Original_Beat__c, Beat_Switched__c
+            SELECT Id, Beat__c, Original_Beat__c, Beat_Switched__c,
+                   Journey_Plan_Day__c
             FROM Day_Attendance__c WHERE Id = :attendanceId LIMIT 1
         ];
         if (records.isEmpty()) {
@@ -159,12 +248,36 @@ public without sharing class VisitManagerController {
         da.Beat__c = newBeatId;
         da.Beat_Switched__c = true;
         da.Beat_Switch_Reason__c = reason;
+
+        // Update Journey_Plan_Day__c if available for the new beat
+        Id userId = UserInfo.getUserId();
+        Date today = Date.today();
+        String dayOfWeek = getDayOfWeek(today);
+        List<Journey_Plan_Day__c> jpDays = [
+            SELECT Id FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c IN (
+                SELECT Id FROM Journey_Plan__c
+                WHERE Salesperson__c = :userId
+                  AND Status__c IN ('Draft', 'Approved', 'Active')
+                  AND Effective_From__c <= :today
+                  AND Effective_To__c >= :today
+            )
+            AND Beat__c = :newBeatId
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+        if (!jpDays.isEmpty()) {
+            da.Journey_Plan_Day__c = jpDays[0].Id;
+        }
+
         update da;
 
         // Re-query to get relationship fields
         return [
             SELECT Id, Beat__c, Beat__r.Name, Original_Beat__c, Original_Beat__r.Name,
-                   Beat_Switched__c, Beat_Switch_Reason__c
+                   Beat_Switched__c, Beat_Switch_Reason__c,
+                   Journey_Plan_Day__c, Journey_Plan_Day__r.Name,
+                   Journey_Plan_Day__r.Journey_Plan__c, Journey_Plan_Day__r.Journey_Plan__r.Name
             FROM Day_Attendance__c WHERE Id = :attendanceId LIMIT 1
         ];
     }
