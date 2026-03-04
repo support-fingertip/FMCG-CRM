@@ -109,6 +109,206 @@
 }
 
 /* ================================================================
+   BEAT SELECTION GRID
+   ================================================================ */
+.vm-beat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.vm-beat-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--vm-white);
+    border: 2px solid var(--vm-border);
+    border-radius: var(--vm-radius-lg);
+    cursor: pointer;
+    transition: var(--vm-transition);
+    position: relative;
+}
+
+.vm-beat-card:hover {
+    border-color: var(--vm-primary);
+    box-shadow: var(--vm-shadow-md);
+    transform: translateY(-2px);
+}
+
+.vm-beat-selected {
+    border-color: var(--vm-primary);
+    background: var(--vm-blue-tint);
+    box-shadow: 0 0 0 3px rgba(1, 118, 211, 0.15);
+}
+
+.vm-beat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    background: var(--vm-bg);
+    border-radius: var(--vm-radius-md);
+}
+
+.vm-beat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.vm-beat-name-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--vm-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vm-beat-code {
+    font-size: 11px;
+    color: var(--vm-text-secondary);
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+}
+
+.vm-beat-outlets {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vm-primary);
+}
+
+.vm-beat-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--vm-primary);
+    border-radius: 50%;
+}
+
+/* ================================================================
+   BEAT CONFIRM MODAL
+   ================================================================ */
+.vm-confirm-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px 0;
+    gap: 8px;
+}
+
+.vm-confirm-icon {
+    margin-bottom: 8px;
+}
+
+.vm-confirm-text {
+    font-size: 14px;
+    color: var(--vm-text-secondary);
+    margin: 0;
+}
+
+.vm-confirm-beat-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--vm-primary-dark);
+    margin: 0;
+}
+
+.vm-confirm-outlets {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vm-primary);
+    margin: 0;
+}
+
+.vm-confirm-note {
+    font-size: 12px;
+    color: var(--vm-text-weak);
+    margin: 8px 0 0;
+}
+
+/* ================================================================
+   SECTION ICON
+   ================================================================ */
+.vm-section-icon {
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* ================================================================
+   SWITCH BEAT BUTTON
+   ================================================================ */
+.vm-btn-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--vm-white);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--vm-radius-sm);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--vm-transition);
+}
+
+.vm-btn-switch:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ================================================================
+   NAVIGATION BACK BUTTON
+   ================================================================ */
+.vm-nav-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--vm-radius-sm);
+    cursor: pointer;
+    transition: var(--vm-transition);
+    margin-right: 4px;
+}
+
+.vm-nav-back:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ================================================================
+   LOCKED / NEXT VISIT ROW STATES
+   ================================================================ */
+.vm-row-next {
+    border-left-color: var(--vm-success);
+    background: var(--vm-green-tint);
+}
+
+.vm-row-locked {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.vm-row-locked .vm-btn-skip-sm {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+/* ================================================================
    CARD & SECTION
    ================================================================ */
 .vm-card {
@@ -1226,6 +1426,10 @@
         font-size: 22px;
     }
 
+    .vm-beat-grid {
+        grid-template-columns: 1fr;
+    }
+
     .vm-stats-grid {
         grid-template-columns: repeat(3, 1fr);
     }
@@ -1273,10 +1477,39 @@
         margin: 0 -4px 10px;
         padding: 8px 10px;
         border-radius: 0 0 var(--vm-radius-md) var(--vm-radius-md);
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .vm-header-right {
+        gap: 6px;
+    }
+
+    .vm-btn-switch {
+        padding: 6px 10px;
+        font-size: 11px;
     }
 
     .vm-header-title {
         font-size: 14px;
+    }
+
+    .vm-beat-card {
+        padding: 12px;
+    }
+
+    .vm-beat-name-text {
+        font-size: 14px;
+    }
+
+    .vm-beat-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+    }
+
+    .vm-row-locked {
+        opacity: 0.4;
     }
 
     .vm-clock {

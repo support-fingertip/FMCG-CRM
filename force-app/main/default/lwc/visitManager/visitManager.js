@@ -4,6 +4,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getInitialContext from '@salesforce/apex/VisitManagerController.getInitialContext';
 import startDayApex from '@salesforce/apex/VisitManagerController.startDay';
 import endDayApex from '@salesforce/apex/VisitManagerController.endDay';
+import switchBeatApex from '@salesforce/apex/VisitManagerController.switchBeat';
 import checkInVisitApex from '@salesforce/apex/VisitManagerController.checkInVisit';
 import checkOutVisitApex from '@salesforce/apex/VisitManagerController.checkOutVisit';
 import skipVisitApex from '@salesforce/apex/VisitManagerController.skipVisit';
@@ -18,8 +19,7 @@ const SCREEN = {
     LOADING: 'loading',
     DAY_START: 'day_start',
     VISIT_BOARD: 'visit_board',
-    VISIT_ACTIVE: 'visit_active',
-    DAY_END: 'day_end'
+    VISIT_ACTIVE: 'visit_active'
 };
 
 const VISIT_STATUS = {
@@ -59,6 +59,12 @@ export default class VisitManager extends LightningElement {
     @track batteryLevel = 0;
     @track networkStatus = 'Online';
 
+    // ── BEATS ──
+    @track todaysBeats = [];
+    @track selectedBeatId = null;
+    @track activeBeatId = null;
+    @track showBeatConfirmModal = false;
+
     // ── DAY START FORM ──
     @track odometerStart = null;
     @track withCompanion = false;
@@ -72,7 +78,6 @@ export default class VisitManager extends LightningElement {
 
     // ── VISITS ──
     @track allVisits = [];
-    @track plannedOutlets = [];
     @track boardTab = 'planned';
 
     // ── ACTIVE VISIT ──
@@ -95,6 +100,11 @@ export default class VisitManager extends LightningElement {
     @track showSkipModal = false;
     @track skipVisitId = null;
     @track skipReason = '';
+
+    // ── SWITCH BEAT ──
+    @track showSwitchBeatModal = false;
+    @track switchBeatId = null;
+    @track switchBeatReason = '';
 
     // ── CHECKOUT ──
     @track showCheckoutModal = false;
@@ -147,15 +157,21 @@ export default class VisitManager extends LightningElement {
         try {
             const ctx = await getInitialContext();
             this.config = ctx.config || {};
+            this.todaysBeats = (ctx.todaysBeats || []).map(b => ({
+                ...b,
+                cardClass: 'vm-beat-card',
+                outletsLabel: (b.outletCount || 0) + ' Outlets'
+            }));
 
             if (ctx.isDayStarted && ctx.dayAttendance) {
                 this.dayAttendance = ctx.dayAttendance;
                 this.dayStats = ctx.dayStats || {};
+                this.activeBeatId = ctx.currentBeatId || null;
                 this.dayStartTime = new Date(ctx.dayAttendance.Day_Start_Time__c || ctx.dayAttendance.Start_Time__c);
 
                 this._processVisits(ctx.todaysVisits || [], ctx.plannedVisits || []);
 
-                // KEY REQUIREMENT: Auto-redirect to in-progress visit
+                // Auto-redirect to in-progress visit
                 if (ctx.hasActiveVisit && ctx.activeVisit) {
                     this.activeVisit = ctx.activeVisit;
                     this.activeVisitSummary = ctx.activeVisitSummary || {};
@@ -281,10 +297,47 @@ export default class VisitManager extends LightningElement {
     }
 
     // ═══════════════════════════════════════════════════
+    // BEAT SELECTION (Day Start Screen)
+    // ═══════════════════════════════════════════════════
+    get hasBeats() { return this.todaysBeats.length > 0; }
+    get selectedBeatName() {
+        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
+        return b ? b.beatName : '';
+    }
+    get selectedBeatOutletCount() {
+        const b = this.todaysBeats.find(bt => bt.beatId === this.selectedBeatId);
+        return b ? (b.outletCount || 0) : 0;
+    }
+
+    get beatsWithSelection() {
+        return this.todaysBeats.map(b => ({
+            ...b,
+            cardClass: b.beatId === this.selectedBeatId ? 'vm-beat-card vm-beat-selected' : 'vm-beat-card',
+            isSelected: b.beatId === this.selectedBeatId
+        }));
+    }
+
+    handleBeatSelect(e) {
+        this.selectedBeatId = e.currentTarget.dataset.beatId;
+    }
+
+    handleBeatConfirm() {
+        if (!this.selectedBeatId) {
+            this._toast('Warning', 'Please select a beat first.', 'warning');
+            return;
+        }
+        this.showBeatConfirmModal = true;
+    }
+
+    handleBeatConfirmClose() {
+        this.showBeatConfirmModal = false;
+    }
+
+    // ═══════════════════════════════════════════════════
     // DAY START
     // ═══════════════════════════════════════════════════
     get startDayDisabled() {
-        return this.isProcessing || !this.locationCaptured ||
+        return this.isProcessing || !this.locationCaptured || !this.selectedBeatId ||
             (this.config.selfieRequired && !this._startSelfieBase64);
     }
 
@@ -310,7 +363,9 @@ export default class VisitManager extends LightningElement {
     async _doCompanionSearch(term) {
         try {
             const results = await searchEmployeesApex({ searchTerm: term });
-            this.companionSearchResults = results || [];
+            this.companionSearchResults = (results || []).map(emp => ({
+                id: emp.Id, name: emp.Name, subtitle: emp.Employee_Code__c || ''
+            }));
             this.showCompanionDropdown = this.companionSearchResults.length > 0;
         } catch (err) { this.showCompanionDropdown = false; }
     }
@@ -349,6 +404,7 @@ export default class VisitManager extends LightningElement {
 
     async handleStartDay() {
         if (this.startDayDisabled) return;
+        this.showBeatConfirmModal = false;
         this.isProcessing = true;
         try {
             await this._captureLocationAsync();
@@ -367,13 +423,13 @@ export default class VisitManager extends LightningElement {
 
             const result = await startDayApex({ dayJson: JSON.stringify(dayData) });
             this.dayAttendance = result;
+            this.activeBeatId = result.Beat__c || this.selectedBeatId;
             this.dayStartTime = new Date(result.Day_Start_Time__c || result.Start_Time__c);
 
-            // Reload full context
             await this._refreshAllData();
             this._startStatsRefresh();
             this.currentScreen = SCREEN.VISIT_BOARD;
-            this._toast('Success', 'Day started successfully!', 'success');
+            this._toast('Success', 'Day started! Beat: ' + this.selectedBeatName, 'success');
         } catch (err) {
             this._toast('Error', 'Failed to start day: ' + this._err(err), 'error');
         } finally {
@@ -432,12 +488,14 @@ export default class VisitManager extends LightningElement {
         };
     }
 
-    // Board data getters
+    // Board data getters — filtered by active beat
     get plannedVisits() {
         return this.allVisits
-            .filter(v => v.Visit_Status__c === VISIT_STATUS.PLANNED)
+            .filter(v => v.Visit_Status__c === VISIT_STATUS.PLANNED &&
+                (!this.activeBeatId || v.Beat__c === this.activeBeatId))
             .sort((a, b) => (a.Visit_Sequence__c || 0) - (b.Visit_Sequence__c || 0));
     }
+
     get activeVisits() {
         return this.allVisits.filter(v =>
             v.Visit_Status__c === VISIT_STATUS.CHECKED_IN ||
@@ -451,6 +509,27 @@ export default class VisitManager extends LightningElement {
         return this.allVisits.filter(v => v.Visit_Status__c === VISIT_STATUS.SKIPPED);
     }
 
+    // Sequence helpers — checks if a visit is NEXT in line (only first planned can check in)
+    get nextSequenceVisitId() {
+        const pv = this.plannedVisits;
+        return pv.length > 0 ? pv[0].Id : null;
+    }
+
+    isNextInSequence(visitId) {
+        return visitId === this.nextSequenceVisitId;
+    }
+
+    // Enriched planned visits with can-check-in flag
+    get plannedVisitsEnriched() {
+        const nextId = this.nextSequenceVisitId;
+        return this.plannedVisits.map(v => ({
+            ...v,
+            canCheckIn: v.Id === nextId && v._isFromPlan,
+            isLocked: v.Id !== nextId,
+            rowClass: v.Id === nextId ? 'vm-visit-row vm-row-planned vm-row-next' : 'vm-visit-row vm-row-planned vm-row-locked'
+        }));
+    }
+
     // Stats
     get statCompleted() { return this.completedVisits.length; }
     get statPlanned() { return this.plannedVisits.length; }
@@ -460,8 +539,11 @@ export default class VisitManager extends LightningElement {
     get statOrders() { return this.dayStats.Orders_Today__c || 0; }
     get statOrderValue() { return INR.format(this.dayStats.Order_Value__c || 0); }
     get statCollection() { return INR.format(this.dayStats.Collection_Total__c || 0); }
-    get statDistance() { return (this.dayStats.Distance_Covered__c || 0).toFixed(1); }
-    get currentBeatName() { return this.dayAttendance && this.dayAttendance.Beat__r ? this.dayAttendance.Beat__r.Name : 'No Beat Assigned'; }
+    get currentBeatName() {
+        if (this.dayAttendance && this.dayAttendance.Beat__r) return this.dayAttendance.Beat__r.Name;
+        const b = this.todaysBeats.find(bt => bt.beatId === this.activeBeatId);
+        return b ? b.beatName : 'No Beat Assigned';
+    }
 
     // Board tabs
     get isPlannedTab() { return this.boardTab === 'planned'; }
@@ -474,27 +556,21 @@ export default class VisitManager extends LightningElement {
     handleBoardTab(e) { this.boardTab = e.currentTarget.dataset.tab; }
 
     // ═══════════════════════════════════════════════════
-    // CHECK-IN
+    // CHECK-IN (sequential enforcement)
     // ═══════════════════════════════════════════════════
     async handleCheckIn(e) {
         e.stopPropagation();
+        const visitId = e.currentTarget.dataset.id;
         const accountId = e.currentTarget.dataset.accountId;
         const beatId = e.currentTarget.dataset.beatId;
         const jpdayId = e.currentTarget.dataset.jpdayId;
-        const seq = Number(e.currentTarget.dataset.sequence) || 0;
 
         if (!accountId) { this._toast('Error', 'No outlet found.', 'error'); return; }
 
-        // Sequence enforcement
-        if (seq > 0) {
-            const pending = this.plannedVisits.filter(v =>
-                (v.Visit_Sequence__c || 0) < seq && v.Visit_Status__c === VISIT_STATUS.PLANNED
-            );
-            if (pending.length > 0) {
-                this._toast('Warning', 'Complete or skip prior visits first: ' +
-                    pending.map(v => v.outletName).join(', '), 'warning');
-                return;
-            }
+        // Strict sequence enforcement — only the NEXT visit can check in
+        if (!this.isNextInSequence(visitId)) {
+            this._toast('Warning', 'You must follow the visit sequence. Please complete or skip the visits above first.', 'warning');
+            return;
         }
 
         // Block if active visit exists
@@ -507,7 +583,7 @@ export default class VisitManager extends LightningElement {
         try {
             const pos = await this._captureLocationAsync();
             const visitData = {
-                accountId, beatId: beatId || null,
+                accountId, beatId: beatId || this.activeBeatId,
                 dayAttendanceId: this.dayAttendance.Id,
                 journeyPlanDayId: jpdayId || null,
                 latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy,
@@ -519,7 +595,6 @@ export default class VisitManager extends LightningElement {
             const visit = await checkInVisitApex({ visitJson: JSON.stringify(visitData) });
             this._toast('Success', 'Checked in successfully!', 'success');
 
-            // Load active visit screen
             this.activeVisit = visit;
             await this._loadActiveVisitData(visit.Id, accountId);
             this._startVisitTimer();
@@ -534,7 +609,7 @@ export default class VisitManager extends LightningElement {
 
     async _loadActiveVisitData(visitId, accountId) {
         try {
-            const [summary, activities, outlet] = await Promise.all([
+            const [summary, , outlet] = await Promise.all([
                 refreshVisitSummary({ visitId }),
                 this._loadActivitiesData(),
                 accountId ? getOutletSummaryApex({ accountId }) : Promise.resolve({})
@@ -553,11 +628,10 @@ export default class VisitManager extends LightningElement {
                 this.visitActivities = this._processActivities(acts.visitActivities);
             }
         } catch (e) {
-            // fallback defaults
             this.visitActivities = [
-                { id: 'order', label: 'Order', icon: 'standard:orders', completed: false },
-                { id: 'collection', label: 'Collection', icon: 'standard:currency', completed: false },
-                { id: 'returns', label: 'Returns', icon: 'standard:return_order', completed: false }
+                { id: 'order', label: 'Order', icon: 'standard:orders', completed: false, cardClass: 'va-act-card' },
+                { id: 'collection', label: 'Collection', icon: 'standard:currency', completed: false, cardClass: 'va-act-card' },
+                { id: 'returns', label: 'Returns', icon: 'standard:return_order', completed: false, cardClass: 'va-act-card' }
             ];
         }
     }
@@ -610,7 +684,7 @@ export default class VisitManager extends LightningElement {
     // ACTIVE VISIT SCREEN
     // ═══════════════════════════════════════════════════
     get activeOutletName() { return this.activeVisit ? (this.activeVisit.Account__r ? this.activeVisit.Account__r.Name : '') : ''; }
-    get activeBeatName() { return this.activeVisit ? (this.activeVisit.Beat__r ? this.activeVisit.Beat__r.Name : '') : ''; }
+    get activeBeatNameDisplay() { return this.activeVisit ? (this.activeVisit.Beat__r ? this.activeVisit.Beat__r.Name : '') : ''; }
     get activeSequence() { return this.activeVisit ? this.activeVisit.Visit_Sequence__c : ''; }
     get activeIsAdHoc() { return this.activeVisit ? this.activeVisit.Is_Ad_Hoc__c : false; }
     get activeOrdersCount() { return this.activeVisitSummary.ordersCount || 0; }
@@ -677,6 +751,15 @@ export default class VisitManager extends LightningElement {
         } catch (e) { /* ignore */ }
     }
 
+    // NAVIGATION: Back to Visit Board from Active Visit
+    handleBackToBoard() {
+        if (this.activeVisit) {
+            this._toast('Warning', 'Please check out the current visit first.', 'warning');
+            return;
+        }
+        this.currentScreen = SCREEN.VISIT_BOARD;
+    }
+
     // ═══════════════════════════════════════════════════
     // CHECKOUT
     // ═══════════════════════════════════════════════════
@@ -702,7 +785,6 @@ export default class VisitManager extends LightningElement {
     }
 
     handleCheckoutClick() {
-        // Mandatory checklist
         this.checklistItems = [
             { id: 'stock', label: 'Stock check completed', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
             { id: 'display', label: 'Product display verified', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
@@ -776,27 +858,19 @@ export default class VisitManager extends LightningElement {
         }
     }
 
-    handleBackToBoard() {
-        // Only allow going back if no active visit
-        if (this.activeVisit) {
-            this._toast('Warning', 'Please complete or check out the current visit first.', 'warning');
-            return;
-        }
-        this.currentScreen = SCREEN.VISIT_BOARD;
-    }
-
     // ═══════════════════════════════════════════════════
-    // SKIP VISIT
+    // SKIP VISIT (mandatory reason)
     // ═══════════════════════════════════════════════════
     get skipReasonOptions() {
         return [
             { label: 'Shop Closed', value: 'Shop Closed' },
             { label: 'Owner Not Available', value: 'Owner Not Available' },
+            { label: 'Road Blocked / Inaccessible', value: 'Road Blocked' },
             { label: 'No Demand', value: 'No Demand' },
             { label: 'Other', value: 'Other' }
         ];
     }
-    get skipDisabled() { return !this.skipReason; }
+    get skipDisabled() { return !this.skipReason || this.isProcessing; }
 
     handleSkipClick(e) {
         e.stopPropagation();
@@ -824,6 +898,71 @@ export default class VisitManager extends LightningElement {
         } finally {
             this.isProcessing = false;
             this.skipVisitId = null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // SWITCH BEAT (mandatory reason)
+    // ═══════════════════════════════════════════════════
+    get switchBeatReasonOptions() {
+        return [
+            { label: 'Manager Instruction', value: 'Manager Instruction' },
+            { label: 'Customer Emergency', value: 'Customer Emergency' },
+            { label: 'Route Issue / Road Block', value: 'Route Issue' },
+            { label: 'Beat Completed Early', value: 'Beat Completed Early' },
+            { label: 'Other', value: 'Other' }
+        ];
+    }
+
+    get availableBeatsForSwitch() {
+        return this.todaysBeats.filter(b => b.beatId !== this.activeBeatId).map(b => ({
+            ...b,
+            switchCardClass: b.beatId === this.switchBeatId ? 'vm-beat-card vm-beat-selected' : 'vm-beat-card'
+        }));
+    }
+
+    get switchBeatDisabled() {
+        return !this.switchBeatId || !this.switchBeatReason || this.isProcessing;
+    }
+
+    handleSwitchBeatClick() {
+        if (this.activeVisits.length > 0) {
+            this._toast('Warning', 'Complete the current active visit before switching beats.', 'warning');
+            return;
+        }
+        this.switchBeatId = null;
+        this.switchBeatReason = '';
+        this.showSwitchBeatModal = true;
+    }
+
+    handleSwitchBeatSelect(e) {
+        this.switchBeatId = e.currentTarget.dataset.beatId;
+    }
+
+    handleSwitchBeatReasonChange(e) { this.switchBeatReason = e.detail.value; }
+    handleSwitchBeatClose() { this.showSwitchBeatModal = false; }
+
+    async handleSwitchBeatConfirm() {
+        if (this.switchBeatDisabled) return;
+        this.isProcessing = true;
+        this.showSwitchBeatModal = false;
+        try {
+            const result = await switchBeatApex({
+                attendanceId: this.dayAttendance.Id,
+                newBeatId: this.switchBeatId,
+                reason: this.switchBeatReason
+            });
+            this.dayAttendance = { ...this.dayAttendance, ...result };
+            this.activeBeatId = this.switchBeatId;
+
+            await this._refreshAllData();
+            this.boardTab = 'planned';
+            const beatName = this.todaysBeats.find(b => b.beatId === this.switchBeatId);
+            this._toast('Success', 'Switched to ' + (beatName ? beatName.beatName : 'new beat'), 'success');
+        } catch (err) {
+            this._toast('Error', 'Failed to switch beat: ' + this._err(err), 'error');
+        } finally {
+            this.isProcessing = false;
         }
     }
 
@@ -897,6 +1036,7 @@ export default class VisitManager extends LightningElement {
             const data = {
                 accountId: this.adHocSelectedAccount.id,
                 dayAttendanceId: this.dayAttendance.Id,
+                beatId: this.activeBeatId,
                 latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy,
                 batteryLevel: this.batteryLevel,
                 networkStatus: this.networkStatus,
@@ -971,6 +1111,8 @@ export default class VisitManager extends LightningElement {
             this.dayAttendance = null;
             this.dayStats = {};
             this.allVisits = [];
+            this.activeBeatId = null;
+            this.selectedBeatId = null;
             this.currentScreen = SCREEN.DAY_START;
         } catch (err) {
             this._toast('Error', 'Failed to end day: ' + this._err(err), 'error');
@@ -987,6 +1129,9 @@ export default class VisitManager extends LightningElement {
             const data = await refreshDayData();
             if (data) {
                 this.dayStats = data.dayStats || {};
+                if (data.currentBeatId) {
+                    this.activeBeatId = data.currentBeatId;
+                }
                 if (data.todaysVisits || data.plannedVisits) {
                     this._processVisits(data.todaysVisits || [], data.plannedVisits || []);
                 }
@@ -1002,7 +1147,6 @@ export default class VisitManager extends LightningElement {
         this.isProcessing = true;
         try {
             await this._refreshAllData();
-            // Re-check for active visit redirect
             if (this.activeVisits.length > 0 && this.currentScreen === SCREEN.VISIT_BOARD) {
                 const av = this.activeVisits[0];
                 if (av && av.Id && !av.Id.startsWith('planned_')) {

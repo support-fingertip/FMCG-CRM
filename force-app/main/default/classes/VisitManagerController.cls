@@ -1,8 +1,8 @@
 /**
  * VisitManagerController
  * Unified Apex controller for the standalone Visit Management component.
- * Orchestrates Day Attendance, Visit lifecycle, and all visit activities
- * within a single-screen experience.
+ * Orchestrates Day Attendance, Visit lifecycle, beat selection/switching,
+ * and all visit activities within a single-screen experience.
  */
 public without sharing class VisitManagerController {
 
@@ -21,6 +21,9 @@ public without sharing class VisitManagerController {
 
         // Config
         ctx.put('config', getVisitConfig());
+
+        // Always load today's beats for beat selection / switch
+        ctx.put('todaysBeats', getTodaysBeats());
 
         if (dayAtt != null) {
             // Day stats
@@ -42,15 +45,80 @@ public without sharing class VisitManagerController {
             ctx.put('plannedVisits', OVE_Visit_Service.getPlannedVisits(userId, today));
 
             // Beat info
+            ctx.put('currentBeatId', dayAtt.Beat__c);
             ctx.put('currentBeat', dayAtt.Beat__r != null ? dayAtt.Beat__r.Name : '');
-            ctx.put('beatId', dayAtt.Beat__c);
+            ctx.put('beatSwitched', dayAtt.Beat_Switched__c == true);
+            ctx.put('originalBeatId', dayAtt.Original_Beat__c);
         }
 
         return ctx;
     }
 
     // ──────────────────────────────────────────────────
-    // 2. DAY START
+    // 2. GET TODAY'S BEATS from Journey Plan
+    // ──────────────────────────────────────────────────
+    @AuraEnabled
+    public static List<Map<String, Object>> getTodaysBeats() {
+        Id userId = UserInfo.getUserId();
+        Date today = Date.today();
+        String dayOfWeek = getDayOfWeek(today);
+        List<Map<String, Object>> beats = new List<Map<String, Object>>();
+
+        // Get journey plan days for today
+        List<Journey_Plan_Day__c> jpDays = [
+            SELECT Id, Beat__c, Beat__r.Name, Beat__r.Beat_Code__c,
+                   Journey_Plan__c, Journey_Plan__r.Name
+            FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c IN (
+                SELECT Id FROM Journey_Plan__c
+                WHERE Salesperson__c = :userId
+                  AND Status__c IN ('Draft', 'Approved', 'Active')
+                  AND Effective_From__c <= :today
+                  AND Effective_To__c >= :today
+            )
+            AND (Plan_Date__c = :today OR Day_of_Week__c = :dayOfWeek)
+            AND Beat__c != null
+        ];
+
+        if (jpDays.isEmpty()) {
+            return beats;
+        }
+
+        // Get outlet counts per beat
+        Set<Id> beatIds = new Set<Id>();
+        Map<Id, Id> beatToJpDay = new Map<Id, Id>();
+        for (Journey_Plan_Day__c jpd : jpDays) {
+            beatIds.add(jpd.Beat__c);
+            beatToJpDay.put(jpd.Beat__c, jpd.Id);
+        }
+
+        Map<Id, Integer> beatOutletCounts = new Map<Id, Integer>();
+        for (AggregateResult ar : [
+            SELECT Beat__c beatId, COUNT(Id) cnt
+            FROM Beat_Outlet__c
+            WHERE Beat__c IN :beatIds AND Is_Active__c = true
+            GROUP BY Beat__c
+        ]) {
+            beatOutletCounts.put((Id)ar.get('beatId'), (Integer)ar.get('cnt'));
+        }
+
+        for (Journey_Plan_Day__c jpd : jpDays) {
+            Map<String, Object> beat = new Map<String, Object>();
+            beat.put('beatId', jpd.Beat__c);
+            beat.put('beatName', jpd.Beat__r.Name);
+            beat.put('beatCode', jpd.Beat__r.Beat_Code__c);
+            beat.put('journeyPlanDayId', jpd.Id);
+            beat.put('journeyPlanName', jpd.Journey_Plan__r.Name);
+            beat.put('outletCount', beatOutletCounts.containsKey(jpd.Beat__c)
+                ? beatOutletCounts.get(jpd.Beat__c) : 0);
+            beats.add(beat);
+        }
+
+        return beats;
+    }
+
+    // ──────────────────────────────────────────────────
+    // 3. DAY START
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Day_Attendance__c startDay(String dayJson) {
@@ -58,7 +126,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 3. DAY END
+    // 4. DAY END
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Day_Attendance__c endDay(String dayJson) {
@@ -66,7 +134,43 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 4. VISIT CHECK-IN
+    // 5. SWITCH BEAT
+    // ──────────────────────────────────────────────────
+    @AuraEnabled
+    public static Day_Attendance__c switchBeat(Id attendanceId, Id newBeatId, String reason) {
+        if (String.isBlank(reason)) {
+            throw new AuraHandledException('Beat switch reason is mandatory.');
+        }
+
+        List<Day_Attendance__c> records = [
+            SELECT Id, Beat__c, Original_Beat__c, Beat_Switched__c
+            FROM Day_Attendance__c WHERE Id = :attendanceId LIMIT 1
+        ];
+        if (records.isEmpty()) {
+            throw new AuraHandledException('Day Attendance record not found.');
+        }
+
+        Day_Attendance__c da = records[0];
+
+        // Store original beat only on first switch
+        if (da.Beat_Switched__c != true) {
+            da.Original_Beat__c = da.Beat__c;
+        }
+        da.Beat__c = newBeatId;
+        da.Beat_Switched__c = true;
+        da.Beat_Switch_Reason__c = reason;
+        update da;
+
+        // Re-query to get relationship fields
+        return [
+            SELECT Id, Beat__c, Beat__r.Name, Original_Beat__c, Original_Beat__r.Name,
+                   Beat_Switched__c, Beat_Switch_Reason__c
+            FROM Day_Attendance__c WHERE Id = :attendanceId LIMIT 1
+        ];
+    }
+
+    // ──────────────────────────────────────────────────
+    // 6. VISIT CHECK-IN
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Visit__c checkInVisit(String visitJson) {
@@ -74,7 +178,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 5. VISIT CHECK-OUT
+    // 7. VISIT CHECK-OUT
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Visit__c checkOutVisit(String visitJson) {
@@ -82,7 +186,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 6. SKIP VISIT
+    // 8. SKIP VISIT
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Visit__c skipVisit(Id visitId, String skipReason) {
@@ -90,7 +194,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 7. REFRESH DATA — Lightweight refresh endpoints
+    // 9. REFRESH DATA — Lightweight refresh endpoints
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Map<String, Object> refreshDayData() {
@@ -102,6 +206,8 @@ public without sharing class VisitManagerController {
             data.put('dayStats', DFO_DayAttendance_Service.getDayStats(dayAtt.Id));
             data.put('todaysVisits', OVE_Visit_Service.getTodaysVisits(userId));
             data.put('plannedVisits', OVE_Visit_Service.getPlannedVisits(userId, Date.today()));
+            data.put('currentBeatId', dayAtt.Beat__c);
+            data.put('currentBeat', dayAtt.Beat__r != null ? dayAtt.Beat__r.Name : '');
 
             Visit__c activeVisit = getActiveVisit(userId);
             data.put('activeVisit', activeVisit);
@@ -121,7 +227,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 8. OUTLET SEARCH (ad-hoc)
+    // 10. OUTLET SEARCH (ad-hoc)
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static List<Account> searchOutlets(String searchTerm) {
@@ -129,7 +235,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 9. EMPLOYEE SEARCH (companion)
+    // 11. EMPLOYEE SEARCH (companion)
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static List<Employee__c> searchEmployees(String searchTerm) {
@@ -137,7 +243,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 10. GPS LOGGING
+    // 12. GPS LOGGING
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static GPS_Log__c logGPS(GPS_Log__c gpsLog) {
@@ -145,7 +251,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 11. VISIT ACTIVITIES & CONFIG
+    // 13. VISIT ACTIVITIES & CONFIG
     // ──────────────────────────────────────────────────
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getVisitActivities() {
@@ -156,7 +262,6 @@ public without sharing class VisitManagerController {
     public static Map<String, Object> getVisitConfig() {
         Map<String, Object> config = new Map<String, Object>();
         try {
-            // Feature toggles
             config.put('selfieRequired', DFO_DayAttendance_Service.getConfigBoolean('SELFIE_REQUIRED', false));
             config.put('gpsTrackingEnabled', BPM_FeatureToggle_Util.isEnabled('DFO-002'));
             config.put('gpsTrackingInterval', DFO_DayAttendance_Service.getConfigInteger('GPS_TRACKING_INTERVAL', 300000));
@@ -168,7 +273,6 @@ public without sharing class VisitManagerController {
             config.put('statsRefreshInterval', DFO_DayAttendance_Service.getConfigInteger('STATS_REFRESH_INTERVAL', 60000));
             config.put('allowGeofenceOverride', DFO_DayAttendance_Service.getConfigBoolean('ALLOW_GEOFENCE_OVERRIDE', true));
         } catch (Exception e) {
-            // Defaults if config fails
             config.put('selfieRequired', false);
             config.put('gpsTrackingEnabled', false);
             config.put('gpsTrackingInterval', 300000);
@@ -184,7 +288,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 12. OUTLET SUMMARY (for check-in screen)
+    // 14. OUTLET SUMMARY (for check-in screen)
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Map<String, Object> getOutletSummary(Id accountId) {
@@ -217,10 +321,8 @@ public without sharing class VisitManagerController {
     private static Map<String, Object> getVisitSummaryData(Id visitId) {
         Map<String, Object> summary = new Map<String, Object>();
 
-        // Orders for this visit
         List<Sales_Order__c> orders = [
-            SELECT Id, Name, Total_Net_Amount__c, Status__c, Total_Items__c,
-                   CreatedDate
+            SELECT Id, Name, Total_Net_Amount__c, Status__c, Total_Items__c, CreatedDate
             FROM Sales_Order__c
             WHERE Visit__c = :visitId AND Status__c != 'Cancelled'
             ORDER BY CreatedDate DESC
@@ -234,7 +336,6 @@ public without sharing class VisitManagerController {
         }
         summary.put('totalOrderValue', totalOrderValue);
 
-        // Collections for this visit
         List<Collection__c> collections = [
             SELECT Id, Name, Amount__c, Payment_Mode__c, Status__c, CreatedDate
             FROM Collection__c
@@ -250,7 +351,6 @@ public without sharing class VisitManagerController {
         }
         summary.put('totalCollection', totalCollection);
 
-        // Return orders for this visit
         List<Return_Order__c> returns = [
             SELECT Id, Name, Total_Return_Amount__c, Status__c, Return_Reason__c, CreatedDate
             FROM Return_Order__c
@@ -261,5 +361,15 @@ public without sharing class VisitManagerController {
         summary.put('returnsCount', returns.size());
 
         return summary;
+    }
+
+    private static String getDayOfWeek(Date d) {
+        Date refDate = Date.newInstance(2000, 1, 1);
+        Integer dayIndex = Math.mod(refDate.daysBetween(d), 7);
+        if (dayIndex < 0) dayIndex += 7;
+        List<String> dayNames = new List<String>{
+            'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
+        };
+        return dayNames[dayIndex];
     }
 }
