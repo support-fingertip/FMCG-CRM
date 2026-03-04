@@ -182,7 +182,9 @@ public without sharing class DFO_DayAttendance_Service {
                 insert gpsLog;
             }
 
-            return dayRecord;
+            // Re-query to include all relationship fields (avoids SObjectException
+            // when callers access fields like Beat_Switched__c on the returned record)
+            return getCurrentAttendance(currentUserId);
         } catch (Exception e) {
             Database.rollback(sp);
             throw new AuraHandledException('Failed to start day: ' + e.getMessage());

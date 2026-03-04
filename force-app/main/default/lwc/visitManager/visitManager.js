@@ -9,6 +9,7 @@ import switchBeatApex from '@salesforce/apex/VisitManagerController.switchBeat';
 import checkInVisitApex from '@salesforce/apex/VisitManagerController.checkInVisit';
 import checkOutVisitApex from '@salesforce/apex/VisitManagerController.checkOutVisit';
 import skipVisitApex from '@salesforce/apex/VisitManagerController.skipVisit';
+import skipPlannedVisitApex from '@salesforce/apex/VisitManagerController.skipPlannedVisit';
 import refreshDayData from '@salesforce/apex/VisitManagerController.refreshDayData';
 import refreshVisitSummary from '@salesforce/apex/VisitManagerController.refreshVisitSummary';
 import searchOutletsApex from '@salesforce/apex/VisitManagerController.searchOutlets';
@@ -952,7 +953,20 @@ export default class VisitManager extends LightningElement {
         this.isProcessing = true;
         this.showSkipModal = false;
         try {
-            await skipVisitApex({ visitId: this.skipVisitId, skipReason: this.skipReason });
+            const isPlanned = String(this.skipVisitId).startsWith('planned_');
+            if (isPlanned) {
+                // Planned visits have synthetic IDs: planned_<accountId>_<index>
+                const visit = this.allVisits.find(v => v.Id === this.skipVisitId);
+                if (!visit) throw new Error('Visit not found.');
+                await skipPlannedVisitApex({
+                    accountId: visit.Account__c,
+                    beatId: visit.Beat__c,
+                    attendanceId: this.dayAttendance.Id,
+                    skipReason: this.skipReason
+                });
+            } else {
+                await skipVisitApex({ visitId: this.skipVisitId, skipReason: this.skipReason });
+            }
             this._toast('Success', 'Visit skipped.', 'success');
             this.allVisits = this.allVisits.map(v =>
                 v.Id === this.skipVisitId ? { ...v, Visit_Status__c: VISIT_STATUS.SKIPPED } : v

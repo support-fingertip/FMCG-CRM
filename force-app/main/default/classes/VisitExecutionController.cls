@@ -47,10 +47,16 @@ public with sharing class VisitExecutionController {
                 ctx.currentBeat = beats.isEmpty() ? null : beats[0];
             }
 
-            // Check if beat was switched
-            ctx.isBeatSwitched = attendance.Beat_Switched__c == true;
-            ctx.originalBeatId = attendance.Original_Beat__c;
-            ctx.beatSwitchReason = attendance.Beat_Switch_Reason__c;
+            // Check if beat was switched (defensive — field may not be queried in all paths)
+            try {
+                ctx.isBeatSwitched = attendance.Beat_Switched__c == true;
+                ctx.originalBeatId = attendance.Original_Beat__c;
+                ctx.beatSwitchReason = attendance.Beat_Switch_Reason__c;
+            } catch (SObjectException e) {
+                ctx.isBeatSwitched = false;
+                ctx.originalBeatId = null;
+                ctx.beatSwitchReason = null;
+            }
 
             // Get beat outlets in visit sequence
             if (currentBeatId != null) {

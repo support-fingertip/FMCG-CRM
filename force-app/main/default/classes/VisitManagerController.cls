@@ -305,11 +305,40 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 8. SKIP VISIT
+    // 8. SKIP VISIT (existing or planned)
     // ──────────────────────────────────────────────────
     @AuraEnabled
     public static Visit__c skipVisit(Id visitId, String skipReason) {
         return VisitCheckInController.skipVisit(visitId, skipReason);
+    }
+
+    @AuraEnabled
+    public static Visit__c skipPlannedVisit(Id accountId, Id beatId, Id attendanceId, String skipReason) {
+        if (accountId == null || String.isBlank(skipReason)) {
+            throw new AuraHandledException('Account and skip reason are required.');
+        }
+        Id userId = UserInfo.getUserId();
+
+        // Create a Visit record in Skipped status for this planned outlet
+        Visit__c visit = new Visit__c();
+        visit.Account__c = accountId;
+        visit.Salesperson__c = userId;
+        visit.Beat__c = beatId;
+        visit.Day_Attendance__c = attendanceId;
+        visit.Visit_Status__c = 'Skipped';
+        visit.Visit_Date__c = Date.today();
+        visit.Is_Planned__c = true;
+        visit.Is_Ad_Hoc__c = false;
+        visit.Deviation_Reason__c = skipReason;
+        visit.Is_Productive__c = false;
+        visit.Non_Productive_Reason__c = 'Visit Skipped';
+        insert visit;
+
+        return [
+            SELECT Id, Name, Account__c, Account__r.Name, Visit_Status__c,
+                   Beat__c, Beat__r.Name, Deviation_Reason__c, Is_Planned__c
+            FROM Visit__c WHERE Id = :visit.Id LIMIT 1
+        ];
     }
 
     // ──────────────────────────────────────────────────
