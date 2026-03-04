@@ -47,8 +47,14 @@ public without sharing class VisitManagerController {
             // Beat info
             ctx.put('currentBeatId', dayAtt.Beat__c);
             ctx.put('currentBeat', dayAtt.Beat__r != null ? dayAtt.Beat__r.Name : '');
-            ctx.put('beatSwitched', dayAtt.Beat_Switched__c == true);
-            ctx.put('originalBeatId', dayAtt.Original_Beat__c);
+            try {
+                ctx.put('beatSwitched', dayAtt.Beat_Switched__c == true);
+                ctx.put('originalBeatId', dayAtt.Original_Beat__c);
+            } catch (SObjectException e) {
+                // Fields may not be queried in all code paths
+                ctx.put('beatSwitched', false);
+                ctx.put('originalBeatId', null);
+            }
         }
 
         return ctx;

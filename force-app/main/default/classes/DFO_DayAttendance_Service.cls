@@ -461,7 +461,9 @@ public without sharing class DFO_DayAttendance_Service {
                    Productivity_Percent__c, Beat__c, Beat__r.Name,
                    Beat_Switched__c, Original_Beat__c, Original_Beat__r.Name,
                    Beat_Switch_Reason__c,
-                   Journey_Plan_Day__c, Week_Day__c,
+                   Journey_Plan_Day__c, Journey_Plan_Day__r.Name,
+                   Journey_Plan_Day__r.Journey_Plan__c, Journey_Plan_Day__r.Journey_Plan__r.Name,
+                   Week_Day__c,
                    Is_Finalized__c, Auto_Closed__c, Is_Leave_Day__c, Remarks__c
             FROM Day_Attendance__c
             WHERE User__c = :targetUserId

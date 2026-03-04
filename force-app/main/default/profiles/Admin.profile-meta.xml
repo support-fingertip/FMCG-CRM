@@ -5192,7 +5192,7 @@
     </tabVisibilities>
     <tabVisibilities>
         <tab>Day_Start_End</tab>
-        <visibility>DefaultOn</visibility>
+        <visibility>Hidden</visibility>
     </tabVisibilities>
     <tabVisibilities>
         <tab>Distributor_Stock__c</tab>
