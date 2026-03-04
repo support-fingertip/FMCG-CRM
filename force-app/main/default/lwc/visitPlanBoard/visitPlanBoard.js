@@ -57,6 +57,7 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     @track adHocReason = '';
     @track showAdHocDropdown = false;
     @track dayAttendanceId = null;
+    @track activeTab = 'planned';
 
     refreshInterval = null;
     hasLoadedOnce = false;
@@ -253,6 +254,25 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
             .sort((a, b) => (a.Visit_Sequence__c || 0) - (b.Visit_Sequence__c || 0));
     }
 
+    // ----- Computed: Tab State -----
+    get isPlannedTab() { return this.activeTab === 'planned'; }
+    get isActiveTab() { return this.activeTab === 'active'; }
+    get isCompletedTab() { return this.activeTab === 'completed'; }
+    get isSkippedTab() { return this.activeTab === 'skipped'; }
+
+    get plannedTabClass() {
+        return 'tab-btn' + (this.isPlannedTab ? ' tab-btn-selected tab-btn-planned' : '');
+    }
+    get activeTabClass() {
+        return 'tab-btn' + (this.isActiveTab ? ' tab-btn-selected tab-btn-active' : '');
+    }
+    get completedTabClass() {
+        return 'tab-btn' + (this.isCompletedTab ? ' tab-btn-selected tab-btn-completed' : '');
+    }
+    get skippedTabClass() {
+        return 'tab-btn' + (this.isSkippedTab ? ' tab-btn-selected tab-btn-skipped' : '');
+    }
+
     // ----- Computed: Stats -----
     get totalVisitCount() {
         return this.visits.length;
@@ -347,22 +367,27 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         return INR_FORMATTER_DECIMAL.format(value);
     }
 
-    // ----- Event Handlers: Card Click (Navigate to Account) -----
+    // ----- Event Handlers: Tab Click -----
+    handleTabClick(event) {
+        this.activeTab = event.currentTarget.dataset.tab;
+    }
+
+    // ----- Event Handlers: Card Click (Navigate to Visit Activity) -----
     handleCardClick(event) {
-        // Prevent navigation when clicking skip button
+        // Prevent navigation when clicking action buttons
         const clickedElement = event.target;
-        if (clickedElement.closest('.skip-button')) {
+        if (clickedElement.closest('.action-btn') || clickedElement.closest('.skip-button')) {
             return;
         }
 
         const visitId = event.currentTarget.dataset.id;
         const visit = this.visits.find(v => v.Id === visitId);
-        if (visit && visit.Account__c) {
+        if (visit && visit.Id && !visit.Id.startsWith('planned_')) {
             this[NavigationMixin.Navigate]({
                 type: 'standard__recordPage',
                 attributes: {
-                    recordId: visit.Account__c,
-                    objectApiName: 'Account',
+                    recordId: visit.Id,
+                    objectApiName: 'Visit__c',
                     actionName: 'view'
                 }
             });
@@ -428,6 +453,7 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
             await createVisit({ visitJson: JSON.stringify(visitData) });
             this.showToast('Success', 'Checked in successfully.', 'success');
             await this.refreshVisits();
+            this.activeTab = 'active'; // Switch to active tab after check-in
         } catch (error) {
             this.showToast('Error', 'Check-in failed: ' + this.reduceErrors(error), 'error');
         } finally {

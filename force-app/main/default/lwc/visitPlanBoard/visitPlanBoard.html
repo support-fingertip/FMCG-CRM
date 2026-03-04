@@ -5,7 +5,7 @@
     </template>
 
     <!-- Main Board Container -->
-    <lightning-card title="Today's Visit Plan" icon-name="standard:visit">
+    <lightning-card title="Visit Manager" icon-name="standard:visit">
         <!-- Header Actions -->
         <div slot="actions">
             <template if:true={isAdHocEnabled}>
@@ -17,49 +17,36 @@
                     class="slds-m-right_x-small">
                 </lightning-button>
             </template>
-            <lightning-button
-                variant="neutral"
-                label="Refresh"
+            <lightning-button-icon
                 icon-name="utility:refresh"
+                alternative-text="Refresh"
                 onclick={handleRefresh}
-                class="slds-m-right_x-small">
-            </lightning-button>
+                variant="border-filled">
+            </lightning-button-icon>
         </div>
 
-        <div class="slds-p-around_medium">
-            <!-- Stats Bar -->
-            <div class="stats-bar slds-m-bottom_medium">
-                <div class="slds-grid slds-gutters slds-wrap">
-                    <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
-                        <div class="stat-tile stat-completed">
-                            <span class="stat-label">Completed</span>
-                            <span class="stat-value">{completedCount}</span>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
-                        <div class="stat-tile stat-productivity">
-                            <span class="stat-label">Productivity</span>
-                            <span class="stat-value">{productivityPercent}%</span>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
-                        <div class="stat-tile stat-time">
-                            <span class="stat-label">Time Spent</span>
-                            <span class="stat-value">{totalTimeSpent}</span>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_6-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
-                        <div class="stat-tile stat-orders">
-                            <span class="stat-label">Orders</span>
-                            <span class="stat-value">{totalOrdersFormatted}</span>
-                        </div>
-                    </div>
-                    <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
-                        <div class="stat-tile stat-collection">
-                            <span class="stat-label">Collection</span>
-                            <span class="stat-value">{totalCollectionFormatted}</span>
-                        </div>
-                    </div>
+        <div class="slds-p-around_small">
+            <!-- Compact Stats Bar -->
+            <div class="stats-strip slds-m-bottom_small">
+                <div class="stat-chip stat-chip-planned">
+                    <span class="chip-count">{plannedVisits.length}</span>
+                    <span class="chip-label">Planned</span>
+                </div>
+                <div class="stat-chip stat-chip-active">
+                    <span class="chip-count">{activeVisits.length}</span>
+                    <span class="chip-label">Active</span>
+                </div>
+                <div class="stat-chip stat-chip-completed">
+                    <span class="chip-count">{completedCount}</span>
+                    <span class="chip-label">Done</span>
+                </div>
+                <div class="stat-chip stat-chip-skipped">
+                    <span class="chip-count">{skippedVisits.length}</span>
+                    <span class="chip-label">Skipped</span>
+                </div>
+                <div class="stat-chip stat-chip-productivity">
+                    <span class="chip-count">{productivityPercent}%</span>
+                    <span class="chip-label">Productive</span>
                 </div>
             </div>
 
@@ -67,222 +54,224 @@
             <template if:true={hasNoVisits}>
                 <div class="empty-state">
                     <div class="empty-state-inner">
-                        <lightning-icon
-                            icon-name="standard:today"
-                            size="large"
-                            class="slds-m-bottom_medium">
-                        </lightning-icon>
-                        <h3 class="slds-text-heading_medium slds-m-bottom_small">No visits planned for today</h3>
+                        <lightning-icon icon-name="standard:today" size="large" class="slds-m-bottom_medium"></lightning-icon>
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">No visits planned for today</h3>
                         <p class="slds-text-body_regular slds-text-color_weak">
-                            There are no scheduled visits for today. Contact your manager or add an ad-hoc visit to get started.
+                            Add an ad-hoc visit to get started.
                         </p>
                     </div>
                 </div>
             </template>
 
-            <!-- Kanban Board -->
+            <!-- Tab-based Visit Board -->
             <template if:false={hasNoVisits}>
-                <div class="kanban-board">
-                    <div class="slds-grid slds-gutters slds-wrap">
-
-                        <!-- Planned Column -->
-                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
-                            <div class="kanban-column column-planned">
-                                <div class="column-header header-planned">
-                                    <div class="column-header-content">
-                                        <span class="column-title">Planned</span>
-                                        <span class="column-count">{plannedVisits.length}</span>
-                                    </div>
-                                </div>
-                                <div class="column-body">
-                                    <template if:true={plannedVisits.length}>
-                                        <template for:each={plannedVisits} for:item="visit">
-                                            <div class="visit-card card-planned" key={visit.Id} data-id={visit.Id}>
-                                                <div class="card-header">
-                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
-                                                    <div class="card-badges">
-                                                        <template if:true={visit.Is_Ad_Hoc__c}>
-                                                            <span class="badge badge-adhoc">Ad-hoc</span>
-                                                        </template>
-                                                        <span class="badge badge-planned">Planned</span>
-                                                    </div>
-                                                </div>
-                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
-                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
-                                                <template if:true={visit.beatName}>
-                                                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">{visit.beatName}</p>
-                                                </template>
-                                                <div class="card-footer slds-m-top_x-small">
-                                                    <template if:true={visit._isFromPlan}>
-                                                        <button class="slds-button slds-button_brand slds-button_stretch"
-                                                            data-account-id={visit.Account__c}
-                                                            data-beat-id={visit.Beat__c}
-                                                            data-jpday-id={visit._journeyPlanDayId}
-                                                            data-sequence={visit.Visit_Sequence__c}
-                                                            onclick={handlePlannedCheckIn}>
-                                                            <lightning-icon icon-name="utility:checkin" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                            Check In
-                                                        </button>
-                                                    </template>
-                                                    <template if:false={visit._isFromPlan}>
-                                                        <button class="skip-button" data-id={visit.Id} onclick={handleSkipClick}>
-                                                            <lightning-icon icon-name="utility:ban" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                            Skip
-                                                        </button>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </template>
-                                    <template if:false={plannedVisits.length}>
-                                        <div class="column-empty">
-                                            <p class="slds-text-body_small slds-text-color_weak">No planned visits</p>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Active Column -->
-                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
-                            <div class="kanban-column column-active">
-                                <div class="column-header header-active">
-                                    <div class="column-header-content">
-                                        <span class="column-title">Active</span>
-                                        <span class="column-count">{activeVisits.length}</span>
-                                    </div>
-                                </div>
-                                <div class="column-body">
-                                    <template if:true={activeVisits.length}>
-                                        <template for:each={activeVisits} for:item="visit">
-                                            <div class="visit-card card-active" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
-                                                <div class="card-header">
-                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
-                                                    <div class="card-badges">
-                                                        <template if:true={visit.Is_Ad_Hoc__c}>
-                                                            <span class="badge badge-adhoc">Ad-hoc</span>
-                                                        </template>
-                                                        <span class="badge badge-active">In Progress</span>
-                                                    </div>
-                                                </div>
-                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
-                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
-                                                <div class="card-footer">
-                                                    <div class="card-time">
-                                                        <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                        <span>In: {visit.checkInTimeDisplay}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </template>
-                                    <template if:false={activeVisits.length}>
-                                        <div class="column-empty">
-                                            <p class="slds-text-body_small slds-text-color_weak">No active visits</p>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Completed Column -->
-                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
-                            <div class="kanban-column column-completed">
-                                <div class="column-header header-completed">
-                                    <div class="column-header-content">
-                                        <span class="column-title">Completed</span>
-                                        <span class="column-count">{completedVisits.length}</span>
-                                    </div>
-                                </div>
-                                <div class="column-body">
-                                    <template if:true={completedVisits.length}>
-                                        <template for:each={completedVisits} for:item="visit">
-                                            <div class="visit-card card-completed" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
-                                                <div class="card-header">
-                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
-                                                    <div class="card-badges">
-                                                        <template if:true={visit.Is_Ad_Hoc__c}>
-                                                            <span class="badge badge-adhoc">Ad-hoc</span>
-                                                        </template>
-                                                        <template if:true={visit.Is_Productive__c}>
-                                                            <span class="badge badge-productive">Productive</span>
-                                                        </template>
-                                                        <template if:false={visit.Is_Productive__c}>
-                                                            <span class="badge badge-nonproductive">Non-Productive</span>
-                                                        </template>
-                                                        <span class="badge badge-completed">Completed</span>
-                                                    </div>
-                                                </div>
-                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
-                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
-                                                <div class="card-footer">
-                                                    <div class="card-time">
-                                                        <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                        <span>{visit.durationDisplay}</span>
-                                                    </div>
-                                                    <template if:true={visit.Order_Value__c}>
-                                                        <div class="card-metric">
-                                                            <lightning-icon icon-name="utility:cart" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                            <span>{visit.orderValueFormatted}</span>
-                                                        </div>
-                                                    </template>
-                                                    <template if:true={visit.Collection_Amount__c}>
-                                                        <div class="card-metric">
-                                                            <lightning-icon icon-name="utility:moneybag" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                                            <span>{visit.collectionFormatted}</span>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </template>
-                                    <template if:false={completedVisits.length}>
-                                        <div class="column-empty">
-                                            <p class="slds-text-body_small slds-text-color_weak">No completed visits</p>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Skipped Column -->
-                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-p-around_xx-small">
-                            <div class="kanban-column column-skipped">
-                                <div class="column-header header-skipped">
-                                    <div class="column-header-content">
-                                        <span class="column-title">Skipped</span>
-                                        <span class="column-count">{skippedVisits.length}</span>
-                                    </div>
-                                </div>
-                                <div class="column-body">
-                                    <template if:true={skippedVisits.length}>
-                                        <template for:each={skippedVisits} for:item="visit">
-                                            <div class="visit-card card-skipped" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
-                                                <div class="card-header">
-                                                    <span class="card-sequence">#{visit.Visit_Sequence__c}</span>
-                                                    <div class="card-badges">
-                                                        <template if:true={visit.Is_Ad_Hoc__c}>
-                                                            <span class="badge badge-adhoc">Ad-hoc</span>
-                                                        </template>
-                                                        <span class="badge badge-skipped">Skipped</span>
-                                                    </div>
-                                                </div>
-                                                <h4 class="card-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
-                                                <p class="card-address" title={visit.fullAddress}>{visit.truncatedAddress}</p>
-                                            </div>
-                                        </template>
-                                    </template>
-                                    <template if:false={skippedVisits.length}>
-                                        <div class="column-empty">
-                                            <p class="slds-text-body_small slds-text-color_weak">No skipped visits</p>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
+                <!-- Tab Navigation -->
+                <div class="visit-tabs">
+                    <button class={plannedTabClass} data-tab="planned" onclick={handleTabClick}>
+                        Planned
+                        <span class="tab-badge tab-badge-planned">{plannedVisits.length}</span>
+                    </button>
+                    <button class={activeTabClass} data-tab="active" onclick={handleTabClick}>
+                        Active
+                        <template if:true={activeVisits.length}>
+                            <span class="tab-badge tab-badge-active tab-badge-pulse">{activeVisits.length}</span>
+                        </template>
+                    </button>
+                    <button class={completedTabClass} data-tab="completed" onclick={handleTabClick}>
+                        Done
+                        <span class="tab-badge tab-badge-completed">{completedCount}</span>
+                    </button>
+                    <button class={skippedTabClass} data-tab="skipped" onclick={handleTabClick}>
+                        Skipped
+                        <span class="tab-badge tab-badge-skipped">{skippedVisits.length}</span>
+                    </button>
                 </div>
+
+                <!-- Tab Content: Planned -->
+                <template if:true={isPlannedTab}>
+                    <div class="visit-list">
+                        <template if:true={plannedVisits.length}>
+                            <template for:each={plannedVisits} for:item="visit">
+                                <div class="visit-row row-planned" key={visit.Id}>
+                                    <div class="visit-row-left">
+                                        <span class="row-sequence">{visit.Visit_Sequence__c}</span>
+                                    </div>
+                                    <div class="visit-row-center">
+                                        <h4 class="row-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                        <p class="row-address">{visit.truncatedAddress}</p>
+                                        <template if:true={visit.beatName}>
+                                            <span class="row-beat">{visit.beatName}</span>
+                                        </template>
+                                    </div>
+                                    <div class="visit-row-actions">
+                                        <template if:true={visit._isFromPlan}>
+                                            <button class="action-btn action-checkin"
+                                                data-account-id={visit.Account__c}
+                                                data-beat-id={visit.Beat__c}
+                                                data-jpday-id={visit._journeyPlanDayId}
+                                                data-sequence={visit.Visit_Sequence__c}
+                                                onclick={handlePlannedCheckIn}>
+                                                <lightning-icon icon-name="utility:checkin" size="xx-small"></lightning-icon>
+                                                <span>Check In</span>
+                                            </button>
+                                        </template>
+                                        <button class="action-btn action-skip"
+                                            data-id={visit.Id}
+                                            onclick={handleSkipClick}>
+                                            <lightning-icon icon-name="utility:ban" size="xx-small"></lightning-icon>
+                                            <span>Skip</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={plannedVisits.length}>
+                            <div class="tab-empty">
+                                <lightning-icon icon-name="utility:check" size="small" class="slds-m-bottom_small"></lightning-icon>
+                                <p>All visits have been handled</p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Tab Content: Active -->
+                <template if:true={isActiveTab}>
+                    <div class="visit-list">
+                        <template if:true={activeVisits.length}>
+                            <template for:each={activeVisits} for:item="visit">
+                                <div class="visit-row row-active" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                    <div class="visit-row-left">
+                                        <span class="row-sequence row-seq-active">{visit.Visit_Sequence__c}</span>
+                                    </div>
+                                    <div class="visit-row-center">
+                                        <div class="row-header-line">
+                                            <h4 class="row-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                            <template if:true={visit.Is_Ad_Hoc__c}>
+                                                <span class="badge badge-adhoc">Ad-hoc</span>
+                                            </template>
+                                        </div>
+                                        <p class="row-address">{visit.truncatedAddress}</p>
+                                        <div class="row-meta">
+                                            <span class="meta-item">
+                                                <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                In: {visit.checkInTimeDisplay}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="visit-row-actions">
+                                        <span class="active-indicator"></span>
+                                        <lightning-icon icon-name="utility:chevronright" size="xx-small" class="row-chevron"></lightning-icon>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={activeVisits.length}>
+                            <div class="tab-empty">
+                                <lightning-icon icon-name="utility:touch_action" size="small" class="slds-m-bottom_small"></lightning-icon>
+                                <p>No active visits. Check in to a planned outlet to start.</p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Tab Content: Completed -->
+                <template if:true={isCompletedTab}>
+                    <div class="visit-list">
+                        <template if:true={completedVisits.length}>
+                            <!-- Completed Summary -->
+                            <div class="completed-summary">
+                                <div class="summary-item">
+                                    <span class="summary-icon">
+                                        <lightning-icon icon-name="utility:cart" size="xx-small"></lightning-icon>
+                                    </span>
+                                    <span class="summary-text">{totalOrdersFormatted}</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-icon">
+                                        <lightning-icon icon-name="utility:moneybag" size="xx-small"></lightning-icon>
+                                    </span>
+                                    <span class="summary-text">{totalCollectionFormatted}</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-icon">
+                                        <lightning-icon icon-name="utility:clock" size="xx-small"></lightning-icon>
+                                    </span>
+                                    <span class="summary-text">{totalTimeSpent}</span>
+                                </div>
+                            </div>
+
+                            <template for:each={completedVisits} for:item="visit">
+                                <div class="visit-row row-completed" key={visit.Id} data-id={visit.Id} onclick={handleCardClick}>
+                                    <div class="visit-row-left">
+                                        <span class="row-sequence row-seq-completed">{visit.Visit_Sequence__c}</span>
+                                    </div>
+                                    <div class="visit-row-center">
+                                        <div class="row-header-line">
+                                            <h4 class="row-outlet-name" title={visit.outletName}>{visit.outletName}</h4>
+                                            <template if:true={visit.Is_Productive__c}>
+                                                <span class="badge badge-productive">Productive</span>
+                                            </template>
+                                            <template if:false={visit.Is_Productive__c}>
+                                                <span class="badge badge-nonproductive">Non-Productive</span>
+                                            </template>
+                                        </div>
+                                        <div class="row-meta">
+                                            <span class="meta-item">
+                                                <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                {visit.durationDisplay}
+                                            </span>
+                                            <template if:true={visit.Order_Value__c}>
+                                                <span class="meta-item">
+                                                    <lightning-icon icon-name="utility:cart" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                    {visit.orderValueFormatted}
+                                                </span>
+                                            </template>
+                                            <template if:true={visit.Collection_Amount__c}>
+                                                <span class="meta-item">
+                                                    <lightning-icon icon-name="utility:moneybag" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                    {visit.collectionFormatted}
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div class="visit-row-actions">
+                                        <lightning-icon icon-name="utility:chevronright" size="xx-small" class="row-chevron"></lightning-icon>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={completedVisits.length}>
+                            <div class="tab-empty">
+                                <lightning-icon icon-name="utility:check" size="small" class="slds-m-bottom_small"></lightning-icon>
+                                <p>No completed visits yet</p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Tab Content: Skipped -->
+                <template if:true={isSkippedTab}>
+                    <div class="visit-list">
+                        <template if:true={skippedVisits.length}>
+                            <template for:each={skippedVisits} for:item="visit">
+                                <div class="visit-row row-skipped" key={visit.Id}>
+                                    <div class="visit-row-left">
+                                        <span class="row-sequence row-seq-skipped">{visit.Visit_Sequence__c}</span>
+                                    </div>
+                                    <div class="visit-row-center">
+                                        <h4 class="row-outlet-name row-name-skipped" title={visit.outletName}>{visit.outletName}</h4>
+                                        <p class="row-address">{visit.truncatedAddress}</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={skippedVisits.length}>
+                            <div class="tab-empty">
+                                <p>No skipped visits</p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
             </template>
         </div>
     </lightning-card>
@@ -294,7 +283,6 @@
                 <header class="slds-modal__header">
                     <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleSkipModalClose}>
                         <lightning-icon icon-name="utility:close" alternative-text="Close" size="small" variant="inverse"></lightning-icon>
-                        <span class="slds-assistive-text">Close</span>
                     </button>
                     <h2 id="skip-modal-heading" class="slds-text-heading_medium slds-hyphenate">Skip Visit</h2>
                 </header>
@@ -313,18 +301,8 @@
                     </lightning-combobox>
                 </div>
                 <footer class="slds-modal__footer">
-                    <lightning-button
-                        variant="neutral"
-                        label="Cancel"
-                        onclick={handleSkipModalClose}
-                        class="slds-m-right_x-small">
-                    </lightning-button>
-                    <lightning-button
-                        variant="destructive"
-                        label="Skip Visit"
-                        onclick={handleSkipConfirm}
-                        disabled={isSkipDisabled}>
-                    </lightning-button>
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleSkipModalClose} class="slds-m-right_x-small"></lightning-button>
+                    <lightning-button variant="destructive" label="Skip Visit" onclick={handleSkipConfirm} disabled={isSkipDisabled}></lightning-button>
                 </footer>
             </div>
         </section>
@@ -338,7 +316,6 @@
                 <header class="slds-modal__header">
                     <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleAdHocModalClose}>
                         <lightning-icon icon-name="utility:close" alternative-text="Close" size="small" variant="inverse"></lightning-icon>
-                        <span class="slds-assistive-text">Close</span>
                     </button>
                     <h2 id="adhoc-modal-heading" class="slds-text-heading_medium slds-hyphenate">Create Ad-Hoc Visit</h2>
                     <p class="slds-m-top_x-small slds-text-body_small slds-text-color_inverse-weak">
@@ -346,7 +323,6 @@
                     </p>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
-                    <!-- Outlet Search -->
                     <div class="slds-form-element slds-m-bottom_medium">
                         <lightning-input
                             type="search"
@@ -356,16 +332,11 @@
                             placeholder="Type at least 2 characters to search...">
                         </lightning-input>
                         <template if:true={showAdHocDropdown}>
-                            <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid slds-is-open" role="listbox"
-                                style="position:relative; z-index:9999; max-height:200px; overflow-y:auto; border:1px solid #dddbda; border-radius:0.25rem; margin-top:2px;">
+                            <div class="adhoc-dropdown" role="listbox">
                                 <ul class="slds-listbox slds-listbox_vertical" role="presentation">
                                     <template for:each={adHocSearchResults} for:item="acct">
-                                        <li key={acct.id} role="presentation"
-                                            class="slds-listbox__item"
-                                            data-id={acct.id}
-                                            onclick={handleAdHocOutletSelect}>
-                                            <div class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-p-around_xx-small"
-                                                role="option" style="cursor:pointer;">
+                                        <li key={acct.id} role="presentation" class="slds-listbox__item" data-id={acct.id} onclick={handleAdHocOutletSelect}>
+                                            <div class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-p-around_xx-small" role="option" style="cursor:pointer;">
                                                 <span class="slds-media__body">
                                                     <span class="slds-truncate slds-text-title_bold">{acct.name}</span>
                                                     <span class="slds-text-body_small slds-text-color_weak">{acct.address}</span>
@@ -378,19 +349,13 @@
                         </template>
                     </div>
 
-                    <!-- Selected Outlet Display -->
                     <template if:true={adHocSelectedAccount}>
                         <div class="slds-box slds-box_x-small slds-theme_shade slds-m-bottom_medium">
-                            <div class="slds-grid slds-grid_vertical-align-center">
-                                <div class="slds-col slds-grow">
-                                    <p class="slds-text-title_bold">{adHocSelectedAccount.name}</p>
-                                    <p class="slds-text-body_small slds-text-color_weak">{adHocSelectedAccount.address}</p>
-                                </div>
-                            </div>
+                            <p class="slds-text-title_bold">{adHocSelectedAccount.name}</p>
+                            <p class="slds-text-body_small slds-text-color_weak">{adHocSelectedAccount.address}</p>
                         </div>
                     </template>
 
-                    <!-- Ad-Hoc Reason -->
                     <lightning-combobox
                         name="adHocReason"
                         label="Reason for Ad-Hoc Visit"
@@ -401,19 +366,8 @@
                     </lightning-combobox>
                 </div>
                 <footer class="slds-modal__footer">
-                    <lightning-button
-                        variant="neutral"
-                        label="Cancel"
-                        onclick={handleAdHocModalClose}
-                        class="slds-m-right_x-small">
-                    </lightning-button>
-                    <lightning-button
-                        variant="brand"
-                        label="Create Visit"
-                        icon-name="utility:add"
-                        onclick={handleAdHocConfirm}
-                        disabled={isAdHocSubmitDisabled}>
-                    </lightning-button>
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleAdHocModalClose} class="slds-m-right_x-small"></lightning-button>
+                    <lightning-button variant="brand" label="Create Visit" icon-name="utility:add" onclick={handleAdHocConfirm} disabled={isAdHocSubmitDisabled}></lightning-button>
                 </footer>
             </div>
         </section>

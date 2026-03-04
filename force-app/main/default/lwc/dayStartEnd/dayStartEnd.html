@@ -209,10 +209,10 @@
                  SECTION 2: ACTIVE DAY DASHBOARD (after day has started)
                  =================================================================== -->
             <template if:true={isDayActive}>
-                <!-- Timer & Status Header -->
+                <!-- Timer & Status Header with End Day Button -->
                 <div class="active-day-header">
                     <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-wrap">
-                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12">
+                        <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12">
                             <span class="active-badge">
                                 <lightning-icon icon-name="utility:success" size="xx-small"
                                     variant="inverse" class="slds-m-right_xx-small"></lightning-icon>
@@ -222,11 +222,21 @@
                                 Started at {dayStartTimeDisplay}
                             </p>
                         </div>
-                        <div class="slds-col slds-size_12-of-12 slds-medium-size_6-of-12 timer-col">
+                        <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 timer-col">
                             <div class="running-timer">
                                 <span class="timer-label">Duration</span>
                                 <span class="timer-value">{dayDurationDisplay}</span>
                             </div>
+                        </div>
+                        <div class="slds-col slds-size_12-of-12 slds-medium-size_4-of-12 slds-text-align_right slds-m-top_small">
+                            <lightning-button
+                                variant="destructive"
+                                label="End Day"
+                                icon-name="utility:stop"
+                                onclick={handleEndDayClick}
+                                disabled={isProcessing}
+                                class="end-day-btn">
+                            </lightning-button>
                         </div>
                     </div>
                 </div>
@@ -323,18 +333,6 @@
                 <!-- Embedded Visit Plan Board -->
                 <div class="slds-m-top_medium">
                     <c-visit-plan-board></c-visit-plan-board>
-                </div>
-
-                <!-- End Day Button -->
-                <div class="slds-m-top_large slds-text-align_center">
-                    <lightning-button
-                        variant="destructive"
-                        label="End Day"
-                        icon-name="utility:stop"
-                        onclick={handleEndDayClick}
-                        disabled={isProcessing}
-                        class="end-day-btn">
-                    </lightning-button>
                 </div>
             </template>
 
