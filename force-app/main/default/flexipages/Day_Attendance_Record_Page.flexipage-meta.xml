@@ -28,26 +28,16 @@
             </componentInstance>
         </itemInstances>
         <name>main</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <flexiPageRegions>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>parentFieldApiName</name>
-                    <value>Day_Attendance__c.Id</value>
-                </componentInstanceProperties>
-                <componentName>force:recordDetail</componentName>
-                <identifier>force_recordDetail_sidebar</identifier>
-            </componentInstance>
-        </itemInstances>
         <name>sidebar</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Day Attendance Record Page</masterLabel>
     <sobjectType>Day_Attendance__c</sobjectType>
     <template>
-        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
+        <name>flexipage:recordHomeTemplateDesktop</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>

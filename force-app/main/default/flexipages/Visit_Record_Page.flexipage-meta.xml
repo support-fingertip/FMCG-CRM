@@ -28,7 +28,7 @@
             </componentInstance>
         </itemInstances>
         <name>main</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <flexiPageRegions>
         <itemInstances>
@@ -38,12 +38,12 @@
             </componentInstance>
         </itemInstances>
         <name>sidebar</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Visit Record Page</masterLabel>
     <sobjectType>Visit__c</sobjectType>
     <template>
-        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
+        <name>flexipage:recordHomeTemplateDesktop</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>
