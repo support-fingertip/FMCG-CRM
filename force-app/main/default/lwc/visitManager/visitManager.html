@@ -1,0 +1,665 @@
+<template>
+    <!-- ══════════════════════════════════════════════════════
+         LOADING SCREEN
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={isLoadingScreen}>
+        <div class="vm-loading">
+            <lightning-spinner alternative-text="Loading..." size="large"></lightning-spinner>
+            <p class="vm-loading-text">Loading Visit Manager...</p>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 1: DAY START
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={isDayStartScreen}>
+        <div class="vm-container">
+            <div class="vm-header-bar">
+                <div class="vm-header-left">
+                    <lightning-icon icon-name="standard:shift" size="small"></lightning-icon>
+                    <span class="vm-header-title">Visit Manager</span>
+                </div>
+                <div class="vm-clock">{currentTime}</div>
+            </div>
+
+            <div class="vm-card">
+                <div class="vm-daystart-hero">
+                    <h2 class="vm-greeting">{greetingMessage}</h2>
+                    <p class="vm-date">{todayDateDisplay}</p>
+                </div>
+
+                <!-- Device Status -->
+                <div class="vm-status-row">
+                    <div class="vm-status-item">
+                        <lightning-icon icon-name="utility:location" size="xx-small"></lightning-icon>
+                        <span>{locationStatusText}</span>
+                    </div>
+                    <div class="vm-status-item">
+                        <lightning-icon icon-name="utility:wifi" size="xx-small"></lightning-icon>
+                        <span>{networkStatus}</span>
+                    </div>
+                </div>
+
+                <!-- Selfie Section -->
+                <template if:true={config.selfieRequired}>
+                    <div class="vm-section">
+                        <h3 class="vm-section-title">Attendance Selfie</h3>
+                        <div class="vm-photo-area">
+                            <template if:false={startSelfiePreview}>
+                                <input type="file" accept="image/*" capture="user"
+                                    class="vm-file-input" data-id="startSelfie"
+                                    onchange={handleStartSelfieCapture} />
+                                <button class="vm-photo-btn" onclick={triggerStartSelfie}>
+                                    <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
+                                    <span>Take Selfie</span>
+                                </button>
+                            </template>
+                            <template if:true={startSelfiePreview}>
+                                <div class="vm-photo-preview">
+                                    <img src={startSelfiePreview} alt="Selfie" class="vm-photo-img" />
+                                    <lightning-button-icon icon-name="utility:close"
+                                        alternative-text="Remove" variant="bare"
+                                        class="vm-photo-remove" onclick={removeStartSelfie}>
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Odometer -->
+                <div class="vm-section">
+                    <lightning-input type="number" label="Odometer Reading (km)"
+                        value={odometerStart} onchange={handleOdometerStartChange}
+                        placeholder="Enter current odometer" min="0" step="0.1">
+                    </lightning-input>
+                </div>
+
+                <!-- Companion -->
+                <div class="vm-section">
+                    <lightning-input type="toggle" label="With Companion"
+                        checked={withCompanion} onchange={handleCompanionToggle}
+                        message-toggle-active="Yes" message-toggle-inactive="No">
+                    </lightning-input>
+                    <template if:true={withCompanion}>
+                        <div class="vm-companion-search slds-m-top_small">
+                            <div class="vm-search-wrapper">
+                                <input type="text" class="vm-search-input"
+                                    value={companionSearchTerm}
+                                    oninput={handleCompanionSearch}
+                                    placeholder="Search employee..." autocomplete="off" />
+                                <template if:true={companionId}>
+                                    <lightning-button-icon icon-name="utility:close"
+                                        alternative-text="Clear" variant="bare" size="small"
+                                        class="vm-search-clear" onclick={clearCompanion}>
+                                    </lightning-button-icon>
+                                </template>
+                            </div>
+                            <template if:true={showCompanionDropdown}>
+                                <div class="vm-dropdown">
+                                    <template for:each={companionSearchResults} for:item="emp">
+                                        <div key={emp.id} class="vm-dropdown-item"
+                                            data-id={emp.id} onclick={handleCompanionSelect}>
+                                            <span class="vm-dropdown-name">{emp.name}</span>
+                                            <span class="vm-dropdown-sub">{emp.subtitle}</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Start Day Button -->
+                <div class="vm-action-center">
+                    <button class="vm-btn vm-btn-start" onclick={handleStartDay}
+                        disabled={startDayDisabled}>
+                        <lightning-icon icon-name="utility:play" size="xx-small" variant="inverse"></lightning-icon>
+                        <span>Start Day</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 2: VISIT BOARD (after day started)
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={isVisitBoardScreen}>
+        <div class="vm-container">
+            <!-- Header with End Day -->
+            <div class="vm-header-bar">
+                <div class="vm-header-left">
+                    <lightning-icon icon-name="standard:visit" size="small"></lightning-icon>
+                    <span class="vm-header-title">Visit Manager</span>
+                </div>
+                <div class="vm-header-right">
+                    <span class="vm-clock">{currentTime}</span>
+                    <button class="vm-btn vm-btn-end-sm" onclick={handleEndDayClick}>End Day</button>
+                </div>
+            </div>
+
+            <!-- Day Summary Bar -->
+            <div class="vm-day-bar">
+                <div class="vm-day-bar-top">
+                    <div class="vm-day-info">
+                        <span class="vm-active-badge">
+                            <span class="vm-pulse"></span> Day Active
+                        </span>
+                        <span class="vm-day-since">Started at {dayStartTimeDisplay}</span>
+                    </div>
+                    <div class="vm-day-timer">{dayDurationDisplay}</div>
+                </div>
+                <div class="vm-beat-name">
+                    <lightning-icon icon-name="utility:routing_offline" size="xx-small"></lightning-icon>
+                    <span>{currentBeatName}</span>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="vm-stats-grid">
+                <div class="vm-stat"><span class="vm-stat-val vm-stat-blue">{statCompleted}</span><span class="vm-stat-lbl">Completed</span></div>
+                <div class="vm-stat"><span class="vm-stat-val vm-stat-orange">{statActive}</span><span class="vm-stat-lbl">Active</span></div>
+                <div class="vm-stat"><span class="vm-stat-val">{statOrders}</span><span class="vm-stat-lbl">Orders</span></div>
+                <div class="vm-stat"><span class="vm-stat-val vm-stat-green">{statOrderValue}</span><span class="vm-stat-lbl">Value</span></div>
+                <div class="vm-stat"><span class="vm-stat-val">{statCollection}</span><span class="vm-stat-lbl">Collected</span></div>
+                <div class="vm-stat"><span class="vm-stat-val">{statProductivity}%</span><span class="vm-stat-lbl">Productive</span></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="vm-board-actions">
+                <template if:true={config.adHocVisitsEnabled}>
+                    <button class="vm-btn vm-btn-adhoc" onclick={handleAdHocClick}>
+                        <lightning-icon icon-name="utility:add" size="xx-small" variant="inverse"></lightning-icon>
+                        <span>Ad-Hoc Visit</span>
+                    </button>
+                </template>
+                <button class="vm-btn vm-btn-refresh" onclick={handleBoardRefresh}>
+                    <lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon>
+                </button>
+            </div>
+
+            <!-- Visit Tabs -->
+            <div class="vm-tabs">
+                <button class={plannedTabCls} data-tab="planned" onclick={handleBoardTab}>
+                    Planned <span class="vm-tab-badge vm-badge-blue">{statPlanned}</span>
+                </button>
+                <button class={completedTabCls} data-tab="completed" onclick={handleBoardTab}>
+                    Done <span class="vm-tab-badge vm-badge-green">{statCompleted}</span>
+                </button>
+                <button class={skippedTabCls} data-tab="skipped" onclick={handleBoardTab}>
+                    Skipped <span class="vm-tab-badge vm-badge-gray">{statSkipped}</span>
+                </button>
+            </div>
+
+            <!-- PLANNED TAB -->
+            <template if:true={isPlannedTab}>
+                <div class="vm-visit-list">
+                    <template if:true={plannedVisits.length}>
+                        <template for:each={plannedVisits} for:item="visit">
+                            <div class="vm-visit-row vm-row-planned" key={visit.Id}>
+                                <div class="vm-row-seq">{visit.Visit_Sequence__c}</div>
+                                <div class="vm-row-body">
+                                    <h4 class="vm-row-name">{visit.outletName}</h4>
+                                    <p class="vm-row-addr">{visit.truncatedAddress}</p>
+                                    <template if:true={visit.beatName}>
+                                        <span class="vm-row-beat">{visit.beatName}</span>
+                                    </template>
+                                </div>
+                                <div class="vm-row-btns">
+                                    <template if:true={visit._isFromPlan}>
+                                        <button class="vm-btn vm-btn-checkin"
+                                            data-account-id={visit.Account__c}
+                                            data-beat-id={visit.Beat__c}
+                                            data-jpday-id={visit._journeyPlanDayId}
+                                            data-sequence={visit.Visit_Sequence__c}
+                                            onclick={handleCheckIn}>Check In</button>
+                                    </template>
+                                    <button class="vm-btn vm-btn-skip-sm"
+                                        data-id={visit.Id}
+                                        onclick={handleSkipClick}>Skip</button>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={plannedVisits.length}>
+                        <div class="vm-empty">
+                            <lightning-icon icon-name="utility:check" size="small"></lightning-icon>
+                            <p>All visits handled</p>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- COMPLETED TAB -->
+            <template if:true={isCompletedTab}>
+                <div class="vm-visit-list">
+                    <template if:true={completedVisits.length}>
+                        <template for:each={completedVisits} for:item="visit">
+                            <div class="vm-visit-row vm-row-done" key={visit.Id}>
+                                <div class="vm-row-seq vm-seq-done">{visit.Visit_Sequence__c}</div>
+                                <div class="vm-row-body">
+                                    <div class="vm-row-header">
+                                        <h4 class="vm-row-name">{visit.outletName}</h4>
+                                        <template if:true={visit.Is_Productive__c}>
+                                            <span class="vm-badge-prod">Productive</span>
+                                        </template>
+                                    </div>
+                                    <div class="vm-row-meta">
+                                        <span>{visit.durationDisplay}</span>
+                                        <template if:true={visit.orderValueFormatted}>
+                                            <span>{visit.orderValueFormatted}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={completedVisits.length}>
+                        <div class="vm-empty"><p>No completed visits yet</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- SKIPPED TAB -->
+            <template if:true={isSkippedTab}>
+                <div class="vm-visit-list">
+                    <template if:true={skippedVisits.length}>
+                        <template for:each={skippedVisits} for:item="visit">
+                            <div class="vm-visit-row vm-row-skip" key={visit.Id}>
+                                <div class="vm-row-seq vm-seq-skip">{visit.Visit_Sequence__c}</div>
+                                <div class="vm-row-body">
+                                    <h4 class="vm-row-name vm-name-strike">{visit.outletName}</h4>
+                                    <p class="vm-row-addr">{visit.truncatedAddress}</p>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={skippedVisits.length}>
+                        <div class="vm-empty"><p>No skipped visits</p></div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 3: ACTIVE VISIT (in-progress)
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={isVisitActiveScreen}>
+        <div class="vm-container">
+            <!-- Visit Header -->
+            <div class="vm-visit-header">
+                <div class="vm-visit-header-top">
+                    <div class="vm-visit-outlet-info">
+                        <div class="vm-visit-seq-circle">#{activeSequence}</div>
+                        <div>
+                            <h2 class="vm-visit-outlet-name">{activeOutletName}</h2>
+                            <div class="vm-visit-badges">
+                                <template if:true={activeBeatName}>
+                                    <span class="vm-badge-beat">{activeBeatName}</span>
+                                </template>
+                                <template if:true={activeIsAdHoc}>
+                                    <span class="vm-badge-adhoc">Ad-hoc</span>
+                                </template>
+                                <span class="vm-badge-active-visit">In Progress</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vm-visit-timer-box">
+                        <span class="vm-visit-timer-label">Duration</span>
+                        <span class="vm-visit-timer-value">{visitDurationDisplay}</span>
+                    </div>
+                </div>
+
+                <!-- Visit KPIs -->
+                <div class="vm-visit-kpis">
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{visitCheckInTime}</span>
+                        <span class="vm-kpi-lbl">Check-In</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{activeOrdersCount}</span>
+                        <span class="vm-kpi-lbl">Orders</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{activeOrderValue}</span>
+                        <span class="vm-kpi-lbl">Value</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{activeCollectionAmount}</span>
+                        <span class="vm-kpi-lbl">Collected</span>
+                    </div>
+                </div>
+
+                <!-- Check Out Button -->
+                <div class="vm-visit-actions-bar">
+                    <button class="vm-btn vm-btn-checkout" onclick={handleCheckoutClick}>
+                        <lightning-icon icon-name="utility:logout" size="xx-small" variant="inverse"></lightning-icon>
+                        <span>Check Out</span>
+                    </button>
+                    <button class="vm-btn vm-btn-refresh" onclick={handleRefreshVisitSummary}>
+                        <lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visit Content Tabs -->
+            <div class="vm-tabs">
+                <button class={activitiesVTabCls} data-tab="activities" onclick={handleActiveVisitTab}>Activities</button>
+                <button class={ordersVTabCls} data-tab="orders" onclick={handleActiveVisitTab}>
+                    Orders <template if:true={activeOrdersCount}><span class="vm-tab-badge vm-badge-blue">{activeOrdersCount}</span></template>
+                </button>
+                <button class={collectionsVTabCls} data-tab="collections" onclick={handleActiveVisitTab}>
+                    Collections <template if:true={activeCollections.length}><span class="vm-tab-badge vm-badge-green">{activeCollections.length}</span></template>
+                </button>
+                <button class={returnsVTabCls} data-tab="returns" onclick={handleActiveVisitTab}>Returns</button>
+                <button class={outletVTabCls} data-tab="outlet" onclick={handleActiveVisitTab}>Outlet</button>
+            </div>
+
+            <!-- ACTIVITIES TAB -->
+            <template if:true={isActivitiesVTab}>
+                <div class="vm-act-grid">
+                    <template for:each={visitActivities} for:item="act">
+                        <div class={act.cardClass} key={act.id}
+                            data-id={act.id} onclick={handleToggleActivity}>
+                            <lightning-icon icon-name={act.icon} size="medium"></lightning-icon>
+                            <span class="va-act-name">{act.label}</span>
+                            <template if:true={act.completed}>
+                                <span class="va-act-check">
+                                    <lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon>
+                                </span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- ORDERS TAB -->
+            <template if:true={isOrdersVTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasActiveOrders}>
+                        <template for:each={activeOrders} for:item="order">
+                            <div class="vm-rec-row" key={order.Id}>
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{order.Name}</span>
+                                    <span class="vm-rec-sub">{order.Status__c} - {order.Total_Items__c} items</span>
+                                </div>
+                                <span class="vm-rec-amt">{order.amountFormatted}</span>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasActiveOrders}>
+                        <div class="vm-empty"><p>No orders placed yet</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- COLLECTIONS TAB -->
+            <template if:true={isCollectionsVTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasActiveCollections}>
+                        <template for:each={activeCollections} for:item="coll">
+                            <div class="vm-rec-row" key={coll.Id}>
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{coll.Name}</span>
+                                    <span class="vm-rec-sub">{coll.Payment_Mode__c} - {coll.Status__c}</span>
+                                </div>
+                                <span class="vm-rec-amt">{coll.amountFormatted}</span>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasActiveCollections}>
+                        <div class="vm-empty"><p>No collections recorded</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- RETURNS TAB -->
+            <template if:true={isReturnsVTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasActiveReturns}>
+                        <template for:each={activeReturns} for:item="ret">
+                            <div class="vm-rec-row" key={ret.Id}>
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{ret.Name}</span>
+                                    <span class="vm-rec-sub">{ret.Return_Reason__c} - {ret.Status__c}</span>
+                                </div>
+                                <span class="vm-rec-amt">{ret.amountFormatted}</span>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasActiveReturns}>
+                        <div class="vm-empty"><p>No returns recorded</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- OUTLET TAB -->
+            <template if:true={isOutletVTab}>
+                <div class="vm-tab-content">
+                    <div class="vm-outlet-summary">
+                        <div class="vm-outlet-row">
+                            <span class="vm-outlet-lbl">Outlet Type</span>
+                            <span class="vm-outlet-val">{outletType}</span>
+                        </div>
+                        <div class="vm-outlet-row">
+                            <span class="vm-outlet-lbl">Last Visit</span>
+                            <span class="vm-outlet-val">{outletLastVisit}</span>
+                        </div>
+                        <div class="vm-outlet-row">
+                            <span class="vm-outlet-lbl">Outstanding</span>
+                            <span class="vm-outlet-val">{outletOutstanding}</span>
+                        </div>
+                        <div class="vm-outlet-row">
+                            <span class="vm-outlet-lbl">Pending Orders</span>
+                            <span class="vm-outlet-val">{outletPendingOrders}</span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: SKIP VISIT
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={showSkipModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleSkipClose}></lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Skip Visit</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-combobox name="skipReason" label="Reason" value={skipReason}
+                        placeholder="Select reason..." options={skipReasonOptions}
+                        onchange={handleSkipReasonChange} required></lightning-combobox>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleSkipClose}></lightning-button>
+                    <lightning-button variant="destructive" label="Skip" onclick={handleSkipConfirm}
+                        disabled={skipDisabled} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: AD-HOC VISIT
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={showAdHocModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleAdHocClose}></lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Ad-Hoc Visit</h2>
+                    <p class="slds-m-top_x-small slds-text-body_small slds-text-color_inverse-weak">
+                        Search by customer name or code
+                    </p>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input type="search" label="Search Outlet" value={adHocSearchTerm}
+                        onchange={handleAdHocSearch} placeholder="Name or customer code..."></lightning-input>
+                    <template if:true={showAdHocDropdown}>
+                        <div class="vm-dropdown vm-dropdown-modal">
+                            <template for:each={adHocSearchResults} for:item="acct">
+                                <div key={acct.id} class="vm-dropdown-item"
+                                    data-id={acct.id} onclick={handleAdHocSelect}>
+                                    <span class="vm-dropdown-name">{acct.name}</span>
+                                    <span class="vm-dropdown-sub">{acct.code} - {acct.address}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template if:true={adHocSelectedAccount}>
+                        <div class="vm-selected-box slds-m-top_small">
+                            <span class="vm-selected-name">{adHocSelectedAccount.name}</span>
+                            <span class="vm-selected-sub">{adHocSelectedAccount.address}</span>
+                        </div>
+                    </template>
+                    <lightning-combobox name="adHocReason" label="Reason" value={adHocReason}
+                        placeholder="Select reason..." options={adHocReasonOptions}
+                        onchange={handleAdHocReasonChange} class="slds-m-top_small"></lightning-combobox>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleAdHocClose}></lightning-button>
+                    <lightning-button variant="brand" label="Check In" icon-name="utility:checkin"
+                        onclick={handleAdHocConfirm} disabled={adHocSubmitDisabled}
+                        class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: CHECKOUT
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={showCheckoutModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleCheckoutClose}></lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Complete Visit - {activeOutletName}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <!-- Visit Summary -->
+                    <div class="vm-checkout-summary">
+                        <div class="vm-co-stat">
+                            <span class="vm-co-stat-val">{visitDurationDisplay}</span>
+                            <span class="vm-co-stat-lbl">Duration</span>
+                        </div>
+                        <div class="vm-co-stat">
+                            <span class="vm-co-stat-val">{activeOrdersCount}</span>
+                            <span class="vm-co-stat-lbl">Orders</span>
+                        </div>
+                        <div class="vm-co-stat">
+                            <span class="vm-co-stat-val">{activeOrderValue}</span>
+                            <span class="vm-co-stat-lbl">Value</span>
+                        </div>
+                        <div class="vm-co-stat">
+                            <span class="vm-co-stat-val">{activeCollectionAmount}</span>
+                            <span class="vm-co-stat-lbl">Collected</span>
+                        </div>
+                    </div>
+
+                    <!-- Mandatory Checklist -->
+                    <div class="vm-checklist slds-m-top_medium">
+                        <h4 class="vm-checklist-title">Mandatory Checklist</h4>
+                        <template for:each={checklistItems} for:item="item">
+                            <div class="vm-checklist-item" key={item.id}
+                                data-id={item.id} onclick={handleChecklistToggle}>
+                                <span class={item.checked ? 'vm-check-box vm-check-done' : 'vm-check-box'}>
+                                    <template if:true={item.checked}>
+                                        <lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon>
+                                    </template>
+                                </span>
+                                <span class={item.checked ? 'vm-check-label vm-check-label-done' : 'vm-check-label'}>
+                                    {item.label}
+                                </span>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Productive Toggle -->
+                    <div class="slds-m-top_medium">
+                        <lightning-input type="toggle" label="Was this a productive visit?"
+                            checked={isProductive} onchange={handleProductiveChange}
+                            message-toggle-active="Productive" message-toggle-inactive="Non-Productive">
+                        </lightning-input>
+                    </div>
+
+                    <template if:false={isProductive}>
+                        <lightning-combobox name="npReason" label="Non-Productive Reason"
+                            value={nonProductiveReason} placeholder="Select reason..."
+                            options={nonProductiveReasonOptions}
+                            onchange={handleNonProductiveReasonChange}
+                            required class="slds-m-top_small">
+                        </lightning-combobox>
+                    </template>
+
+                    <lightning-textarea label="Visit Notes" value={visitNotes}
+                        onchange={handleVisitNotesChange}
+                        placeholder="Any observations or notes..."
+                        max-length="1000" class="slds-m-top_small">
+                    </lightning-textarea>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleCheckoutClose}></lightning-button>
+                    <lightning-button variant="brand" label="Complete Visit" icon-name="utility:check"
+                        onclick={handleCheckoutConfirm} disabled={checkoutDisabled}
+                        class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: END DAY
+         ══════════════════════════════════════════════════════ -->
+    <template if:true={showEndDayModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleEndDayClose}></lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">End Day Summary</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="vm-checkout-summary">
+                        <div class="vm-co-stat"><span class="vm-co-stat-val">{dayDurationDisplay}</span><span class="vm-co-stat-lbl">Duration</span></div>
+                        <div class="vm-co-stat"><span class="vm-co-stat-val">{statCompleted}</span><span class="vm-co-stat-lbl">Visits</span></div>
+                        <div class="vm-co-stat"><span class="vm-co-stat-val">{statOrderValue}</span><span class="vm-co-stat-lbl">Orders</span></div>
+                        <div class="vm-co-stat"><span class="vm-co-stat-val">{statCollection}</span><span class="vm-co-stat-lbl">Collected</span></div>
+                    </div>
+                    <lightning-input type="number" label="Odometer End (km)"
+                        value={odometerEnd} onchange={handleOdometerEndChange}
+                        placeholder="End reading" min="0" step="0.1"
+                        class="slds-m-top_medium"></lightning-input>
+                    <lightning-textarea label="Remarks" value={endDayRemarks}
+                        onchange={handleEndRemarksChange}
+                        placeholder="How was your day?" max-length="1000"
+                        class="slds-m-top_small"></lightning-textarea>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleEndDayClose}></lightning-button>
+                    <lightning-button variant="brand" label="Confirm End Day" icon-name="utility:check"
+                        onclick={handleEndDayConfirm} disabled={isProcessing}
+                        class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Processing Spinner -->
+    <template if:true={isProcessing}>
+        <lightning-spinner alternative-text="Processing..." size="medium" class="vm-spinner"></lightning-spinner>
+    </template>
+</template>

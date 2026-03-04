@@ -371,6 +371,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>VisitManagerController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>VisitExecutionController_Test</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -5308,6 +5312,10 @@
     </tabVisibilities>
     <tabVisibilities>
         <tab>Territory_Master__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Visit_Manager</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
