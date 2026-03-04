@@ -904,6 +904,37 @@
     border-radius: 10px;
 }
 
+/* Non-productive badge */
+.vm-badge-nonprod {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--vm-danger);
+    background: #fde8e8;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* Clickable row */
+.vm-row-clickable {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.vm-row-clickable:hover {
+    filter: brightness(0.97);
+}
+
+/* Row chevron */
+.vm-row-chevron {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+    color: var(--vm-text-secondary);
+}
+
 /* Empty state */
 .vm-empty {
     display: flex;

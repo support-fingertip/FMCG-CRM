@@ -22,7 +22,8 @@ const SCREEN = {
     DAY_START: 'day_start',
     BEAT_SELECT: 'beat_select',
     VISIT_BOARD: 'visit_board',
-    VISIT_ACTIVE: 'visit_active'
+    VISIT_ACTIVE: 'visit_active',
+    VISIT_DETAIL: 'visit_detail'
 };
 
 const VISIT_STATUS = {
@@ -90,6 +91,11 @@ export default class VisitManager extends LightningElement {
     @track outletSummary = {};
     @track visitDuration = 0;
     @track activeVisitTab = 'activities';
+
+    // ── COMPLETED VISIT DETAIL ──
+    @track detailVisit = null;
+    @track detailVisitSummary = {};
+    @track detailVisitTab = 'orders';
 
     // ── AD-HOC ──
     @track showAdHocModal = false;
@@ -213,6 +219,7 @@ export default class VisitManager extends LightningElement {
     get isBeatSelectScreen() { return this.currentScreen === SCREEN.BEAT_SELECT; }
     get isVisitBoardScreen() { return this.currentScreen === SCREEN.VISIT_BOARD; }
     get isVisitActiveScreen() { return this.currentScreen === SCREEN.VISIT_ACTIVE; }
+    get isVisitDetailScreen() { return this.currentScreen === SCREEN.VISIT_DETAIL; }
 
     // ═══════════════════════════════════════════════════
     // CLOCK & TIME
@@ -825,6 +832,92 @@ export default class VisitManager extends LightningElement {
         }
         this.currentScreen = SCREEN.VISIT_BOARD;
     }
+
+    // ═══════════════════════════════════════════════════
+    // COMPLETED VISIT DETAIL
+    // ═══════════════════════════════════════════════════
+    async handleCompletedVisitClick(e) {
+        const visitId = e.currentTarget.dataset.id;
+        const visit = this.allVisits.find(v => v.Id === visitId);
+        if (!visit) return;
+
+        this.detailVisit = visit;
+        this.detailVisitSummary = {};
+        this.detailVisitTab = 'orders';
+        this.currentScreen = SCREEN.VISIT_DETAIL;
+
+        try {
+            this.isProcessing = true;
+            this.detailVisitSummary = await refreshVisitSummary({ visitId }) || {};
+        } catch (err) {
+            this._toast('Error', 'Failed to load visit details.', 'error');
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+
+    handleBackToBoardFromDetail() {
+        this.detailVisit = null;
+        this.detailVisitSummary = {};
+        this.currentScreen = SCREEN.VISIT_BOARD;
+    }
+
+    handleDetailTab(e) { this.detailVisitTab = e.currentTarget.dataset.tab; }
+
+    // Detail visit getters
+    get detailOutletName() { return this.detailVisit ? (this.detailVisit.Account__r ? this.detailVisit.Account__r.Name : '') : ''; }
+    get detailBeatName() { return this.detailVisit ? (this.detailVisit.Beat__r ? this.detailVisit.Beat__r.Name : '') : ''; }
+    get detailSequence() { return this.detailVisit ? this.detailVisit.Visit_Sequence__c : ''; }
+    get detailIsAdHoc() { return this.detailVisit ? this.detailVisit.Is_Ad_Hoc__c : false; }
+    get detailIsProductive() { return this.detailVisit ? this.detailVisit.Is_Productive__c : false; }
+    get detailCheckInTime() {
+        if (!this.detailVisit || !this.detailVisit.Check_In_Time__c) return '--';
+        return this._fmtTime(this.detailVisit.Check_In_Time__c);
+    }
+    get detailCheckOutTime() {
+        if (!this.detailVisit || !this.detailVisit.Check_Out_Time__c) return '--';
+        return this._fmtTime(this.detailVisit.Check_Out_Time__c);
+    }
+    get detailDuration() {
+        if (!this.detailVisit || !this.detailVisit.Duration_Minutes__c) return '--';
+        const mins = this.detailVisit.Duration_Minutes__c;
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+    get detailOrdersCount() { return this.detailVisitSummary.ordersCount || 0; }
+    get detailOrderValue() { return INR.format(this.detailVisitSummary.totalOrderValue || 0); }
+    get detailCollectionAmount() { return INR.format(this.detailVisitSummary.totalCollection || 0); }
+    get detailReturnsCount() { return this.detailVisitSummary.returnsCount || 0; }
+    get detailOrders() {
+        return (this.detailVisitSummary.orders || []).map(o => ({
+            ...o,
+            amountFormatted: INR.format(o.Total_Net_Amount__c || 0)
+        }));
+    }
+    get detailCollections() {
+        return (this.detailVisitSummary.collections || []).map(c => ({
+            ...c,
+            amountFormatted: INR.format(c.Amount__c || 0)
+        }));
+    }
+    get detailReturns() {
+        return (this.detailVisitSummary.returns || []).map(r => ({
+            ...r,
+            amountFormatted: INR.format(r.Total_Return_Amount__c || 0)
+        }));
+    }
+    get hasDetailOrders() { return this.detailOrders.length > 0; }
+    get hasDetailCollections() { return this.detailCollections.length > 0; }
+    get hasDetailReturns() { return this.detailReturns.length > 0; }
+
+    // Detail tabs
+    get isDetailOrdersTab() { return this.detailVisitTab === 'orders'; }
+    get isDetailCollectionsTab() { return this.detailVisitTab === 'collections'; }
+    get isDetailReturnsTab() { return this.detailVisitTab === 'returns'; }
+    get detailOrdersTabCls() { return 'vm-tab' + (this.isDetailOrdersTab ? ' vm-tab-active' : ''); }
+    get detailCollectionsTabCls() { return 'vm-tab' + (this.isDetailCollectionsTab ? ' vm-tab-active' : ''); }
+    get detailReturnsTabCls() { return 'vm-tab' + (this.isDetailReturnsTab ? ' vm-tab-active' : ''); }
 
     // ═══════════════════════════════════════════════════
     // CHECKOUT

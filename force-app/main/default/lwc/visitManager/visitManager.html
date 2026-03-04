@@ -380,7 +380,7 @@
                 <div class="vm-visit-list">
                     <template if:true={completedVisits.length}>
                         <template for:each={completedVisits} for:item="visit">
-                            <div key={visit.Id} class="vm-visit-row vm-row-done">
+                            <div key={visit.Id} class="vm-visit-row vm-row-done vm-row-clickable" data-id={visit.Id} onclick={handleCompletedVisitClick}>
                                 <span class="vm-row-seq vm-seq-done">{visit.Visit_Sequence__c}</span>
                                 <div class="vm-row-body">
                                     <div class="vm-row-header">
@@ -396,6 +396,9 @@
                                             <span>{visit.orderValueFormatted}</span>
                                         </template>
                                     </div>
+                                </div>
+                                <div class="vm-row-chevron">
+                                    <lightning-icon icon-name="utility:chevronright" size="xx-small"></lightning-icon>
                                 </div>
                             </div>
                         </template>
@@ -841,6 +844,157 @@
             </section>
             <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- SCREEN: COMPLETED VISIT DETAIL                    -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <template if:true={isVisitDetailScreen}>
+        <div class="vm-container">
+            <!-- Nav Header with Back Arrow -->
+            <div class="vm-header-bar">
+                <div class="vm-header-left">
+                    <button class="vm-nav-back" onclick={handleBackToBoardFromDetail} title="Back to Visit Board">
+                        <lightning-icon icon-name="utility:chevronleft" size="xx-small" variant="inverse"></lightning-icon>
+                    </button>
+                    <span class="vm-header-title">Visit Details</span>
+                </div>
+            </div>
+
+            <!-- Visit Header Card -->
+            <div class="vm-visit-header">
+                <div class="vm-visit-header-top">
+                    <div class="vm-visit-outlet-info">
+                        <span class="vm-visit-seq-circle">{detailSequence}</span>
+                        <div>
+                            <p class="vm-visit-outlet-name">{detailOutletName}</p>
+                            <div class="vm-visit-badges">
+                                <span class="vm-badge-beat">{detailBeatName}</span>
+                                <template if:true={detailIsAdHoc}>
+                                    <span class="vm-badge-adhoc">Ad-Hoc</span>
+                                </template>
+                                <template if:true={detailIsProductive}>
+                                    <span class="vm-badge-prod">Productive</span>
+                                </template>
+                                <template if:false={detailIsProductive}>
+                                    <span class="vm-badge-nonprod">Non-Productive</span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs -->
+                <div class="vm-visit-kpis">
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{detailCheckInTime}</span>
+                        <span class="vm-kpi-lbl">Check In</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{detailCheckOutTime}</span>
+                        <span class="vm-kpi-lbl">Check Out</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{detailDuration}</span>
+                        <span class="vm-kpi-lbl">Duration</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{detailOrdersCount}</span>
+                        <span class="vm-kpi-lbl">Orders</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{detailOrderValue}</span>
+                        <span class="vm-kpi-lbl">Value</span>
+                    </div>
+                    <div class="vm-visit-kpi">
+                        <span class="vm-kpi-val">{detailCollectionAmount}</span>
+                        <span class="vm-kpi-lbl">Collection</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Tabs -->
+            <div class="vm-tabs">
+                <button class={detailOrdersTabCls} data-tab="orders" onclick={handleDetailTab}>
+                    Orders
+                    <template if:true={hasDetailOrders}>
+                        <span class="vm-tab-badge">{detailOrders.length}</span>
+                    </template>
+                </button>
+                <button class={detailCollectionsTabCls} data-tab="collections" onclick={handleDetailTab}>
+                    Collections
+                    <template if:true={hasDetailCollections}>
+                        <span class="vm-tab-badge">{detailCollections.length}</span>
+                    </template>
+                </button>
+                <button class={detailReturnsTabCls} data-tab="returns" onclick={handleDetailTab}>
+                    Returns
+                    <template if:true={hasDetailReturns}>
+                        <span class="vm-tab-badge">{detailReturns.length}</span>
+                    </template>
+                </button>
+            </div>
+
+            <!-- Orders Tab -->
+            <template if:true={isDetailOrdersTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailOrders}>
+                        <template for:each={detailOrders} for:item="order">
+                            <div key={order.Id} class="vm-rec-row">
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{order.Name}</span>
+                                    <span class="vm-rec-sub">{order.Status__c} - {order.Total_Items__c} items</span>
+                                </div>
+                                <span class="vm-rec-amt">{order.amountFormatted}</span>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailOrders}>
+                        <div class="vm-empty"><p>No orders placed during this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Collections Tab -->
+            <template if:true={isDetailCollectionsTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailCollections}>
+                        <template for:each={detailCollections} for:item="col">
+                            <div key={col.Id} class="vm-rec-row">
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{col.Name}</span>
+                                    <span class="vm-rec-sub">{col.Payment_Mode__c} - {col.Status__c}</span>
+                                </div>
+                                <span class="vm-rec-amt">{col.amountFormatted}</span>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailCollections}>
+                        <div class="vm-empty"><p>No collections recorded during this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Returns Tab -->
+            <template if:true={isDetailReturnsTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailReturns}>
+                        <template for:each={detailReturns} for:item="ret">
+                            <div key={ret.Id} class="vm-rec-row">
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{ret.Name}</span>
+                                    <span class="vm-rec-sub">{ret.Return_Reason__c} - {ret.Status__c}</span>
+                                </div>
+                                <span class="vm-rec-amt">{ret.amountFormatted}</span>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailReturns}>
+                        <div class="vm-empty"><p>No returns recorded during this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+        </div>
     </template>
 
     <!-- Spinner Overlay -->
