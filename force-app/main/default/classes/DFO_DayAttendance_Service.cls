@@ -459,6 +459,8 @@ public without sharing class DFO_DayAttendance_Service {
                    Total_Orders__c, Orders_Taken__c, Total_Order_Value__c, Total_Orders_Value__c,
                    Total_Collection__c, Total_Collections__c,
                    Productivity_Percent__c, Beat__c, Beat__r.Name,
+                   Beat_Switched__c, Original_Beat__c, Original_Beat__r.Name,
+                   Beat_Switch_Reason__c,
                    Journey_Plan_Day__c, Week_Day__c,
                    Is_Finalized__c, Auto_Closed__c, Is_Leave_Day__c, Remarks__c
             FROM Day_Attendance__c
