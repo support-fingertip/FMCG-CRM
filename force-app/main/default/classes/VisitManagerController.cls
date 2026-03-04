@@ -331,7 +331,7 @@ public without sharing class VisitManagerController {
         visit.Is_Ad_Hoc__c = false;
         visit.Deviation_Reason__c = skipReason;
         visit.Is_Productive__c = false;
-        visit.Non_Productive_Reason__c = 'Visit Skipped';
+        visit.Non_Productive_Reason__c = 'Other';
         insert visit;
 
         return [

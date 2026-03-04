@@ -347,7 +347,7 @@ public without sharing class OVE_Visit_Service {
         visit.Visit_Status__c = 'Skipped';
         visit.Deviation_Reason__c = skipReason;
         visit.Is_Productive__c = false;
-        visit.Non_Productive_Reason__c = 'Visit Skipped';
+        visit.Non_Productive_Reason__c = 'Other';
         update visit;
 
         return visit;
