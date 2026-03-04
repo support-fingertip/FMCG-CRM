@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Beat_Switched__c</fullName>
+    <description>Indicates whether the beat was switched during this day.</description>
+    <defaultValue>false</defaultValue>
+    <label>Beat Switched</label>
+    <type>Checkbox</type>
+</CustomField>
