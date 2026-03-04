@@ -14,10 +14,11 @@ import Id from '@salesforce/user/Id';
 
 const VISIT_STATUS = {
     PLANNED: 'Planned',
-    CHECKED_IN: 'Checked-In',
-    IN_PROGRESS: 'In-Progress',
+    CHECKED_IN: 'Checked In',
+    IN_PROGRESS: 'In Progress',
     COMPLETED: 'Completed',
-    SKIPPED: 'Skipped'
+    SKIPPED: 'Skipped',
+    MISSED: 'Missed'
 };
 
 const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
@@ -60,6 +61,7 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     refreshInterval = null;
     hasLoadedOnce = false;
     _adHocSearchTimer = null;
+    _batteryLevel = 0;
 
     // ----- Skip Reason Options -----
     get skipReasonOptions() {
@@ -79,6 +81,22 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
     connectedCallback() {
         this.loadAllData();
         this.startAutoRefresh();
+        this._captureBattery();
+    }
+
+    /** Capture battery level for visit data */
+    async _captureBattery() {
+        try {
+            if (navigator.getBattery) {
+                const battery = await navigator.getBattery();
+                this._batteryLevel = Math.round(battery.level * 100);
+                battery.addEventListener('levelchange', () => {
+                    this._batteryLevel = Math.round(battery.level * 100);
+                });
+            }
+        } catch (e) {
+            this._batteryLevel = 0;
+        }
     }
 
     disconnectedCallback() {
@@ -229,6 +247,12 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
             .sort((a, b) => (a.Visit_Sequence__c || 0) - (b.Visit_Sequence__c || 0));
     }
 
+    get missedVisits() {
+        return this.visits
+            .filter(v => v.Visit_Status__c === VISIT_STATUS.MISSED)
+            .sort((a, b) => (a.Visit_Sequence__c || 0) - (b.Visit_Sequence__c || 0));
+    }
+
     // ----- Computed: Stats -----
     get totalVisitCount() {
         return this.visits.length;
@@ -351,24 +375,53 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         const accountId = event.currentTarget.dataset.accountId;
         const beatId = event.currentTarget.dataset.beatId;
         const jpdayId = event.currentTarget.dataset.jpdayId;
+        const visitSequence = Number(event.currentTarget.dataset.sequence) || 0;
 
         if (!accountId) {
             this.showToast('Error', 'No outlet found for this planned visit.', 'error');
             return;
         }
 
+        // Sequence enforcement: check all prior sequence outlets are handled
+        if (visitSequence > 0) {
+            const pendingPrior = this.plannedVisits.filter(v =>
+                (v.Visit_Sequence__c || 0) < visitSequence &&
+                v.Visit_Status__c === VISIT_STATUS.PLANNED
+            );
+            if (pendingPrior.length > 0) {
+                const names = pendingPrior.map(v => v.outletName || 'Outlet #' + v.Visit_Sequence__c).join(', ');
+                this.showToast('Warning',
+                    'Please complete or skip prior outlets first: ' + names,
+                    'warning'
+                );
+                return;
+            }
+        }
+
+        // Also block if there is already an active visit (Checked In / In Progress)
+        if (this.activeVisits.length > 0) {
+            this.showToast('Warning',
+                'Please complete or check out the current active visit before checking into a new one.',
+                'warning'
+            );
+            return;
+        }
+
         this.isLoading = true;
         try {
+            // Capture current GPS location
+            const position = await this._captureCurrentLocation();
+
             const visitData = {
                 accountId: accountId,
                 beatId: beatId || null,
                 dayAttendanceId: this.dayAttendanceId,
                 journeyPlanDayId: jpdayId || null,
-                latitude: 0,
-                longitude: 0,
-                accuracy: 0,
-                batteryLevel: 0,
-                networkStatus: 'Online',
+                latitude: position.latitude,
+                longitude: position.longitude,
+                accuracy: position.accuracy,
+                batteryLevel: this._batteryLevel || 0,
+                networkStatus: navigator.onLine ? 'Online' : 'Offline',
                 isPlanned: true
             };
 
@@ -380,6 +433,30 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    /** Capture current GPS location as a Promise */
+    _captureCurrentLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve({ latitude: 0, longitude: 0, accuracy: 0 });
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    resolve({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy
+                    });
+                },
+                () => {
+                    // On error, resolve with 0s rather than blocking
+                    resolve({ latitude: 0, longitude: 0, accuracy: 0 });
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
     }
 
     // ----- Event Handlers: Skip Visit -----
@@ -539,14 +616,16 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         this.isAdHocModalOpen = false;
 
         try {
+            const position = await this._captureCurrentLocation();
+
             const visitData = {
                 accountId: this.adHocSelectedAccount.id,
                 dayAttendanceId: this.dayAttendanceId,
-                latitude: 0,
-                longitude: 0,
-                accuracy: 0,
-                batteryLevel: 0,
-                networkStatus: 'Online',
+                latitude: position.latitude,
+                longitude: position.longitude,
+                accuracy: position.accuracy,
+                batteryLevel: this._batteryLevel || 0,
+                networkStatus: navigator.onLine ? 'Online' : 'Offline',
                 isPlanned: false,
                 adHocReason: this.adHocReason || 'Ad-hoc visit'
             };

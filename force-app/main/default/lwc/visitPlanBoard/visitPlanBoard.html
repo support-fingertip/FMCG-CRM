@@ -33,7 +33,7 @@
                     <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
                         <div class="stat-tile stat-completed">
                             <span class="stat-label">Completed</span>
-                            <span class="stat-value">{completedCount} / {totalVisitCount}</span>
+                            <span class="stat-value">{completedCount}</span>
                         </div>
                     </div>
                     <div class="slds-col slds-size_6-of-12 slds-medium-size_4-of-12 slds-large-size_2-of-12 slds-p-around_xx-small">
@@ -118,6 +118,7 @@
                                                             data-account-id={visit.Account__c}
                                                             data-beat-id={visit.Beat__c}
                                                             data-jpday-id={visit._journeyPlanDayId}
+                                                            data-sequence={visit.Visit_Sequence__c}
                                                             onclick={handlePlannedCheckIn}>
                                                             <lightning-icon icon-name="utility:checkin" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
                                                             Check In

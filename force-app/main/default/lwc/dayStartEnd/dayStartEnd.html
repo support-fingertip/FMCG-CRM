@@ -234,14 +234,14 @@
                 <!-- KPI Stats Grid - 6 Tiles, Responsive -->
                 <div class="stats-grid slds-m-top_medium slds-m-bottom_medium">
                     <div class="slds-grid slds-gutters slds-wrap">
-                        <!-- Tile 1: Visits -->
+                        <!-- Tile 1: Completed Visits -->
                         <div class="slds-col slds-size_6-of-12 slds-medium-size_6-of-12 slds-large-size_4-of-12 slds-m-bottom_small">
                             <div class="stat-card stat-visits">
                                 <span class="stat-icon stat-icon-visits">
                                     <lightning-icon icon-name="standard:visit" size="small"></lightning-icon>
                                 </span>
-                                <span class="stat-number">{completedVisits} / {plannedVisits}</span>
-                                <span class="stat-label">Visits</span>
+                                <span class="stat-number">{completedVisits}</span>
+                                <span class="stat-label">Completed</span>
                             </div>
                         </div>
                         <!-- Tile 2: Productive % -->
@@ -294,22 +294,6 @@
                                 <span class="stat-label">Distance</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Visit Progress Bar -->
-                <div class="progress-section slds-m-bottom_medium">
-                    <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
-                        <span class="slds-text-title_bold">Visit Progress</span>
-                        <span class="slds-text-body_small slds-text-color_weak">
-                            {completedVisits} of {plannedVisits} completed
-                        </span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style={progressBarStyle}></div>
-                    </div>
-                    <div class="slds-text-align_right slds-m-top_xx-small">
-                        <span class="progress-percentage">{visitProgressPercent}%</span>
                     </div>
                 </div>
 
@@ -385,8 +369,8 @@
                                     <span class="summary-value">{dayDurationDisplay}</span>
                                 </div>
                                 <div class="summary-row">
-                                    <span class="summary-label">Total Visits</span>
-                                    <span class="summary-value">{completedVisits} / {plannedVisits}</span>
+                                    <span class="summary-label">Completed Visits</span>
+                                    <span class="summary-value">{completedVisits}</span>
                                 </div>
                                 <div class="summary-row">
                                     <span class="summary-label">Productive Calls</span>
