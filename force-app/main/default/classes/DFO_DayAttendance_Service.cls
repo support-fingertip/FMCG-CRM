@@ -139,7 +139,9 @@ public without sharing class DFO_DayAttendance_Service {
             dayRecord.Start_Accuracy__c = request.startAccuracy;
             dayRecord.Battery_Level__c = request.batteryLevel;
             dayRecord.Network_Status__c = request.networkStatus;
-            dayRecord.Device_Info__c = request.deviceInfo;
+            dayRecord.Device_Info__c = String.isNotBlank(request.deviceInfo) && request.deviceInfo.length() > 255
+                ? request.deviceInfo.left(255)
+                : request.deviceInfo;
             dayRecord.Week_Day__c = dayOfWeek;
             dayRecord.Beat__c = beatId;
             dayRecord.Journey_Plan_Day__c = journeyPlanDayId;
