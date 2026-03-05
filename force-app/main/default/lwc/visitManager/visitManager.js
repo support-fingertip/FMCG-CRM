@@ -367,10 +367,6 @@ export default class VisitManager extends LightningElement {
         this.companionSearchTerm = '';
     }
 
-    triggerStartSelfie() {
-        this.template.querySelector('input[data-id="startSelfie"]').click();
-    }
-
     handleStartSelfieCapture(e) {
         this._processPhoto(e, (base64, preview) => {
             this._startSelfieBase64 = base64;
@@ -582,24 +578,14 @@ export default class VisitManager extends LightningElement {
         return this.allVisits.filter(v => v.Visit_Status__c === VISIT_STATUS.SKIPPED);
     }
 
-    // Sequence helpers — checks if a visit is NEXT in line (only first planned can check in)
-    get nextSequenceVisitId() {
-        const pv = this.plannedVisits;
-        return pv.length > 0 ? pv[0].Id : null;
-    }
 
-    isNextInSequence(visitId) {
-        return visitId === this.nextSequenceVisitId;
-    }
-
-    // Enriched planned visits with can-check-in flag
+    // Enriched planned visits — all can check in (no sequence restriction)
     get plannedVisitsEnriched() {
-        const nextId = this.nextSequenceVisitId;
         return this.plannedVisits.map(v => ({
             ...v,
-            canCheckIn: v.Id === nextId && v._isFromPlan,
-            isLocked: v.Id !== nextId,
-            rowClass: v.Id === nextId ? 'vm-visit-row vm-row-planned vm-row-next' : 'vm-visit-row vm-row-planned vm-row-locked'
+            canCheckIn: v._isFromPlan,
+            isLocked: false,
+            rowClass: 'vm-visit-row vm-row-planned vm-row-next'
         }));
     }
 
@@ -629,22 +615,16 @@ export default class VisitManager extends LightningElement {
     handleBoardTab(e) { this.boardTab = e.currentTarget.dataset.tab; }
 
     // ═══════════════════════════════════════════════════
-    // CHECK-IN (sequential enforcement)
+    // CHECK-IN
     // ═══════════════════════════════════════════════════
     async handleCheckIn(e) {
         e.stopPropagation();
-        const visitId = e.currentTarget.dataset.id;
         const accountId = e.currentTarget.dataset.accountId;
         const beatId = e.currentTarget.dataset.beatId;
         const jpdayId = e.currentTarget.dataset.jpdayId;
 
         if (!accountId) { this._toast('Error', 'No outlet found.', 'error'); return; }
 
-        // Strict sequence enforcement — only the NEXT visit can check in
-        if (!this.isNextInSequence(visitId)) {
-            this._toast('Warning', 'You must follow the visit sequence. Please complete or skip the visits above first.', 'warning');
-            return;
-        }
 
         // Block if active visit exists
         if (this.activeVisits.length > 0) {
@@ -791,6 +771,9 @@ export default class VisitManager extends LightningElement {
     get outletOutstanding() { return this.outletSummary.outstandingBalanceFormatted || INR.format(0); }
     get outletPendingOrders() { return this.outletSummary.pendingOrders || 0; }
     get outletType() { return this.outletSummary.outletType || '--'; }
+    get outletChannel() { return this.outletSummary.channel || '--'; }
+    get outletCreditLimit() { return this.outletSummary.creditLimit ? INR.format(this.outletSummary.creditLimit) : '--'; }
+    get outletCity() { return this.outletSummary.city || '--'; }
 
     // Active visit tabs
     get isActivitiesVTab() { return this.activeVisitTab === 'activities'; }
@@ -1249,9 +1232,6 @@ export default class VisitManager extends LightningElement {
     handleOdometerEndChange(e) { this.odometerEnd = e.detail.value ? Number(e.detail.value) : null; }
     handleEndRemarksChange(e) { this.endDayRemarks = e.detail.value; }
 
-    triggerEndSelfie() {
-        this.template.querySelector('input[data-id="endSelfie"]').click();
-    }
 
     handleEndSelfieCapture(e) {
         this._processPhoto(e, (base64, preview) => {

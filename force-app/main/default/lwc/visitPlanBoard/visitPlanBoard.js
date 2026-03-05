@@ -400,28 +400,12 @@ export default class VisitPlanBoard extends NavigationMixin(LightningElement) {
         const accountId = event.currentTarget.dataset.accountId;
         const beatId = event.currentTarget.dataset.beatId;
         const jpdayId = event.currentTarget.dataset.jpdayId;
-        const visitSequence = Number(event.currentTarget.dataset.sequence) || 0;
 
         if (!accountId) {
             this.showToast('Error', 'No outlet found for this planned visit.', 'error');
             return;
         }
 
-        // Sequence enforcement: check all prior sequence outlets are handled
-        if (visitSequence > 0) {
-            const pendingPrior = this.plannedVisits.filter(v =>
-                (v.Visit_Sequence__c || 0) < visitSequence &&
-                v.Visit_Status__c === VISIT_STATUS.PLANNED
-            );
-            if (pendingPrior.length > 0) {
-                const names = pendingPrior.map(v => v.outletName || 'Outlet #' + v.Visit_Sequence__c).join(', ');
-                this.showToast('Warning',
-                    'Please complete or skip prior outlets first: ' + names,
-                    'warning'
-                );
-                return;
-            }
-        }
 
         // Also block if there is already an active visit (Checked In / In Progress)
         if (this.activeVisits.length > 0) {

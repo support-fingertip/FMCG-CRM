@@ -54,12 +54,12 @@
                     Selfie
                 </h3>
                 <div class="vm-photo-area">
-                    <input type="file" accept="image/*" capture="user" data-id="startSelfie" class="vm-file-input" onchange={handleStartSelfieCapture}/>
                     <template if:false={startSelfiePreview}>
-                        <button class="vm-photo-btn" onclick={triggerStartSelfie}>
+                        <label class="vm-photo-btn">
                             <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
                             Capture Selfie
-                        </button>
+                            <input type="file" accept="image/*" capture="user" class="vm-file-input-hidden" onchange={handleStartSelfieCapture}/>
+                        </label>
                     </template>
                     <template if:true={startSelfiePreview}>
                         <div class="vm-photo-preview">
@@ -420,6 +420,15 @@
                                     <p class="vm-row-name vm-name-strike">{visit.outletName}</p>
                                     <p class="vm-row-addr">{visit.truncatedAddress}</p>
                                 </div>
+                                <div class="vm-row-btns">
+                                    <button class="vm-btn vm-btn-checkin"
+                                        data-id={visit.Id}
+                                        data-account-id={visit.Account__c}
+                                        data-beat-id={visit.Beat__c}
+                                        onclick={handleCheckIn} disabled={isProcessing}>
+                                        Check In
+                                    </button>
+                                </div>
                             </div>
                         </template>
                     </template>
@@ -571,13 +580,13 @@
                             onchange={handleOdometerEndChange} class="slds-m-bottom_small"></lightning-input>
                         <lightning-textarea label="End Day Remarks" value={endDayRemarks}
                             onchange={handleEndRemarksChange} class="slds-m-bottom_small"></lightning-textarea>
-                        <input type="file" accept="image/*" capture="user" data-id="endSelfie" class="vm-file-input" onchange={handleEndSelfieCapture}/>
                         <div class="vm-photo-area">
                             <template if:false={endSelfiePreview}>
-                                <button class="vm-photo-btn" onclick={triggerEndSelfie}>
+                                <label class="vm-photo-btn">
                                     <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
                                     End Day Selfie
-                                </button>
+                                    <input type="file" accept="image/*" capture="user" class="vm-file-input-hidden" onchange={handleEndSelfieCapture}/>
+                                </label>
                             </template>
                             <template if:true={endSelfiePreview}>
                                 <div class="vm-photo-preview">
@@ -759,6 +768,18 @@
             <template if:true={isOutletVTab}>
                 <div class="vm-outlet-summary">
                     <div class="vm-outlet-row">
+                        <span class="vm-outlet-lbl">Outlet Type</span>
+                        <span class="vm-outlet-val">{outletType}</span>
+                    </div>
+                    <div class="vm-outlet-row">
+                        <span class="vm-outlet-lbl">Channel</span>
+                        <span class="vm-outlet-val">{outletChannel}</span>
+                    </div>
+                    <div class="vm-outlet-row">
+                        <span class="vm-outlet-lbl">City</span>
+                        <span class="vm-outlet-val">{outletCity}</span>
+                    </div>
+                    <div class="vm-outlet-row">
                         <span class="vm-outlet-lbl">Last Visit</span>
                         <span class="vm-outlet-val">{outletLastVisit}</span>
                     </div>
@@ -771,8 +792,8 @@
                         <span class="vm-outlet-val">{outletPendingOrders}</span>
                     </div>
                     <div class="vm-outlet-row">
-                        <span class="vm-outlet-lbl">Outlet Type</span>
-                        <span class="vm-outlet-val">{outletType}</span>
+                        <span class="vm-outlet-lbl">Credit Limit</span>
+                        <span class="vm-outlet-val">{outletCreditLimit}</span>
                     </div>
                 </div>
             </template>
