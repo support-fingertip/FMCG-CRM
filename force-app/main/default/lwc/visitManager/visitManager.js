@@ -245,6 +245,8 @@ export default class VisitManager extends LightningElement {
     }
 
     get dayDurationDisplay() {
+        // Reference currentTime to create a reactive dependency that ticks every second
+        void this.currentTime;
         if (!this.dayStartTime) return '00:00:00';
         const diff = Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000);
         const h = Math.floor(diff / 3600);
