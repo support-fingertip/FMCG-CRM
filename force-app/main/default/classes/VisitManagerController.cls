@@ -392,15 +392,7 @@ public without sharing class VisitManagerController {
     }
 
     // ──────────────────────────────────────────────────
-    // 12. GPS LOGGING
-    // ──────────────────────────────────────────────────
-    @AuraEnabled
-    public static GPS_Log__c logGPS(GPS_Log__c gpsLog) {
-        return DayAttendanceController.logGPS(gpsLog);
-    }
-
-    // ──────────────────────────────────────────────────
-    // 13. VISIT ACTIVITIES & CONFIG
+    // 12. VISIT ACTIVITIES & CONFIG
     // ──────────────────────────────────────────────────
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getVisitActivities() {
