@@ -912,7 +912,7 @@ export default class VisitManager extends LightningElement {
 
     get _checklistComplete() {
         if (this.checklistItems.length === 0) return true;
-        return this.checklistItems.every(c => c.checked);
+        return this.checklistItems.every(c => c.answer != null);
     }
 
     get nonProductiveReasonOptions() {
