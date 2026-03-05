@@ -41,6 +41,7 @@ public without sharing class OVE_Visit_Service {
         public Boolean isPlanned;
         public String  adHocReason;
         public String  geoOverrideReason;
+        public Id      existingVisitId;
     }
 
     /**
@@ -146,7 +147,29 @@ public without sharing class OVE_Visit_Service {
 
         Savepoint sp = Database.setSavepoint();
         try {
-            Visit__c visit = new Visit__c();
+            Visit__c visit;
+            Boolean isReactivation = false;
+
+            // Check if reactivating an existing skipped visit
+            if (request.existingVisitId != null) {
+                List<Visit__c> existingVisits = [
+                    SELECT Id, Visit_Status__c, Visit_Sequence__c
+                    FROM Visit__c
+                    WHERE Id = :request.existingVisitId
+                      AND Visit_Status__c = 'Skipped'
+                    LIMIT 1
+                ];
+                if (!existingVisits.isEmpty()) {
+                    visit = existingVisits[0];
+                    isReactivation = true;
+                    sequence = visit.Visit_Sequence__c != null ? Integer.valueOf(visit.Visit_Sequence__c) : sequence;
+                }
+            }
+
+            if (visit == null) {
+                visit = new Visit__c();
+            }
+
             visit.Account__c = request.accountId;
             visit.Outlet__c = request.accountId;
             visit.Salesperson__c = currentUserId;
@@ -167,6 +190,12 @@ public without sharing class OVE_Visit_Service {
             visit.Visit_Sequence__c = sequence;
             visit.Is_Planned__c = !isAdHoc;
             visit.Is_Ad_Hoc__c = isAdHoc;
+
+            // Clear skip-related fields on reactivation
+            if (isReactivation) {
+                visit.Missed_Reason__c = null;
+                visit.Missed_Notes__c = null;
+            }
 
             if (isAdHoc && String.isNotBlank(request.adHocReason)) {
                 visit.Ad_Hoc_Reason__c = request.adHocReason;
@@ -191,7 +220,11 @@ public without sharing class OVE_Visit_Service {
             visit.Collection_Amount__c = 0;
             visit.Total_Orders_Count__c = 0;
 
-            insert visit;
+            if (isReactivation) {
+                update visit;
+            } else {
+                insert visit;
+            }
 
             // Log GPS for visit check-in
             if (BPM_FeatureToggle_Util.isEnabled(DFO_DayAttendance_Service.FEATURE_GPS_TRACKING) &&

@@ -622,6 +622,7 @@ export default class VisitManager extends LightningElement {
         const accountId = e.currentTarget.dataset.accountId;
         const beatId = e.currentTarget.dataset.beatId;
         const jpdayId = e.currentTarget.dataset.jpdayId;
+        const existingVisitId = e.currentTarget.dataset.id || null;
 
         if (!accountId) { this._toast('Error', 'No outlet found.', 'error'); return; }
 
@@ -642,7 +643,8 @@ export default class VisitManager extends LightningElement {
                 latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy,
                 batteryLevel: this.batteryLevel,
                 networkStatus: this.networkStatus,
-                isPlanned: true
+                isPlanned: true,
+                existingVisitId: existingVisitId
             };
 
             const visit = await checkInVisitApex({ visitJson: JSON.stringify(visitData) });
