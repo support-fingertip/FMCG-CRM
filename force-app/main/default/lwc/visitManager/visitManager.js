@@ -928,12 +928,16 @@ export default class VisitManager extends LightningElement {
 
     handleCheckoutClick() {
         this.checklistItems = [
-            { id: 'stock', label: 'Stock check completed', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
-            { id: 'display', label: 'Product display verified', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
-            { id: 'feedback', label: 'Retailer feedback captured', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' },
-            { id: 'scheme', label: 'Scheme communication done', checked: false, boxClass: 'vm-check-box', labelClass: 'vm-check-label' }
+            { id: 'stock', label: 'Was stock check completed?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
+            { id: 'display', label: 'Was product display verified?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
+            { id: 'feedback', label: 'Was retailer feedback captured?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
+            { id: 'scheme', label: 'Was scheme communication done?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' }
         ];
-        this.isProductive = true;
+        const hasOrders = this.activeOrdersCount > 0;
+        const hasCollections = (this.activeVisitSummary.collectionsCount || 0) > 0;
+        const hasReturns = (this.activeVisitSummary.returnsCount || 0) > 0;
+        const hasAnyActivity = hasOrders || hasCollections || hasReturns;
+        this.isProductive = hasAnyActivity;
         this.nonProductiveReason = '';
         this.visitNotes = '';
         this.showCheckoutModal = true;
@@ -941,16 +945,16 @@ export default class VisitManager extends LightningElement {
 
     handleCheckoutClose() { this.showCheckoutModal = false; }
 
-    handleChecklistToggle(e) {
+    handleChecklistAnswer(e) {
         const id = e.currentTarget.dataset.id;
+        const answer = e.currentTarget.dataset.answer;
         this.checklistItems = this.checklistItems.map(c => {
             if (c.id === id) {
-                const checked = !c.checked;
                 return {
                     ...c,
-                    checked,
-                    boxClass: checked ? 'vm-check-box vm-check-done' : 'vm-check-box',
-                    labelClass: checked ? 'vm-check-label vm-check-label-done' : 'vm-check-label'
+                    answer,
+                    yesClass: answer === 'yes' ? 'vm-yn-btn vm-yn-yes-active' : 'vm-yn-btn',
+                    noClass: answer === 'no' ? 'vm-yn-btn vm-yn-no-active' : 'vm-yn-btn'
                 };
             }
             return c;
@@ -970,9 +974,9 @@ export default class VisitManager extends LightningElement {
         this.isProcessing = true;
         try {
             const pos = await this._captureLocationAsync();
-            const completedActs = this.visitActivities
-                .filter(a => a.completed)
-                .map(a => a.label)
+            const completedActs = this.checklistItems
+                .filter(c => c.answer != null)
+                .map(c => c.label.replace(/^Was\s+/i, '').replace(/\?$/, '') + ': ' + (c.answer === 'yes' ? 'Yes' : 'No'))
                 .join(', ');
 
             const data = {

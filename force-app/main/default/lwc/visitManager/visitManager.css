@@ -1417,49 +1417,64 @@
     margin: 0 0 12px;
 }
 
-.vm-checklist-item {
+.vm-yn-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     padding: 12px 14px;
     background: var(--vm-white);
     border: 1px solid var(--vm-border);
     border-radius: var(--vm-radius-md);
     margin-bottom: 6px;
+}
+
+.vm-yn-question {
+    font-size: 14px;
+    color: var(--vm-text);
+    flex: 1;
+}
+
+.vm-yn-buttons {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.vm-yn-btn {
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-sm);
+    background: var(--vm-white);
+    color: var(--vm-text-secondary);
     cursor: pointer;
     transition: var(--vm-transition);
 }
 
-.vm-checklist-item:hover {
+.vm-yn-btn:hover {
     background: var(--vm-bg);
 }
 
-.vm-check-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    border: 2px solid var(--vm-border);
-    border-radius: var(--vm-radius-sm);
-    transition: var(--vm-transition);
-}
-
-.vm-check-done {
+.vm-yn-yes-active {
     background: var(--vm-success);
     border-color: var(--vm-success);
+    color: #fff;
 }
 
-.vm-check-label {
-    font-size: 14px;
-    color: var(--vm-text);
-    transition: var(--vm-transition);
+.vm-yn-yes-active:hover {
+    background: #257a3e;
 }
 
-.vm-check-label-done {
-    color: var(--vm-success);
-    text-decoration: line-through;
+.vm-yn-no-active {
+    background: var(--vm-error);
+    border-color: var(--vm-error);
+    color: #fff;
+}
+
+.vm-yn-no-active:hover {
+    background: #c9001a;
 }
 
 /* ================================================================

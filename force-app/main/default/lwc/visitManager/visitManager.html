@@ -830,15 +830,14 @@
 
                         <!-- Mandatory Checklist -->
                         <div class="vm-checklist">
-                            <p class="vm-checklist-title">Mandatory Checklist</p>
+                            <p class="vm-checklist-title">Visit Checklist</p>
                             <template for:each={checklistItems} for:item="item">
-                                <div key={item.id} class="vm-checklist-item" data-id={item.id} onclick={handleChecklistToggle}>
-                                    <span class={item.boxClass}>
-                                        <template if:true={item.checked}>
-                                            <lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon>
-                                        </template>
-                                    </span>
-                                    <span class={item.labelClass}>{item.label}</span>
+                                <div key={item.id} class="vm-checklist-item vm-yn-item">
+                                    <span class="vm-yn-question">{item.label}</span>
+                                    <div class="vm-yn-buttons">
+                                        <button class={item.yesClass} data-id={item.id} data-answer="yes" onclick={handleChecklistAnswer}>Yes</button>
+                                        <button class={item.noClass} data-id={item.id} data-answer="no" onclick={handleChecklistAnswer}>No</button>
+                                    </div>
                                 </div>
                             </template>
                         </div>
