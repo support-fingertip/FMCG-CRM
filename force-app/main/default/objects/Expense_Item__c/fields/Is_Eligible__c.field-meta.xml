@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Is_Eligible__c</fullName>
+    <label>Is Eligible</label>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>Whether this expense item qualifies based on eligibility rules (distance thresholds met, etc.).</description>
+</CustomField>

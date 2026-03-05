@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Expense</label>
+    <pluralLabel>Expenses</pluralLabel>
+    <nameField>
+        <label>Expense Number</label>
+        <type>AutoNumber</type>
+        <displayFormat>EXP-{0000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <enableHistory>true</enableHistory>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Monthly expense claim record per employee. Aggregates Expense Items and tracks the approval workflow from Draft through Manager/Finance approval to Paid status.</description>
+</CustomObject>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Min_Distance_KM__c</fullName>
+    <label>Min Distance KM</label>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+    <description>Minimum daily travel distance (km) required to be eligible for this expense type.</description>
+</CustomField>

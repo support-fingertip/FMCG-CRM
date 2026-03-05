@@ -53,6 +53,8 @@
     <tabs>Product_Category__c</tabs>
     <tabs>Price_List__c</tabs>
     <tabs>Price_Change_Log__c</tabs>
+    <tabs>Expense_Manager</tabs>
+    <tabs>Expense__c</tabs>
     <tabs>standard-Account</tabs>
     <tabs>standard-Product2</tabs>
     <tabs>standard-report</tabs>

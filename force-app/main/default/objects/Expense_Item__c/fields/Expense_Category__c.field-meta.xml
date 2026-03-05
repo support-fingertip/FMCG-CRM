@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Expense_Category__c</fullName>
+    <label>Expense Category</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Travel</fullName><default>true</default><label>Travel</label></value>
+            <value><fullName>Miscellaneous</fullName><default>false</default><label>Miscellaneous</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Finance_Approver__c</fullName>
+    <label>Finance Approver</label>
+    <type>Lookup</type>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Finance Approved Expenses</relationshipLabel>
+    <relationshipName>Finance_Approved_Expenses</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

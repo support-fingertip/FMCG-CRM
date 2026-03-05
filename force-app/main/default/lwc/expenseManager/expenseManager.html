@@ -1,0 +1,478 @@
+<template>
+    <!-- Loading Spinner -->
+    <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading" size="medium" class="spinner-overlay"></lightning-spinner>
+    </template>
+
+    <!-- Messages -->
+    <template if:true={errorMessage}>
+        <div class="msg msg-error">
+            <lightning-icon icon-name="utility:error" size="x-small" variant="inverse"></lightning-icon>
+            <span>{errorMessage}</span>
+        </div>
+    </template>
+    <template if:true={successMessage}>
+        <div class="msg msg-success">
+            <lightning-icon icon-name="utility:success" size="x-small" variant="inverse"></lightning-icon>
+            <span>{successMessage}</span>
+        </div>
+    </template>
+
+    <div class="exp-container">
+        <!-- Header Bar -->
+        <div class="exp-header">
+            <div class="header-left">
+                <lightning-icon icon-name="standard:expense_report" size="small"></lightning-icon>
+                <span class="header-title">Expense Manager</span>
+            </div>
+            <div class="header-right">
+                <template if:true={expense.Name}>
+                    <span class="header-ref">{expense.Name}</span>
+                </template>
+            </div>
+        </div>
+
+        <!-- Month/Year Selector + Status -->
+        <div class="selector-bar">
+            <div class="selector-controls">
+                <lightning-combobox
+                    label="Month"
+                    value={selectedMonth}
+                    options={monthOptions}
+                    onchange={handleMonthChange}
+                    variant="label-hidden"
+                    class="month-select">
+                </lightning-combobox>
+                <lightning-combobox
+                    label="Year"
+                    value={selectedYear}
+                    options={yearOptions}
+                    onchange={handleYearChange}
+                    variant="label-hidden"
+                    class="year-select">
+                </lightning-combobox>
+            </div>
+            <template if:true={expense.Status__c}>
+                <span class={statusBadgeClass}>{expense.Status__c}</span>
+            </template>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-grid">
+            <div class="stat-card stat-eligible">
+                <span class="stat-label">Eligible</span>
+                <span class="stat-value">{totalEligible}</span>
+            </div>
+            <div class="stat-card stat-claimed">
+                <span class="stat-label">Claimed</span>
+                <span class="stat-value">{totalClaimed}</span>
+            </div>
+            <div class="stat-card stat-approved">
+                <span class="stat-label">Approved</span>
+                <span class="stat-value">{totalApproved}</span>
+            </div>
+            <div class="stat-card stat-days">
+                <span class="stat-label">Days</span>
+                <span class="stat-value">{workingDays}</span>
+            </div>
+            <div class="stat-card stat-distance">
+                <span class="stat-label">Distance</span>
+                <span class="stat-value">{totalDistance} km</span>
+            </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <button class={expenseTabClass} data-tab="expense" onclick={handleTabClick}>
+                <lightning-icon icon-name="utility:money" size="xx-small"></lightning-icon>
+                <span>Expenses</span>
+            </button>
+            <button class={summaryTabClass} data-tab="summary" onclick={handleTabClick}>
+                <lightning-icon icon-name="utility:summary" size="xx-small"></lightning-icon>
+                <span>Summary</span>
+            </button>
+            <button class={overviewTabClass} data-tab="overview" onclick={handleTabClick}>
+                <lightning-icon icon-name="utility:date_input" size="xx-small"></lightning-icon>
+                <span>Overview</span>
+            </button>
+            <button class={teamTabClass} data-tab="team" onclick={handleTabClick}>
+                <lightning-icon icon-name="utility:groups" size="xx-small"></lightning-icon>
+                <span>Team</span>
+            </button>
+        </div>
+
+        <!-- ═══ Expense Tab: Calendar View ═══ -->
+        <template if:true={isExpenseTab}>
+            <div class="calendar-container">
+                <!-- Weekday headers -->
+                <div class="cal-header-row">
+                    <template for:each={weekdayHeaders} for:item="wd">
+                        <div key={wd.key} class="cal-header-cell">{wd.label}</div>
+                    </template>
+                </div>
+                <!-- Calendar grid -->
+                <div class="cal-grid">
+                    <template for:each={calendarDays} for:item="cell">
+                        <template if:true={cell.isEmpty}>
+                            <div key={cell.key} class={cell.cssClass}></div>
+                        </template>
+                        <template if:false={cell.isEmpty}>
+                            <div key={cell.key}
+                                 class={cell.cssClass}
+                                 data-date={cell.dateStr}
+                                 onclick={handleDayClick}>
+                                <span class="cal-day-num">{cell.day}</span>
+                                <template if:true={cell.hasAttendance}>
+                                    <span class="cal-dist">{cell.gpsDistance} km</span>
+                                    <template if:true={cell.showBadge}>
+                                        <span class="cal-badge">{cell.expenseCount}</span>
+                                    </template>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <template if:true={canSubmit}>
+                <div class="action-bar">
+                    <lightning-button
+                        label="Submit for Approval"
+                        variant="brand"
+                        onclick={handleSubmit}
+                        icon-name="utility:forward">
+                    </lightning-button>
+                </div>
+            </template>
+
+            <!-- Rejection reason -->
+            <template if:true={isRejected}>
+                <div class="rejection-banner">
+                    <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                    <span>Rejected: {expense.Rejection_Reason__c}</span>
+                </div>
+            </template>
+        </template>
+
+        <!-- ═══ Summary Tab ═══ -->
+        <template if:true={isSummaryTab}>
+            <div class="summary-section">
+                <h3 class="section-title">Type-wise Breakdown</h3>
+                <div class="table-wrap">
+                    <table class="exp-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th class="num-col">Items</th>
+                                <th class="num-col">Eligible</th>
+                                <th class="num-col">Claimed</th>
+                                <th class="num-col">Approved</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={summaryTypeBreakdown} for:item="row">
+                                <tr key={row.type}>
+                                    <td>{row.type}</td>
+                                    <td class="num-col">{row.count}</td>
+                                    <td class="num-col">{row.eligible}</td>
+                                    <td class="num-col">{row.claimed}</td>
+                                    <td class="num-col">{row.approved}</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="section-title">Day-wise Breakdown</h3>
+                <div class="table-wrap">
+                    <table class="exp-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th class="num-col">Items</th>
+                                <th class="num-col">Eligible</th>
+                                <th class="num-col">Claimed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={summaryDayBreakdown} for:item="row">
+                                <tr key={row.date}>
+                                    <td>{row.date}</td>
+                                    <td class="num-col">{row.count}</td>
+                                    <td class="num-col">{row.eligible}</td>
+                                    <td class="num-col">{row.claimed}</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </template>
+
+        <!-- ═══ Overview Tab ═══ -->
+        <template if:true={isOverviewTab}>
+            <div class="overview-section">
+                <h3 class="section-title">{selectedYear} - Monthly Overview</h3>
+                <div class="overview-grid">
+                    <template for:each={monthlyOverview} for:item="mo">
+                        <div key={mo.month} class="overview-card">
+                            <div class="ov-month">{mo.month}</div>
+                            <template if:true={mo.hasReport}>
+                                <span class="ov-status">{mo.status}</span>
+                                <div class="ov-amounts">
+                                    <span>Claimed: {mo.totalClaimed}</span>
+                                    <span>Approved: {mo.totalApproved}</span>
+                                </div>
+                            </template>
+                            <template if:false={mo.hasReport}>
+                                <span class="ov-no-report">No expense</span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- ═══ Team Tab ═══ -->
+        <template if:true={isTeamTab}>
+            <div class="team-section">
+                <h3 class="section-title">Team Expenses - {selectedMonth} {selectedYear}</h3>
+                <template if:true={hasTeamReports}>
+                    <div class="table-wrap">
+                        <table class="exp-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Band</th>
+                                    <th>Status</th>
+                                    <th class="num-col">Claimed</th>
+                                    <th class="num-col">Approved</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={teamReports} for:item="tr">
+                                    <tr key={tr.Id}>
+                                        <td>{tr.Employee__r.First_Name__c} {tr.Employee__r.Last_Name__c}</td>
+                                        <td>{tr.Employee__r.Band__c}</td>
+                                        <td><span class="status-badge-sm">{tr.Status__c}</span></td>
+                                        <td class="num-col">{tr.Total_Claimed__c}</td>
+                                        <td class="num-col">{tr.Total_Approved__c}</td>
+                                        <td class="action-col">
+                                            <template if:true={tr.Status__c}>
+                                                <lightning-button-group>
+                                                    <lightning-button
+                                                        label="Approve"
+                                                        variant="success"
+                                                        data-action="approve"
+                                                        data-level="manager"
+                                                        data-id={tr.Id}
+                                                        onclick={handleOpenApproval}
+                                                        class="btn-sm">
+                                                    </lightning-button>
+                                                    <lightning-button
+                                                        label="Reject"
+                                                        variant="destructive"
+                                                        data-action="reject"
+                                                        data-level="manager"
+                                                        data-id={tr.Id}
+                                                        onclick={handleOpenApproval}
+                                                        class="btn-sm">
+                                                    </lightning-button>
+                                                </lightning-button-group>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasTeamReports}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="utility:sentiment_neutral" size="large"></lightning-icon>
+                        <p>No team expense reports found for this period.</p>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <!-- ═══ DAY EXPENSE ENTRY MODAL ═══ -->
+    <template if:true={showDayModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container modal-container">
+                <header class="slds-modal__header modal-header">
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        onclick={closeDayModal}
+                        class="slds-modal__close">
+                    </lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">{formattedSelectedDate}</h2>
+                    <template if:true={selectedDateInfo.gpsDistance}>
+                        <span class="modal-subtitle">GPS Distance: {selectedDateInfo.gpsDistance} km</span>
+                    </template>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium modal-body">
+                    <div class="item-cards">
+                        <template for:each={editItems} for:item="item">
+                            <div key={item.key} class="item-card">
+                                <div class="item-card-header">
+                                    <span class="item-type-name">{item.expenseType}</span>
+                                    <span class="item-rate-badge">{item.rateLabel}</span>
+                                    <template if:true={item.receiptRequired}>
+                                        <span class="receipt-badge">Receipt Required</span>
+                                    </template>
+                                </div>
+                                <div class="item-card-body">
+                                    <!-- Distance row (for Per KM or distance-based types) -->
+                                    <template if:true={item.showDistance}>
+                                        <div class="field-row">
+                                            <div class="field-group">
+                                                <label class="field-label">GPS Distance</label>
+                                                <span class="field-readonly">{item.gpsDistance} km</span>
+                                            </div>
+                                            <div class="field-group">
+                                                <lightning-input
+                                                    label="Manual Distance (km)"
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={item.manualDistance}
+                                                    data-field="manualDistance"
+                                                    data-type={item.expenseType}
+                                                    onchange={handleItemFieldChange}
+                                                    disabled={!canEdit}
+                                                    variant="label-stacked">
+                                                </lightning-input>
+                                            </div>
+                                            <div class="field-group field-wide">
+                                                <lightning-input
+                                                    label="Override Reason"
+                                                    type="text"
+                                                    value={item.overrideReason}
+                                                    data-field="overrideReason"
+                                                    data-type={item.expenseType}
+                                                    onchange={handleItemFieldChange}
+                                                    disabled={!canEdit}
+                                                    variant="label-stacked">
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Amounts row -->
+                                    <div class="field-row">
+                                        <div class="field-group">
+                                            <label class="field-label">Eligible</label>
+                                            <span class="field-readonly amount-eligible">{item.eligibleAmount}</span>
+                                        </div>
+                                        <div class="field-group">
+                                            <lightning-input
+                                                label="Claimed Amount"
+                                                type="number"
+                                                step="0.01"
+                                                value={item.claimedAmount}
+                                                data-field="claimedAmount"
+                                                data-type={item.expenseType}
+                                                onchange={handleItemFieldChange}
+                                                disabled={!canEdit}
+                                                variant="label-stacked">
+                                            </lightning-input>
+                                        </div>
+                                        <div class="field-group">
+                                            <lightning-input
+                                                label="Receipt URL"
+                                                type="url"
+                                                value={item.receiptUrl}
+                                                data-field="receiptUrl"
+                                                data-type={item.expenseType}
+                                                onchange={handleItemFieldChange}
+                                                disabled={!canEdit}
+                                                variant="label-stacked"
+                                                placeholder="https://">
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+
+                                    <!-- Notes -->
+                                    <div class="field-row">
+                                        <div class="field-group field-wide">
+                                            <lightning-input
+                                                label="Notes"
+                                                type="text"
+                                                value={item.notes}
+                                                data-field="notes"
+                                                data-type={item.expenseType}
+                                                onchange={handleItemFieldChange}
+                                                disabled={!canEdit}
+                                                variant="label-stacked"
+                                                placeholder="Optional notes...">
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer modal-footer">
+                    <lightning-button label="Cancel" onclick={closeDayModal}></lightning-button>
+                    <template if:true={canEdit}>
+                        <lightning-button
+                            label="Delete All"
+                            variant="text-destructive"
+                            onclick={handleDeleteDayItems}
+                            icon-name="utility:delete">
+                        </lightning-button>
+                        <lightning-button
+                            label="Save"
+                            variant="brand"
+                            onclick={handleSaveDayItems}
+                            icon-name="utility:save">
+                        </lightning-button>
+                    </template>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ═══ APPROVAL MODAL ═══ -->
+    <template if:true={showApprovalModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        onclick={closeApprovalModal}
+                        class="slds-modal__close">
+                    </lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">{approvalModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template if:true={showRemarksField}>
+                        <lightning-textarea
+                            label="Remarks"
+                            value={approvalRemarks}
+                            onchange={handleRemarksChange}
+                            placeholder="Enter remarks or reason..."
+                            max-length="32000">
+                        </lightning-textarea>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeApprovalModal}></lightning-button>
+                    <lightning-button
+                        label={approvalActionLabel}
+                        variant={approvalActionVariant}
+                        onclick={handleApprovalConfirm}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>
