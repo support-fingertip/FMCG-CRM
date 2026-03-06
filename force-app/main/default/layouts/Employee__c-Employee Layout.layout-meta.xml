@@ -46,6 +46,10 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>Band__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>Reporting_Manager__c</field>
             </layoutItems>
             <layoutItems>
