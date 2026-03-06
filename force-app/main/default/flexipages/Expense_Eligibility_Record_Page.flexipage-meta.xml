@@ -126,11 +126,21 @@
                 <fieldItem>Rate_Amount__c</fieldItem>
                 <identifier>rate_amount_field</identifier>
                 <visibilityRule>
-                    <booleanFilter>1</booleanFilter>
+                    <booleanFilter>1 OR 2 OR 3</booleanFilter>
                     <criteria>
                         <leftValue>{!Record.Rate_Type__c}</leftValue>
-                        <operator>NOTEQUAL</operator>
-                        <rightValue>Actual</rightValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Per Day</rightValue>
+                    </criteria>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Per KM</rightValue>
+                    </criteria>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Flat Monthly</rightValue>
                     </criteria>
                 </visibilityRule>
             </fieldInstance>
@@ -169,11 +179,21 @@
                 <fieldItem>Max_Per_Day__c</fieldItem>
                 <identifier>max_per_day_field</identifier>
                 <visibilityRule>
-                    <booleanFilter>1</booleanFilter>
+                    <booleanFilter>1 OR 2 OR 3</booleanFilter>
                     <criteria>
                         <leftValue>{!Record.Rate_Type__c}</leftValue>
-                        <operator>NOTEQUAL</operator>
-                        <rightValue>Flat Monthly</rightValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Per Day</rightValue>
+                    </criteria>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Per KM</rightValue>
+                    </criteria>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Actual</rightValue>
                     </criteria>
                 </visibilityRule>
             </fieldInstance>
