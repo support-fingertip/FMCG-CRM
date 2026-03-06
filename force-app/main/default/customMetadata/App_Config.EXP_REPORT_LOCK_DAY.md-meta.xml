@@ -5,6 +5,6 @@
     <values><field>Module__c</field><value xsi:type="xsd:string">EXP</value></values>
     <values><field>Config_Key__c</field><value xsi:type="xsd:string">REPORT_LOCK_DAY</value></values>
     <values><field>Config_Value__c</field><value xsi:type="xsd:string">5</value></values>
-    <values><field>Data_Type__c</field><value xsi:type="xsd:string">Integer</value></values>
+    <values><field>Data_Type__c</field><value xsi:type="xsd:string">Number</value></values>
     <values><field>Description__c</field><value xsi:type="xsd:string">Day of next month after which previous month report is locked for editing</value></values>
 </CustomMetadata>

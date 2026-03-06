@@ -5,6 +5,6 @@
     <values><field>Module__c</field><value xsi:type="xsd:string">EXP</value></values>
     <values><field>Config_Key__c</field><value xsi:type="xsd:string">MAX_OVERRIDE_PERCENT</value></values>
     <values><field>Config_Value__c</field><value xsi:type="xsd:string">150</value></values>
-    <values><field>Data_Type__c</field><value xsi:type="xsd:string">Integer</value></values>
+    <values><field>Data_Type__c</field><value xsi:type="xsd:string">Number</value></values>
     <values><field>Description__c</field><value xsi:type="xsd:string">Maximum percentage manual distance can exceed GPS distance</value></values>
 </CustomMetadata>
