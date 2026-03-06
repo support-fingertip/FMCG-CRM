@@ -257,7 +257,7 @@ public without sharing class EXP_Expense_Service {
     public static void populateEligibilityFields(List<Expense_Item__c> items, Id expenseId) {
         // Get the expense record for employee band + working days
         Expense__c expense = [
-            SELECT Id, Employee__c, Employee__r.Band__c, Working_Days__c
+            SELECT Id, Employee__c, Employee__r.Band__c, Working_Days__c, User__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
