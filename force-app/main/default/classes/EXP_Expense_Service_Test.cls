@@ -32,10 +32,10 @@ public class EXP_Expense_Service_Test {
         List<Day_Attendance__c> attendances = new List<Day_Attendance__c>();
         for (Integer i = 0; i < 5; i++) {
             attendances.add(new Day_Attendance__c(
-                Employee__c = emp.Id,
+                User__c = UserInfo.getUserId(),
                 Attendance_Date__c = monthStart.addDays(i),
-                Check_In_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(9, 0, 0, 0)),
-                Check_Out_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(18, 0, 0, 0)),
+                Start_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(9, 0, 0, 0)),
+                End_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(18, 0, 0, 0)),
                 Distance_Traveled_Km__c = 25 + (i * 5)
             ));
         }

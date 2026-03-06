@@ -17,9 +17,9 @@ public class ExpenseController_Test {
         Date monthStart = Date.newInstance(Date.today().year(), Date.today().month(), 1);
         for (Integer i = 0; i < 3; i++) {
             attendances.add(new Day_Attendance__c(
-                Employee__c = emp.Id,
+                User__c = UserInfo.getUserId(),
                 Attendance_Date__c = monthStart.addDays(i),
-                Check_In_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(9, 0, 0, 0)),
+                Start_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(9, 0, 0, 0)),
                 Distance_Traveled_Km__c = 20
             ));
         }

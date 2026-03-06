@@ -15,9 +15,9 @@ public class EXP_ExpenseItem_TriggerHandler_Test {
 
         Date monthStart = Date.newInstance(Date.today().year(), Date.today().month(), 1);
         Day_Attendance__c att = new Day_Attendance__c(
-            Employee__c = emp.Id,
+            User__c = UserInfo.getUserId(),
             Attendance_Date__c = monthStart,
-            Check_In_Time__c = Datetime.newInstance(monthStart, Time.newInstance(9, 0, 0, 0)),
+            Start_Time__c = Datetime.newInstance(monthStart, Time.newInstance(9, 0, 0, 0)),
             Distance_Traveled_Km__c = 30
         );
         insert att;

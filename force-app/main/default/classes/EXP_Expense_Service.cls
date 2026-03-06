@@ -75,7 +75,7 @@ public without sharing class EXP_Expense_Service {
         Integer workingDays = [
             SELECT COUNT()
             FROM Day_Attendance__c
-            WHERE Employee__c = :emp.Id
+            WHERE User__c = :emp.User__c
               AND Attendance_Date__c >= :periodStart
               AND Attendance_Date__c <= :periodEnd
         ];
@@ -84,7 +84,7 @@ public without sharing class EXP_Expense_Service {
         AggregateResult[] distResult = [
             SELECT SUM(Distance_Traveled_Km__c) totalDist
             FROM Day_Attendance__c
-            WHERE Employee__c = :emp.Id
+            WHERE User__c = :emp.User__c
               AND Attendance_Date__c >= :periodStart
               AND Attendance_Date__c <= :periodEnd
         ];
@@ -144,10 +144,10 @@ public without sharing class EXP_Expense_Service {
 
         // Get attendance records
         List<Day_Attendance__c> attendances = [
-            SELECT Id, Attendance_Date__c, Check_In_Time__c, Check_Out_Time__c,
+            SELECT Id, Attendance_Date__c, Start_Time__c, End_Time__c,
                    Distance_Traveled_Km__c
             FROM Day_Attendance__c
-            WHERE Employee__c = :emp.Id
+            WHERE User__c = :emp.User__c
               AND Attendance_Date__c >= :periodStart
               AND Attendance_Date__c <= :periodEnd
             ORDER BY Attendance_Date__c ASC
@@ -174,8 +174,8 @@ public without sharing class EXP_Expense_Service {
             Map<String, Object> dateInfo = new Map<String, Object>();
             dateInfo.put('date', att.Attendance_Date__c);
             dateInfo.put('attendanceId', att.Id);
-            dateInfo.put('checkIn', att.Check_In_Time__c);
-            dateInfo.put('checkOut', att.Check_Out_Time__c);
+            dateInfo.put('checkIn', att.Start_Time__c);
+            dateInfo.put('checkOut', att.End_Time__c);
             dateInfo.put('gpsDistance', att.Distance_Traveled_Km__c != null ? att.Distance_Traveled_Km__c : 0);
             dateInfo.put('expenseCount', expenseCountByDate.containsKey(att.Attendance_Date__c)
                 ? expenseCountByDate.get(att.Attendance_Date__c) : 0);
@@ -288,7 +288,7 @@ public without sharing class EXP_Expense_Service {
                 SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c
                 FROM Day_Attendance__c
                 WHERE (Id IN :attendanceIds OR Attendance_Date__c IN :expenseDates)
-                  AND Employee__c = :expense.Employee__c
+                  AND User__c = :expense.User__c
             ]) {
                 attMap.put(att.Id, att);
                 attByDate.put(att.Attendance_Date__c, att);

@@ -343,7 +343,7 @@
                                                     data-field="manualDistance"
                                                     data-type={item.expenseType}
                                                     onchange={handleItemFieldChange}
-                                                    disabled={!canEdit}
+                                                    disabled={cannotEdit}
                                                     variant="label-stacked">
                                                 </lightning-input>
                                             </div>
@@ -355,7 +355,7 @@
                                                     data-field="overrideReason"
                                                     data-type={item.expenseType}
                                                     onchange={handleItemFieldChange}
-                                                    disabled={!canEdit}
+                                                    disabled={cannotEdit}
                                                     variant="label-stacked">
                                                 </lightning-input>
                                             </div>
@@ -377,7 +377,7 @@
                                                 data-field="claimedAmount"
                                                 data-type={item.expenseType}
                                                 onchange={handleItemFieldChange}
-                                                disabled={!canEdit}
+                                                disabled={cannotEdit}
                                                 variant="label-stacked">
                                             </lightning-input>
                                         </div>
@@ -389,7 +389,7 @@
                                                 data-field="receiptUrl"
                                                 data-type={item.expenseType}
                                                 onchange={handleItemFieldChange}
-                                                disabled={!canEdit}
+                                                disabled={cannotEdit}
                                                 variant="label-stacked"
                                                 placeholder="https://">
                                             </lightning-input>
@@ -406,7 +406,7 @@
                                                 data-field="notes"
                                                 data-type={item.expenseType}
                                                 onchange={handleItemFieldChange}
-                                                disabled={!canEdit}
+                                                disabled={cannotEdit}
                                                 variant="label-stacked"
                                                 placeholder="Optional notes...">
                                             </lightning-input>

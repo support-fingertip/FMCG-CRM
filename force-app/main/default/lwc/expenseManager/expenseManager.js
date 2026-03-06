@@ -529,6 +529,7 @@ export default class ExpenseManager extends LightningElement {
     get isRejected() { return this.expense.Status__c === 'Rejected'; }
     get canSubmit() { return this.isDraft || this.isRejected; }
     get canEdit() { return this.isDraft || this.isRejected; }
+    get cannotEdit() { return !this.canEdit; }
     get isExpenseTab() { return this.activeTab === 'expense'; }
     get isSummaryTab() { return this.activeTab === 'summary'; }
     get isOverviewTab() { return this.activeTab === 'overview'; }
