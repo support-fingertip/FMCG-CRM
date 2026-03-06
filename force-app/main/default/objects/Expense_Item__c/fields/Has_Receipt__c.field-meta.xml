@@ -3,7 +3,6 @@
     <fullName>Has_Receipt__c</fullName>
     <label>Has Receipt</label>
     <type>Checkbox</type>
-    <defaultValue>false</defaultValue>
     <formula>NOT(ISBLANK(Receipt_URL__c))</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <description>Indicates whether a receipt has been uploaded.</description>

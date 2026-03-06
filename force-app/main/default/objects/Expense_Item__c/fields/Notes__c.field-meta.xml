@@ -2,8 +2,9 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Notes__c</fullName>
     <label>Notes</label>
-    <type>Text</type>
+    <type>LongTextArea</type>
     <length>500</length>
+    <visibleLines>3</visibleLines>
     <required>false</required>
     <description>Employee notes or justification for this expense item.</description>
 </CustomField>
