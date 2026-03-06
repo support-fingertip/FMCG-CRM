@@ -28,85 +28,85 @@
                 </componentInstanceProperties>
                 <componentName>flexipage:fieldSection</componentName>
                 <identifier>eligibility_rule_section</identifier>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>readonly</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Name</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>name_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Is_Active__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>is_active_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>required</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Band__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>band_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Sort_Order__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>sort_order_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>required</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Expense_Type__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>expense_type_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>required</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Expense_Category__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>expense_category_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
             </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>readonly</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Name</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>name_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Is_Active__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>is_active_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>required</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Band__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>band_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Sort_Order__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>sort_order_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>required</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Expense_Type__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>expense_type_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>required</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Expense_Category__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>expense_category_field</identifier>
+            </fieldInstance>
         </itemInstances>
         <!-- ═══ Rate Configuration Section ═══ -->
         <itemInstances>
@@ -121,106 +121,106 @@
                 </componentInstanceProperties>
                 <componentName>flexipage:fieldSection</componentName>
                 <identifier>rate_config_section</identifier>
-                <!-- Rate Type - always visible -->
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>required</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Rate_Type__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>rate_type_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <!-- Rate Amount - hidden when Actual -->
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>required</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Rate_Amount__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>rate_amount_field</identifier>
-                        <visibilityRule>
-                            <booleanFilter>1</booleanFilter>
-                            <criteria>
-                                <leftValue>{!Record.Rate_Type__c}</leftValue>
-                                <operator>NOTEQUAL</operator>
-                                <rightValue>Actual</rightValue>
-                            </criteria>
-                        </visibilityRule>
-                    </fieldInstance>
-                </itemInstances>
-                <!-- Min Distance - only for Per Day and Per KM -->
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Min_Distance_KM__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>min_distance_field</identifier>
-                        <visibilityRule>
-                            <booleanFilter>1 OR 2</booleanFilter>
-                            <criteria>
-                                <leftValue>{!Record.Rate_Type__c}</leftValue>
-                                <operator>EQUAL</operator>
-                                <rightValue>Per KM</rightValue>
-                            </criteria>
-                            <criteria>
-                                <leftValue>{!Record.Rate_Type__c}</leftValue>
-                                <operator>EQUAL</operator>
-                                <rightValue>Per Day</rightValue>
-                            </criteria>
-                        </visibilityRule>
-                    </fieldInstance>
-                </itemInstances>
-                <!-- Max Per Day - hidden for Flat Monthly -->
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Max_Per_Day__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>max_per_day_field</identifier>
-                        <visibilityRule>
-                            <booleanFilter>1</booleanFilter>
-                            <criteria>
-                                <leftValue>{!Record.Rate_Type__c}</leftValue>
-                                <operator>NOTEQUAL</operator>
-                                <rightValue>Flat Monthly</rightValue>
-                            </criteria>
-                        </visibilityRule>
-                    </fieldInstance>
-                </itemInstances>
-                <!-- Max Per Month - always visible -->
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Max_Per_Month__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>max_per_month_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
             </componentInstance>
+        </itemInstances>
+        <!-- Rate Type - always visible -->
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>required</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Rate_Type__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>rate_type_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <!-- Rate Amount - hidden when Actual -->
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>required</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Rate_Amount__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>rate_amount_field</identifier>
+                <visibilityRule>
+                    <booleanFilter>1</booleanFilter>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>NOTEQUAL</operator>
+                        <rightValue>Actual</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </fieldInstance>
+        </itemInstances>
+        <!-- Min Distance - only for Per Day and Per KM -->
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Min_Distance_KM__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>min_distance_field</identifier>
+                <visibilityRule>
+                    <booleanFilter>1 OR 2</booleanFilter>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Per KM</rightValue>
+                    </criteria>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>Per Day</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </fieldInstance>
+        </itemInstances>
+        <!-- Max Per Day - hidden for Flat Monthly -->
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Max_Per_Day__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>max_per_day_field</identifier>
+                <visibilityRule>
+                    <booleanFilter>1</booleanFilter>
+                    <criteria>
+                        <leftValue>{!Record.Rate_Type__c}</leftValue>
+                        <operator>NOTEQUAL</operator>
+                        <rightValue>Flat Monthly</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </fieldInstance>
+        </itemInstances>
+        <!-- Max Per Month - always visible -->
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Max_Per_Month__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>max_per_month_field</identifier>
+            </fieldInstance>
         </itemInstances>
         <!-- ═══ Receipt Rules Section ═══ -->
         <itemInstances>
@@ -235,42 +235,42 @@
                 </componentInstanceProperties>
                 <componentName>flexipage:fieldSection</componentName>
                 <identifier>receipt_rules_section</identifier>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Receipt_Required__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>receipt_required_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <!-- Receipt Threshold - only when Receipt Required is checked -->
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Receipt_Threshold__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>receipt_threshold_field</identifier>
-                        <visibilityRule>
-                            <booleanFilter>1</booleanFilter>
-                            <criteria>
-                                <leftValue>{!Record.Receipt_Required__c}</leftValue>
-                                <operator>EQUAL</operator>
-                                <rightValue>true</rightValue>
-                            </criteria>
-                        </visibilityRule>
-                    </fieldInstance>
-                </itemInstances>
             </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Receipt_Required__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>receipt_required_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <!-- Receipt Threshold - only when Receipt Required is checked -->
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Receipt_Threshold__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>receipt_threshold_field</identifier>
+                <visibilityRule>
+                    <booleanFilter>1</booleanFilter>
+                    <criteria>
+                        <leftValue>{!Record.Receipt_Required__c}</leftValue>
+                        <operator>EQUAL</operator>
+                        <rightValue>true</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </fieldInstance>
         </itemInstances>
         <!-- ═══ Description Section ═══ -->
         <itemInstances>
@@ -285,20 +285,20 @@
                 </componentInstanceProperties>
                 <componentName>flexipage:fieldSection</componentName>
                 <identifier>description_section</identifier>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>none</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>Description__c</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>description_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
             </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>Description__c</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>description_field</identifier>
+            </fieldInstance>
         </itemInstances>
         <!-- ═══ System Information Section ═══ -->
         <itemInstances>
@@ -313,33 +313,33 @@
                 </componentInstanceProperties>
                 <componentName>flexipage:fieldSection</componentName>
                 <identifier>system_info_section</identifier>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>readonly</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>CreatedById</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>created_by_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
-                <itemInstances>
-                    <fieldInstance>
-                        <fieldInstanceProperties>
-                            <name>uiBehavior</name>
-                            <value>readonly</value>
-                        </fieldInstanceProperties>
-                        <fieldItem>
-                            <fieldName>LastModifiedById</fieldName>
-                            <isRequired>false</isRequired>
-                        </fieldItem>
-                        <identifier>last_modified_by_field</identifier>
-                    </fieldInstance>
-                </itemInstances>
             </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>readonly</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>CreatedById</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>created_by_field</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>readonly</value>
+                </fieldInstanceProperties>
+                <fieldItem>
+                    <fieldName>LastModifiedById</fieldName>
+                    <isRequired>false</isRequired>
+                </fieldItem>
+                <identifier>last_modified_by_field</identifier>
+            </fieldInstance>
         </itemInstances>
         <name>main</name>
         <type>Region</type>
