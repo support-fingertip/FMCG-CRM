@@ -881,3 +881,35 @@
     font-style: italic;
     margin-top: 4px;
 }
+
+/* ── Modal Error / Validation ────────────────────────────────── */
+.modal-error-msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--error-light, #fde4e4);
+    color: var(--error-color, #ea001e);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    border: 1px solid var(--error-color, #ea001e);
+}
+
+.item-card-error {
+    border-color: var(--error-color, #ea001e) !important;
+    box-shadow: 0 0 0 1px var(--error-color, #ea001e);
+}
+
+.input-error {
+    --sds-c-input-color-border: var(--error-color, #ea001e);
+}
+
+.field-error-text {
+    display: block;
+    font-size: 11px;
+    color: var(--error-color, #ea001e);
+    margin-top: 2px;
+    font-weight: 500;
+}

@@ -316,6 +316,12 @@
                     </template>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium modal-body">
+                    <template if:true={modalError}>
+                        <div class="modal-error-msg">
+                            <lightning-icon icon-name="utility:error" size="xx-small" variant="error"></lightning-icon>
+                            <span>{modalError}</span>
+                        </div>
+                    </template>
                     <template if:true={hasNoEditItems}>
                         <div class="slds-align_absolute-center slds-p-around_large">
                             <div class="slds-text-align_center slds-text-color_weak">
@@ -326,7 +332,7 @@
                     </template>
                     <div class="item-cards">
                         <template for:each={editItems} for:item="item">
-                            <div key={item.key} class="item-card">
+                            <div key={item.key} class={item.cardClass}>
                                 <div class="item-card-header">
                                     <span class="item-type-name">{item.expenseType}</span>
                                     <span class="item-rate-badge">{item.rateLabel}</span>
@@ -386,8 +392,12 @@
                                                 data-type={item.expenseType}
                                                 onchange={handleItemFieldChange}
                                                 disabled={cannotEdit}
+                                                class={item.claimedInputClass}
                                                 variant="label-stacked">
                                             </lightning-input>
+                                            <template if:true={item.exceedsEligible}>
+                                                <span class="field-error-text">Exceeds eligible amount ({item.eligibleAmount})</span>
+                                            </template>
                                         </div>
                                         <div class="field-group">
                                             <template if:true={item.id}>

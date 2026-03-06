@@ -54,6 +54,9 @@ export default class ExpenseManager extends LightningElement {
     @track selectedDateInfo = {};
     @track editItems = [];
 
+    // Modal error
+    @track modalError = '';
+
     // Approval modal
     @track showApprovalModal = false;
     @track approvalRemarks = '';
@@ -243,6 +246,7 @@ export default class ExpenseManager extends LightningElement {
         this.selectedDate = dateStr;
         this.selectedDateInfo = dayInfo;
         this.showDayModal = true;
+        this.modalError = '';
 
         try {
             this.isLoading = true;
@@ -276,6 +280,9 @@ export default class ExpenseManager extends LightningElement {
                     hasExisting: !!existing,
                     showDistance: rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0),
                     isActual: rule.Rate_Type__c === 'Actual',
+                    exceedsEligible: false,
+                    cardClass: 'item-card',
+                    claimedInputClass: '',
                     files: [],
                     hasFiles: false
                 };
@@ -315,6 +322,9 @@ export default class ExpenseManager extends LightningElement {
                 if (item.isActual) {
                     item.eligibleAmount = this.recalcEligible(item);
                 }
+                item.exceedsEligible = !item.isActual && item.claimedAmount > item.eligibleAmount;
+                item.cardClass = item.exceedsEligible ? 'item-card item-card-error' : 'item-card';
+                item.claimedInputClass = item.exceedsEligible ? 'input-error' : '';
             } else if (field === 'overrideReason') {
                 item.overrideReason = value;
             } else if (field === 'receiptUrl') {
@@ -351,6 +361,27 @@ export default class ExpenseManager extends LightningElement {
     }
 
     async handleSaveDayItems() {
+        // Client-side validation: check claimed vs eligible
+        this.modalError = '';
+        const exceeded = this.editItems.filter(
+            i => !i.isActual && i.claimedAmount > 0 && i.claimedAmount > i.eligibleAmount
+        );
+        if (exceeded.length > 0) {
+            const types = exceeded.map(i => i.expenseType).join(', ');
+            this.modalError = 'Claimed amount exceeds eligible amount for: ' + types;
+            // Highlight the exceeded items
+            this.editItems = this.editItems.map(item => {
+                const exceeds = !item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount;
+                return {
+                    ...item,
+                    exceedsEligible: exceeds,
+                    cardClass: exceeds ? 'item-card item-card-error' : 'item-card',
+                    claimedInputClass: exceeds ? 'input-error' : ''
+                };
+            });
+            return;
+        }
+
         try {
             this.isLoading = true;
             const itemsToSave = this.editItems
@@ -388,7 +419,10 @@ export default class ExpenseManager extends LightningElement {
             this.closeDayModal();
             await this.loadReport();
         } catch (e) {
-            this.showError(e);
+            let msg = 'An error occurred.';
+            if (e && e.body && e.body.message) msg = e.body.message;
+            else if (e && e.message) msg = e.message;
+            this.modalError = msg;
         } finally {
             this.isLoading = false;
         }
@@ -421,6 +455,7 @@ export default class ExpenseManager extends LightningElement {
         this.showDayModal = false;
         this.selectedDate = null;
         this.editItems = [];
+        this.modalError = '';
     }
 
     // ── File Upload Handlers ──────────────────────────────────────
