@@ -1410,22 +1410,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Eligibility__c.Band__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense_Eligibility__c.Description__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Eligibility__c.Expense_Category__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Eligibility__c.Expense_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1455,11 +1440,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Eligibility__c.Rate_Type__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense_Eligibility__c.Receipt_Required__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1474,7 +1454,7 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
+        <editable>false</editable>
         <field>Expense_Item__c.Applied_Distance_KM__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1510,26 +1490,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Item__c.Expense_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Item__c.Expense_Type__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Item__c.Expense__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense_Item__c.GPS_Distance_KM__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
+        <editable>false</editable>
         <field>Expense_Item__c.Has_Receipt__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1570,11 +1535,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense__c.Employee__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense__c.Finance_Approved_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1605,11 +1565,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense__c.Month__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense__c.Period_End__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1634,12 +1589,12 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
+        <editable>false</editable>
         <field>Expense__c.Total_Approved__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
+        <editable>false</editable>
         <field>Expense__c.Total_Claimed__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1649,7 +1604,7 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
+        <editable>false</editable>
         <field>Expense__c.Total_Eligible__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1661,11 +1616,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Expense__c.Working_Days__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense__c.Year__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
