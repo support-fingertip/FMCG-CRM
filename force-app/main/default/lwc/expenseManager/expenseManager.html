@@ -316,6 +316,14 @@
                     </template>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium modal-body">
+                    <template if:true={hasNoEditItems}>
+                        <div class="slds-align_absolute-center slds-p-around_large">
+                            <div class="slds-text-align_center slds-text-color_weak">
+                                <lightning-icon icon-name="utility:info" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                                <p class="slds-m-top_small">No expense eligibility rules found for your band. Please contact your administrator to configure eligibility rules.</p>
+                            </div>
+                        </div>
+                    </template>
                     <div class="item-cards">
                         <template for:each={editItems} for:item="item">
                             <div key={item.key} class="item-card">

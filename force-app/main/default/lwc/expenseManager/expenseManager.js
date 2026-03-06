@@ -131,7 +131,12 @@ export default class ExpenseManager extends LightningElement {
             this.eligibilityRules = await getEligibilityRules();
         } catch (e) {
             this.eligibilityRules = [];
+            this.showError(e);
         }
+    }
+
+    get hasNoEditItems() {
+        return !this.editItems || this.editItems.length === 0;
     }
 
     // ── Calendar Builder ─────────────────────────────────────────
