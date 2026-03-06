@@ -36,10 +36,7 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Name</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Name</fieldItem>
                 <identifier>name_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -49,10 +46,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Is_Active__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Is_Active__c</fieldItem>
                 <identifier>is_active_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -62,10 +56,7 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Band__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Band__c</fieldItem>
                 <identifier>band_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -75,10 +66,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Sort_Order__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Sort_Order__c</fieldItem>
                 <identifier>sort_order_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -88,10 +76,7 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Expense_Type__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Expense_Type__c</fieldItem>
                 <identifier>expense_type_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -101,10 +86,7 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Expense_Category__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Expense_Category__c</fieldItem>
                 <identifier>expense_category_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -130,10 +112,7 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Rate_Type__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Rate_Type__c</fieldItem>
                 <identifier>rate_type_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -144,10 +123,7 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Rate_Amount__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Rate_Amount__c</fieldItem>
                 <identifier>rate_amount_field</identifier>
                 <visibilityRule>
                     <booleanFilter>1</booleanFilter>
@@ -166,10 +142,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Min_Distance_KM__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Min_Distance_KM__c</fieldItem>
                 <identifier>min_distance_field</identifier>
                 <visibilityRule>
                     <booleanFilter>1 OR 2</booleanFilter>
@@ -193,10 +166,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Max_Per_Day__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Max_Per_Day__c</fieldItem>
                 <identifier>max_per_day_field</identifier>
                 <visibilityRule>
                     <booleanFilter>1</booleanFilter>
@@ -215,10 +185,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Max_Per_Month__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Max_Per_Month__c</fieldItem>
                 <identifier>max_per_month_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -243,10 +210,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Receipt_Required__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Receipt_Required__c</fieldItem>
                 <identifier>receipt_required_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -257,10 +221,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Receipt_Threshold__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Receipt_Threshold__c</fieldItem>
                 <identifier>receipt_threshold_field</identifier>
                 <visibilityRule>
                     <booleanFilter>1</booleanFilter>
@@ -293,10 +254,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>Description__c</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>Description__c</fieldItem>
                 <identifier>description_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -321,10 +279,7 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>CreatedById</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>CreatedById</fieldItem>
                 <identifier>created_by_field</identifier>
             </fieldInstance>
         </itemInstances>
@@ -334,10 +289,7 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>
-                    <fieldName>LastModifiedById</fieldName>
-                    <isRequired>false</isRequired>
-                </fieldItem>
+                <fieldItem>LastModifiedById</fieldItem>
                 <identifier>last_modified_by_field</identifier>
             </fieldInstance>
         </itemInstances>
