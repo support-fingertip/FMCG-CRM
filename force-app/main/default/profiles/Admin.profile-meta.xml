@@ -5452,6 +5452,10 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
+        <tab>Expense_Eligibility__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Expense_Manager</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
