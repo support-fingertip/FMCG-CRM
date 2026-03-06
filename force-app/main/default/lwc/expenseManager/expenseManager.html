@@ -390,17 +390,43 @@
                                             </lightning-input>
                                         </div>
                                         <div class="field-group">
-                                            <lightning-input
-                                                label="Receipt URL"
-                                                type="url"
-                                                value={item.receiptUrl}
-                                                data-field="receiptUrl"
-                                                data-type={item.expenseType}
-                                                onchange={handleItemFieldChange}
-                                                disabled={cannotEdit}
-                                                variant="label-stacked"
-                                                placeholder="https://">
-                                            </lightning-input>
+                                            <template if:true={item.id}>
+                                                <template if:true={canEdit}>
+                                                    <lightning-file-upload
+                                                        label="Upload Receipt"
+                                                        name="receiptUpload"
+                                                        record-id={item.id}
+                                                        accept={acceptedFormats}
+                                                        multiple
+                                                        onuploadfinished={handleUploadFinished}
+                                                        data-type={item.expenseType}>
+                                                    </lightning-file-upload>
+                                                </template>
+                                                <template if:true={item.files}>
+                                                    <div class="file-list">
+                                                        <template for:each={item.files} for:item="file">
+                                                            <div key={file.contentDocumentId} class="file-item">
+                                                                <lightning-icon icon-name="doctype:attachment" size="xx-small"></lightning-icon>
+                                                                <span class="file-name" title={file.title}>{file.title}.{file.fileExtension}</span>
+                                                                <template if:true={canEdit}>
+                                                                    <lightning-button-icon
+                                                                        icon-name="utility:delete"
+                                                                        alternative-text="Delete file"
+                                                                        size="small"
+                                                                        variant="bare-destructive"
+                                                                        data-docid={file.contentDocumentId}
+                                                                        data-type={item.expenseType}
+                                                                        onclick={handleDeleteFile}>
+                                                                    </lightning-button-icon>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </template>
+                                            <template if:false={item.id}>
+                                                <p class="save-first-msg">Save to upload receipts</p>
+                                            </template>
                                         </div>
                                     </div>
 

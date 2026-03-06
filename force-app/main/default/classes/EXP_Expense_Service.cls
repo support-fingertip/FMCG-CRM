@@ -477,8 +477,27 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
+        // Collect item IDs to check for attached files
+        Set<Id> receiptRequiredItemIds = new Set<Id>();
+        Map<Id, Expense_Item__c> itemById = new Map<Id, Expense_Item__c>();
         for (Expense_Item__c item : items) {
-            if (String.isBlank(item.Receipt_URL__c)) {
+            receiptRequiredItemIds.add(item.Id);
+            itemById.put(item.Id, item);
+        }
+
+        // Check which items have files attached
+        Set<Id> itemsWithFiles = new Set<Id>();
+        for (ContentDocumentLink cdl : [
+            SELECT LinkedEntityId
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId IN :receiptRequiredItemIds
+        ]) {
+            itemsWithFiles.add(cdl.LinkedEntityId);
+        }
+
+        for (Expense_Item__c item : items) {
+            Boolean hasReceipt = itemsWithFiles.contains(item.Id) || String.isNotBlank(item.Receipt_URL__c);
+            if (!hasReceipt) {
                 Expense_Eligibility__c rule = ruleMap.get(item.Expense_Type__c);
                 Decimal threshold = (rule != null && rule.Receipt_Threshold__c != null)
                     ? rule.Receipt_Threshold__c : 0;
@@ -715,6 +734,43 @@ public without sharing class EXP_Expense_Service {
               AND Month__c = :month AND Year__c = :year
             ORDER BY Employee__r.First_Name__c ASC
         ];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FILE / RECEIPT MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public static List<Map<String, Object>> getExpenseItemFiles(List<Id> itemIds) {
+        List<Map<String, Object>> result = new List<Map<String, Object>>();
+        if (itemIds == null || itemIds.isEmpty()) return result;
+
+        for (ContentDocumentLink cdl : [
+            SELECT ContentDocumentId, ContentDocument.Title,
+                   ContentDocument.FileExtension, ContentDocument.ContentSize,
+                   ContentDocument.LatestPublishedVersionId, LinkedEntityId
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId IN :itemIds
+            ORDER BY ContentDocument.CreatedDate DESC
+        ]) {
+            Map<String, Object> fileInfo = new Map<String, Object>();
+            fileInfo.put('contentDocumentId', cdl.ContentDocumentId);
+            fileInfo.put('title', cdl.ContentDocument.Title);
+            fileInfo.put('fileExtension', cdl.ContentDocument.FileExtension);
+            fileInfo.put('contentSize', cdl.ContentDocument.ContentSize);
+            fileInfo.put('versionId', cdl.ContentDocument.LatestPublishedVersionId);
+            fileInfo.put('expenseItemId', cdl.LinkedEntityId);
+            result.add(fileInfo);
+        }
+        return result;
+    }
+
+    public static void deleteExpenseItemFile(Id contentDocumentId) {
+        List<ContentDocument> docs = [
+            SELECT Id FROM ContentDocument WHERE Id = :contentDocumentId LIMIT 1
+        ];
+        if (!docs.isEmpty()) {
+            delete docs;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -13,6 +13,8 @@ import getMonthlyOverview from '@salesforce/apex/ExpenseController.getMonthlyOve
 import getExpenseConfig from '@salesforce/apex/ExpenseController.getExpenseConfig';
 import getTeamExpenseReports from '@salesforce/apex/ExpenseController.getTeamExpenseReports';
 import markAsPaid from '@salesforce/apex/ExpenseController.markAsPaid';
+import getExpenseItemFiles from '@salesforce/apex/ExpenseController.getExpenseItemFiles';
+import deleteExpenseItemFile from '@salesforce/apex/ExpenseController.deleteExpenseItemFile';
 
 const MONTHS = [
     { label: 'January', value: 'January' },
@@ -273,9 +275,13 @@ export default class ExpenseManager extends LightningElement {
                     rateLabel: this.getRateLabel(rule),
                     hasExisting: !!existing,
                     showDistance: rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0),
-                    isActual: rule.Rate_Type__c === 'Actual'
+                    isActual: rule.Rate_Type__c === 'Actual',
+                    files: [],
+                    hasFiles: false
                 };
             });
+
+            await this.loadFilesForItems();
         } catch (e) {
             this.showError(e);
         } finally {
@@ -415,6 +421,52 @@ export default class ExpenseManager extends LightningElement {
         this.showDayModal = false;
         this.selectedDate = null;
         this.editItems = [];
+    }
+
+    // ── File Upload Handlers ──────────────────────────────────────
+    async loadFilesForItems() {
+        const itemIds = this.editItems.filter(i => i.id).map(i => i.id);
+        if (itemIds.length === 0) return;
+
+        try {
+            const files = await getExpenseItemFiles({ itemIds });
+            const filesByItem = {};
+            files.forEach(f => {
+                const itemId = f.expenseItemId;
+                if (!filesByItem[itemId]) filesByItem[itemId] = [];
+                filesByItem[itemId].push(f);
+            });
+
+            this.editItems = this.editItems.map(item => ({
+                ...item,
+                files: item.id ? (filesByItem[item.id] || []) : [],
+                hasFiles: item.id ? (filesByItem[item.id] || []).length > 0 : false
+            }));
+        } catch (e) {
+            this.showError(e);
+        }
+    }
+
+    async handleUploadFinished(event) {
+        const uploadedFiles = event.detail.files;
+        if (uploadedFiles && uploadedFiles.length > 0) {
+            this.showSuccess(uploadedFiles.length + ' receipt(s) uploaded.');
+            await this.loadFilesForItems();
+        }
+    }
+
+    async handleDeleteFile(event) {
+        const docId = event.currentTarget.dataset.docid;
+        try {
+            this.isLoading = true;
+            await deleteExpenseItemFile({ contentDocumentId: docId });
+            this.showSuccess('Receipt deleted.');
+            await this.loadFilesForItems();
+        } catch (e) {
+            this.showError(e);
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     // ── Submit / Approve / Reject ────────────────────────────────
@@ -577,6 +629,10 @@ export default class ExpenseManager extends LightningElement {
     }
 
     get hasTeamReports() { return this.teamReports.length > 0; }
+
+    get acceptedFormats() {
+        return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
+    }
 
     get approvalModalTitle() {
         if (this.approvalAction === 'approve') return 'Approve Expense';

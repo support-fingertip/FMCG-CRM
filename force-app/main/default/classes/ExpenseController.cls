@@ -155,6 +155,24 @@ public with sharing class ExpenseController {
     }
 
     @AuraEnabled
+    public static List<Map<String, Object>> getExpenseItemFiles(List<Id> itemIds) {
+        try {
+            return EXP_Expense_Service.getExpenseItemFiles(itemIds);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void deleteExpenseItemFile(Id contentDocumentId) {
+        try {
+            EXP_Expense_Service.deleteExpenseItemFile(contentDocumentId);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static Expense__c markAsPaid(Id expenseId) {
         try {
             return EXP_Expense_Service.markAsPaid(expenseId);
