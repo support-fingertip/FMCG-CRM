@@ -53,7 +53,8 @@ public without sharing class EXP_Expense_Service {
         'Submitted'         => new Set<String>{ 'Manager Approved', 'Rejected' },
         'Manager Approved'  => new Set<String>{ 'Finance Approved', 'Rejected' },
         'Rejected'          => new Set<String>{ 'Draft' },
-        'Finance Approved'  => new Set<String>{ 'Paid' }
+        'Finance Approved'  => new Set<String>{ 'Paid' },
+        'Paid'              => new Set<String>{ 'Finance Approved' }
     };
 
     // ── DA Working Hour Thresholds ────────────────────────────────────────

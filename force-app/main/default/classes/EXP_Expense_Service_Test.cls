@@ -628,6 +628,8 @@ public class EXP_Expense_Service_Test {
         System.assert(EXP_Expense_Service.isValidTransition('Submitted', 'Rejected'));
         System.assert(!EXP_Expense_Service.isValidTransition('Draft', 'Manager Approved'));
         System.assert(!EXP_Expense_Service.isValidTransition('Paid', 'Draft'));
+        System.assert(EXP_Expense_Service.isValidTransition('Finance Approved', 'Paid'));
+        System.assert(EXP_Expense_Service.isValidTransition('Paid', 'Finance Approved'));
     }
 
     @isTest
