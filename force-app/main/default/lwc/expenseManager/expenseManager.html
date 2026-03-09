@@ -398,11 +398,11 @@
                                                 </div>
                                             </template>
 
-                                            <!-- Food Limit (readonly, for food types) -->
+                                            <!-- Daily Limit (readonly, for food types) -->
                                             <template if:true={item.isFood}>
                                                 <div class="item-field item-field-sm">
-                                                    <label class="field-label">Food Limit</label>
-                                                    <span class="field-value-readonly">{item.foodLimit}</span>
+                                                    <label class="field-label">Daily Limit</label>
+                                                    <span class="field-value-readonly">{item.maxPerDay}</span>
                                                 </div>
                                             </template>
 

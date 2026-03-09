@@ -26,6 +26,31 @@
                 <default>false</default>
                 <label>Public Transport</label>
             </value>
+            <value>
+                <fullName>Auto</fullName>
+                <default>false</default>
+                <label>Auto</label>
+            </value>
+            <value>
+                <fullName>Bus</fullName>
+                <default>false</default>
+                <label>Bus</label>
+            </value>
+            <value>
+                <fullName>Train</fullName>
+                <default>false</default>
+                <label>Train</label>
+            </value>
+            <value>
+                <fullName>Flight</fullName>
+                <default>false</default>
+                <label>Flight</label>
+            </value>
+            <value>
+                <fullName>Own Vehicle</fullName>
+                <default>false</default>
+                <label>Own Vehicle</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

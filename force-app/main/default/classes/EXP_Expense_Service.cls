@@ -4,7 +4,7 @@
  *              - Configuration-driven expense types per band/travel type
  *              - Auto-calculation of DA (working hours) and TA (distance × rate)
  *              - Per-line-item approval status tracking
- *              - Vehicle-type-specific TA rates (Bike/Car)
+ *              - Travel-mode-specific TA rates (Bike/Car/Auto/Flight/etc.)
  *              - City-based lodging limits (Metro/Non-Metro)
  *              - Configurable receipt & remarks requirements
  *              - File attachment validation before submit
@@ -267,9 +267,9 @@ public without sharing class EXP_Expense_Service {
                    Min_Distance_KM__c, Receipt_Required__c, Receipt_Threshold__c,
                    Is_Active__c, Sort_Order__c, Description__c,
                    Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c,
-                   DA_Half_Day_Rate__c, Daily_KM_Limit__c,
+                   Daily_KM_Limit__c,
                    Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c,
-                   Per_KM_Bike_Rate__c, Food_Limit__c
+                   Travel_Mode__c
             FROM Expense_Eligibility__c
             WHERE Band__c = :band AND Is_Active__c = true
             ORDER BY Sort_Order__c ASC, Expense_Type__c ASC
@@ -324,12 +324,6 @@ public without sharing class EXP_Expense_Service {
                     eligible = limit_val;
                 }
             }
-            // For food with configurable limit
-            if (rule.Food_Limit__c != null && rule.Food_Limit__c > 0) {
-                if (eligible > rule.Food_Limit__c) {
-                    eligible = rule.Food_Limit__c;
-                }
-            }
         }
 
         // Apply daily cap
@@ -342,7 +336,7 @@ public without sharing class EXP_Expense_Service {
 
     private static Decimal calculateDAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
         Decimal fullRate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
-        Decimal halfRate = rule.DA_Half_Day_Rate__c != null ? rule.DA_Half_Day_Rate__c : (fullRate / 2);
+        Decimal halfRate = fullRate / 2;
 
         // If working hours available, apply DA logic
         Decimal hours = item.Working_Hours__c != null ? item.Working_Hours__c : 0;
@@ -366,12 +360,8 @@ public without sharing class EXP_Expense_Service {
             appliedDistance = rule.Daily_KM_Limit__c;
         }
 
-        // Vehicle-type-specific rate
+        // Rate comes from the matched travel-mode-specific rule
         Decimal rate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
-        if (item.Vehicle_Type__c == 'Bike' && rule.Per_KM_Bike_Rate__c != null) {
-            rate = rule.Per_KM_Bike_Rate__c;
-        }
-        // Car uses default Rate_Amount__c
 
         return appliedDistance * rate;
     }
@@ -392,6 +382,15 @@ public without sharing class EXP_Expense_Service {
             : (item.GPS_Distance_KM__c != null ? item.GPS_Distance_KM__c : 0);
     }
 
+    private static Expense_Eligibility__c findRule(
+        Map<String, Expense_Eligibility__c> ruleMap,
+        String expType, String travelMode) {
+        String tm = String.isNotBlank(travelMode) ? travelMode : 'All';
+        Expense_Eligibility__c rule = ruleMap.get(expType + '|' + tm);
+        if (rule != null) return rule;
+        return ruleMap.get(expType + '|All');
+    }
+
     public static void populateEligibilityFields(List<Expense_Item__c> items, Id expenseId) {
         Expense__c expense = [
             SELECT Id, Employee__c, Employee__r.Band__c, Working_Days__c, User__c
@@ -405,9 +404,10 @@ public without sharing class EXP_Expense_Service {
             ? (Integer) expense.Working_Days__c : 0;
 
         List<Expense_Eligibility__c> rules = getEligibilityRules(band);
-        Map<String, Expense_Eligibility__c> ruleByType = new Map<String, Expense_Eligibility__c>();
+        Map<String, Expense_Eligibility__c> ruleMap = new Map<String, Expense_Eligibility__c>();
         for (Expense_Eligibility__c rule : rules) {
-            ruleByType.put(rule.Expense_Type__c, rule);
+            String tm = rule.Travel_Mode__c != null ? rule.Travel_Mode__c : 'All';
+            ruleMap.put(rule.Expense_Type__c + '|' + tm, rule);
         }
 
         // Get attendance records for GPS distance and working hours
@@ -445,7 +445,7 @@ public without sharing class EXP_Expense_Service {
         }
 
         for (Expense_Item__c item : items) {
-            Expense_Eligibility__c rule = ruleByType.get(item.Expense_Type__c);
+            Expense_Eligibility__c rule = findRule(ruleMap, item.Expense_Type__c, item.Travel_Mode__c);
 
             // Auto-populate GPS distance and working hours from attendance
             Day_Attendance__c att = item.Day_Attendance__c != null

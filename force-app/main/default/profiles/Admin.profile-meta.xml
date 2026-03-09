@@ -1420,7 +1420,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Eligibility__c.DA_Half_Day_Rate__c</field>
+        <field>Expense_Eligibility__c.Travel_Mode__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1431,11 +1431,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Expense_Eligibility__c.Description__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Eligibility__c.Food_Limit__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1471,11 +1466,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Expense_Eligibility__c.Min_Distance_KM__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Eligibility__c.Per_KM_Bike_Rate__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
