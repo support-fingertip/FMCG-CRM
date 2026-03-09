@@ -130,6 +130,10 @@
                 <behavior>Edit</behavior>
                 <field>Submitted_Date__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Comments_History__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
@@ -179,8 +183,10 @@
         <fields>Expense_Type__c</fields>
         <fields>Expense_Category__c</fields>
         <fields>Claimed_Amount__c</fields>
+        <fields>System_Calculated_Amount__c</fields>
         <fields>Eligible_Amount__c</fields>
         <fields>Approved_Amount__c</fields>
+        <fields>Approval_Status__c</fields>
         <relatedList>Expense_Item__c.Expense__c</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
