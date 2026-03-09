@@ -22,7 +22,6 @@ import getExpenseData from '@salesforce/apex/ExpenseController.getExpenseData';
 import getOrCreateReport from '@salesforce/apex/ExpenseController.getOrCreateReport';
 import saveExpenseItems from '@salesforce/apex/ExpenseController.saveExpenseItems';
 import deleteExpenseItems from '@salesforce/apex/ExpenseController.deleteExpenseItems';
-import uploadReceiptBase64 from '@salesforce/apex/ExpenseController.uploadReceiptBase64';
 import submitReport from '@salesforce/apex/ExpenseController.submitReport';
 import approveReport from '@salesforce/apex/ExpenseController.approveReport';
 import rejectReport from '@salesforce/apex/ExpenseController.rejectReport';
@@ -375,8 +374,6 @@ export default class ExpenseManager extends LightningElement {
             statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
             files: itemFiles,
             hasFiles: itemFiles.length > 0,
-            pendingFiles: [],
-            hasPendingFiles: false,
             hasAnyFiles: itemFiles.length > 0,
             dirty: false
         };
@@ -439,8 +436,6 @@ export default class ExpenseManager extends LightningElement {
             statusClass: 'item-status item-status-new',
             files: [],
             hasFiles: false,
-            pendingFiles: [],
-            hasPendingFiles: false,
             hasAnyFiles: false,
             dirty: false
         };
@@ -800,148 +795,17 @@ export default class ExpenseManager extends LightningElement {
                 items: row.items.map(item => {
                     const itemFiles = item.id ? (filesByItem[item.id] || []) : [];
                     const hasFiles = itemFiles.length > 0;
-                    const hasPending = item.pendingFiles && item.pendingFiles.length > 0;
                     return {
                         ...item,
                         files: itemFiles,
                         hasFiles: hasFiles,
-                        hasAnyFiles: hasFiles || hasPending
+                        hasAnyFiles: hasFiles
                     };
                 })
             }));
         } catch (e) {
             this.showError(e);
         }
-    }
-
-    handleFileSelect(event) {
-        const itemKey = event.currentTarget.dataset.key;
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-
-        // Validate file size (max 3MB to stay within Salesforce limits)
-        const MAX_FILE_SIZE = 3 * 1024 * 1024;
-        for (const file of files) {
-            if (file.size > MAX_FILE_SIZE) {
-                this.saveError = file.name + ' exceeds the 3MB file size limit. Please compress or resize the image.';
-                event.target.value = '';
-                return;
-            }
-        }
-
-        const pendingPromises = Array.from(files).map(file => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64 = reader.result.split(',')[1];
-                    resolve({
-                        name: file.name,
-                        base64: base64,
-                        size: file.size
-                    });
-                };
-                reader.onerror = () => reject(new Error('Failed to read file: ' + file.name));
-                reader.readAsDataURL(file);
-            });
-        });
-
-        Promise.all(pendingPromises).then(pendingFiles => {
-            this.dayRows = this.dayRows.map(row => ({
-                ...row,
-                items: row.items.map(item => {
-                    if (item.key !== itemKey) return item;
-                    const allPending = [...(item.pendingFiles || []), ...pendingFiles];
-                    return {
-                        ...item,
-                        pendingFiles: allPending,
-                        hasPendingFiles: allPending.length > 0,
-                        hasAnyFiles: item.hasFiles || allPending.length > 0,
-                        dirty: true
-                    };
-                })
-            }));
-        });
-
-        // Reset file input
-        event.target.value = '';
-    }
-
-    async uploadPendingFiles() {
-        const uploads = [];
-        this.dayRows.forEach(row => {
-            row.items.forEach(item => {
-                if (item.id && item.pendingFiles && item.pendingFiles.length > 0) {
-                    item.pendingFiles.forEach(pf => {
-                        uploads.push({
-                            itemId: item.id,
-                            itemKey: item.key,
-                            fileName: pf.name,
-                            base64: pf.base64
-                        });
-                    });
-                }
-            });
-        });
-
-        if (uploads.length === 0) return;
-
-        const failedUploads = [];
-        const successKeys = new Set();
-
-        for (const upload of uploads) {
-            try {
-                await uploadReceiptBase64({
-                    expenseItemId: upload.itemId,
-                    fileName: upload.fileName,
-                    base64Data: upload.base64
-                });
-                successKeys.add(upload.itemKey);
-            } catch (e) {
-                console.error('Failed to upload ' + upload.fileName, e);
-                let errMsg = upload.fileName;
-                if (e && e.body && e.body.message) errMsg += ' (' + e.body.message + ')';
-                else if (e && e.message) errMsg += ' (' + e.message + ')';
-                failedUploads.push(errMsg);
-            }
-        }
-
-        // Only clear pending files for items that uploaded successfully
-        this.dayRows = this.dayRows.map(row => ({
-            ...row,
-            items: row.items.map(item => {
-                if (successKeys.has(item.key)) {
-                    return {
-                        ...item,
-                        pendingFiles: [],
-                        hasPendingFiles: false
-                    };
-                }
-                return item;
-            })
-        }));
-
-        if (failedUploads.length > 0) {
-            throw new Error('Failed to upload receipt(s): ' + failedUploads.join(', ') + '. Please try again.');
-        }
-    }
-
-    handleRemovePendingFile(event) {
-        const itemKey = event.currentTarget.dataset.key;
-        const fileName = event.currentTarget.dataset.filename;
-
-        this.dayRows = this.dayRows.map(row => ({
-            ...row,
-            items: row.items.map(item => {
-                if (item.key !== itemKey) return item;
-                const allPending = (item.pendingFiles || []).filter(pf => pf.name !== fileName);
-                return {
-                    ...item,
-                    pendingFiles: allPending,
-                    hasPendingFiles: allPending.length > 0,
-                    hasAnyFiles: item.hasFiles || allPending.length > 0
-                };
-            })
-        }));
     }
 
     async handleUploadFinished(event) {
@@ -1016,16 +880,7 @@ export default class ExpenseManager extends LightningElement {
                 this.showSuccess('All expense items saved successfully.');
             }
 
-            // Upload any pending receipt files (after IDs are mapped)
-            try {
-                await this.uploadPendingFiles();
-            } catch (uploadErr) {
-                let uploadMsg = 'Receipt upload failed.';
-                if (uploadErr && uploadErr.message) uploadMsg = uploadErr.message;
-                this.saveError = uploadMsg;
-            }
-
-            // Always refresh file attachments and expense totals
+            // Refresh file attachments and expense totals
             await this.loadAllFiles();
             this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
         } catch (e) {
@@ -1166,9 +1021,8 @@ export default class ExpenseManager extends LightningElement {
             row.items.forEach(item => {
                 if (item.receiptRequired && item.claimedAmount > 0) {
                     const threshold = item.receiptThreshold || 0;
-                    const hasPending = item.pendingFiles && item.pendingFiles.length > 0;
                     if (threshold === 0 || item.claimedAmount > threshold) {
-                        if (!item.hasFiles && !hasPending) {
+                        if (!item.hasFiles) {
                             errors.push('Receipt required for ' + item.expenseType + ' on ' + row.formattedDate);
                         }
                     }
@@ -1364,6 +1218,7 @@ export default class ExpenseManager extends LightningElement {
     get isPaid() { return this.expense.Status__c === 'Paid'; }
     get canSubmit() { return !this.isFinanceApproved && !this.isPaid; }
     get canEdit() { return !this.isFinanceApproved && !this.isPaid; }
+    get acceptedFileFormats() { return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']; }
     get cannotEdit() { return !this.canEdit; }
     get isExpenseTab() { return this.activeTab === 'expense'; }
     get isSummaryTab() { return this.activeTab === 'summary'; }

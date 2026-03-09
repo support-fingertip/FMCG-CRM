@@ -432,16 +432,22 @@
                                                         </span>
                                                     </template>
                                                 </div>
-                                                <!-- File input (always available for editing) -->
+                                                <!-- Native lightning-file-upload for saved items -->
                                                 <template if:true={canEdit}>
-                                                    <div class="file-input-wrap">
-                                                        <input type="file"
-                                                            accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp"
+                                                    <template if:true={item.id}>
+                                                        <lightning-file-upload
+                                                            label=""
+                                                            name="receiptUpload"
+                                                            accept={acceptedFileFormats}
+                                                            record-id={item.id}
                                                             multiple
                                                             data-key={item.key}
-                                                            onchange={handleFileSelect}
-                                                            class="receipt-file-input" />
-                                                    </div>
+                                                            onuploadfinished={handleUploadFinished}>
+                                                        </lightning-file-upload>
+                                                    </template>
+                                                    <template if:false={item.id}>
+                                                        <p class="slds-text-body_small slds-text-color_weak">Save the expense first to upload receipts.</p>
+                                                    </template>
                                                 </template>
                                                 <!-- Uploaded files list -->
                                                 <template if:true={item.hasFiles}>
@@ -458,29 +464,6 @@
                                                                         variant="bare-destructive"
                                                                         data-docid={file.contentDocumentId}
                                                                         onclick={handleDeleteFile}>
-                                                                    </lightning-button-icon>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                                <!-- Pending files (not yet uploaded) -->
-                                                <template if:true={item.hasPendingFiles}>
-                                                    <div class="file-list pending-files">
-                                                        <template for:each={item.pendingFiles} for:item="pf">
-                                                            <div key={pf.name} class="file-item file-item-pending">
-                                                                <lightning-icon icon-name="doctype:attachment" size="xx-small"></lightning-icon>
-                                                                <span class="file-name" title={pf.name}>{pf.name}</span>
-                                                                <span class="pending-badge">Pending</span>
-                                                                <template if:true={canEdit}>
-                                                                    <lightning-button-icon
-                                                                        icon-name="utility:delete"
-                                                                        alternative-text="Remove"
-                                                                        size="small"
-                                                                        variant="bare-destructive"
-                                                                        data-key={item.key}
-                                                                        data-filename={pf.name}
-                                                                        onclick={handleRemovePendingFile}>
                                                                     </lightning-button-icon>
                                                                 </template>
                                                             </div>
