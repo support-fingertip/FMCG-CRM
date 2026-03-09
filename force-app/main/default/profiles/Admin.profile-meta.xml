@@ -1420,11 +1420,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Eligibility__c.Band__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense_Eligibility__c.DA_Half_Day_Rate__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1436,16 +1431,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Expense_Eligibility__c.Description__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Eligibility__c.Expense_Category__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Eligibility__c.Expense_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1575,11 +1560,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Item__c.Expense_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense_Item__c.Expense_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1700,11 +1680,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense__c.Month__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense__c.Period_End__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1756,11 +1731,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Expense__c.Working_Days__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense__c.Year__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
