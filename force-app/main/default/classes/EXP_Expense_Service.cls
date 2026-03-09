@@ -1153,23 +1153,16 @@ public without sharing class EXP_Expense_Service {
     }
 
     public static Map<String, Object> uploadReceiptBase64(Id expenseItemId, String fileName, String base64Data) {
-        // Create ContentVersion from base64
+        // Create ContentVersion linked directly to expense item
         ContentVersion cv = new ContentVersion();
         cv.Title = fileName.substringBeforeLast('.');
         cv.PathOnClient = fileName;
         cv.VersionData = EncodingUtil.base64Decode(base64Data);
+        cv.FirstPublishLocationId = expenseItemId;
         insert cv;
 
         // Get the ContentDocumentId
         cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
-
-        // Link to the expense item
-        ContentDocumentLink cdl = new ContentDocumentLink();
-        cdl.ContentDocumentId = cv.ContentDocumentId;
-        cdl.LinkedEntityId = expenseItemId;
-        cdl.ShareType = 'V';
-        cdl.Visibility = 'AllUsers';
-        insert cdl;
 
         Map<String, Object> result = new Map<String, Object>();
         result.put('contentDocumentId', cv.ContentDocumentId);

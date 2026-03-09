@@ -898,7 +898,10 @@ export default class ExpenseManager extends LightningElement {
                 successKeys.add(upload.itemKey);
             } catch (e) {
                 console.error('Failed to upload ' + upload.fileName, e);
-                failedUploads.push(upload.fileName);
+                let errMsg = upload.fileName;
+                if (e && e.body && e.body.message) errMsg += ' (' + e.body.message + ')';
+                else if (e && e.message) errMsg += ' (' + e.message + ')';
+                failedUploads.push(errMsg);
             }
         }
 
