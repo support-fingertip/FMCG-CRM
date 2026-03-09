@@ -19,7 +19,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>columns</name>
-                    <value>1</value>
+                    <value>Facet-eligibility_rule_fields</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>label</name>
@@ -33,7 +33,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>columns</name>
-                    <value>1</value>
+                    <value>Facet-rate_config_fields</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>label</name>
@@ -47,7 +47,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>columns</name>
-                    <value>1</value>
+                    <value>Facet-receipt_rules_fields</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>label</name>
@@ -61,7 +61,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>columns</name>
-                    <value>1</value>
+                    <value>Facet-description_fields</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>label</name>
@@ -75,7 +75,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>columns</name>
-                    <value>1</value>
+                    <value>Facet-system_info_fields</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>label</name>
@@ -88,6 +88,7 @@
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
+    <!-- Eligibility Rule Fields -->
     <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
@@ -95,8 +96,8 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>Name</fieldItem>
-                <identifier>name_field</identifier>
+                <fieldItem>Record.Name</fieldItem>
+                <identifier>RecordNameField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -105,8 +106,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Is_Active__c</fieldItem>
-                <identifier>is_active_field</identifier>
+                <fieldItem>Record.Is_Active__c</fieldItem>
+                <identifier>RecordIs_Active__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -115,8 +116,8 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>Band__c</fieldItem>
-                <identifier>band_field</identifier>
+                <fieldItem>Record.Band__c</fieldItem>
+                <identifier>RecordBand__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -125,8 +126,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Sort_Order__c</fieldItem>
-                <identifier>sort_order_field</identifier>
+                <fieldItem>Record.Sort_Order__c</fieldItem>
+                <identifier>RecordSort_Order__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -135,8 +136,8 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>Expense_Type__c</fieldItem>
-                <identifier>expense_type_field</identifier>
+                <fieldItem>Record.Expense_Type__c</fieldItem>
+                <identifier>RecordExpense_Type__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -145,13 +146,14 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>Expense_Category__c</fieldItem>
-                <identifier>expense_category_field</identifier>
+                <fieldItem>Record.Expense_Category__c</fieldItem>
+                <identifier>RecordExpense_Category__cField</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-eligibility_rule_section-1</name>
+        <name>Facet-eligibility_rule_fields</name>
         <type>Facet</type>
     </flexiPageRegions>
+    <!-- Rate Configuration Fields -->
     <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
@@ -159,8 +161,8 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>Rate_Type__c</fieldItem>
-                <identifier>rate_type_field</identifier>
+                <fieldItem>Record.Rate_Type__c</fieldItem>
+                <identifier>RecordRate_Type__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -169,8 +171,8 @@
                     <name>uiBehavior</name>
                     <value>required</value>
                 </fieldInstanceProperties>
-                <fieldItem>Rate_Amount__c</fieldItem>
-                <identifier>rate_amount_field</identifier>
+                <fieldItem>Record.Rate_Amount__c</fieldItem>
+                <identifier>RecordRate_Amount__cField</identifier>
                 <visibilityRule>
                     <booleanFilter>1 OR 2 OR 3</booleanFilter>
                     <criteria>
@@ -197,8 +199,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Min_Distance_KM__c</fieldItem>
-                <identifier>min_distance_field</identifier>
+                <fieldItem>Record.Min_Distance_KM__c</fieldItem>
+                <identifier>RecordMin_Distance_KM__cField</identifier>
                 <visibilityRule>
                     <booleanFilter>1 OR 2</booleanFilter>
                     <criteria>
@@ -220,8 +222,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Max_Per_Day__c</fieldItem>
-                <identifier>max_per_day_field</identifier>
+                <fieldItem>Record.Max_Per_Day__c</fieldItem>
+                <identifier>RecordMax_Per_Day__cField</identifier>
                 <visibilityRule>
                     <booleanFilter>1 OR 2 OR 3</booleanFilter>
                     <criteria>
@@ -248,13 +250,14 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Max_Per_Month__c</fieldItem>
-                <identifier>max_per_month_field</identifier>
+                <fieldItem>Record.Max_Per_Month__c</fieldItem>
+                <identifier>RecordMax_Per_Month__cField</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-rate_config_section-1</name>
+        <name>Facet-rate_config_fields</name>
         <type>Facet</type>
     </flexiPageRegions>
+    <!-- Receipt Rules Fields -->
     <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
@@ -262,8 +265,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Receipt_Required__c</fieldItem>
-                <identifier>receipt_required_field</identifier>
+                <fieldItem>Record.Receipt_Required__c</fieldItem>
+                <identifier>RecordReceipt_Required__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -272,8 +275,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Receipt_Threshold__c</fieldItem>
-                <identifier>receipt_threshold_field</identifier>
+                <fieldItem>Record.Receipt_Threshold__c</fieldItem>
+                <identifier>RecordReceipt_Threshold__cField</identifier>
                 <visibilityRule>
                     <criteria>
                         <leftValue>{!Record.Receipt_Required__c}</leftValue>
@@ -283,9 +286,10 @@
                 </visibilityRule>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-receipt_rules_section-1</name>
+        <name>Facet-receipt_rules_fields</name>
         <type>Facet</type>
     </flexiPageRegions>
+    <!-- Description Fields -->
     <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
@@ -293,13 +297,14 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Description__c</fieldItem>
-                <identifier>description_field</identifier>
+                <fieldItem>Record.Description__c</fieldItem>
+                <identifier>RecordDescription__cField</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-description_section-1</name>
+        <name>Facet-description_fields</name>
         <type>Facet</type>
     </flexiPageRegions>
+    <!-- System Information Fields -->
     <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
@@ -307,8 +312,8 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>CreatedById</fieldItem>
-                <identifier>created_by_field</identifier>
+                <fieldItem>Record.CreatedById</fieldItem>
+                <identifier>RecordCreatedByIdField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -317,11 +322,11 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>LastModifiedById</fieldItem>
-                <identifier>last_modified_by_field</identifier>
+                <fieldItem>Record.LastModifiedById</fieldItem>
+                <identifier>RecordLastModifiedByIdField</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-system_info_section-1</name>
+        <name>Facet-system_info_fields</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
