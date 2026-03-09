@@ -83,6 +83,7 @@ export default class ExpenseManager extends LightningElement {
     @track employee = {};
     @track eligibleDates = [];
     @track eligibilityRules = [];
+    @track expenseTypePicklist = [];
     @track config = {};
 
     // Accordion day list
@@ -159,6 +160,7 @@ export default class ExpenseManager extends LightningElement {
             this.expense = data.expense || {};
             this.employee = data.employee || {};
             this.eligibilityRules = data.eligibilityRules || [];
+            this.expenseTypePicklist = data.expenseTypePicklist || [];
             this.eligibleDates = data.eligibleDates || [];
             this.config = data.config || {};
 
@@ -387,6 +389,63 @@ export default class ExpenseManager extends LightningElement {
         return item;
     }
 
+    buildGenericItem(expenseType, dateStr, dayInfo) {
+        return {
+            key: dateStr + '-' + expenseType,
+            id: null,
+            expenseType: expenseType,
+            category: 'Miscellaneous',
+            rateType: 'Actual',
+            rateAmount: 0,
+            maxPerDay: 0,
+            minDistance: 0,
+            dailyKmLimit: 0,
+            receiptRequired: true,
+            receiptThreshold: 0,
+            mandatoryRemarks: true,
+            lodgingMetroLimit: 0,
+            lodgingNonMetroLimit: 0,
+            gpsDistance: dayInfo.gpsDistance || 0,
+            manualDistance: null,
+            overrideReason: '',
+            eligibleAmount: 0,
+            claimedAmount: 0,
+            approvedAmount: null,
+            fromLocation: '',
+            toLocation: '',
+            notes: '',
+            vehicleType: '',
+            travelMode: '',
+            city: '',
+            isMetro: false,
+            workingHours: dayInfo.hoursWorked || 0,
+            approvalStatus: 'Not Submitted',
+            approverComments: '',
+            isEligible: true,
+            hasExisting: false,
+            isActual: true,
+            isTravel: false,
+            isDA: false,
+            isLodging: false,
+            isFood: false,
+            showFromTo: false,
+            showVehicle: false,
+            showTravelMode: false,
+            showRemarks: true,
+            showCity: false,
+            systemCalcAmount: 0,
+            exceedsEligible: false,
+            statusLabel: 'New',
+            statusClass: 'item-status item-status-new',
+            files: [],
+            hasFiles: false,
+            pendingFiles: [],
+            hasPendingFiles: false,
+            hasAnyFiles: false,
+            dirty: false
+        };
+    }
+
     getItemStatusLabel(status) {
         if (!status || status === 'Not Submitted') return 'Saved';
         return status;
@@ -414,17 +473,24 @@ export default class ExpenseManager extends LightningElement {
     // ═══════════════════════════════════════════════════════════════
 
     get availableExpenseTypes() {
+        // Include all picklist values, plus any from eligibility rules
         const seen = new Set();
-        return this.eligibilityRules
-            .filter(r => {
-                if (seen.has(r.Expense_Type__c)) return false;
+        const options = [];
+        // Eligibility rule types first
+        this.eligibilityRules.forEach(r => {
+            if (!seen.has(r.Expense_Type__c)) {
                 seen.add(r.Expense_Type__c);
-                return true;
-            })
-            .map(r => ({
-                label: r.Expense_Type__c,
-                value: r.Expense_Type__c
-            }));
+                options.push({ label: r.Expense_Type__c, value: r.Expense_Type__c });
+            }
+        });
+        // Then remaining picklist values
+        (this.expenseTypePicklist || []).forEach(val => {
+            if (!seen.has(val)) {
+                seen.add(val);
+                options.push({ label: val, value: val });
+            }
+        });
+        return options;
     }
 
     handleAddLineItem(event) {
@@ -462,9 +528,6 @@ export default class ExpenseManager extends LightningElement {
         const typeToAdd = event.detail.value;
         if (!typeToAdd || !dateStr) return;
 
-        const rule = this.findRuleForItem(typeToAdd, null);
-        if (!rule) return;
-
         this.dayRows = this.dayRows.map(row => {
             if (row.dateStr !== dateStr) return row;
 
@@ -473,7 +536,13 @@ export default class ExpenseManager extends LightningElement {
             }
 
             const dayInfo = this.eligibleDates.find(d => d.date === dateStr) || {};
-            const newItem = this.buildItemFromRule(rule, null, dateStr, dayInfo, {}, dayInfo.hoursWorked || 0);
+            const rule = this.findRuleForItem(typeToAdd, null);
+            let newItem;
+            if (rule) {
+                newItem = this.buildItemFromRule(rule, null, dateStr, dayInfo, {}, dayInfo.hoursWorked || 0);
+            } else {
+                newItem = this.buildGenericItem(typeToAdd, dateStr, dayInfo);
+            }
             const items = [...row.items, newItem];
             const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
 
@@ -484,6 +553,9 @@ export default class ExpenseManager extends LightningElement {
                 dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge'
             };
         });
+
+        // Reset the combobox value
+        event.currentTarget.value = '';
     }
 
     // ── Accordion Toggle ─────────────────────────────────────────

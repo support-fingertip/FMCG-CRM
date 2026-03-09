@@ -109,7 +109,21 @@ public without sharing class EXP_Expense_Service {
         config.put('backDateLimitDays', getConfigInteger(CFG_BACK_DATE_LIMIT_DAYS, 60));
         result.put('config', config);
 
+        // Expense type picklist values for add-type dropdown
+        result.put('expenseTypePicklist', getExpenseTypePicklistValues());
+
         return result;
+    }
+
+    public static List<String> getExpenseTypePicklistValues() {
+        List<String> values = new List<String>();
+        Schema.DescribeFieldResult dfr = Expense_Item__c.Expense_Type__c.getDescribe();
+        for (Schema.PicklistEntry pe : dfr.getPicklistValues()) {
+            if (pe.isActive()) {
+                values.add(pe.getValue());
+            }
+        }
+        return values;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
