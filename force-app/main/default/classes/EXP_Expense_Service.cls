@@ -269,7 +269,7 @@ public without sharing class EXP_Expense_Service {
                    Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c,
                    DA_Half_Day_Rate__c, Daily_KM_Limit__c,
                    Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c,
-                   Per_KM_Bike_Rate__c
+                   Per_KM_Bike_Rate__c, Food_Limit__c
             FROM Expense_Eligibility__c
             WHERE Band__c = :band AND Is_Active__c = true
             ORDER BY Sort_Order__c ASC, Expense_Type__c ASC
@@ -322,6 +322,12 @@ public without sharing class EXP_Expense_Service {
                 Decimal limit_val = getLodgingLimit(item, rule);
                 if (limit_val > 0 && eligible > limit_val) {
                     eligible = limit_val;
+                }
+            }
+            // For food with configurable limit
+            if (rule.Food_Limit__c != null && rule.Food_Limit__c > 0) {
+                if (eligible > rule.Food_Limit__c) {
+                    eligible = rule.Food_Limit__c;
                 }
             }
         }
@@ -475,6 +481,7 @@ public without sharing class EXP_Expense_Service {
                 }
 
                 item.Eligible_Amount__c = eligible;
+                item.System_Calculated_Amount__c = eligible;
 
                 // Check min distance eligibility
                 Decimal appliedDist = getAppliedDistance(item);
@@ -486,6 +493,7 @@ public without sharing class EXP_Expense_Service {
             } else {
                 item.Is_Eligible__c = false;
                 item.Eligible_Amount__c = 0;
+                item.System_Calculated_Amount__c = 0;
             }
         }
     }
@@ -511,7 +519,7 @@ public without sharing class EXP_Expense_Service {
         'Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c, ' +
         'From_Location__c, To_Location__c, Approval_Status__c, ' +
         'Approver_Comments__c, Vehicle_Type__c, Working_Hours__c, ' +
-        'City__c, Is_Metro__c';
+        'City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c';
 
     public static List<Expense_Item__c> getExpenseItemsForDate(Id expenseId, Date expenseDate) {
         return [
@@ -523,7 +531,7 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c = :expenseDate
             ORDER BY Expense_Type__c ASC
@@ -541,7 +549,7 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -615,7 +623,7 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c IN :dates
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -1137,6 +1145,88 @@ public without sharing class EXP_Expense_Service {
         if (!docs.isEmpty()) {
             delete docs;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUBMIT SUMMARY — Returns confirmation data before final submit
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public static Map<String, Object> getSubmitSummary(Id expenseId) {
+        Expense__c expense = [
+            SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c,
+                   Employee__r.First_Name__c, Employee__r.Last_Name__c,
+                   Employee__r.Band__c, Working_Days__c, Total_Distance_KM__c,
+                   Total_Claimed__c, Total_Eligible__c
+            FROM Expense__c WHERE Id = :expenseId LIMIT 1
+        ];
+
+        List<Expense_Item__c> items = getAllExpenseItemsForReport(expenseId);
+
+        // Count items, missing receipts, type totals
+        Integer totalItems = items.size();
+        Integer dayCount = 0;
+        Integer missingReceipts = 0;
+        Decimal totalClaimed = 0;
+        Decimal totalEligible = 0;
+
+        // Check files
+        Set<Id> allItemIds = new Set<Id>();
+        for (Expense_Item__c item : items) {
+            allItemIds.add(item.Id);
+        }
+        Set<Id> itemsWithFiles = new Set<Id>();
+        for (ContentDocumentLink cdl : [
+            SELECT LinkedEntityId FROM ContentDocumentLink WHERE LinkedEntityId IN :allItemIds
+        ]) {
+            itemsWithFiles.add(cdl.LinkedEntityId);
+        }
+
+        Set<Date> uniqueDates = new Set<Date>();
+        List<Map<String, Object>> typeBreakdown = new List<Map<String, Object>>();
+        Map<String, Decimal> claimedByType = new Map<String, Decimal>();
+        Map<String, Decimal> eligibleByType = new Map<String, Decimal>();
+        Map<String, Integer> countByType = new Map<String, Integer>();
+
+        for (Expense_Item__c item : items) {
+            uniqueDates.add(item.Expense_Date__c);
+            Decimal claimed = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
+            Decimal eligible = item.Eligible_Amount__c != null ? item.Eligible_Amount__c : 0;
+            totalClaimed += claimed;
+            totalEligible += eligible;
+
+            String typ = item.Expense_Type__c;
+            claimedByType.put(typ, (claimedByType.containsKey(typ) ? claimedByType.get(typ) : 0) + claimed);
+            eligibleByType.put(typ, (eligibleByType.containsKey(typ) ? eligibleByType.get(typ) : 0) + eligible);
+            countByType.put(typ, (countByType.containsKey(typ) ? countByType.get(typ) : 0) + 1);
+
+            // Check missing receipts
+            if (item.Receipt_Required__c == true && !itemsWithFiles.contains(item.Id)
+                && String.isBlank(item.Receipt_URL__c)) {
+                missingReceipts++;
+            }
+        }
+        dayCount = uniqueDates.size();
+
+        for (String typ : claimedByType.keySet()) {
+            Map<String, Object> row = new Map<String, Object>();
+            row.put('type', typ);
+            row.put('claimed', claimedByType.get(typ));
+            row.put('eligible', eligibleByType.get(typ));
+            row.put('count', countByType.get(typ));
+            typeBreakdown.add(row);
+        }
+
+        Map<String, Object> summary = new Map<String, Object>();
+        summary.put('expense', expense);
+        summary.put('totalItems', totalItems);
+        summary.put('dayCount', dayCount);
+        summary.put('totalClaimed', totalClaimed);
+        summary.put('totalEligible', totalEligible);
+        summary.put('missingReceipts', missingReceipts);
+        summary.put('typeBreakdown', typeBreakdown);
+        summary.put('canSubmit', missingReceipts == 0);
+
+        return summary;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

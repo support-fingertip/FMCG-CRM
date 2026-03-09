@@ -31,6 +31,7 @@ import getMonthlyOverview from '@salesforce/apex/ExpenseController.getMonthlyOve
 import getTeamExpenseReports from '@salesforce/apex/ExpenseController.getTeamExpenseReports';
 import getExpenseItemFiles from '@salesforce/apex/ExpenseController.getExpenseItemFiles';
 import deleteExpenseItemFile from '@salesforce/apex/ExpenseController.deleteExpenseItemFile';
+import getSubmitSummary from '@salesforce/apex/ExpenseController.getSubmitSummary';
 
 const MONTHS = [
     { label: 'January', value: 'January' },
@@ -53,6 +54,15 @@ const DA_HALF_DAY_HOURS = 8;
 const VEHICLE_OPTIONS = [
     { label: 'Bike', value: 'Bike' },
     { label: 'Car', value: 'Car' },
+    { label: 'Public Transport', value: 'Public Transport' }
+];
+
+const TRAVEL_MODE_OPTIONS = [
+    { label: 'Bike', value: 'Bike' },
+    { label: 'Car', value: 'Car' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Auto', value: 'Auto' },
     { label: 'Public Transport', value: 'Public Transport' }
 ];
 
@@ -84,6 +94,11 @@ export default class ExpenseManager extends LightningElement {
     @track approvalExpenseId = null;
     @track approvalLevel = '';
 
+    // Submit confirmation
+    @track showSubmitConfirmModal = false;
+    @track submitSummary = {};
+    @track submitRemarks = '';
+
     // Comments
     @track showCommentsModal = false;
     @track commentsHistory = [];
@@ -100,6 +115,7 @@ export default class ExpenseManager extends LightningElement {
     // Options
     monthOptions = MONTHS;
     vehicleOptions = VEHICLE_OPTIONS;
+    travelModeOptions = TRAVEL_MODE_OPTIONS;
 
     get yearOptions() {
         const now = new Date();
@@ -253,8 +269,10 @@ export default class ExpenseManager extends LightningElement {
         const isDA = rule && rule.Rate_Type__c === 'Per Day';
         const isActual = rule && rule.Rate_Type__c === 'Actual';
         const isLodging = rule && (rule.Lodging_Metro_Limit__c > 0 || rule.Lodging_Non_Metro_Limit__c > 0);
+        const isFood = rule && rule.Food_Limit__c > 0;
         const showFromTo = rule && rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM';
         const showVehicle = rule && rule.Rate_Type__c === 'Per KM' && rule.Per_KM_Bike_Rate__c > 0;
+        const showTravelMode = isTravel;
         const showRemarks = rule && (isActual || rule.Expense_Category__c === 'Miscellaneous' || rule.Mandatory_Remarks__c);
         const showCity = isLodging;
         const mandatoryRemarks = rule && rule.Mandatory_Remarks__c;
@@ -288,8 +306,10 @@ export default class ExpenseManager extends LightningElement {
             toLocation: existing ? existing.To_Location__c : '',
             notes: existing ? existing.Notes__c : '',
             vehicleType: existing ? existing.Vehicle_Type__c : (showVehicle ? 'Bike' : ''),
+            travelMode: existing ? (existing.Travel_Mode__c || '') : '',
             city: existing ? existing.City__c : '',
             isMetro: existing ? existing.Is_Metro__c : false,
+            foodLimit: rule ? (rule.Food_Limit__c || 0) : 0,
             workingHours: existing ? existing.Working_Hours__c : hoursWorked,
             approvalStatus: existing ? existing.Approval_Status__c : 'Not Submitted',
             approverComments: existing ? existing.Approver_Comments__c : '',
@@ -299,10 +319,13 @@ export default class ExpenseManager extends LightningElement {
             isTravel: isTravel,
             isDA: isDA,
             isLodging: isLodging,
+            isFood: isFood,
             showFromTo: showFromTo,
             showVehicle: showVehicle,
+            showTravelMode: showTravelMode,
             showRemarks: showRemarks,
             showCity: showCity,
+            systemCalcAmount: existing ? (existing.System_Calculated_Amount__c || 0) : 0,
             exceedsEligible: false,
             statusLabel: existing ? this.getItemStatusLabel(existing.Approval_Status__c) : 'New',
             statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
@@ -490,6 +513,9 @@ export default class ExpenseManager extends LightningElement {
                     item.vehicleType = value;
                     item.eligibleAmount = this.recalcEligible(item);
                     break;
+                case 'travelMode':
+                    item.travelMode = value;
+                    break;
                 case 'city':
                     item.city = value;
                     break;
@@ -546,6 +572,10 @@ export default class ExpenseManager extends LightningElement {
                 if (limit > 0 && eligible > limit) {
                     eligible = limit;
                 }
+            }
+            // Food limits
+            if (item.isFood && item.foodLimit > 0 && eligible > item.foodLimit) {
+                eligible = item.foodLimit;
             }
         } else if (item.rateType === 'Flat Monthly') {
             const wd = this.expense.Working_Days__c || 22;
@@ -757,6 +787,7 @@ export default class ExpenseManager extends LightningElement {
                         Is_Eligible__c: item.isEligible,
                         Day_Attendance__c: row.attendanceId || null,
                         Vehicle_Type__c: item.vehicleType || null,
+                        Travel_Mode__c: item.travelMode || null,
                         Working_Hours__c: item.workingHours || null,
                         City__c: item.city || null,
                         Is_Metro__c: item.isMetro || false
@@ -769,7 +800,7 @@ export default class ExpenseManager extends LightningElement {
         return itemsToSave;
     }
 
-    // ── Save & Submit ────────────────────────────────────────────
+    // ── Save & Submit with Confirmation ──────────────────────────
     async handleSaveAndSubmit() {
         await this.handleSaveAll();
         if (this.saveError) return;
@@ -781,8 +812,32 @@ export default class ExpenseManager extends LightningElement {
             return;
         }
 
+        // Show confirmation popup with summary
         try {
             this.isLoading = true;
+            const summary = await getSubmitSummary({ expenseId: this.expense.Id });
+            this.submitSummary = summary;
+            this.submitRemarks = '';
+            this.showSubmitConfirmModal = true;
+        } catch (e) {
+            this.showError(e);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    handleSubmitRemarksChange(event) {
+        this.submitRemarks = event.detail.value;
+    }
+
+    closeSubmitConfirmModal() {
+        this.showSubmitConfirmModal = false;
+    }
+
+    async handleConfirmSubmit() {
+        try {
+            this.isLoading = true;
+            this.showSubmitConfirmModal = false;
             this.expense = await submitReport({ expenseId: this.expense.Id });
             this.showSuccess('Expense submitted for approval.');
             this.showDayExpenses = false;
@@ -791,6 +846,22 @@ export default class ExpenseManager extends LightningElement {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    get submitSummaryItems() {
+        return this.submitSummary.typeBreakdown || [];
+    }
+
+    get submitCanProceed() {
+        return this.submitSummary.canSubmit === true;
+    }
+
+    get submitMissingReceipts() {
+        return this.submitSummary.missingReceipts || 0;
+    }
+
+    get submitHasMissingReceipts() {
+        return this.submitMissingReceipts > 0;
     }
 
     validateReceiptsForSubmit() {
@@ -1051,6 +1122,20 @@ export default class ExpenseManager extends LightningElement {
 
     get acceptedFormats() {
         return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
+    }
+
+    // Receipt status helper — determines CSS class for receipt indicator
+    getReceiptStatusClass(item) {
+        if (!item.receiptRequired) return '';
+        if (item.hasFiles) return 'receipt-status receipt-uploaded';
+        return 'receipt-status receipt-missing';
+    }
+
+    getReceiptStatusLabel(item) {
+        if (!item.receiptRequired) return '';
+        if (item.hasFiles) return 'Receipt Uploaded';
+        if (!item.id) return 'Save to upload';
+        return 'Receipt Missing';
     }
 
     get approvalModalTitle() {

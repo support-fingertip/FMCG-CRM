@@ -273,6 +273,23 @@
                                                 </div>
                                             </template>
 
+                                            <!-- Travel Mode (for travel types) -->
+                                            <template if:true={item.showTravelMode}>
+                                                <div class="item-field item-field-sm">
+                                                    <lightning-combobox
+                                                        label="Travel Mode"
+                                                        value={item.travelMode}
+                                                        options={travelModeOptions}
+                                                        data-field="travelMode"
+                                                        data-key={item.key}
+                                                        onchange={handleItemFieldChange}
+                                                        disabled={cannotEdit}
+                                                        variant="label-stacked"
+                                                        placeholder="Select...">
+                                                    </lightning-combobox>
+                                                </div>
+                                            </template>
+
                                             <!-- Vehicle Type (for Per KM with bike rate) -->
                                             <template if:true={item.showVehicle}>
                                                 <div class="item-field item-field-sm">
@@ -373,6 +390,22 @@
                                                 </template>
                                             </div>
 
+                                            <!-- System Calculated Amount (readonly) -->
+                                            <template if:true={item.systemCalcAmount}>
+                                                <div class="item-field item-field-sm">
+                                                    <label class="field-label">System Calc.</label>
+                                                    <span class="field-value-readonly field-system-calc">{item.systemCalcAmount}</span>
+                                                </div>
+                                            </template>
+
+                                            <!-- Food Limit (readonly, for food types) -->
+                                            <template if:true={item.isFood}>
+                                                <div class="item-field item-field-sm">
+                                                    <label class="field-label">Food Limit</label>
+                                                    <span class="field-value-readonly">{item.foodLimit}</span>
+                                                </div>
+                                            </template>
+
                                             <!-- GPS Distance (readonly, for travel) -->
                                             <template if:true={item.isTravel}>
                                                 <div class="item-field item-field-sm">
@@ -402,6 +435,23 @@
                                         <!-- Receipt Upload (inline, after item saved) -->
                                         <template if:true={item.receiptRequired}>
                                             <div class="item-receipt-section">
+                                                <!-- Receipt Status Indicator -->
+                                                <div class="receipt-status-row">
+                                                    <template if:true={item.hasFiles}>
+                                                        <span class="receipt-status receipt-uploaded">
+                                                            <lightning-icon icon-name="utility:success" size="xx-small" variant="inverse"></lightning-icon>
+                                                            Receipt Uploaded
+                                                        </span>
+                                                    </template>
+                                                    <template if:false={item.hasFiles}>
+                                                        <template if:true={item.id}>
+                                                            <span class="receipt-status receipt-missing">
+                                                                <lightning-icon icon-name="utility:warning" size="xx-small"></lightning-icon>
+                                                                Receipt Missing
+                                                            </span>
+                                                        </template>
+                                                    </template>
+                                                </div>
                                                 <template if:true={item.id}>
                                                     <template if:true={canEdit}>
                                                         <lightning-file-upload
@@ -685,6 +735,101 @@
                         label={approvalActionLabel}
                         variant={approvalActionVariant}
                         onclick={handleApprovalConfirm}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ═══ SUBMIT CONFIRMATION MODAL ═══ -->
+    <template if:true={showSubmitConfirmModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header submit-confirm-header">
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        onclick={closeSubmitConfirmModal}
+                        class="slds-modal__close">
+                    </lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Confirm Submission</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <!-- Summary Stats -->
+                    <div class="submit-summary-grid">
+                        <div class="submit-stat">
+                            <span class="submit-stat-label">Total Items</span>
+                            <span class="submit-stat-value">{submitSummary.totalItems}</span>
+                        </div>
+                        <div class="submit-stat">
+                            <span class="submit-stat-label">Days</span>
+                            <span class="submit-stat-value">{submitSummary.dayCount}</span>
+                        </div>
+                        <div class="submit-stat">
+                            <span class="submit-stat-label">Total Claimed</span>
+                            <span class="submit-stat-value submit-stat-amount">{submitSummary.totalClaimed}</span>
+                        </div>
+                        <div class="submit-stat">
+                            <span class="submit-stat-label">Total Eligible</span>
+                            <span class="submit-stat-value submit-stat-amount">{submitSummary.totalEligible}</span>
+                        </div>
+                    </div>
+
+                    <!-- Missing Receipts Warning -->
+                    <template if:true={submitHasMissingReceipts}>
+                        <div class="submit-warning">
+                            <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+                            <span>{submitMissingReceipts} item(s) missing required receipts. Please upload before submitting.</span>
+                        </div>
+                    </template>
+
+                    <!-- Type Breakdown -->
+                    <template if:true={submitSummaryItems.length}>
+                        <h3 class="submit-section-title">Expense Breakdown</h3>
+                        <div class="table-wrap">
+                            <table class="exp-table">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th class="num-col">Items</th>
+                                        <th class="num-col">Eligible</th>
+                                        <th class="num-col">Claimed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template for:each={submitSummaryItems} for:item="row">
+                                        <tr key={row.type}>
+                                            <td>{row.type}</td>
+                                            <td class="num-col">{row.count}</td>
+                                            <td class="num-col">{row.eligible}</td>
+                                            <td class="num-col">{row.claimed}</td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+
+                    <!-- Remarks -->
+                    <div class="submit-remarks">
+                        <lightning-textarea
+                            label="Submission Remarks (Optional)"
+                            value={submitRemarks}
+                            onchange={handleSubmitRemarksChange}
+                            placeholder="Add any remarks for the approver..."
+                            max-length="32000">
+                        </lightning-textarea>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeSubmitConfirmModal}></lightning-button>
+                    <lightning-button
+                        label="Confirm & Submit"
+                        variant="success"
+                        onclick={handleConfirmSubmit}
+                        disabled={submitHasMissingReceipts}
+                        icon-name="utility:forward">
                     </lightning-button>
                 </footer>
             </div>

@@ -261,6 +261,21 @@ public with sharing class ExpenseController {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // SUBMIT SUMMARY
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @AuraEnabled
+    public static Map<String, Object> getSubmitSummary(Id expenseId) {
+        try {
+            return EXP_Expense_Service.getSubmitSummary(expenseId);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // FILES
     // ═══════════════════════════════════════════════════════════════════════
 

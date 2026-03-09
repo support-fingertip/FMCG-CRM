@@ -1168,3 +1168,117 @@
         display: none;
     }
 }
+
+/* ================================================================
+   SYSTEM CALCULATED AMOUNT
+   ================================================================ */
+.field-system-calc {
+    color: var(--teal-color);
+    font-weight: 700;
+}
+
+/* ================================================================
+   RECEIPT STATUS INDICATORS
+   ================================================================ */
+.receipt-status-row {
+    margin-bottom: 6px;
+}
+
+.receipt-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.receipt-uploaded {
+    background: var(--success-color);
+    color: white;
+}
+
+.receipt-missing {
+    background: var(--warning-light);
+    color: var(--warning-color);
+}
+
+/* ================================================================
+   SUBMIT CONFIRMATION MODAL
+   ================================================================ */
+.submit-confirm-header {
+    background: linear-gradient(135deg, var(--success-color), #1a6832);
+    color: white;
+}
+
+.submit-confirm-header h2 {
+    color: white;
+}
+
+.submit-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.submit-stat {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 8px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+}
+
+.submit-stat-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.submit-stat-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.submit-stat-amount {
+    font-family: var(--font-mono);
+    color: var(--brand-primary);
+}
+
+.submit-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--warning-light);
+    color: var(--warning-color);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.submit-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+    text-transform: uppercase;
+}
+
+.submit-remarks {
+    margin-top: 16px;
+}
+
+@media (max-width: 480px) {
+    .submit-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

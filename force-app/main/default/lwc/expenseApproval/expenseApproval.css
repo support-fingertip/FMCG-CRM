@@ -234,6 +234,86 @@
 .status-finance { background: var(--success-light); color: var(--success-color); }
 .status-rejected { background: var(--error-light); color: var(--error-color); }
 
+/* Row Highlighting for actionable items */
+.highlight-row td {
+    background-color: #d9fdd3 !important;
+}
+
+.highlight-row:hover td {
+    background-color: #c9f0c3 !important;
+}
+
+/* System Calculated Column */
+.system-calc-value {
+    color: var(--teal-color);
+    font-weight: 600;
+}
+
+.exceeds-system-warn {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--warning-color);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* Travel Mode Badge */
+.travel-mode-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: var(--brand-primary);
+    margin-left: 4px;
+}
+
+/* File Count Badge */
+.file-count-badge {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* Inline Comment */
+.comment-col {
+    min-width: 100px;
+}
+
+.inline-comment-wrap {
+    margin-top: 4px;
+}
+
+.inline-comment-input {
+    font-size: 12px;
+}
+
+.prev-comments {
+    display: block;
+    font-size: 10px;
+    color: var(--text-secondary);
+    cursor: help;
+    font-style: italic;
+    margin-top: 2px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .employee-info {

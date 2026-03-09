@@ -703,6 +703,113 @@ public class EXP_Expense_Service_Test {
     }
 
     @isTest
+    static void testGetSubmitSummary() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        Expense_Item__c item = new Expense_Item__c(
+            Expense__c = report.Id,
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Expense_Category__c = 'Travel',
+            Claimed_Amount__c = 300,
+            Eligible_Amount__c = 300
+        );
+        insert item;
+
+        Test.startTest();
+        Map<String, Object> summary = EXP_Expense_Service.getSubmitSummary(report.Id);
+        Test.stopTest();
+
+        System.assertEquals(1, (Integer) summary.get('totalItems'), 'Should have 1 item');
+        System.assertEquals(1, (Integer) summary.get('dayCount'), 'Should have 1 day');
+        System.assertEquals(300, (Decimal) summary.get('totalClaimed'), 'Total claimed should be 300');
+        System.assertEquals(300, (Decimal) summary.get('totalEligible'), 'Total eligible should be 300');
+        System.assertNotEquals(null, summary.get('typeBreakdown'), 'Should have type breakdown');
+        System.assertEquals(true, summary.get('canSubmit'), 'Should be able to submit');
+    }
+
+    @isTest
+    static void testFoodLimitCalculation() {
+        Expense_Item__c foodItem = new Expense_Item__c(
+            Claimed_Amount__c = 500
+        );
+        Expense_Eligibility__c foodRule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Actual', Max_Per_Day__c = 1000,
+            Is_Active__c = true, Min_Distance_KM__c = 0,
+            Food_Limit__c = 300
+        );
+
+        Test.startTest();
+        Decimal result = EXP_Expense_Service.calculateEligibleAmount(foodItem, foodRule, 22);
+        Test.stopTest();
+
+        System.assertEquals(300, result, 'Food limit should cap at 300');
+    }
+
+    @isTest
+    static void testSystemCalculatedAmountPopulated() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        Day_Attendance__c att = [
+            SELECT Id FROM Day_Attendance__c
+            WHERE Attendance_Date__c = :monthStart LIMIT 1
+        ];
+
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        items.add(new Expense_Item__c(
+            Expense__c = report.Id,
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Day_Attendance__c = att.Id,
+            Claimed_Amount__c = 300
+        ));
+
+        Test.startTest();
+        EXP_Expense_Service.populateEligibilityFields(items, report.Id);
+        Test.stopTest();
+
+        System.assertNotEquals(null, items[0].System_Calculated_Amount__c, 'System calc amount should be populated');
+        System.assert(items[0].System_Calculated_Amount__c > 0, 'System calc amount should be > 0');
+        System.assertEquals(items[0].Eligible_Amount__c, items[0].System_Calculated_Amount__c, 'System calc should equal eligible');
+    }
+
+    @isTest
+    static void testSaveWithTravelMode() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        items.add(new Expense_Item__c(
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Travelling Allowance',
+            Expense_Category__c = 'Travel',
+            GPS_Distance_KM__c = 30,
+            Claimed_Amount__c = 150,
+            Eligible_Amount__c = 150,
+            Vehicle_Type__c = 'Car',
+            Travel_Mode__c = 'Car'
+        ));
+
+        Test.startTest();
+        List<Expense_Item__c> saved = EXP_Expense_Service.saveExpenseItems(report.Id, items);
+        Test.stopTest();
+
+        System.assertEquals(1, saved.size(), 'Should save 1 item');
+        System.assertEquals('Car', saved[0].Travel_Mode__c, 'Travel mode should be preserved');
+    }
+
+    @isTest
     static void testSaveExpenseItemsValidation() {
         Date today = Date.today();
         String monthName = getCurrentMonth();
