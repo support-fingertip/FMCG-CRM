@@ -819,8 +819,18 @@ export default class ExpenseManager extends LightningElement {
         const files = event.target.files;
         if (!files || files.length === 0) return;
 
+        // Validate file size (max 3MB to stay within Salesforce limits)
+        const MAX_FILE_SIZE = 3 * 1024 * 1024;
+        for (const file of files) {
+            if (file.size > MAX_FILE_SIZE) {
+                this.saveError = file.name + ' exceeds the 3MB file size limit. Please compress or resize the image.';
+                event.target.value = '';
+                return;
+            }
+        }
+
         const pendingPromises = Array.from(files).map(file => {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => {
                     const base64 = reader.result.split(',')[1];
@@ -830,6 +840,7 @@ export default class ExpenseManager extends LightningElement {
                         size: file.size
                     });
                 };
+                reader.onerror = () => reject(new Error('Failed to read file: ' + file.name));
                 reader.readAsDataURL(file);
             });
         });
@@ -874,6 +885,9 @@ export default class ExpenseManager extends LightningElement {
 
         if (uploads.length === 0) return;
 
+        const failedUploads = [];
+        const successKeys = new Set();
+
         for (const upload of uploads) {
             try {
                 await uploadReceiptBase64({
@@ -881,21 +895,31 @@ export default class ExpenseManager extends LightningElement {
                     fileName: upload.fileName,
                     base64Data: upload.base64
                 });
+                successKeys.add(upload.itemKey);
             } catch (e) {
-                // Log but continue with other uploads
                 console.error('Failed to upload ' + upload.fileName, e);
+                failedUploads.push(upload.fileName);
             }
         }
 
-        // Clear pending files
+        // Only clear pending files for items that uploaded successfully
         this.dayRows = this.dayRows.map(row => ({
             ...row,
-            items: row.items.map(item => ({
-                ...item,
-                pendingFiles: [],
-                hasPendingFiles: false
-            }))
+            items: row.items.map(item => {
+                if (successKeys.has(item.key)) {
+                    return {
+                        ...item,
+                        pendingFiles: [],
+                        hasPendingFiles: false
+                    };
+                }
+                return item;
+            })
         }));
+
+        if (failedUploads.length > 0) {
+            throw new Error('Failed to upload receipt(s): ' + failedUploads.join(', ') + '. Please try again.');
+        }
     }
 
     handleRemovePendingFile(event) {
@@ -990,12 +1014,16 @@ export default class ExpenseManager extends LightningElement {
             }
 
             // Upload any pending receipt files (after IDs are mapped)
-            await this.uploadPendingFiles();
+            try {
+                await this.uploadPendingFiles();
+            } catch (uploadErr) {
+                let uploadMsg = 'Receipt upload failed.';
+                if (uploadErr && uploadErr.message) uploadMsg = uploadErr.message;
+                this.saveError = uploadMsg;
+            }
 
-            // Refresh file attachments
+            // Always refresh file attachments and expense totals
             await this.loadAllFiles();
-
-            // Refresh expense totals
             this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
         } catch (e) {
             let msg = 'An error occurred.';
