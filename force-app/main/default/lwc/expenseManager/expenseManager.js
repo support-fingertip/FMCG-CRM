@@ -797,11 +797,17 @@ export default class ExpenseManager extends LightningElement {
 
             this.dayRows = this.dayRows.map(row => ({
                 ...row,
-                items: row.items.map(item => ({
-                    ...item,
-                    files: item.id ? (filesByItem[item.id] || []) : [],
-                    hasFiles: item.id ? (filesByItem[item.id] || []).length > 0 : false
-                }))
+                items: row.items.map(item => {
+                    const itemFiles = item.id ? (filesByItem[item.id] || []) : [];
+                    const hasFiles = itemFiles.length > 0;
+                    const hasPending = item.pendingFiles && item.pendingFiles.length > 0;
+                    return {
+                        ...item,
+                        files: itemFiles,
+                        hasFiles: hasFiles,
+                        hasAnyFiles: hasFiles || hasPending
+                    };
+                })
             }));
         } catch (e) {
             this.showError(e);
@@ -980,12 +986,14 @@ export default class ExpenseManager extends LightningElement {
                     })
                 }));
 
-                // Upload any pending receipt files
-                await this.uploadPendingFiles();
-
-                await this.loadAllFiles();
                 this.showSuccess('All expense items saved successfully.');
             }
+
+            // Upload any pending receipt files (after IDs are mapped)
+            await this.uploadPendingFiles();
+
+            // Refresh file attachments
+            await this.loadAllFiles();
 
             // Refresh expense totals
             this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
@@ -1069,13 +1077,6 @@ export default class ExpenseManager extends LightningElement {
     async handleSaveAndSubmit() {
         await this.handleSaveAll();
         if (this.saveError) return;
-
-        // Check receipt requirements before submit
-        const receiptErrors = this.validateReceiptsForSubmit();
-        if (receiptErrors.length > 0) {
-            this.saveError = receiptErrors.join(' | ');
-            return;
-        }
 
         // Show confirmation popup with summary
         try {
