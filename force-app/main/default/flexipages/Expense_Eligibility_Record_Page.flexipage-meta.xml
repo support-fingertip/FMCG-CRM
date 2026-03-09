@@ -244,7 +244,6 @@
                 <fieldItem>Receipt_Threshold__c</fieldItem>
                 <identifier>receipt_threshold_field</identifier>
                 <visibilityRule>
-                    <booleanFilter>1</booleanFilter>
                     <criteria>
                         <leftValue>{!Record.Receipt_Required__c}</leftValue>
                         <operator>EQUAL</operator>
