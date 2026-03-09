@@ -258,7 +258,7 @@ export default class ExpenseManager extends LightningElement {
             // Build edit items from eligibility rules
             this.editItems = this.eligibilityRules.map(rule => {
                 const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
-                return {
+                const item = {
                     key: rule.Expense_Type__c,
                     id: existing ? existing.Id : null,
                     expenseType: rule.Expense_Type__c,
@@ -286,6 +286,11 @@ export default class ExpenseManager extends LightningElement {
                     files: [],
                     hasFiles: false
                 };
+                // Calculate eligible amount for new items from the rule
+                if (!existing) {
+                    item.eligibleAmount = this.recalcEligible(item);
+                }
+                return item;
             });
 
             await this.loadFilesForItems();
