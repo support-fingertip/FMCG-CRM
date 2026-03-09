@@ -396,7 +396,7 @@
                                                 variant="label-stacked">
                                             </lightning-input>
                                             <template if:true={item.exceedsEligible}>
-                                                <span class="field-error-text">Exceeds eligible amount ({item.eligibleAmount})</span>
+                                                <span class="field-warning-text">Exceeds eligible amount ({item.eligibleAmount}) — notes required</span>
                                             </template>
                                         </div>
                                         <div class="field-group">
@@ -443,17 +443,34 @@
                                     <!-- Notes -->
                                     <div class="field-row">
                                         <div class="field-group field-wide">
-                                            <lightning-input
-                                                label="Notes"
-                                                type="text"
-                                                value={item.notes}
-                                                data-field="notes"
-                                                data-type={item.expenseType}
-                                                onchange={handleItemFieldChange}
-                                                disabled={cannotEdit}
-                                                variant="label-stacked"
-                                                placeholder="Optional notes...">
-                                            </lightning-input>
+                                            <template if:true={item.exceedsEligible}>
+                                                <lightning-input
+                                                    label="Notes (Required)"
+                                                    type="text"
+                                                    value={item.notes}
+                                                    data-field="notes"
+                                                    data-type={item.expenseType}
+                                                    onchange={handleItemFieldChange}
+                                                    disabled={cannotEdit}
+                                                    variant="label-stacked"
+                                                    required
+                                                    class={item.notesInputClass}
+                                                    placeholder="Justification required for exceeding eligible amount...">
+                                                </lightning-input>
+                                            </template>
+                                            <template if:false={item.exceedsEligible}>
+                                                <lightning-input
+                                                    label="Notes"
+                                                    type="text"
+                                                    value={item.notes}
+                                                    data-field="notes"
+                                                    data-type={item.expenseType}
+                                                    onchange={handleItemFieldChange}
+                                                    disabled={cannotEdit}
+                                                    variant="label-stacked"
+                                                    placeholder="Optional notes...">
+                                                </lightning-input>
+                                            </template>
                                         </div>
                                     </div>
                                 </div>

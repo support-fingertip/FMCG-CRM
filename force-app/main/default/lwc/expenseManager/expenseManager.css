@@ -913,3 +913,20 @@
     margin-top: 2px;
     font-weight: 500;
 }
+
+.item-card-warning {
+    border-color: var(--warning-color, #fe9339) !important;
+    box-shadow: 0 0 0 1px var(--warning-color, #fe9339);
+}
+
+.input-warning {
+    --sds-c-input-color-border: var(--warning-color, #fe9339);
+}
+
+.field-warning-text {
+    display: block;
+    font-size: 11px;
+    color: var(--warning-color, #fe9339);
+    margin-top: 2px;
+    font-weight: 500;
+}

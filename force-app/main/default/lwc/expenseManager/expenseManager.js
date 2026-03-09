@@ -328,14 +328,24 @@ export default class ExpenseManager extends LightningElement {
                     item.eligibleAmount = this.recalcEligible(item);
                 }
                 item.exceedsEligible = !item.isActual && item.claimedAmount > item.eligibleAmount;
-                item.cardClass = item.exceedsEligible ? 'item-card item-card-error' : 'item-card';
-                item.claimedInputClass = item.exceedsEligible ? 'input-error' : '';
+                item.cardClass = item.exceedsEligible ? 'item-card item-card-warning' : 'item-card';
+                item.claimedInputClass = item.exceedsEligible ? 'input-warning' : '';
+                // Clear notes error if no longer exceeding
+                if (!item.exceedsEligible) {
+                    item.notesRequired = false;
+                    item.notesInputClass = '';
+                }
             } else if (field === 'overrideReason') {
                 item.overrideReason = value;
             } else if (field === 'receiptUrl') {
                 item.receiptUrl = value;
             } else if (field === 'notes') {
                 item.notes = value;
+                // Clear notes error when user types a note
+                if (item.notesRequired && value && value.trim() !== '') {
+                    item.notesRequired = false;
+                    item.notesInputClass = '';
+                }
             }
             items[idx] = item;
             this.editItems = items;
@@ -366,22 +376,22 @@ export default class ExpenseManager extends LightningElement {
     }
 
     async handleSaveDayItems() {
-        // Client-side validation: check claimed vs eligible
+        // Client-side validation: notes required when claimed exceeds eligible
         this.modalError = '';
-        const exceeded = this.editItems.filter(
+        const exceededNoNotes = this.editItems.filter(
             i => !i.isActual && i.claimedAmount > 0 && i.claimedAmount > i.eligibleAmount
+                && (!i.notes || i.notes.trim() === '')
         );
-        if (exceeded.length > 0) {
-            const types = exceeded.map(i => i.expenseType).join(', ');
-            this.modalError = 'Claimed amount exceeds eligible amount for: ' + types;
-            // Highlight the exceeded items
+        if (exceededNoNotes.length > 0) {
+            const types = exceededNoNotes.map(i => i.expenseType).join(', ');
+            this.modalError = 'Notes are required when claimed amount exceeds eligible amount: ' + types;
             this.editItems = this.editItems.map(item => {
-                const exceeds = !item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount;
+                const needsNotes = !item.isActual && item.claimedAmount > 0
+                    && item.claimedAmount > item.eligibleAmount && (!item.notes || item.notes.trim() === '');
                 return {
                     ...item,
-                    exceedsEligible: exceeds,
-                    cardClass: exceeds ? 'item-card item-card-error' : 'item-card',
-                    claimedInputClass: exceeds ? 'input-error' : ''
+                    notesRequired: needsNotes,
+                    notesInputClass: needsNotes ? 'input-error' : ''
                 };
             });
             return;
