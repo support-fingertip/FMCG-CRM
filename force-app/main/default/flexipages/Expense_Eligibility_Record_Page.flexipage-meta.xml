@@ -149,7 +149,7 @@
                 <identifier>expense_category_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-eligibility_rule_section</name>
+        <name>Facet-eligibility_rule_section-1</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -252,7 +252,7 @@
                 <identifier>max_per_month_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-rate_config_section</name>
+        <name>Facet-rate_config_section-1</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -283,7 +283,7 @@
                 </visibilityRule>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-receipt_rules_section</name>
+        <name>Facet-receipt_rules_section-1</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -297,7 +297,7 @@
                 <identifier>description_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-description_section</name>
+        <name>Facet-description_section-1</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -321,7 +321,7 @@
                 <identifier>last_modified_by_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>Facet-system_info_section</name>
+        <name>Facet-system_info_section-1</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
