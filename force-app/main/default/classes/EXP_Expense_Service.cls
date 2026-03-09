@@ -378,10 +378,27 @@ public without sharing class EXP_Expense_Service {
                    Manual_Distance_KM__c, Distance_Override_Reason__c,
                    Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c,
                    Approved_Amount__c, Receipt_URL__c, Receipt_Required__c,
-                   Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c
+                   Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
+                   From_Location__c, To_Location__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c = :expenseDate
             ORDER BY Expense_Type__c ASC
+        ];
+    }
+
+    @AuraEnabled
+    public static List<Expense_Item__c> getAllExpenseItemsForReport(Id expenseId) {
+        return [
+            SELECT Id, Expense__c, Day_Attendance__c, Expense_Date__c,
+                   Expense_Type__c, Expense_Category__c, GPS_Distance_KM__c,
+                   Manual_Distance_KM__c, Distance_Override_Reason__c,
+                   Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c,
+                   Approved_Amount__c, Receipt_URL__c, Receipt_Required__c,
+                   Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
+                   From_Location__c, To_Location__c
+            FROM Expense_Item__c
+            WHERE Expense__c = :expenseId
+            ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
         ];
     }
 
@@ -431,8 +448,23 @@ public without sharing class EXP_Expense_Service {
 
         upsert items;
 
-        Date itemDate = items[0].Expense_Date__c;
-        return getExpenseItemsForDate(expenseId, itemDate);
+        // Return all saved items (may span multiple dates)
+        Set<Date> dates = new Set<Date>();
+        for (Expense_Item__c item : items) {
+            dates.add(item.Expense_Date__c);
+        }
+        return [
+            SELECT Id, Expense__c, Day_Attendance__c, Expense_Date__c,
+                   Expense_Type__c, Expense_Category__c, GPS_Distance_KM__c,
+                   Manual_Distance_KM__c, Distance_Override_Reason__c,
+                   Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c,
+                   Approved_Amount__c, Receipt_URL__c, Receipt_Required__c,
+                   Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
+                   From_Location__c, To_Location__c
+            FROM Expense_Item__c
+            WHERE Expense__c = :expenseId AND Expense_Date__c IN :dates
+            ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
+        ];
     }
 
     public static void deleteExpenseItems(List<Id> itemIds) {

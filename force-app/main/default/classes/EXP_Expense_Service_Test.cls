@@ -220,6 +220,14 @@ public class EXP_Expense_Service_Test {
         // Get items for date
         List<Expense_Item__c> retrieved = EXP_Expense_Service.getExpenseItemsForDate(report.Id, monthStart);
         System.assertEquals(2, retrieved.size(), 'Should retrieve 2 items for the date');
+
+        // Get all items for report (bulk method)
+        List<Expense_Item__c> allItems = EXP_Expense_Service.getAllExpenseItemsForReport(report.Id);
+        System.assertEquals(2, allItems.size(), 'Should retrieve all items for the report');
+        // Verify From/To fields are queryable
+        for (Expense_Item__c item : allItems) {
+            System.assertNotEquals(null, item.Id, 'Item should have Id');
+        }
     }
 
     @isTest

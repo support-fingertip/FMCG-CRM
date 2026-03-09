@@ -53,6 +53,15 @@ public with sharing class ExpenseController {
     }
 
     @AuraEnabled
+    public static List<Expense_Item__c> getAllExpenseItemsForReport(Id expenseId) {
+        try {
+            return EXP_Expense_Service.getAllExpenseItemsForReport(expenseId);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static List<Expense_Item__c> saveExpenseItems(Id expenseId, String itemsJson) {
         try {
             List<Expense_Item__c> items = (List<Expense_Item__c>)

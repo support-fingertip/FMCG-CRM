@@ -3,7 +3,7 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Expense Manager</masterLabel>
-    <description>Expense Management component - monthly expense claims with calendar view, day entry, and approval workflow</description>
+    <description>Expense Management component - monthly expense claims with accordion day view, inline editing, receipt upload, and approval workflow</description>
     <targets>
         <target>lightning__AppPage</target>
         <target>lightning__HomePage</target>

@@ -1,6 +1,6 @@
 /* ================================================================
    expenseManager.css
-   Responsive Expense Manager LWC — Desktop + Mobile
+   Responsive Expense Manager LWC — Accordion Day View
    ================================================================ */
 
 :host {
@@ -25,13 +25,14 @@
     --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     --card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.1);
     --font-mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    --accent-blue-bg: #dbeafe;
 }
 
 /* ================================================================
    CONTAINER
    ================================================================ */
 .exp-container {
-    max-width: 960px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 0 16px 24px;
     font-family: 'Salesforce Sans', Arial, sans-serif;
@@ -121,32 +122,56 @@
 }
 
 /* ================================================================
-   SELECTOR BAR
+   INFO BAR (Date Range, Executive, Status)
    ================================================================ */
-.selector-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
+.info-bar {
     background: white;
     border: 1px solid var(--border-color);
     border-radius: 10px;
+    padding: 14px 16px;
     margin-bottom: 12px;
     box-shadow: var(--card-shadow);
 }
 
-.selector-controls {
+.info-bar-fields {
     display: flex;
-    gap: 8px;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.info-field {
+    flex: 1;
+    min-width: 140px;
+}
+
+.info-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.info-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 6px 12px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
 }
 
 .month-select {
-    width: 150px;
+    width: 100%;
 }
 
 .year-select {
-    width: 100px;
+    width: 100%;
 }
 
 /* ================================================================
@@ -177,6 +202,22 @@
     font-weight: 600;
     background: #f0f0f0;
     color: #706e6b;
+}
+
+/* ================================================================
+   REJECTION BANNER
+   ================================================================ */
+.rejection-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--warning-light);
+    border: 1px solid var(--warning-color);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #8a5100;
 }
 
 /* ================================================================
@@ -280,212 +321,237 @@
 }
 
 /* ================================================================
-   CALENDAR
+   ADD DAY EXPENSES BUTTON
    ================================================================ */
-.calendar-container {
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: var(--card-shadow);
+.add-day-btn-wrap {
+    margin-bottom: 16px;
 }
 
-.cal-header-row {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
+.add-day-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--brand-dark), #001a3d);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-day-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(1, 68, 134, 0.3);
+}
+
+.add-day-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ================================================================
+   NO ATTENDANCE BANNER
+   ================================================================ */
+.no-attendance-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--error-light);
+    border: 1px solid var(--error-color);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.no-att-text {
+    display: flex;
+    flex-direction: column;
     gap: 4px;
+}
+
+.no-att-text strong {
+    color: var(--error-color);
+    font-size: 14px;
+}
+
+.no-att-text span {
+    color: var(--error-color);
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+/* ================================================================
+   SELECT ALL BAR
+   ================================================================ */
+.select-all-bar {
+    background: var(--accent-blue-bg);
+    padding: 10px 16px;
+    border-radius: 8px;
     margin-bottom: 8px;
 }
 
-.cal-header-cell {
-    text-align: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    padding: 6px 0;
-}
-
-.cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-}
-
-.cal-cell {
-    aspect-ratio: 1;
+.select-all-label {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    min-height: 60px;
-    gap: 2px;
-}
-
-.cal-empty {
-    cursor: default;
-}
-
-.cal-eligible {
-    background: #f0f7ff;
-    border-color: #d0e5f7;
-}
-
-.cal-eligible:hover {
-    background: #e0efff;
-    border-color: var(--brand-primary);
-    transform: scale(1.03);
-}
-
-.cal-has-expense {
-    background: var(--success-light);
-    border-color: #b8e6c4;
-}
-
-.cal-has-expense:hover {
-    border-color: var(--success-color);
-    transform: scale(1.03);
-}
-
-.cal-disabled {
-    background: #fafafa;
-    color: var(--text-weak);
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-.cal-today {
-    border: 2px solid var(--brand-primary) !important;
-    font-weight: 700;
-}
-
-.cal-day-num {
+    gap: 10px;
     font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: var(--brand-dark);
+    cursor: pointer;
 }
 
-.cal-dist {
-    font-size: 9px;
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-}
-
-.cal-badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
+.select-all-label input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    background: var(--success-color);
-    color: white;
-    border-radius: 50%;
-    font-size: 10px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    cursor: pointer;
 }
 
 /* ================================================================
-   ACTION BAR
+   DAY ACCORDION
    ================================================================ */
-.action-bar {
-    display: flex;
-    justify-content: center;
-    padding: 16px 0;
-    gap: 12px;
-}
-
-/* ================================================================
-   REJECTION BANNER
-   ================================================================ */
-.rejection-banner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--warning-light);
-    border: 1px solid var(--warning-color);
-    border-radius: 8px;
-    padding: 10px 16px;
-    margin-top: 12px;
-    font-size: 13px;
-    color: #8a5100;
-}
-
-/* ================================================================
-   DAY MODAL — ITEM CARDS
-   ================================================================ */
-.modal-container {
-    max-width: 720px;
-}
-
-.modal-header {
-    background: linear-gradient(135deg, var(--brand-primary), var(--brand-dark));
-    color: white;
-}
-
-.modal-subtitle {
-    font-size: 13px;
-    opacity: 0.85;
-    margin-top: 4px;
-    display: block;
-    font-family: var(--font-mono);
-}
-
-.modal-body {
-    max-height: 65vh;
-    overflow-y: auto;
-}
-
-.item-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.item-card {
-    border: 1px solid var(--border-color);
+.day-accordion {
+    border: 2px solid var(--error-color);
     border-radius: 10px;
+    margin-bottom: 8px;
     overflow: hidden;
     transition: box-shadow 0.2s ease;
 }
 
-.item-card:hover {
+.day-accordion:hover {
     box-shadow: var(--card-shadow-hover);
 }
 
-.item-card-header {
+.day-accordion-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 14px;
-    background: var(--bg-light);
-    border-bottom: 1px solid var(--border-color);
+    background: var(--accent-blue-bg);
+    padding: 10px 16px;
+    cursor: default;
 }
 
-.item-type-name {
+.day-toggle-btn {
+    border: none;
+    background: white;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+}
+
+.day-toggle-btn:hover {
+    background: #e0efff;
+}
+
+.day-checkbox {
+    flex-shrink: 0;
+}
+
+.day-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.day-date-label {
     font-size: 14px;
     font-weight: 700;
     color: var(--text-primary);
     flex: 1;
 }
 
-.item-rate-badge {
-    font-size: 11px;
+.day-total-right {
+    font-size: 13px;
+    color: var(--text-secondary);
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 8px;
-    background: #e8f4fd;
-    color: var(--brand-primary);
+    white-space: nowrap;
 }
 
-.receipt-badge {
+.day-total-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    background: #e0e0e0;
+    color: var(--text-secondary);
+}
+
+.day-total-positive {
+    background: var(--success-color);
+    color: white;
+}
+
+/* ================================================================
+   DAY ACCORDION BODY (Expanded)
+   ================================================================ */
+.day-accordion-body {
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ================================================================
+   EXPENSE ITEM ROW
+   ================================================================ */
+.expense-item-row {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    background: white;
+    transition: box-shadow 0.15s ease;
+}
+
+.expense-item-row:hover {
+    box-shadow: var(--card-shadow);
+}
+
+.item-row-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.item-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.item-status-new {
+    background: var(--warning-light);
+    color: var(--warning-color);
+}
+
+.item-status-saved {
+    background: var(--success-light);
+    color: var(--success-color);
+}
+
+.item-type-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.receipt-required-badge {
     font-size: 10px;
     font-weight: 600;
     padding: 2px 8px;
@@ -494,24 +560,34 @@
     color: #8a5100;
 }
 
-.item-card-body {
-    padding: 12px 14px;
-}
-
-.field-row {
+.item-actions-right {
     display: flex;
-    gap: 12px;
-    margin-bottom: 8px;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ================================================================
+   ITEM FIELDS ROW
+   ================================================================ */
+.item-fields-row {
+    display: flex;
+    gap: 10px;
     align-items: flex-end;
+    flex-wrap: wrap;
 }
 
-.field-group {
+.item-field {
     flex: 1;
-    min-width: 0;
+    min-width: 120px;
 }
 
-.field-wide {
-    flex: 2;
+.item-field-type {
+    max-width: 160px;
+}
+
+.item-field-sm {
+    max-width: 140px;
+    min-width: 100px;
 }
 
 .field-label {
@@ -524,23 +600,140 @@
     letter-spacing: 0.3px;
 }
 
-.field-readonly {
+.field-value-readonly {
     display: block;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
-    padding: 8px 0;
+    padding: 6px 10px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     font-family: var(--font-mono);
 }
 
-.amount-eligible {
-    color: var(--success-color);
+/* ================================================================
+   RECEIPT SECTION
+   ================================================================ */
+.item-receipt-section {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    background: #fafbfc;
 }
 
-.modal-footer {
+.receipt-upload {
+    display: block;
+}
+
+.file-list {
+    margin-top: 6px;
+}
+
+.file-item {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--bg-light);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary);
+}
+
+.save-first-msg {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    text-align: center;
+}
+
+/* ================================================================
+   SAVE ERROR
+   ================================================================ */
+.save-error-msg {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    padding: 10px 14px;
+    background: var(--error-light);
+    color: var(--error-color);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin: 12px 0;
+    border: 1px solid var(--error-color);
+}
+
+/* ================================================================
+   WARNING TEXT
+   ================================================================ */
+.field-warning-text {
+    display: block;
+    font-size: 11px;
+    color: var(--warning-color);
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.field-error-text {
+    display: block;
+    font-size: 11px;
+    color: var(--error-color);
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+/* ================================================================
+   FOOTER — Grand Total + Actions
+   ================================================================ */
+.expense-footer {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--card-shadow);
+}
+
+.grand-total {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.grand-total strong {
+    font-size: 20px;
+    font-weight: 800;
+    margin-left: 6px;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ================================================================
+   ACTION BAR
+   ================================================================ */
+.action-bar {
+    display: flex;
+    justify-content: center;
+    padding: 16px 0;
+    gap: 12px;
 }
 
 /* ================================================================
@@ -694,6 +887,16 @@
         font-size: 16px;
     }
 
+    .info-bar-fields {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .info-field {
+        flex: none;
+        width: 100%;
+    }
+
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
     }
@@ -714,42 +917,26 @@
         grid-template-columns: repeat(3, 1fr);
     }
 
-    .cal-cell {
-        min-height: 50px;
-    }
-
-    .cal-day-num {
-        font-size: 12px;
-    }
-
-    .cal-dist {
-        font-size: 8px;
-    }
-
-    .field-row {
+    .item-fields-row {
         flex-direction: column;
         gap: 8px;
     }
 
-    .field-group, .field-wide {
+    .item-field, .item-field-type, .item-field-sm {
         flex: none;
         width: 100%;
+        max-width: none;
     }
 
-    .slds-modal__container {
-        margin: 0;
-        max-width: 100%;
-        min-width: 100%;
-        border-radius: 0;
-        height: 100%;
+    .expense-footer {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
     }
 
-    .modal-body {
-        max-height: calc(100vh - 180px);
-    }
-
-    .modal-container {
-        max-width: 100%;
+    .footer-actions {
+        width: 100%;
+        justify-content: center;
     }
 }
 
@@ -769,21 +956,6 @@
         font-size: 14px;
     }
 
-    .selector-bar {
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px 12px;
-    }
-
-    .selector-controls {
-        width: 100%;
-    }
-
-    .month-select, .year-select {
-        flex: 1;
-        width: auto;
-    }
-
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 6px;
@@ -801,27 +973,6 @@
         font-size: 13px;
     }
 
-    .cal-cell {
-        min-height: 42px;
-        border-radius: 6px;
-    }
-
-    .cal-day-num {
-        font-size: 11px;
-    }
-
-    .cal-dist {
-        display: none;
-    }
-
-    .cal-badge {
-        width: 14px;
-        height: 14px;
-        font-size: 8px;
-        top: 2px;
-        right: 2px;
-    }
-
     .overview-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -834,99 +985,33 @@
         padding: 8px;
     }
 
-    .item-card-body {
-        padding: 10px;
+    .day-accordion-header {
+        padding: 8px 10px;
+        gap: 6px;
     }
 
-    .action-bar {
+    .day-date-label {
+        font-size: 12px;
+    }
+
+    .expense-item-row {
+        padding: 8px 10px;
+    }
+
+    .add-day-btn {
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+
+    .footer-actions {
         flex-direction: column;
     }
 
-    .action-bar lightning-button {
+    .footer-actions lightning-button {
         width: 100%;
     }
 
     .btn-sm {
         font-size: 11px;
     }
-}
-
-/* ── File Upload / Receipt ────────────────────────────────────── */
-.file-list {
-    margin-top: 6px;
-}
-
-.file-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background: var(--bg-light, #f4f6f9);
-    border-radius: 4px;
-    margin-bottom: 4px;
-    font-size: 12px;
-}
-
-.file-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--text-secondary, #444);
-}
-
-.save-first-msg {
-    font-size: 12px;
-    color: var(--text-secondary, #706e6b);
-    font-style: italic;
-    margin-top: 4px;
-}
-
-/* ── Modal Error / Validation ────────────────────────────────── */
-.modal-error-msg {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: var(--error-light, #fde4e4);
-    color: var(--error-color, #ea001e);
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 12px;
-    border: 1px solid var(--error-color, #ea001e);
-}
-
-.item-card-error {
-    border-color: var(--error-color, #ea001e) !important;
-    box-shadow: 0 0 0 1px var(--error-color, #ea001e);
-}
-
-.input-error {
-    --sds-c-input-color-border: var(--error-color, #ea001e);
-}
-
-.field-error-text {
-    display: block;
-    font-size: 11px;
-    color: var(--error-color, #ea001e);
-    margin-top: 2px;
-    font-weight: 500;
-}
-
-.item-card-warning {
-    border-color: var(--warning-color, #fe9339) !important;
-    box-shadow: 0 0 0 1px var(--warning-color, #fe9339);
-}
-
-.input-warning {
-    --sds-c-input-color-border: var(--warning-color, #fe9339);
-}
-
-.field-warning-text {
-    display: block;
-    font-size: 11px;
-    color: var(--warning-color, #fe9339);
-    margin-top: 2px;
-    font-weight: 500;
 }

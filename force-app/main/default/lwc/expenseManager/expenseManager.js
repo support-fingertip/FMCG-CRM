@@ -2,7 +2,7 @@ import { LightningElement, track } from 'lwc';
 import getOrCreateReport from '@salesforce/apex/ExpenseController.getOrCreateReport';
 import getEligibleDates from '@salesforce/apex/ExpenseController.getEligibleDates';
 import getEligibilityRules from '@salesforce/apex/ExpenseController.getEligibilityRules';
-import getExpenseItemsForDate from '@salesforce/apex/ExpenseController.getExpenseItemsForDate';
+import getAllExpenseItemsForReport from '@salesforce/apex/ExpenseController.getAllExpenseItemsForReport';
 import saveExpenseItems from '@salesforce/apex/ExpenseController.saveExpenseItems';
 import deleteExpenseItems from '@salesforce/apex/ExpenseController.deleteExpenseItems';
 import submitReport from '@salesforce/apex/ExpenseController.submitReport';
@@ -31,8 +31,6 @@ const MONTHS = [
     { label: 'December', value: 'December' }
 ];
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 export default class ExpenseManager extends LightningElement {
     // ── State ─────────────────────────────────────────────────────
     @track currentScreen = 'LOADING';
@@ -41,21 +39,17 @@ export default class ExpenseManager extends LightningElement {
     @track expense = {};
     @track eligibleDates = [];
     @track eligibilityRules = [];
-    @track calendarDays = [];
-    @track dayItems = [];
+    @track config = {};
+
+    // Accordion day list
+    @track dayRows = [];
+    @track showDayExpenses = false;
+    @track selectAllDays = false;
+
+    // Summary / Overview / Team
     @track summary = {};
     @track monthlyOverview = [];
     @track teamReports = [];
-    @track config = {};
-
-    // Day entry modal
-    @track showDayModal = false;
-    @track selectedDate = null;
-    @track selectedDateInfo = {};
-    @track editItems = [];
-
-    // Modal error
-    @track modalError = '';
 
     // Approval modal
     @track showApprovalModal = false;
@@ -64,16 +58,14 @@ export default class ExpenseManager extends LightningElement {
     @track approvalExpenseId = null;
     @track approvalLevel = '';
 
-    // Summary modal
-    @track showSummaryModal = false;
-
     // Active tab
     @track activeTab = 'expense';
 
-    // Loading/error
+    // Loading/error/messages
     @track isLoading = false;
     @track errorMessage = '';
     @track successMessage = '';
+    @track saveError = '';
 
     // Options
     monthOptions = MONTHS;
@@ -114,12 +106,14 @@ export default class ExpenseManager extends LightningElement {
         try {
             this.isLoading = true;
             this.clearMessages();
+            this.showDayExpenses = false;
+            this.dayRows = [];
+            this.selectAllDays = false;
             this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
             await Promise.all([
                 this.loadEligibleDates(),
                 this.loadEligibilityRules()
             ]);
-            this.buildCalendar();
         } catch (e) {
             this.showError(e);
         } finally {
@@ -138,81 +132,6 @@ export default class ExpenseManager extends LightningElement {
             this.eligibilityRules = [];
             this.showError(e);
         }
-    }
-
-    get hasNoEditItems() {
-        return !this.editItems || this.editItems.length === 0;
-    }
-
-    // ── Calendar Builder ─────────────────────────────────────────
-    buildCalendar() {
-        const monthIndex = MONTHS.findIndex(m => m.value === this.selectedMonth);
-        const year = this.selectedYear;
-        const firstDay = new Date(year, monthIndex, 1);
-        const lastDay = new Date(year, monthIndex + 1, 0);
-        const startDayOfWeek = firstDay.getDay();
-        const daysInMonth = lastDay.getDate();
-
-        // Build date lookup from eligible dates
-        const dateMap = {};
-        this.eligibleDates.forEach(d => {
-            const dateStr = typeof d.date === 'string' ? d.date : d.date;
-            dateMap[dateStr] = d;
-        });
-
-        const days = [];
-
-        // Leading empty cells
-        for (let i = 0; i < startDayOfWeek; i++) {
-            days.push({ key: `empty-${i}`, day: '', isEmpty: true, cssClass: 'cal-cell cal-empty' });
-        }
-
-        // Calendar days
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateObj = new Date(year, monthIndex, d);
-            const dateStr = this.formatDate(year, monthIndex + 1, d);
-            const info = dateMap[dateStr];
-            const hasAttendance = !!info;
-            const expenseCount = info ? (info.expenseCount || 0) : 0;
-            const gpsDistance = info ? (info.gpsDistance || 0) : 0;
-            const isToday = this.isToday(year, monthIndex, d);
-
-            let cssClass = 'cal-cell';
-            if (hasAttendance) {
-                cssClass += expenseCount > 0 ? ' cal-has-expense' : ' cal-eligible';
-            } else {
-                cssClass += ' cal-disabled';
-            }
-            if (isToday) cssClass += ' cal-today';
-
-            days.push({
-                key: `day-${d}`,
-                day: d,
-                dateStr,
-                isEmpty: false,
-                hasAttendance,
-                expenseCount,
-                gpsDistance: gpsDistance.toFixed(1),
-                isToday,
-                cssClass,
-                showBadge: expenseCount > 0
-            });
-        }
-
-        this.calendarDays = days;
-    }
-
-    formatDate(y, m, d) {
-        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    }
-
-    isToday(y, m, d) {
-        const now = new Date();
-        return y === now.getFullYear() && m === now.getMonth() && d === now.getDate();
-    }
-
-    get weekdayHeaders() {
-        return WEEKDAYS.map(d => ({ key: d, label: d }));
     }
 
     // ── Event Handlers ───────────────────────────────────────────
@@ -237,63 +156,97 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    // ── Calendar Day Click ───────────────────────────────────────
-    async handleDayClick(event) {
-        const dateStr = event.currentTarget.dataset.date;
-        const dayInfo = this.eligibleDates.find(d => d.date === dateStr);
-        if (!dayInfo) return;
-
-        this.selectedDate = dateStr;
-        this.selectedDateInfo = dayInfo;
-        this.showDayModal = true;
-        this.modalError = '';
+    // ── ADD DAY EXPENSES ─────────────────────────────────────────
+    async handleAddDayExpenses() {
+        if (this.eligibleDates.length === 0) return;
 
         try {
             this.isLoading = true;
-            const existingItems = await getExpenseItemsForDate({
-                expenseId: this.expense.Id,
-                expenseDate: dateStr
+            this.saveError = '';
+
+            // Load all existing expense items for this report
+            const allItems = this.expense.Id
+                ? await getAllExpenseItemsForReport({ expenseId: this.expense.Id })
+                : [];
+
+            // Group existing items by date
+            const itemsByDate = {};
+            allItems.forEach(item => {
+                const d = item.Expense_Date__c;
+                if (!itemsByDate[d]) itemsByDate[d] = [];
+                itemsByDate[d].push(item);
             });
 
-            // Build edit items from eligibility rules
-            this.editItems = this.eligibilityRules.map(rule => {
-                const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
-                const item = {
-                    key: rule.Expense_Type__c,
-                    id: existing ? existing.Id : null,
-                    expenseType: rule.Expense_Type__c,
-                    category: rule.Expense_Category__c,
-                    rateType: rule.Rate_Type__c,
-                    rateAmount: rule.Rate_Amount__c || 0,
-                    maxPerDay: rule.Max_Per_Day__c || 0,
-                    minDistance: rule.Min_Distance_KM__c || 0,
-                    receiptRequired: rule.Receipt_Required__c,
-                    gpsDistance: existing ? existing.GPS_Distance_KM__c : (dayInfo.gpsDistance || 0),
-                    manualDistance: existing ? existing.Manual_Distance_KM__c : null,
-                    overrideReason: existing ? existing.Distance_Override_Reason__c : '',
-                    eligibleAmount: existing ? existing.Eligible_Amount__c : 0,
-                    claimedAmount: existing ? existing.Claimed_Amount__c : 0,
-                    receiptUrl: existing ? existing.Receipt_URL__c : '',
-                    notes: existing ? existing.Notes__c : '',
-                    isEligible: existing ? existing.Is_Eligible__c : true,
-                    rateLabel: this.getRateLabel(rule),
-                    hasExisting: !!existing,
-                    showDistance: rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0),
-                    isActual: rule.Rate_Type__c === 'Actual',
-                    exceedsEligible: false,
-                    cardClass: 'item-card',
-                    claimedInputClass: '',
-                    files: [],
-                    hasFiles: false
+            // Build day rows from eligible dates
+            this.dayRows = this.eligibleDates.map((dayInfo, idx) => {
+                const dateStr = dayInfo.date;
+                const existingItems = itemsByDate[dateStr] || [];
+                const beatName = dayInfo.beatName || '';
+
+                // Build expense items for this day from eligibility rules
+                const items = this.eligibilityRules.map(rule => {
+                    const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
+                    const item = {
+                        key: dateStr + '-' + rule.Expense_Type__c,
+                        id: existing ? existing.Id : null,
+                        expenseType: rule.Expense_Type__c,
+                        category: rule.Expense_Category__c,
+                        rateType: rule.Rate_Type__c,
+                        rateAmount: rule.Rate_Amount__c || 0,
+                        maxPerDay: rule.Max_Per_Day__c || 0,
+                        minDistance: rule.Min_Distance_KM__c || 0,
+                        receiptRequired: rule.Receipt_Required__c,
+                        receiptThreshold: rule.Receipt_Threshold__c || 0,
+                        gpsDistance: existing ? existing.GPS_Distance_KM__c : (dayInfo.gpsDistance || 0),
+                        manualDistance: existing ? existing.Manual_Distance_KM__c : null,
+                        overrideReason: existing ? existing.Distance_Override_Reason__c : '',
+                        eligibleAmount: existing ? existing.Eligible_Amount__c : 0,
+                        claimedAmount: existing ? existing.Claimed_Amount__c : 0,
+                        fromLocation: existing ? existing.From_Location__c : '',
+                        toLocation: existing ? existing.To_Location__c : '',
+                        notes: existing ? existing.Notes__c : '',
+                        isEligible: existing ? existing.Is_Eligible__c : true,
+                        hasExisting: !!existing,
+                        isActual: rule.Rate_Type__c === 'Actual',
+                        isTravel: rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0),
+                        showFromTo: rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM',
+                        showRemarks: rule.Rate_Type__c === 'Actual' || rule.Expense_Category__c === 'Miscellaneous',
+                        exceedsEligible: false,
+                        statusLabel: existing ? 'Saved' : 'New',
+                        statusClass: existing ? 'item-status item-status-saved' : 'item-status item-status-new',
+                        files: [],
+                        hasFiles: false,
+                        dirty: false
+                    };
+
+                    if (!existing) {
+                        item.eligibleAmount = this.recalcEligible(item);
+                    }
+                    return item;
+                });
+
+                const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
+
+                return {
+                    key: dateStr,
+                    dateStr: dateStr,
+                    formattedDate: this.formatDisplayDate(dateStr),
+                    beatName: beatName,
+                    attendanceId: dayInfo.attendanceId,
+                    gpsDistance: dayInfo.gpsDistance || 0,
+                    expanded: false,
+                    selected: false,
+                    items: items,
+                    dayTotal: Math.round(dayTotal * 100) / 100,
+                    dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge',
+                    rowClass: 'day-accordion-row'
                 };
-                // Calculate eligible amount for new items from the rule
-                if (!existing) {
-                    item.eligibleAmount = this.recalcEligible(item);
-                }
-                return item;
             });
 
-            await this.loadFilesForItems();
+            this.showDayExpenses = true;
+
+            // Load files for all items with IDs
+            await this.loadAllFiles();
         } catch (e) {
             this.showError(e);
         } finally {
@@ -301,55 +254,87 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    getRateLabel(rule) {
-        if (rule.Rate_Type__c === 'Per Day') return `${rule.Rate_Amount__c}/day`;
-        if (rule.Rate_Type__c === 'Per KM') return `${rule.Rate_Amount__c}/km`;
-        if (rule.Rate_Type__c === 'Flat Monthly') return `${rule.Rate_Amount__c}/month`;
-        if (rule.Rate_Type__c === 'Actual') return 'Actual';
-        return '';
+    formatDisplayDate(dateStr) {
+        const parts = dateStr.split('-');
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    // ── Day Modal Handlers ───────────────────────────────────────
+    // ── Accordion Toggle ─────────────────────────────────────────
+    handleToggleDay(event) {
+        const dateStr = event.currentTarget.dataset.date;
+        this.dayRows = this.dayRows.map(row => {
+            if (row.dateStr === dateStr) {
+                return { ...row, expanded: !row.expanded };
+            }
+            return row;
+        });
+    }
+
+    // ── Day Selection (checkboxes) ───────────────────────────────
+    handleSelectAllDays(event) {
+        this.selectAllDays = event.target.checked;
+        this.dayRows = this.dayRows.map(row => ({
+            ...row,
+            selected: this.selectAllDays
+        }));
+    }
+
+    handleSelectDay(event) {
+        const dateStr = event.currentTarget.dataset.date;
+        const checked = event.target.checked;
+        this.dayRows = this.dayRows.map(row => {
+            if (row.dateStr === dateStr) {
+                return { ...row, selected: checked };
+            }
+            return row;
+        });
+        this.selectAllDays = this.dayRows.every(r => r.selected);
+    }
+
+    // ── Item Field Changes ───────────────────────────────────────
     handleItemFieldChange(event) {
         const field = event.currentTarget.dataset.field;
-        const type = event.currentTarget.dataset.type;
+        const itemKey = event.currentTarget.dataset.key;
         const value = event.detail.value;
-        const idx = this.editItems.findIndex(i => i.expenseType === type);
-        if (idx >= 0) {
-            const items = [...this.editItems];
-            const item = { ...items[idx] };
 
-            if (field === 'manualDistance') {
-                item.manualDistance = value ? parseFloat(value) : null;
-                item.eligibleAmount = this.recalcEligible(item);
-            } else if (field === 'claimedAmount') {
+        this.dayRows = this.dayRows.map(row => {
+            const itemIdx = row.items.findIndex(i => i.key === itemKey);
+            if (itemIdx < 0) return row;
+
+            const items = [...row.items];
+            const item = { ...items[itemIdx] };
+
+            if (field === 'claimedAmount') {
                 item.claimedAmount = value ? parseFloat(value) : 0;
                 if (item.isActual) {
                     item.eligibleAmount = this.recalcEligible(item);
                 }
-                item.exceedsEligible = !item.isActual && item.claimedAmount > item.eligibleAmount;
-                item.cardClass = item.exceedsEligible ? 'item-card item-card-warning' : 'item-card';
-                item.claimedInputClass = item.exceedsEligible ? 'input-warning' : '';
-                // Clear notes error if no longer exceeding
-                if (!item.exceedsEligible) {
-                    item.notesRequired = false;
-                    item.notesInputClass = '';
-                }
-            } else if (field === 'overrideReason') {
-                item.overrideReason = value;
-            } else if (field === 'receiptUrl') {
-                item.receiptUrl = value;
+                item.exceedsEligible = !item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount;
+            } else if (field === 'manualDistance') {
+                item.manualDistance = value ? parseFloat(value) : null;
+                item.eligibleAmount = this.recalcEligible(item);
+            } else if (field === 'fromLocation') {
+                item.fromLocation = value;
+            } else if (field === 'toLocation') {
+                item.toLocation = value;
             } else if (field === 'notes') {
                 item.notes = value;
-                // Clear notes error when user types a note
-                if (item.notesRequired && value && value.trim() !== '') {
-                    item.notesRequired = false;
-                    item.notesInputClass = '';
-                }
+            } else if (field === 'overrideReason') {
+                item.overrideReason = value;
             }
-            items[idx] = item;
-            this.editItems = items;
-        }
+
+            item.dirty = true;
+            items[itemIdx] = item;
+
+            const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
+            return {
+                ...row,
+                items,
+                dayTotal: Math.round(dayTotal * 100) / 100,
+                dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge'
+            };
+        });
     }
 
     recalcEligible(item) {
@@ -375,128 +360,18 @@ export default class ExpenseManager extends LightningElement {
         return Math.round(eligible * 100) / 100;
     }
 
-    async handleSaveDayItems() {
-        // Client-side validation: notes required when claimed exceeds eligible
-        this.modalError = '';
-        const exceededNoNotes = this.editItems.filter(
-            i => !i.isActual && i.claimedAmount > 0 && i.claimedAmount > i.eligibleAmount
-                && (!i.notes || i.notes.trim() === '')
-        );
-        if (exceededNoNotes.length > 0) {
-            const types = exceededNoNotes.map(i => i.expenseType).join(', ');
-            this.modalError = 'Notes are required when claimed amount exceeds eligible amount: ' + types;
-            this.editItems = this.editItems.map(item => {
-                const needsNotes = !item.isActual && item.claimedAmount > 0
-                    && item.claimedAmount > item.eligibleAmount && (!item.notes || item.notes.trim() === '');
-                return {
-                    ...item,
-                    notesRequired: needsNotes,
-                    notesInputClass: needsNotes ? 'input-error' : ''
-                };
+    // ── File Upload ──────────────────────────────────────────────
+    async loadAllFiles() {
+        const allItemIds = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if (item.id) allItemIds.push(item.id);
             });
-            return;
-        }
+        });
+        if (allItemIds.length === 0) return;
 
         try {
-            this.isLoading = true;
-            const itemsToSave = this.editItems
-                .filter(i => (i.claimedAmount && i.claimedAmount > 0) || i.hasExisting)
-                .map(i => {
-                    const item = {
-                        Expense_Date__c: this.selectedDate,
-                        Expense_Type__c: i.expenseType,
-                        Expense_Category__c: i.category,
-                        GPS_Distance_KM__c: i.gpsDistance,
-                        Manual_Distance_KM__c: i.manualDistance,
-                        Distance_Override_Reason__c: i.overrideReason,
-                        Eligible_Amount__c: i.eligibleAmount,
-                        Claimed_Amount__c: i.claimedAmount || 0,
-                        Receipt_URL__c: i.receiptUrl,
-                        Notes__c: i.notes,
-                        Rate_Type__c: i.rateType,
-                        Rate_Amount__c: i.rateAmount,
-                        Receipt_Required__c: i.receiptRequired,
-                        Is_Eligible__c: i.isEligible,
-                        Day_Attendance__c: this.selectedDateInfo.attendanceId || null
-                    };
-                    if (i.id) item.Id = i.id;
-                    return item;
-                });
-
-            if (itemsToSave.length > 0) {
-                const result = await saveExpenseItems({
-                    expenseId: this.expense.Id,
-                    itemsJson: JSON.stringify(itemsToSave)
-                });
-                this.showSuccess('Expense items saved successfully.');
-
-                // Refresh editItems with saved records (now have IDs for file upload)
-                if (result && result.length > 0) {
-                    this.editItems = this.editItems.map(editItem => {
-                        const saved = result.find(r => r.Expense_Type__c === editItem.expenseType);
-                        if (saved) {
-                            return {
-                                ...editItem,
-                                id: saved.Id,
-                                hasExisting: true,
-                                eligibleAmount: saved.Eligible_Amount__c || editItem.eligibleAmount,
-                                claimedAmount: saved.Claimed_Amount__c || editItem.claimedAmount
-                            };
-                        }
-                        return editItem;
-                    });
-                    await this.loadFilesForItems();
-                }
-            }
-
-            await this.loadReport();
-        } catch (e) {
-            let msg = 'An error occurred.';
-            if (e && e.body && e.body.message) msg = e.body.message;
-            else if (e && e.message) msg = e.message;
-            this.modalError = msg;
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    async handleDeleteDayItems() {
-        const idsToDelete = this.editItems
-            .filter(i => i.id)
-            .map(i => i.id);
-
-        if (idsToDelete.length === 0) {
-            this.closeDayModal();
-            return;
-        }
-
-        try {
-            this.isLoading = true;
-            await deleteExpenseItems({ itemIds: idsToDelete });
-            this.showSuccess('Expense items deleted.');
-            this.closeDayModal();
-            await this.loadReport();
-        } catch (e) {
-            this.showError(e);
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    closeDayModal() {
-        this.showDayModal = false;
-        this.selectedDate = null;
-        this.editItems = [];
-        this.modalError = '';
-    }
-
-    // ── File Upload Handlers ──────────────────────────────────────
-    async loadFilesForItems() {
-        const itemIds = this.editItems.filter(i => i.id).map(i => i.id);
-        if (itemIds.length === 0) return;
-
-        try {
-            const files = await getExpenseItemFiles({ itemIds });
+            const files = await getExpenseItemFiles({ itemIds: allItemIds });
             const filesByItem = {};
             files.forEach(f => {
                 const itemId = f.expenseItemId;
@@ -504,10 +379,13 @@ export default class ExpenseManager extends LightningElement {
                 filesByItem[itemId].push(f);
             });
 
-            this.editItems = this.editItems.map(item => ({
-                ...item,
-                files: item.id ? (filesByItem[item.id] || []) : [],
-                hasFiles: item.id ? (filesByItem[item.id] || []).length > 0 : false
+            this.dayRows = this.dayRows.map(row => ({
+                ...row,
+                items: row.items.map(item => ({
+                    ...item,
+                    files: item.id ? (filesByItem[item.id] || []) : [],
+                    hasFiles: item.id ? (filesByItem[item.id] || []).length > 0 : false
+                }))
             }));
         } catch (e) {
             this.showError(e);
@@ -518,7 +396,7 @@ export default class ExpenseManager extends LightningElement {
         const uploadedFiles = event.detail.files;
         if (uploadedFiles && uploadedFiles.length > 0) {
             this.showSuccess(uploadedFiles.length + ' receipt(s) uploaded.');
-            await this.loadFilesForItems();
+            await this.loadAllFiles();
         }
     }
 
@@ -528,11 +406,185 @@ export default class ExpenseManager extends LightningElement {
             this.isLoading = true;
             await deleteExpenseItemFile({ contentDocumentId: docId });
             this.showSuccess('Receipt deleted.');
-            await this.loadFilesForItems();
+            await this.loadAllFiles();
         } catch (e) {
             this.showError(e);
         } finally {
             this.isLoading = false;
+        }
+    }
+
+    // ── Save All ─────────────────────────────────────────────────
+    async handleSaveAll() {
+        this.saveError = '';
+
+        // Client-side validation: notes required when claimed exceeds eligible
+        const exceededNoNotes = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if (!item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount
+                    && (!item.notes || item.notes.trim() === '')) {
+                    exceededNoNotes.push(item.expenseType + ' on ' + row.formattedDate);
+                }
+            });
+        });
+
+        if (exceededNoNotes.length > 0) {
+            this.saveError = 'Notes/Remarks are required when claimed amount exceeds eligible amount: ' + exceededNoNotes.join(', ');
+            return;
+        }
+
+        try {
+            this.isLoading = true;
+
+            // Collect all items to save across all days
+            const itemsToSave = [];
+            this.dayRows.forEach(row => {
+                row.items.forEach(item => {
+                    if ((item.claimedAmount && item.claimedAmount > 0) || item.hasExisting) {
+                        const rec = {
+                            Expense_Date__c: row.dateStr,
+                            Expense_Type__c: item.expenseType,
+                            Expense_Category__c: item.category,
+                            GPS_Distance_KM__c: item.gpsDistance,
+                            Manual_Distance_KM__c: item.manualDistance,
+                            Distance_Override_Reason__c: item.overrideReason,
+                            Eligible_Amount__c: item.eligibleAmount,
+                            Claimed_Amount__c: item.claimedAmount || 0,
+                            From_Location__c: item.fromLocation || '',
+                            To_Location__c: item.toLocation || '',
+                            Notes__c: item.notes,
+                            Rate_Type__c: item.rateType,
+                            Rate_Amount__c: item.rateAmount,
+                            Receipt_Required__c: item.receiptRequired,
+                            Is_Eligible__c: item.isEligible,
+                            Day_Attendance__c: row.attendanceId || null
+                        };
+                        if (item.id) rec.Id = item.id;
+                        itemsToSave.push(rec);
+                    }
+                });
+            });
+
+            if (itemsToSave.length > 0) {
+                const savedItems = await saveExpenseItems({
+                    expenseId: this.expense.Id,
+                    itemsJson: JSON.stringify(itemsToSave)
+                });
+
+                // Map saved IDs back to dayRows
+                this.dayRows = this.dayRows.map(row => ({
+                    ...row,
+                    items: row.items.map(item => {
+                        const saved = savedItems.find(
+                            s => s.Expense_Date__c === row.dateStr && s.Expense_Type__c === item.expenseType
+                        );
+                        if (saved) {
+                            return {
+                                ...item,
+                                id: saved.Id,
+                                hasExisting: true,
+                                dirty: false,
+                                statusLabel: 'Saved',
+                                statusClass: 'item-status item-status-saved'
+                            };
+                        }
+                        return item;
+                    })
+                }));
+
+                await this.loadAllFiles();
+                this.showSuccess('All expense items saved successfully.');
+            }
+
+            // Refresh the expense record for updated totals
+            this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
+        } catch (e) {
+            let msg = 'An error occurred.';
+            if (e && e.body && e.body.message) msg = e.body.message;
+            else if (e && e.message) msg = e.message;
+            this.saveError = msg;
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Save & Submit ────────────────────────────────────────────
+    async handleSaveAndSubmit() {
+        await this.handleSaveAll();
+        if (this.saveError) return;
+
+        try {
+            this.isLoading = true;
+            this.expense = await submitReport({ expenseId: this.expense.Id });
+            this.showSuccess('Expense submitted for approval.');
+            this.showDayExpenses = false;
+        } catch (e) {
+            this.showError(e);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // ── Cancel ───────────────────────────────────────────────────
+    handleCancel() {
+        this.showDayExpenses = false;
+        this.dayRows = [];
+        this.saveError = '';
+        this.selectAllDays = false;
+    }
+
+    // ── Delete Day Items ─────────────────────────────────────────
+    async handleDeleteItem(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        let itemId = null;
+
+        this.dayRows = this.dayRows.map(row => {
+            const itemIdx = row.items.findIndex(i => i.key === itemKey);
+            if (itemIdx < 0) return row;
+
+            const items = [...row.items];
+            const item = items[itemIdx];
+            itemId = item.id;
+
+            // Reset item to defaults
+            items[itemIdx] = {
+                ...item,
+                id: null,
+                claimedAmount: 0,
+                fromLocation: '',
+                toLocation: '',
+                notes: '',
+                manualDistance: null,
+                overrideReason: '',
+                hasExisting: false,
+                dirty: false,
+                files: [],
+                hasFiles: false,
+                statusLabel: 'New',
+                statusClass: 'item-status item-status-new',
+                exceedsEligible: false
+            };
+
+            const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
+            return {
+                ...row,
+                items,
+                dayTotal: Math.round(dayTotal * 100) / 100,
+                dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge'
+            };
+        });
+
+        if (itemId) {
+            try {
+                this.isLoading = true;
+                await deleteExpenseItems({ itemIds: [itemId] });
+                this.showSuccess('Expense item deleted.');
+            } catch (e) {
+                this.showError(e);
+            } finally {
+                this.isLoading = false;
+            }
         }
     }
 
@@ -542,7 +594,7 @@ export default class ExpenseManager extends LightningElement {
             this.isLoading = true;
             this.expense = await submitReport({ expenseId: this.expense.Id });
             this.showSuccess('Expense submitted for approval.');
-            await this.loadReport();
+            this.showDayExpenses = false;
         } catch (e) {
             this.showError(e);
         } finally {
@@ -645,9 +697,8 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    // ── Computed ──────────────────────────────────────────────────
+    // ── Computed Properties ──────────────────────────────────────
     get isMainScreen() { return this.currentScreen === 'MAIN'; }
-    get isLoadingScreen() { return this.currentScreen === 'LOADING'; }
     get isDraft() { return this.expense.Status__c === 'Draft'; }
     get isSubmitted() { return this.expense.Status__c === 'Submitted'; }
     get isRejected() { return this.expense.Status__c === 'Rejected'; }
@@ -675,26 +726,28 @@ export default class ExpenseManager extends LightningElement {
         return 'status-badge';
     }
 
-    get formattedSelectedDate() {
-        if (!this.selectedDate) return '';
-        const d = new Date(this.selectedDate + 'T00:00:00');
-        return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    }
-
     get totalClaimed() { return this.expense.Total_Claimed__c || 0; }
     get totalEligible() { return this.expense.Total_Eligible__c || 0; }
     get totalApproved() { return this.expense.Total_Approved__c || 0; }
     get workingDays() { return this.expense.Working_Days__c || 0; }
     get totalDistance() { return this.expense.Total_Distance_KM__c || 0; }
 
-    get summaryTypeBreakdown() {
-        return this.summary.typeBreakdown || [];
+    get grandTotal() {
+        return this.dayRows.reduce((sum, row) => sum + row.dayTotal, 0);
     }
 
-    get summaryDayBreakdown() {
-        return this.summary.dayBreakdown || [];
+    get hasEligibleDates() { return this.eligibleDates.length > 0; }
+    get noAttendanceMessage() {
+        if (this.eligibleDates.length > 0) return '';
+        const monthIdx = MONTHS.findIndex(m => m.value === this.selectedMonth);
+        const start = new Date(this.selectedYear, monthIdx, 1);
+        const end = new Date(this.selectedYear, monthIdx + 1, 0);
+        const fmt = d => d.toISOString().split('T')[0];
+        return 'There are no attendance entries available between ' + fmt(start) + ' and ' + fmt(end) + '.';
     }
 
+    get summaryTypeBreakdown() { return this.summary.typeBreakdown || []; }
+    get summaryDayBreakdown() { return this.summary.dayBreakdown || []; }
     get hasTeamReports() { return this.teamReports.length > 0; }
 
     get acceptedFormats() {
@@ -723,6 +776,24 @@ export default class ExpenseManager extends LightningElement {
         return this.approvalAction === 'approve' || this.approvalAction === 'reject';
     }
 
+    get employeeName() {
+        return this.expense.Employee__r
+            ? (this.expense.Employee__r.First_Name__c + ' ' + this.expense.Employee__r.Last_Name__c)
+            : '';
+    }
+
+    get expenseStartDate() {
+        const monthIdx = MONTHS.findIndex(m => m.value === this.selectedMonth);
+        const d = new Date(this.selectedYear, monthIdx, 1);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    get expenseEndDate() {
+        const monthIdx = MONTHS.findIndex(m => m.value === this.selectedMonth);
+        const d = new Date(this.selectedYear, monthIdx + 1, 0);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
     // ── Helpers ──────────────────────────────────────────────────
     showError(e) {
         let msg = 'An error occurred.';
@@ -744,15 +815,6 @@ export default class ExpenseManager extends LightningElement {
     clearMessages() {
         this.errorMessage = '';
         this.successMessage = '';
-    }
-
-    getStatusClass(status) {
-        if (status === 'Draft') return 'status-badge status-draft';
-        if (status === 'Submitted') return 'status-badge status-submitted';
-        if (status === 'Manager Approved') return 'status-badge status-manager-approved';
-        if (status === 'Finance Approved') return 'status-badge status-finance-approved';
-        if (status === 'Rejected') return 'status-badge status-rejected';
-        if (status === 'Paid') return 'status-badge status-paid';
-        return 'status-badge';
+        this.saveError = '';
     }
 }
