@@ -256,6 +256,56 @@ public class EXP_Expense_Service_Test {
     }
 
     @isTest
+    static void testSaveExceedingWithNotes() {
+        Date today = Date.today();
+        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
+        String monthName = months[today.month()];
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        // Should fail without notes when exceeding eligible
+        List<Expense_Item__c> itemsNoNotes = new List<Expense_Item__c>();
+        itemsNoNotes.add(new Expense_Item__c(
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Expense_Category__c = 'Travel',
+            GPS_Distance_KM__c = 25,
+            Eligible_Amount__c = 300,
+            Claimed_Amount__c = 400,
+            Rate_Type__c = 'Per Day'
+        ));
+
+        Boolean caught = false;
+        try {
+            EXP_Expense_Service.saveExpenseItems(report.Id, itemsNoNotes);
+        } catch (AuraHandledException e) {
+            caught = true;
+            System.assert(e.getMessage().contains('Notes are required'), 'Error should mention notes requirement');
+        }
+        System.assert(caught, 'Should throw error when exceeding without notes');
+
+        // Should succeed with notes when exceeding eligible
+        List<Expense_Item__c> itemsWithNotes = new List<Expense_Item__c>();
+        itemsWithNotes.add(new Expense_Item__c(
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Expense_Category__c = 'Travel',
+            GPS_Distance_KM__c = 25,
+            Eligible_Amount__c = 300,
+            Claimed_Amount__c = 400,
+            Rate_Type__c = 'Per Day',
+            Notes__c = 'Client meeting required extended travel'
+        ));
+
+        Test.startTest();
+        List<Expense_Item__c> saved = EXP_Expense_Service.saveExpenseItems(report.Id, itemsWithNotes);
+        Test.stopTest();
+
+        System.assertEquals(1, saved.size(), 'Should save when notes provided for exceeding amount');
+    }
+
+    @isTest
     static void testDeleteExpenseItems() {
         Date today = Date.today();
         List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};

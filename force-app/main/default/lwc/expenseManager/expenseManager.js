@@ -424,14 +424,31 @@ export default class ExpenseManager extends LightningElement {
                 });
 
             if (itemsToSave.length > 0) {
-                await saveExpenseItems({
+                const result = await saveExpenseItems({
                     expenseId: this.expense.Id,
                     itemsJson: JSON.stringify(itemsToSave)
                 });
                 this.showSuccess('Expense items saved successfully.');
+
+                // Refresh editItems with saved records (now have IDs for file upload)
+                if (result && result.length > 0) {
+                    this.editItems = this.editItems.map(editItem => {
+                        const saved = result.find(r => r.Expense_Type__c === editItem.expenseType);
+                        if (saved) {
+                            return {
+                                ...editItem,
+                                id: saved.Id,
+                                hasExisting: true,
+                                eligibleAmount: saved.Eligible_Amount__c || editItem.eligibleAmount,
+                                claimedAmount: saved.Claimed_Amount__c || editItem.claimedAmount
+                            };
+                        }
+                        return editItem;
+                    });
+                    await this.loadFilesForItems();
+                }
             }
 
-            this.closeDayModal();
             await this.loadReport();
         } catch (e) {
             let msg = 'An error occurred.';

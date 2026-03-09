@@ -417,13 +417,15 @@ public without sharing class EXP_Expense_Service {
                 }
             }
 
-            // Validate claimed amount
+            // Validate claimed amount exceeding eligible requires notes
             if (item.Claimed_Amount__c != null && item.Eligible_Amount__c != null
                 && item.Claimed_Amount__c > item.Eligible_Amount__c
                 && item.Rate_Type__c != 'Actual') {
-                throw new AuraHandledException(
-                    'Claimed amount cannot exceed eligible amount for ' + item.Expense_Type__c + '.'
-                );
+                if (String.isBlank(item.Notes__c)) {
+                    throw new AuraHandledException(
+                        'Notes are required when claimed amount exceeds eligible amount for ' + item.Expense_Type__c + '.'
+                    );
+                }
             }
         }
 
