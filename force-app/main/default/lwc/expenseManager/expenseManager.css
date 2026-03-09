@@ -454,7 +454,7 @@
     border: 2px solid var(--brand-primary);
     border-radius: 10px;
     margin-bottom: 8px;
-    overflow: hidden;
+    overflow: visible;
     transition: box-shadow 0.2s ease;
 }
 
@@ -469,6 +469,7 @@
     background: var(--accent-blue-bg);
     padding: 10px 16px;
     cursor: default;
+    border-radius: 8px 8px 0 0;
 }
 
 .day-toggle-btn {
@@ -719,6 +720,8 @@
 
 .add-type-combo {
     max-width: 280px;
+    position: relative;
+    z-index: 1;
 }
 
 /* ================================================================

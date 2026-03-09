@@ -166,6 +166,11 @@ export default class ExpenseManager extends LightningElement {
             this._existingFiles = data.files || [];
 
             this.currentScreen = 'MAIN';
+
+            // Auto-show day expenses if there are eligible dates
+            if (this.eligibleDates.length > 0) {
+                this.handleAddDayExpenses();
+            }
         } catch (e) {
             this.showError(e);
             this.currentScreen = 'MAIN';

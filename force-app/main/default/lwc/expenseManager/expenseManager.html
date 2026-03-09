@@ -138,31 +138,22 @@
         <!-- ═══ Expense Tab: Accordion Day View ═══ -->
         <template if:true={isExpenseTab}>
 
-            <!-- ADD DAY EXPENSES Button -->
-            <template if:false={showDayExpenses}>
-                <div class="add-day-btn-wrap">
-                    <button class="add-day-btn" onclick={handleAddDayExpenses} disabled={cannotEdit}>
-                        ADD DAY EXPENSES
-                    </button>
-                </div>
+            <!-- Date Range Info -->
+            <div class="date-range-info">
+                <span>Period: {expenseStartDate} to {expenseEndDate}</span>
+                <span class="date-range-separator">|</span>
+                <span>{eligibleDates.length} eligible day(s)</span>
+            </div>
 
-                <!-- Date Range Info -->
-                <div class="date-range-info">
-                    <span>Period: {expenseStartDate} to {expenseEndDate}</span>
-                    <span class="date-range-separator">|</span>
-                    <span>{eligibleDates.length} eligible day(s)</span>
-                </div>
-
-                <!-- No Attendance Warning -->
-                <template if:false={hasEligibleDates}>
-                    <div class="no-attendance-banner">
-                        <lightning-icon icon-name="utility:people" size="small"></lightning-icon>
-                        <div class="no-att-text">
-                            <strong>No Attendance Records Found</strong>
-                            <span>{noAttendanceMessage}</span>
-                        </div>
+            <!-- No Attendance Warning -->
+            <template if:false={hasEligibleDates}>
+                <div class="no-attendance-banner">
+                    <lightning-icon icon-name="utility:people" size="small"></lightning-icon>
+                    <div class="no-att-text">
+                        <strong>No Attendance Records Found</strong>
+                        <span>{noAttendanceMessage}</span>
                     </div>
-                </template>
+                </div>
             </template>
 
             <!-- Day Expenses Accordion -->
@@ -546,19 +537,6 @@
                 </div>
             </template>
 
-            <!-- Submit Button (when day expenses not shown) -->
-            <template if:false={showDayExpenses}>
-                <template if:true={canSubmit}>
-                    <div class="action-bar">
-                        <lightning-button
-                            label="Submit for Approval"
-                            variant="brand"
-                            onclick={handleSubmit}
-                            icon-name="utility:forward">
-                        </lightning-button>
-                    </div>
-                </template>
-            </template>
         </template>
 
         <!-- ═══ Summary Tab ═══ -->
