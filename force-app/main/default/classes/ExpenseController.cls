@@ -289,6 +289,15 @@ public with sharing class ExpenseController {
     }
 
     @AuraEnabled
+    public static Map<String, Object> uploadReceiptBase64(Id expenseItemId, String fileName, String base64Data) {
+        try {
+            return EXP_Expense_Service.uploadReceiptBase64(expenseItemId, fileName, base64Data);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void deleteExpenseItemFile(Id contentDocumentId) {
         try {
             EXP_Expense_Service.deleteExpenseItemFile(contentDocumentId);

@@ -22,6 +22,7 @@ import getExpenseData from '@salesforce/apex/ExpenseController.getExpenseData';
 import getOrCreateReport from '@salesforce/apex/ExpenseController.getOrCreateReport';
 import saveExpenseItems from '@salesforce/apex/ExpenseController.saveExpenseItems';
 import deleteExpenseItems from '@salesforce/apex/ExpenseController.deleteExpenseItems';
+import uploadReceiptBase64 from '@salesforce/apex/ExpenseController.uploadReceiptBase64';
 import submitReport from '@salesforce/apex/ExpenseController.submitReport';
 import approveReport from '@salesforce/apex/ExpenseController.approveReport';
 import rejectReport from '@salesforce/apex/ExpenseController.rejectReport';
@@ -230,26 +231,33 @@ export default class ExpenseManager extends LightningElement {
         this.dayRows = this.eligibleDates.map((dayInfo) => {
             const dateStr = dayInfo.date;
             const existingItems = itemsByDate[dateStr] || [];
-            const hoursWorked = dayInfo.hoursWorked || 0;
 
-            // Build items: auto-create from rules flagged Auto_Create,
-            // plus any additional existing items
+            // Auto-calculate hours from checkIn/checkOut if both available
+            let hoursWorked = dayInfo.hoursWorked || 0;
+            let missingCheckOut = false;
+            if (dayInfo.checkIn && dayInfo.checkOut) {
+                const diff = this.calcHoursBetween(dayInfo.checkIn, dayInfo.checkOut);
+                if (diff > 0) hoursWorked = diff;
+            } else if (dayInfo.checkIn && !dayInfo.checkOut) {
+                missingCheckOut = true;
+                // hoursWorked stays as server value or 0 for manual entry
+            }
+
+            // Build items: all eligibility expense types for each day
+            // (deduplicated by expense type)
             const items = [];
             const usedTypes = new Set();
 
-            // First add auto-create rules (deduplicated by expense type)
-            const seenAutoTypes = new Set();
+            const seenTypes = new Set();
             this.eligibilityRules.forEach(rule => {
-                if (seenAutoTypes.has(rule.Expense_Type__c)) return;
+                if (seenTypes.has(rule.Expense_Type__c)) return;
                 const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
-                if (rule.Auto_Create__c || existing) {
-                    const matchedRule = existing
-                        ? this.findRuleForItem(existing.Expense_Type__c, existing.Travel_Mode__c)
-                        : rule;
-                    items.push(this.buildItemFromRule(matchedRule || rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
-                    usedTypes.add(rule.Expense_Type__c);
-                    seenAutoTypes.add(rule.Expense_Type__c);
-                }
+                const matchedRule = existing
+                    ? this.findRuleForItem(existing.Expense_Type__c, existing.Travel_Mode__c)
+                    : rule;
+                items.push(this.buildItemFromRule(matchedRule || rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
+                usedTypes.add(rule.Expense_Type__c);
+                seenTypes.add(rule.Expense_Type__c);
             });
 
             // Add any existing items that don't match auto-create rules
@@ -270,6 +278,9 @@ export default class ExpenseManager extends LightningElement {
                 attendanceId: dayInfo.attendanceId,
                 gpsDistance: dayInfo.gpsDistance || 0,
                 hoursWorked: hoursWorked,
+                checkIn: dayInfo.checkIn || null,
+                checkOut: dayInfo.checkOut || null,
+                missingCheckOut: missingCheckOut,
                 expanded: false,
                 selected: false,
                 items: items,
@@ -305,7 +316,7 @@ export default class ExpenseManager extends LightningElement {
         const isLodging = rule && (rule.Lodging_Metro_Limit__c > 0 || rule.Lodging_Non_Metro_Limit__c > 0);
         const isFood = rule && rule.Expense_Type__c === 'Food';
         const showFromTo = rule && rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM';
-        const showVehicle = rule && rule.Rate_Type__c === 'Per KM';
+        const showVehicle = false; // consolidated into Travel Mode
         const showTravelMode = isTravel;
         const showRemarks = rule && (isActual || rule.Expense_Category__c === 'Miscellaneous' || rule.Mandatory_Remarks__c);
         const showCity = isLodging;
@@ -362,6 +373,9 @@ export default class ExpenseManager extends LightningElement {
             statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
             files: itemFiles,
             hasFiles: itemFiles.length > 0,
+            pendingFiles: [],
+            hasPendingFiles: false,
+            hasAnyFiles: itemFiles.length > 0,
             dirty: false
         };
 
@@ -562,6 +576,7 @@ export default class ExpenseManager extends LightningElement {
                     break;
                 case 'travelMode':
                     item.travelMode = value;
+                    item.vehicleType = value; // keep vehicleType in sync
                     // Re-match eligibility rule for the new travel mode
                     {
                         const matchedRule = this.findRuleForItem(item.expenseType, value);
@@ -641,6 +656,28 @@ export default class ExpenseManager extends LightningElement {
         return Math.round(eligible * 100) / 100;
     }
 
+    calcHoursBetween(startTime, endTime) {
+        // startTime/endTime can be ISO datetime strings or epoch millis from Salesforce Time fields
+        try {
+            let startMs, endMs;
+            if (typeof startTime === 'number') {
+                startMs = startTime;
+            } else {
+                startMs = new Date(startTime).getTime();
+            }
+            if (typeof endTime === 'number') {
+                endMs = endTime;
+            } else {
+                endMs = new Date(endTime).getTime();
+            }
+            if (isNaN(startMs) || isNaN(endMs)) return 0;
+            const diffHours = (endMs - startMs) / (1000 * 60 * 60);
+            return Math.round(diffHours * 10) / 10; // round to 1 decimal
+        } catch (e) {
+            return 0;
+        }
+    }
+
     calcDA(item) {
         const fullRate = item.rateAmount || 0;
         const halfRate = fullRate / 2;
@@ -697,6 +734,109 @@ export default class ExpenseManager extends LightningElement {
         } catch (e) {
             this.showError(e);
         }
+    }
+
+    handleFileSelect(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        const pendingPromises = Array.from(files).map(file => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve({
+                        name: file.name,
+                        base64: base64,
+                        size: file.size
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        Promise.all(pendingPromises).then(pendingFiles => {
+            this.dayRows = this.dayRows.map(row => ({
+                ...row,
+                items: row.items.map(item => {
+                    if (item.key !== itemKey) return item;
+                    const allPending = [...(item.pendingFiles || []), ...pendingFiles];
+                    return {
+                        ...item,
+                        pendingFiles: allPending,
+                        hasPendingFiles: allPending.length > 0,
+                        hasAnyFiles: item.hasFiles || allPending.length > 0,
+                        dirty: true
+                    };
+                })
+            }));
+        });
+
+        // Reset file input
+        event.target.value = '';
+    }
+
+    async uploadPendingFiles() {
+        const uploads = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if (item.id && item.pendingFiles && item.pendingFiles.length > 0) {
+                    item.pendingFiles.forEach(pf => {
+                        uploads.push({
+                            itemId: item.id,
+                            itemKey: item.key,
+                            fileName: pf.name,
+                            base64: pf.base64
+                        });
+                    });
+                }
+            });
+        });
+
+        if (uploads.length === 0) return;
+
+        for (const upload of uploads) {
+            try {
+                await uploadReceiptBase64({
+                    expenseItemId: upload.itemId,
+                    fileName: upload.fileName,
+                    base64Data: upload.base64
+                });
+            } catch (e) {
+                // Log but continue with other uploads
+                console.error('Failed to upload ' + upload.fileName, e);
+            }
+        }
+
+        // Clear pending files
+        this.dayRows = this.dayRows.map(row => ({
+            ...row,
+            items: row.items.map(item => ({
+                ...item,
+                pendingFiles: [],
+                hasPendingFiles: false
+            }))
+        }));
+    }
+
+    handleRemovePendingFile(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        const fileName = event.currentTarget.dataset.filename;
+
+        this.dayRows = this.dayRows.map(row => ({
+            ...row,
+            items: row.items.map(item => {
+                if (item.key !== itemKey) return item;
+                const allPending = (item.pendingFiles || []).filter(pf => pf.name !== fileName);
+                return {
+                    ...item,
+                    pendingFiles: allPending,
+                    hasPendingFiles: allPending.length > 0,
+                    hasAnyFiles: item.hasFiles || allPending.length > 0
+                };
+            })
+        }));
     }
 
     async handleUploadFinished(event) {
@@ -767,6 +907,9 @@ export default class ExpenseManager extends LightningElement {
                         return item;
                     })
                 }));
+
+                // Upload any pending receipt files
+                await this.uploadPendingFiles();
 
                 await this.loadAllFiles();
                 this.showSuccess('All expense items saved successfully.');
@@ -890,7 +1033,6 @@ export default class ExpenseManager extends LightningElement {
             this.showSubmitConfirmModal = false;
             this.expense = await submitReport({ expenseId: this.expense.Id });
             this.showSuccess('Expense submitted for approval.');
-            this.showDayExpenses = false;
         } catch (e) {
             this.showError(e);
         } finally {
@@ -920,10 +1062,9 @@ export default class ExpenseManager extends LightningElement {
             row.items.forEach(item => {
                 if (item.receiptRequired && item.claimedAmount > 0) {
                     const threshold = item.receiptThreshold || 0;
+                    const hasPending = item.pendingFiles && item.pendingFiles.length > 0;
                     if (threshold === 0 || item.claimedAmount > threshold) {
-                        if (!item.hasFiles && !item.id) {
-                            errors.push('Save items first to upload receipts for ' + item.expenseType);
-                        } else if (item.id && !item.hasFiles) {
+                        if (!item.hasFiles && !hasPending) {
                             errors.push('Receipt required for ' + item.expenseType + ' on ' + row.formattedDate);
                         }
                     }
@@ -935,10 +1076,9 @@ export default class ExpenseManager extends LightningElement {
 
     // ── Cancel ───────────────────────────────────────────────────
     handleCancel() {
-        this.showDayExpenses = false;
-        this.dayRows = [];
         this.saveError = '';
         this.selectAllDays = false;
+        this.loadExpenseData();
     }
 
     // ── Delete Item ──────────────────────────────────────────────
@@ -1116,8 +1256,10 @@ export default class ExpenseManager extends LightningElement {
     get isDraft() { return this.expense.Status__c === 'Draft'; }
     get isSubmitted() { return this.expense.Status__c === 'Submitted'; }
     get isRejected() { return this.expense.Status__c === 'Rejected'; }
-    get canSubmit() { return this.isDraft || this.isRejected; }
-    get canEdit() { return this.isDraft || this.isRejected; }
+    get isFinanceApproved() { return this.expense.Status__c === 'Finance Approved'; }
+    get isPaid() { return this.expense.Status__c === 'Paid'; }
+    get canSubmit() { return !this.isFinanceApproved && !this.isPaid; }
+    get canEdit() { return !this.isFinanceApproved && !this.isPaid; }
     get cannotEdit() { return !this.canEdit; }
     get isExpenseTab() { return this.activeTab === 'expense'; }
     get isSummaryTab() { return this.activeTab === 'summary'; }

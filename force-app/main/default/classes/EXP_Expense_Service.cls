@@ -561,8 +561,8 @@ public without sharing class EXP_Expense_Service {
         Expense__c expense = [
             SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
-        if (expense.Status__c != 'Draft' && expense.Status__c != 'Rejected') {
-            throw new AuraHandledException('Expense must be in Draft or Rejected status to edit items.');
+        if (expense.Status__c == 'Finance Approved' || expense.Status__c == 'Paid') {
+            throw new AuraHandledException('Expense cannot be edited after finance approval or payment.');
         }
 
         // Validate distance override
@@ -636,9 +636,9 @@ public without sharing class EXP_Expense_Service {
             FROM Expense_Item__c
             WHERE Id IN :itemIds
         ];
-        if (!items.isEmpty() && items[0].Expense__r.Status__c != 'Draft'
-            && items[0].Expense__r.Status__c != 'Rejected') {
-            throw new AuraHandledException('Cannot delete items from a non-Draft expense.');
+        if (!items.isEmpty() && (items[0].Expense__r.Status__c == 'Finance Approved'
+            || items[0].Expense__r.Status__c == 'Paid')) {
+            throw new AuraHandledException('Cannot delete items from a finance-approved or paid expense.');
         }
         delete items;
     }
@@ -653,8 +653,8 @@ public without sharing class EXP_Expense_Service {
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
-        if (expense.Status__c != 'Draft' && expense.Status__c != 'Rejected') {
-            throw new AuraHandledException('Only Draft or Rejected expenses can be submitted.');
+        if (expense.Status__c == 'Finance Approved' || expense.Status__c == 'Paid') {
+            throw new AuraHandledException('Expense cannot be re-submitted after finance approval or payment.');
         }
 
         // Validate receipt and remarks requirements
@@ -1135,6 +1135,32 @@ public without sharing class EXP_Expense_Service {
             fileInfo.put('expenseItemId', cdl.LinkedEntityId);
             result.add(fileInfo);
         }
+        return result;
+    }
+
+    public static Map<String, Object> uploadReceiptBase64(Id expenseItemId, String fileName, String base64Data) {
+        // Create ContentVersion from base64
+        ContentVersion cv = new ContentVersion();
+        cv.Title = fileName.substringBeforeLast('.');
+        cv.PathOnClient = fileName;
+        cv.VersionData = EncodingUtil.base64Decode(base64Data);
+        insert cv;
+
+        // Get the ContentDocumentId
+        cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
+
+        // Link to the expense item
+        ContentDocumentLink cdl = new ContentDocumentLink();
+        cdl.ContentDocumentId = cv.ContentDocumentId;
+        cdl.LinkedEntityId = expenseItemId;
+        cdl.ShareType = 'V';
+        cdl.Visibility = 'AllUsers';
+        insert cdl;
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('contentDocumentId', cv.ContentDocumentId);
+        result.put('title', cv.Title);
+        result.put('expenseItemId', expenseItemId);
         return result;
     }
 
