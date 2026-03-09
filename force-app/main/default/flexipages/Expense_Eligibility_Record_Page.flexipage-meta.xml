@@ -15,7 +15,6 @@
         <type>Region</type>
     </flexiPageRegions>
     <flexiPageRegions>
-        <!-- ═══ Eligibility Rule Section ═══ -->
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
@@ -30,6 +29,66 @@
                 <identifier>eligibility_rule_section</identifier>
             </componentInstance>
         </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>columns</name>
+                    <value>1</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>label</name>
+                    <value>Rate Configuration</value>
+                </componentInstanceProperties>
+                <componentName>flexipage:fieldSection</componentName>
+                <identifier>rate_config_section</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>columns</name>
+                    <value>1</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>label</name>
+                    <value>Receipt Rules</value>
+                </componentInstanceProperties>
+                <componentName>flexipage:fieldSection</componentName>
+                <identifier>receipt_rules_section</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>columns</name>
+                    <value>1</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>label</name>
+                    <value>Description</value>
+                </componentInstanceProperties>
+                <componentName>flexipage:fieldSection</componentName>
+                <identifier>description_section</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>columns</name>
+                    <value>1</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>label</name>
+                    <value>System Information</value>
+                </componentInstanceProperties>
+                <componentName>flexipage:fieldSection</componentName>
+                <identifier>system_info_section</identifier>
+            </componentInstance>
+        </itemInstances>
+        <name>main</name>
+        <type>Region</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -90,22 +149,10 @@
                 <identifier>expense_category_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <!-- ═══ Rate Configuration Section ═══ -->
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>columns</name>
-                    <value>1</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>label</name>
-                    <value>Rate Configuration</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:fieldSection</componentName>
-                <identifier>rate_config_section</identifier>
-            </componentInstance>
-        </itemInstances>
-        <!-- Rate Type - always visible -->
+        <name>Facet-eligibility_rule_section</name>
+        <type>Facet</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -116,7 +163,6 @@
                 <identifier>rate_type_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <!-- Rate Amount - hidden when Actual -->
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -145,7 +191,6 @@
                 </visibilityRule>
             </fieldInstance>
         </itemInstances>
-        <!-- Min Distance - only for Per Day and Per KM -->
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -169,7 +214,6 @@
                 </visibilityRule>
             </fieldInstance>
         </itemInstances>
-        <!-- Max Per Day - hidden for Flat Monthly -->
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -198,7 +242,6 @@
                 </visibilityRule>
             </fieldInstance>
         </itemInstances>
-        <!-- Max Per Month - always visible -->
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -209,21 +252,10 @@
                 <identifier>max_per_month_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <!-- ═══ Receipt Rules Section ═══ -->
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>columns</name>
-                    <value>1</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>label</name>
-                    <value>Receipt Rules</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:fieldSection</componentName>
-                <identifier>receipt_rules_section</identifier>
-            </componentInstance>
-        </itemInstances>
+        <name>Facet-rate_config_section</name>
+        <type>Facet</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -234,7 +266,6 @@
                 <identifier>receipt_required_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <!-- Receipt Threshold - only when Receipt Required is checked -->
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -252,21 +283,10 @@
                 </visibilityRule>
             </fieldInstance>
         </itemInstances>
-        <!-- ═══ Description Section ═══ -->
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>columns</name>
-                    <value>1</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>label</name>
-                    <value>Description</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:fieldSection</componentName>
-                <identifier>description_section</identifier>
-            </componentInstance>
-        </itemInstances>
+        <name>Facet-receipt_rules_section</name>
+        <type>Facet</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -277,21 +297,10 @@
                 <identifier>description_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <!-- ═══ System Information Section ═══ -->
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>columns</name>
-                    <value>1</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>label</name>
-                    <value>System Information</value>
-                </componentInstanceProperties>
-                <componentName>flexipage:fieldSection</componentName>
-                <identifier>system_info_section</identifier>
-            </componentInstance>
-        </itemInstances>
+        <name>Facet-description_section</name>
+        <type>Facet</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
         <itemInstances>
             <fieldInstance>
                 <fieldInstanceProperties>
@@ -312,8 +321,8 @@
                 <identifier>last_modified_by_field</identifier>
             </fieldInstance>
         </itemInstances>
-        <name>main</name>
-        <type>Region</type>
+        <name>Facet-system_info_section</name>
+        <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
         <name>sidebar</name>
