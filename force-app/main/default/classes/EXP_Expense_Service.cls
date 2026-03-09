@@ -415,7 +415,10 @@ public without sharing class EXP_Expense_Service {
         Integer maxOverridePercent = getConfigInteger(CFG_MAX_OVERRIDE_PERCENT, 150);
 
         for (Expense_Item__c item : items) {
-            item.Expense__c = expenseId;
+            // Only set parent on new items (not writable on update for master-detail)
+            if (item.Id == null) {
+                item.Expense__c = expenseId;
+            }
 
             // Validate distance override
             if (item.Manual_Distance_KM__c != null && item.GPS_Distance_KM__c != null
