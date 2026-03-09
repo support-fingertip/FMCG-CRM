@@ -1,12 +1,32 @@
 /**
  * @description Controller for the Expense Manager LWC components.
  *              Thin @AuraEnabled wrapper that delegates all business logic
- *              to EXP_Expense_Service.
+ *              to EXP_Expense_Service. Includes single bulk API pattern
+ *              for optimal data loading.
  *
  * @author  SFA Development Team
  * @date    2026
  */
 public with sharing class ExpenseController {
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SINGLE BULK API — One call returns everything the LWC needs
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @AuraEnabled
+    public static Map<String, Object> getExpenseData(String month, Integer year) {
+        try {
+            return EXP_Expense_Service.getExpenseData(UserInfo.getUserId(), month, year);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REPORT LIFECYCLE
+    // ═══════════════════════════════════════════════════════════════════════
 
     @AuraEnabled
     public static Expense__c getOrCreateReport(String month, Integer year) {
@@ -42,6 +62,10 @@ public with sharing class ExpenseController {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EXPENSE ITEM CRUD
+    // ═══════════════════════════════════════════════════════════════════════
 
     @AuraEnabled
     public static List<Expense_Item__c> getExpenseItemsForDate(Id expenseId, Date expenseDate) {
@@ -85,6 +109,10 @@ public with sharing class ExpenseController {
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // APPROVAL WORKFLOW
+    // ═══════════════════════════════════════════════════════════════════════
+
     @AuraEnabled
     public static Expense__c submitReport(Id expenseId) {
         try {
@@ -118,6 +146,59 @@ public with sharing class ExpenseController {
         }
     }
 
+    @AuraEnabled
+    public static Map<String, Object> approveExpenseItems(List<Id> itemIds, String remarks, String level) {
+        try {
+            return EXP_Expense_Service.approveExpenseItems(itemIds, remarks, level);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static Map<String, Object> rejectExpenseItems(List<Id> itemIds, String reason, String level) {
+        try {
+            return EXP_Expense_Service.rejectExpenseItems(itemIds, reason, level);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static Map<String, Object> updateApprovedAmounts(String itemAmountsJson) {
+        try {
+            Map<Id, Decimal> itemAmounts = new Map<Id, Decimal>();
+            Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(itemAmountsJson);
+            for (String key : parsed.keySet()) {
+                itemAmounts.put(Id.valueOf(key), (Decimal) parsed.get(key));
+            }
+            return EXP_Expense_Service.updateApprovedAmounts(itemAmounts);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static Expense__c markAsPaid(Id expenseId) {
+        try {
+            return EXP_Expense_Service.markAsPaid(expenseId);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REPORTING
+    // ═══════════════════════════════════════════════════════════════════════
+
     @AuraEnabled(cacheable=true)
     public static Map<String, Object> getReportSummary(Id expenseId) {
         try {
@@ -146,6 +227,7 @@ public with sharing class ExpenseController {
             config.put('maxOverridePercent', EXP_Expense_Service.getConfigInteger('MAX_OVERRIDE_PERCENT', 150));
             config.put('reportLockDay', EXP_Expense_Service.getConfigInteger('REPORT_LOCK_DAY', 5));
             config.put('allowFutureDates', EXP_Expense_Service.getConfigBoolean('ALLOW_FUTURE_DATES', false));
+            config.put('backDateLimitDays', EXP_Expense_Service.getConfigInteger('BACK_DATE_LIMIT_DAYS', 60));
             return config;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
@@ -163,6 +245,25 @@ public with sharing class ExpenseController {
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // APPROVAL DATA
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @AuraEnabled
+    public static Map<String, Object> getExpenseForApproval(Id expenseId) {
+        try {
+            return EXP_Expense_Service.getExpenseForApproval(expenseId);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FILES
+    // ═══════════════════════════════════════════════════════════════════════
+
     @AuraEnabled
     public static List<Map<String, Object>> getExpenseItemFiles(List<Id> itemIds) {
         try {
@@ -176,17 +277,6 @@ public with sharing class ExpenseController {
     public static void deleteExpenseItemFile(Id contentDocumentId) {
         try {
             EXP_Expense_Service.deleteExpenseItemFile(contentDocumentId);
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static Expense__c markAsPaid(Id expenseId) {
-        try {
-            return EXP_Expense_Service.markAsPaid(expenseId);
-        } catch (AuraHandledException e) {
-            throw e;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

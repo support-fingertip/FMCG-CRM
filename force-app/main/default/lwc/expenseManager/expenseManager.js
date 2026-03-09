@@ -1,18 +1,34 @@
+/**
+ * @description Full-fledged Dynamic Expense Management LWC
+ *              - Single bulk API data loading
+ *              - Configuration-driven expense types per band/travel type
+ *              - Auto-calculation of DA (working hours) and TA (distance × rate)
+ *              - Dynamic add/remove expense line items per day
+ *              - Vehicle-type-specific TA rates (Bike/Car)
+ *              - City-based lodging limits (Metro/Non-Metro)
+ *              - Configurable receipt & remarks requirements
+ *              - File upload with validation before submit
+ *              - Per-line-item approval status tracking
+ *              - Comments history with timestamps
+ *              - Accordion day view with select-all checkboxes
+ *              - Multi-level approval (L1/L2/Finance)
+ *              - Responsive design (Desktop/Phone)
+ *
+ * @author  SFA Development Team
+ * @date    2026
+ */
 import { LightningElement, track } from 'lwc';
+import getExpenseData from '@salesforce/apex/ExpenseController.getExpenseData';
 import getOrCreateReport from '@salesforce/apex/ExpenseController.getOrCreateReport';
-import getEligibleDates from '@salesforce/apex/ExpenseController.getEligibleDates';
-import getEligibilityRules from '@salesforce/apex/ExpenseController.getEligibilityRules';
-import getAllExpenseItemsForReport from '@salesforce/apex/ExpenseController.getAllExpenseItemsForReport';
 import saveExpenseItems from '@salesforce/apex/ExpenseController.saveExpenseItems';
 import deleteExpenseItems from '@salesforce/apex/ExpenseController.deleteExpenseItems';
 import submitReport from '@salesforce/apex/ExpenseController.submitReport';
 import approveReport from '@salesforce/apex/ExpenseController.approveReport';
 import rejectReport from '@salesforce/apex/ExpenseController.rejectReport';
+import markAsPaid from '@salesforce/apex/ExpenseController.markAsPaid';
 import getReportSummary from '@salesforce/apex/ExpenseController.getReportSummary';
 import getMonthlyOverview from '@salesforce/apex/ExpenseController.getMonthlyOverview';
-import getExpenseConfig from '@salesforce/apex/ExpenseController.getExpenseConfig';
 import getTeamExpenseReports from '@salesforce/apex/ExpenseController.getTeamExpenseReports';
-import markAsPaid from '@salesforce/apex/ExpenseController.markAsPaid';
 import getExpenseItemFiles from '@salesforce/apex/ExpenseController.getExpenseItemFiles';
 import deleteExpenseItemFile from '@salesforce/apex/ExpenseController.deleteExpenseItemFile';
 
@@ -31,12 +47,22 @@ const MONTHS = [
     { label: 'December', value: 'December' }
 ];
 
+const DA_MIN_HOURS = 4;
+const DA_HALF_DAY_HOURS = 8;
+
+const VEHICLE_OPTIONS = [
+    { label: 'Bike', value: 'Bike' },
+    { label: 'Car', value: 'Car' },
+    { label: 'Public Transport', value: 'Public Transport' }
+];
+
 export default class ExpenseManager extends LightningElement {
     // ── State ─────────────────────────────────────────────────────
     @track currentScreen = 'LOADING';
     @track selectedMonth;
     @track selectedYear;
     @track expense = {};
+    @track employee = {};
     @track eligibleDates = [];
     @track eligibilityRules = [];
     @track config = {};
@@ -58,6 +84,10 @@ export default class ExpenseManager extends LightningElement {
     @track approvalExpenseId = null;
     @track approvalLevel = '';
 
+    // Comments
+    @track showCommentsModal = false;
+    @track commentsHistory = [];
+
     // Active tab
     @track activeTab = 'expense';
 
@@ -69,6 +99,7 @@ export default class ExpenseManager extends LightningElement {
 
     // Options
     monthOptions = MONTHS;
+    vehicleOptions = VEHICLE_OPTIONS;
 
     get yearOptions() {
         const now = new Date();
@@ -85,64 +116,50 @@ export default class ExpenseManager extends LightningElement {
         const now = new Date();
         this.selectedMonth = MONTHS[now.getMonth()].value;
         this.selectedYear = now.getFullYear();
-        this.loadConfig();
+        this.loadExpenseData();
     }
 
-    async loadConfig() {
-        try {
-            this.isLoading = true;
-            this.config = await getExpenseConfig();
-            await this.loadReport();
-            this.currentScreen = 'MAIN';
-        } catch (e) {
-            this.showError(e);
-            this.currentScreen = 'MAIN';
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    async loadReport() {
+    async loadExpenseData() {
         try {
             this.isLoading = true;
             this.clearMessages();
             this.showDayExpenses = false;
             this.dayRows = [];
             this.selectAllDays = false;
-            this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
-            await Promise.all([
-                this.loadEligibleDates(),
-                this.loadEligibilityRules()
-            ]);
+
+            const data = await getExpenseData({
+                month: this.selectedMonth,
+                year: this.selectedYear
+            });
+
+            this.expense = data.expense || {};
+            this.employee = data.employee || {};
+            this.eligibilityRules = data.eligibilityRules || [];
+            this.eligibleDates = data.eligibleDates || [];
+            this.config = data.config || {};
+
+            // Store existing items and files for later use
+            this._existingItems = data.expenseItems || [];
+            this._existingFiles = data.files || [];
+
+            this.currentScreen = 'MAIN';
         } catch (e) {
             this.showError(e);
+            this.currentScreen = 'MAIN';
         } finally {
             this.isLoading = false;
-        }
-    }
-
-    async loadEligibleDates() {
-        this.eligibleDates = await getEligibleDates({ month: this.selectedMonth, year: this.selectedYear });
-    }
-
-    async loadEligibilityRules() {
-        try {
-            this.eligibilityRules = await getEligibilityRules();
-        } catch (e) {
-            this.eligibilityRules = [];
-            this.showError(e);
         }
     }
 
     // ── Event Handlers ───────────────────────────────────────────
     handleMonthChange(event) {
         this.selectedMonth = event.detail.value;
-        this.loadReport();
+        this.loadExpenseData();
     }
 
     handleYearChange(event) {
         this.selectedYear = parseInt(event.detail.value, 10);
-        this.loadReport();
+        this.loadExpenseData();
     }
 
     handleTabClick(event) {
@@ -156,108 +173,242 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    // ── ADD DAY EXPENSES ─────────────────────────────────────────
-    async handleAddDayExpenses() {
+    // ═══════════════════════════════════════════════════════════════
+    // ADD DAY EXPENSES — Build accordion from eligibility rules
+    // ═══════════════════════════════════════════════════════════════
+
+    handleAddDayExpenses() {
         if (this.eligibleDates.length === 0) return;
 
-        try {
-            this.isLoading = true;
-            this.saveError = '';
+        this.saveError = '';
 
-            // Load all existing expense items for this report
-            const allItems = this.expense.Id
-                ? await getAllExpenseItemsForReport({ expenseId: this.expense.Id })
-                : [];
+        // Group existing items by date
+        const itemsByDate = {};
+        (this._existingItems || []).forEach(item => {
+            const d = item.Expense_Date__c;
+            if (!itemsByDate[d]) itemsByDate[d] = [];
+            itemsByDate[d].push(item);
+        });
 
-            // Group existing items by date
-            const itemsByDate = {};
-            allItems.forEach(item => {
-                const d = item.Expense_Date__c;
-                if (!itemsByDate[d]) itemsByDate[d] = [];
-                itemsByDate[d].push(item);
-            });
+        // Group files by item ID
+        const filesByItem = {};
+        (this._existingFiles || []).forEach(f => {
+            const itemId = f.expenseItemId;
+            if (!filesByItem[itemId]) filesByItem[itemId] = [];
+            filesByItem[itemId].push(f);
+        });
 
-            // Build day rows from eligible dates
-            this.dayRows = this.eligibleDates.map((dayInfo, idx) => {
-                const dateStr = dayInfo.date;
-                const existingItems = itemsByDate[dateStr] || [];
-                const beatName = dayInfo.beatName || '';
+        // Build day rows
+        this.dayRows = this.eligibleDates.map((dayInfo) => {
+            const dateStr = dayInfo.date;
+            const existingItems = itemsByDate[dateStr] || [];
+            const hoursWorked = dayInfo.hoursWorked || 0;
 
-                // Build expense items for this day from eligibility rules
-                const items = this.eligibilityRules.map(rule => {
+            // Build items: auto-create from rules flagged Auto_Create,
+            // plus any additional existing items
+            const items = [];
+            const usedTypes = new Set();
+
+            // First add auto-create rules
+            this.eligibilityRules.forEach(rule => {
+                if (rule.Auto_Create__c || existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c)) {
                     const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
-                    const item = {
-                        key: dateStr + '-' + rule.Expense_Type__c,
-                        id: existing ? existing.Id : null,
-                        expenseType: rule.Expense_Type__c,
-                        category: rule.Expense_Category__c,
-                        rateType: rule.Rate_Type__c,
-                        rateAmount: rule.Rate_Amount__c || 0,
-                        maxPerDay: rule.Max_Per_Day__c || 0,
-                        minDistance: rule.Min_Distance_KM__c || 0,
-                        receiptRequired: rule.Receipt_Required__c,
-                        receiptThreshold: rule.Receipt_Threshold__c || 0,
-                        gpsDistance: existing ? existing.GPS_Distance_KM__c : (dayInfo.gpsDistance || 0),
-                        manualDistance: existing ? existing.Manual_Distance_KM__c : null,
-                        overrideReason: existing ? existing.Distance_Override_Reason__c : '',
-                        eligibleAmount: existing ? existing.Eligible_Amount__c : 0,
-                        claimedAmount: existing ? existing.Claimed_Amount__c : 0,
-                        fromLocation: existing ? existing.From_Location__c : '',
-                        toLocation: existing ? existing.To_Location__c : '',
-                        notes: existing ? existing.Notes__c : '',
-                        isEligible: existing ? existing.Is_Eligible__c : true,
-                        hasExisting: !!existing,
-                        isActual: rule.Rate_Type__c === 'Actual',
-                        isTravel: rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0),
-                        showFromTo: rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM',
-                        showRemarks: rule.Rate_Type__c === 'Actual' || rule.Expense_Category__c === 'Miscellaneous',
-                        exceedsEligible: false,
-                        statusLabel: existing ? 'Saved' : 'New',
-                        statusClass: existing ? 'item-status item-status-saved' : 'item-status item-status-new',
-                        files: [],
-                        hasFiles: false,
-                        dirty: false
-                    };
-
-                    if (!existing) {
-                        item.eligibleAmount = this.recalcEligible(item);
-                    }
-                    return item;
-                });
-
-                const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
-
-                return {
-                    key: dateStr,
-                    dateStr: dateStr,
-                    formattedDate: this.formatDisplayDate(dateStr),
-                    beatName: beatName,
-                    attendanceId: dayInfo.attendanceId,
-                    gpsDistance: dayInfo.gpsDistance || 0,
-                    expanded: false,
-                    selected: false,
-                    items: items,
-                    dayTotal: Math.round(dayTotal * 100) / 100,
-                    dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge',
-                    rowClass: 'day-accordion-row'
-                };
+                    items.push(this.buildItemFromRule(rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
+                    usedTypes.add(rule.Expense_Type__c);
+                }
             });
 
-            this.showDayExpenses = true;
+            // Add any existing items that don't match auto-create rules
+            existingItems.forEach(existing => {
+                if (!usedTypes.has(existing.Expense_Type__c)) {
+                    const rule = this.eligibilityRules.find(r => r.Expense_Type__c === existing.Expense_Type__c);
+                    items.push(this.buildItemFromRule(rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
+                }
+            });
 
-            // Load files for all items with IDs
-            await this.loadAllFiles();
-        } catch (e) {
-            this.showError(e);
-        } finally {
-            this.isLoading = false;
+            const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
+
+            return {
+                key: dateStr,
+                dateStr: dateStr,
+                formattedDate: this.formatDisplayDate(dateStr),
+                beatName: dayInfo.beatName || '',
+                attendanceId: dayInfo.attendanceId,
+                gpsDistance: dayInfo.gpsDistance || 0,
+                hoursWorked: hoursWorked,
+                expanded: false,
+                selected: false,
+                items: items,
+                dayTotal: Math.round(dayTotal * 100) / 100,
+                dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge',
+                rowClass: 'day-accordion-row'
+            };
+        });
+
+        this.showDayExpenses = true;
+    }
+
+    buildItemFromRule(rule, existing, dateStr, dayInfo, filesByItem, hoursWorked) {
+        const isTravel = rule && (rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0));
+        const isDA = rule && rule.Rate_Type__c === 'Per Day';
+        const isActual = rule && rule.Rate_Type__c === 'Actual';
+        const isLodging = rule && (rule.Lodging_Metro_Limit__c > 0 || rule.Lodging_Non_Metro_Limit__c > 0);
+        const showFromTo = rule && rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM';
+        const showVehicle = rule && rule.Rate_Type__c === 'Per KM' && rule.Per_KM_Bike_Rate__c > 0;
+        const showRemarks = rule && (isActual || rule.Expense_Category__c === 'Miscellaneous' || rule.Mandatory_Remarks__c);
+        const showCity = isLodging;
+        const mandatoryRemarks = rule && rule.Mandatory_Remarks__c;
+
+        const itemFiles = existing && existing.Id ? (filesByItem[existing.Id] || []) : [];
+
+        const item = {
+            key: dateStr + '-' + (rule ? rule.Expense_Type__c : (existing ? existing.Expense_Type__c : 'Unknown')),
+            id: existing ? existing.Id : null,
+            expenseType: rule ? rule.Expense_Type__c : (existing ? existing.Expense_Type__c : ''),
+            category: rule ? rule.Expense_Category__c : (existing ? existing.Expense_Category__c : ''),
+            rateType: rule ? rule.Rate_Type__c : (existing ? existing.Rate_Type__c : ''),
+            rateAmount: rule ? (rule.Rate_Amount__c || 0) : (existing ? existing.Rate_Amount__c : 0),
+            maxPerDay: rule ? (rule.Max_Per_Day__c || 0) : 0,
+            minDistance: rule ? (rule.Min_Distance_KM__c || 0) : 0,
+            dailyKmLimit: rule ? (rule.Daily_KM_Limit__c || 0) : 0,
+            receiptRequired: rule ? rule.Receipt_Required__c : (existing ? existing.Receipt_Required__c : false),
+            receiptThreshold: rule ? (rule.Receipt_Threshold__c || 0) : 0,
+            mandatoryRemarks: mandatoryRemarks,
+            daHalfDayRate: rule ? (rule.DA_Half_Day_Rate__c || 0) : 0,
+            perKmBikeRate: rule ? (rule.Per_KM_Bike_Rate__c || 0) : 0,
+            lodgingMetroLimit: rule ? (rule.Lodging_Metro_Limit__c || 0) : 0,
+            lodgingNonMetroLimit: rule ? (rule.Lodging_Non_Metro_Limit__c || 0) : 0,
+            gpsDistance: existing ? existing.GPS_Distance_KM__c : (dayInfo.gpsDistance || 0),
+            manualDistance: existing ? existing.Manual_Distance_KM__c : null,
+            overrideReason: existing ? existing.Distance_Override_Reason__c : '',
+            eligibleAmount: existing ? existing.Eligible_Amount__c : 0,
+            claimedAmount: existing ? existing.Claimed_Amount__c : 0,
+            approvedAmount: existing ? existing.Approved_Amount__c : null,
+            fromLocation: existing ? existing.From_Location__c : '',
+            toLocation: existing ? existing.To_Location__c : '',
+            notes: existing ? existing.Notes__c : '',
+            vehicleType: existing ? existing.Vehicle_Type__c : (showVehicle ? 'Bike' : ''),
+            city: existing ? existing.City__c : '',
+            isMetro: existing ? existing.Is_Metro__c : false,
+            workingHours: existing ? existing.Working_Hours__c : hoursWorked,
+            approvalStatus: existing ? existing.Approval_Status__c : 'Not Submitted',
+            approverComments: existing ? existing.Approver_Comments__c : '',
+            isEligible: existing ? existing.Is_Eligible__c : true,
+            hasExisting: !!existing,
+            isActual: isActual,
+            isTravel: isTravel,
+            isDA: isDA,
+            isLodging: isLodging,
+            showFromTo: showFromTo,
+            showVehicle: showVehicle,
+            showRemarks: showRemarks,
+            showCity: showCity,
+            exceedsEligible: false,
+            statusLabel: existing ? this.getItemStatusLabel(existing.Approval_Status__c) : 'New',
+            statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
+            files: itemFiles,
+            hasFiles: itemFiles.length > 0,
+            dirty: false
+        };
+
+        // Calculate eligible if new
+        if (!existing) {
+            item.eligibleAmount = this.recalcEligible(item);
         }
+
+        return item;
+    }
+
+    getItemStatusLabel(status) {
+        if (!status || status === 'Not Submitted') return 'Saved';
+        return status;
+    }
+
+    getItemStatusClass(status) {
+        if (!status || status === 'Not Submitted') return 'item-status item-status-saved';
+        if (status === 'Pending') return 'item-status item-status-pending';
+        if (status === 'L1 Approved' || status === 'L2 Approved') return 'item-status item-status-approved';
+        if (status === 'Finance Approved') return 'item-status item-status-finance';
+        if (status === 'Rejected') return 'item-status item-status-rejected';
+        return 'item-status item-status-saved';
     }
 
     formatDisplayDate(dateStr) {
         const parts = dateStr.split('-');
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const weekday = d.toLocaleDateString('en-IN', { weekday: 'short' });
+        const formatted = d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return weekday + ', ' + formatted;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ADD / REMOVE LINE ITEMS PER DAY
+    // ═══════════════════════════════════════════════════════════════
+
+    get availableExpenseTypes() {
+        return this.eligibilityRules.map(r => ({
+            label: r.Expense_Type__c,
+            value: r.Expense_Type__c
+        }));
+    }
+
+    handleAddLineItem(event) {
+        const dateStr = event.currentTarget.dataset.date;
+        const typeToAdd = event.currentTarget.dataset.type;
+        if (!typeToAdd) return;
+
+        const rule = this.eligibilityRules.find(r => r.Expense_Type__c === typeToAdd);
+        if (!rule) return;
+
+        this.dayRows = this.dayRows.map(row => {
+            if (row.dateStr !== dateStr) return row;
+
+            // Check if type already exists
+            if (row.items.find(i => i.expenseType === typeToAdd)) {
+                return row; // already exists
+            }
+
+            const dayInfo = this.eligibleDates.find(d => d.date === dateStr) || {};
+            const newItem = this.buildItemFromRule(rule, null, dateStr, dayInfo, {}, dayInfo.hoursWorked || 0);
+            const items = [...row.items, newItem];
+            const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
+
+            return {
+                ...row,
+                items,
+                dayTotal: Math.round(dayTotal * 100) / 100,
+                dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge'
+            };
+        });
+    }
+
+    handleAddTypeChange(event) {
+        const dateStr = event.currentTarget.dataset.date;
+        const typeToAdd = event.detail.value;
+        if (!typeToAdd || !dateStr) return;
+
+        const rule = this.eligibilityRules.find(r => r.Expense_Type__c === typeToAdd);
+        if (!rule) return;
+
+        this.dayRows = this.dayRows.map(row => {
+            if (row.dateStr !== dateStr) return row;
+
+            if (row.items.find(i => i.expenseType === typeToAdd)) {
+                return row;
+            }
+
+            const dayInfo = this.eligibleDates.find(d => d.date === dateStr) || {};
+            const newItem = this.buildItemFromRule(rule, null, dateStr, dayInfo, {}, dayInfo.hoursWorked || 0);
+            const items = [...row.items, newItem];
+            const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
+
+            return {
+                ...row,
+                items,
+                dayTotal: Math.round(dayTotal * 100) / 100,
+                dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge'
+            };
+        });
     }
 
     // ── Accordion Toggle ─────────────────────────────────────────
@@ -292,11 +443,17 @@ export default class ExpenseManager extends LightningElement {
         this.selectAllDays = this.dayRows.every(r => r.selected);
     }
 
-    // ── Item Field Changes ───────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // ITEM FIELD CHANGES — Inline editing
+    // ═══════════════════════════════════════════════════════════════
+
     handleItemFieldChange(event) {
         const field = event.currentTarget.dataset.field;
         const itemKey = event.currentTarget.dataset.key;
-        const value = event.detail.value;
+        let value = event.detail.value;
+        if (event.detail.checked !== undefined) {
+            value = event.detail.checked;
+        }
 
         this.dayRows = this.dayRows.map(row => {
             const itemIdx = row.items.findIndex(i => i.key === itemKey);
@@ -305,23 +462,51 @@ export default class ExpenseManager extends LightningElement {
             const items = [...row.items];
             const item = { ...items[itemIdx] };
 
-            if (field === 'claimedAmount') {
-                item.claimedAmount = value ? parseFloat(value) : 0;
-                if (item.isActual) {
+            switch (field) {
+                case 'claimedAmount':
+                    item.claimedAmount = value ? parseFloat(value) : 0;
+                    if (item.isActual) {
+                        item.eligibleAmount = this.recalcEligible(item);
+                    }
+                    item.exceedsEligible = !item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount;
+                    break;
+                case 'manualDistance':
+                    item.manualDistance = value ? parseFloat(value) : null;
                     item.eligibleAmount = this.recalcEligible(item);
-                }
-                item.exceedsEligible = !item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount;
-            } else if (field === 'manualDistance') {
-                item.manualDistance = value ? parseFloat(value) : null;
-                item.eligibleAmount = this.recalcEligible(item);
-            } else if (field === 'fromLocation') {
-                item.fromLocation = value;
-            } else if (field === 'toLocation') {
-                item.toLocation = value;
-            } else if (field === 'notes') {
-                item.notes = value;
-            } else if (field === 'overrideReason') {
-                item.overrideReason = value;
+                    break;
+                case 'fromLocation':
+                    item.fromLocation = value;
+                    break;
+                case 'toLocation':
+                    item.toLocation = value;
+                    break;
+                case 'notes':
+                    item.notes = value;
+                    break;
+                case 'overrideReason':
+                    item.overrideReason = value;
+                    break;
+                case 'vehicleType':
+                    item.vehicleType = value;
+                    item.eligibleAmount = this.recalcEligible(item);
+                    break;
+                case 'city':
+                    item.city = value;
+                    break;
+                case 'isMetro':
+                    item.isMetro = value;
+                    if (item.isLodging) {
+                        item.eligibleAmount = this.recalcEligible(item);
+                    }
+                    break;
+                case 'workingHours':
+                    item.workingHours = value ? parseFloat(value) : 0;
+                    if (item.isDA) {
+                        item.eligibleAmount = this.recalcEligible(item);
+                    }
+                    break;
+                default:
+                    break;
             }
 
             item.dirty = true;
@@ -337,6 +522,10 @@ export default class ExpenseManager extends LightningElement {
         });
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // ELIGIBILITY CALCULATION (Client-side mirror of server logic)
+    // ═══════════════════════════════════════════════════════════════
+
     recalcEligible(item) {
         const dist = item.manualDistance != null ? item.manualDistance : (item.gpsDistance || 0);
         let eligible = 0;
@@ -344,11 +533,20 @@ export default class ExpenseManager extends LightningElement {
         if (item.minDistance > 0 && dist < item.minDistance) return 0;
 
         if (item.rateType === 'Per Day') {
-            eligible = item.rateAmount;
+            // DA with working hours logic
+            eligible = this.calcDA(item);
         } else if (item.rateType === 'Per KM') {
-            eligible = dist * item.rateAmount;
+            // TA with vehicle type
+            eligible = this.calcTA(item, dist);
         } else if (item.rateType === 'Actual') {
             eligible = item.claimedAmount || 0;
+            // Lodging limits
+            if (item.isLodging) {
+                const limit = item.isMetro ? item.lodgingMetroLimit : item.lodgingNonMetroLimit;
+                if (limit > 0 && eligible > limit) {
+                    eligible = limit;
+                }
+            }
         } else if (item.rateType === 'Flat Monthly') {
             const wd = this.expense.Working_Days__c || 22;
             eligible = wd > 0 ? item.rateAmount / wd : 0;
@@ -360,7 +558,36 @@ export default class ExpenseManager extends LightningElement {
         return Math.round(eligible * 100) / 100;
     }
 
-    // ── File Upload ──────────────────────────────────────────────
+    calcDA(item) {
+        const fullRate = item.rateAmount || 0;
+        const halfRate = item.daHalfDayRate > 0 ? item.daHalfDayRate : fullRate / 2;
+        const hours = item.workingHours || 0;
+
+        if (hours > 0) {
+            if (hours < DA_MIN_HOURS) return 0;
+            if (hours <= DA_HALF_DAY_HOURS) return halfRate;
+        }
+        return fullRate;
+    }
+
+    calcTA(item, dist) {
+        let appliedDist = dist;
+        if (item.dailyKmLimit > 0 && appliedDist > item.dailyKmLimit) {
+            appliedDist = item.dailyKmLimit;
+        }
+
+        let rate = item.rateAmount || 0;
+        if (item.vehicleType === 'Bike' && item.perKmBikeRate > 0) {
+            rate = item.perKmBikeRate;
+        }
+
+        return appliedDist * rate;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // FILE UPLOAD
+    // ═══════════════════════════════════════════════════════════════
+
     async loadAllFiles() {
         const allItemIds = [];
         this.dayRows.forEach(row => {
@@ -414,57 +641,24 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    // ── Save All ─────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // SAVE ALL
+    // ═══════════════════════════════════════════════════════════════
+
     async handleSaveAll() {
         this.saveError = '';
 
-        // Client-side validation: notes required when claimed exceeds eligible
-        const exceededNoNotes = [];
-        this.dayRows.forEach(row => {
-            row.items.forEach(item => {
-                if (!item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount
-                    && (!item.notes || item.notes.trim() === '')) {
-                    exceededNoNotes.push(item.expenseType + ' on ' + row.formattedDate);
-                }
-            });
-        });
-
-        if (exceededNoNotes.length > 0) {
-            this.saveError = 'Notes/Remarks are required when claimed amount exceeds eligible amount: ' + exceededNoNotes.join(', ');
+        // Client-side validations
+        const errors = this.validateItems();
+        if (errors.length > 0) {
+            this.saveError = errors.join(' | ');
             return;
         }
 
         try {
             this.isLoading = true;
 
-            // Collect all items to save across all days
-            const itemsToSave = [];
-            this.dayRows.forEach(row => {
-                row.items.forEach(item => {
-                    if ((item.claimedAmount && item.claimedAmount > 0) || item.hasExisting) {
-                        const rec = {
-                            Expense_Date__c: row.dateStr,
-                            Expense_Type__c: item.expenseType,
-                            Expense_Category__c: item.category,
-                            GPS_Distance_KM__c: item.gpsDistance,
-                            Manual_Distance_KM__c: item.manualDistance,
-                            Distance_Override_Reason__c: item.overrideReason,
-                            Eligible_Amount__c: item.eligibleAmount,
-                            Claimed_Amount__c: item.claimedAmount || 0,
-                            From_Location__c: item.fromLocation || '',
-                            To_Location__c: item.toLocation || '',
-                            Notes__c: item.notes,
-                            Rate_Type__c: item.rateType,
-                            Rate_Amount__c: item.rateAmount,
-                            Receipt_Required__c: item.receiptRequired,
-                            Is_Eligible__c: item.isEligible,
-                            Day_Attendance__c: row.attendanceId || null
-                        };
-                        if (item.id) rec.Id = item.id;
-                        itemsToSave.push(rec);
-                    }
-                });
-            });
+            const itemsToSave = this.collectItemsToSave();
 
             if (itemsToSave.length > 0) {
                 const savedItems = await saveExpenseItems({
@@ -485,8 +679,9 @@ export default class ExpenseManager extends LightningElement {
                                 id: saved.Id,
                                 hasExisting: true,
                                 dirty: false,
-                                statusLabel: 'Saved',
-                                statusClass: 'item-status item-status-saved'
+                                approvalStatus: saved.Approval_Status__c || 'Not Submitted',
+                                statusLabel: this.getItemStatusLabel(saved.Approval_Status__c),
+                                statusClass: this.getItemStatusClass(saved.Approval_Status__c)
                             };
                         }
                         return item;
@@ -497,7 +692,7 @@ export default class ExpenseManager extends LightningElement {
                 this.showSuccess('All expense items saved successfully.');
             }
 
-            // Refresh the expense record for updated totals
+            // Refresh expense totals
             this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
         } catch (e) {
             let msg = 'An error occurred.';
@@ -509,10 +704,82 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
+    validateItems() {
+        const errors = [];
+
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                // Notes required when claimed exceeds eligible
+                if (!item.isActual && item.claimedAmount > 0 && item.claimedAmount > item.eligibleAmount
+                    && (!item.notes || item.notes.trim() === '')) {
+                    errors.push('Notes required for ' + item.expenseType + ' on ' + row.formattedDate + ' (exceeds eligible)');
+                }
+                // Mandatory remarks
+                if (item.mandatoryRemarks && item.claimedAmount > 0 && (!item.notes || item.notes.trim() === '')) {
+                    errors.push('Remarks required for ' + item.expenseType + ' on ' + row.formattedDate);
+                }
+                // From/To required for travel
+                if (item.showFromTo && item.claimedAmount > 0) {
+                    if (!item.fromLocation || !item.toLocation) {
+                        errors.push('From/To required for ' + item.expenseType + ' on ' + row.formattedDate);
+                    }
+                }
+                // City required for lodging
+                if (item.showCity && item.claimedAmount > 0 && !item.city) {
+                    errors.push('City required for ' + item.expenseType + ' on ' + row.formattedDate);
+                }
+            });
+        });
+
+        return errors;
+    }
+
+    collectItemsToSave() {
+        const itemsToSave = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if ((item.claimedAmount && item.claimedAmount > 0) || item.hasExisting) {
+                    const rec = {
+                        Expense_Date__c: row.dateStr,
+                        Expense_Type__c: item.expenseType,
+                        Expense_Category__c: item.category,
+                        GPS_Distance_KM__c: item.gpsDistance,
+                        Manual_Distance_KM__c: item.manualDistance,
+                        Distance_Override_Reason__c: item.overrideReason,
+                        Eligible_Amount__c: item.eligibleAmount,
+                        Claimed_Amount__c: item.claimedAmount || 0,
+                        From_Location__c: item.fromLocation || '',
+                        To_Location__c: item.toLocation || '',
+                        Notes__c: item.notes,
+                        Rate_Type__c: item.rateType,
+                        Rate_Amount__c: item.rateAmount,
+                        Receipt_Required__c: item.receiptRequired,
+                        Is_Eligible__c: item.isEligible,
+                        Day_Attendance__c: row.attendanceId || null,
+                        Vehicle_Type__c: item.vehicleType || null,
+                        Working_Hours__c: item.workingHours || null,
+                        City__c: item.city || null,
+                        Is_Metro__c: item.isMetro || false
+                    };
+                    if (item.id) rec.Id = item.id;
+                    itemsToSave.push(rec);
+                }
+            });
+        });
+        return itemsToSave;
+    }
+
     // ── Save & Submit ────────────────────────────────────────────
     async handleSaveAndSubmit() {
         await this.handleSaveAll();
         if (this.saveError) return;
+
+        // Check receipt requirements before submit
+        const receiptErrors = this.validateReceiptsForSubmit();
+        if (receiptErrors.length > 0) {
+            this.saveError = receiptErrors.join(' | ');
+            return;
+        }
 
         try {
             this.isLoading = true;
@@ -526,6 +793,25 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
+    validateReceiptsForSubmit() {
+        const errors = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if (item.receiptRequired && item.claimedAmount > 0) {
+                    const threshold = item.receiptThreshold || 0;
+                    if (threshold === 0 || item.claimedAmount > threshold) {
+                        if (!item.hasFiles && !item.id) {
+                            errors.push('Save items first to upload receipts for ' + item.expenseType);
+                        } else if (item.id && !item.hasFiles) {
+                            errors.push('Receipt required for ' + item.expenseType + ' on ' + row.formattedDate);
+                        }
+                    }
+                }
+            });
+        });
+        return errors;
+    }
+
     // ── Cancel ───────────────────────────────────────────────────
     handleCancel() {
         this.showDayExpenses = false;
@@ -534,7 +820,7 @@ export default class ExpenseManager extends LightningElement {
         this.selectAllDays = false;
     }
 
-    // ── Delete Day Items ─────────────────────────────────────────
+    // ── Delete Item ──────────────────────────────────────────────
     async handleDeleteItem(event) {
         const itemKey = event.currentTarget.dataset.key;
         let itemId = null;
@@ -547,24 +833,8 @@ export default class ExpenseManager extends LightningElement {
             const item = items[itemIdx];
             itemId = item.id;
 
-            // Reset item to defaults
-            items[itemIdx] = {
-                ...item,
-                id: null,
-                claimedAmount: 0,
-                fromLocation: '',
-                toLocation: '',
-                notes: '',
-                manualDistance: null,
-                overrideReason: '',
-                hasExisting: false,
-                dirty: false,
-                files: [],
-                hasFiles: false,
-                statusLabel: 'New',
-                statusClass: 'item-status item-status-new',
-                exceedsEligible: false
-            };
+            // Remove item entirely (dynamic add/remove)
+            items.splice(itemIdx, 1);
 
             const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
             return {
@@ -588,7 +858,10 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    // ── Submit / Approve / Reject ────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // SUBMIT / APPROVE / REJECT
+    // ═══════════════════════════════════════════════════════════════
+
     async handleSubmit() {
         try {
             this.isLoading = true;
@@ -641,7 +914,7 @@ export default class ExpenseManager extends LightningElement {
                 this.showSuccess('Expense marked as paid.');
             }
             this.showApprovalModal = false;
-            await this.loadReport();
+            await this.loadExpenseData();
             if (this.activeTab === 'team') {
                 await this.loadTeamReports();
             }
@@ -654,6 +927,23 @@ export default class ExpenseManager extends LightningElement {
 
     closeApprovalModal() {
         this.showApprovalModal = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // COMMENTS HISTORY
+    // ═══════════════════════════════════════════════════════════════
+
+    handleShowComments() {
+        const raw = this.expense.Comments_History__c || '';
+        this.commentsHistory = raw.split('\n').filter(l => l.trim() !== '').map((line, idx) => ({
+            key: 'comment-' + idx,
+            text: line
+        }));
+        this.showCommentsModal = true;
+    }
+
+    closeCommentsModal() {
+        this.showCommentsModal = false;
     }
 
     // ── Summary ──────────────────────────────────────────────────
@@ -697,7 +987,10 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    // ── Computed Properties ──────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // COMPUTED PROPERTIES
+    // ═══════════════════════════════════════════════════════════════
+
     get isMainScreen() { return this.currentScreen === 'MAIN'; }
     get isDraft() { return this.expense.Status__c === 'Draft'; }
     get isSubmitted() { return this.expense.Status__c === 'Submitted'; }
@@ -746,6 +1039,12 @@ export default class ExpenseManager extends LightningElement {
         return 'There are no attendance entries available between ' + fmt(start) + ' and ' + fmt(end) + '.';
     }
 
+    get hasComments() {
+        return this.expense.Comments_History__c && this.expense.Comments_History__c.trim() !== '';
+    }
+
+    get hasCommentsEntries() { return this.commentsHistory.length > 0; }
+
     get summaryTypeBreakdown() { return this.summary.typeBreakdown || []; }
     get summaryDayBreakdown() { return this.summary.dayBreakdown || []; }
     get hasTeamReports() { return this.teamReports.length > 0; }
@@ -777,9 +1076,14 @@ export default class ExpenseManager extends LightningElement {
     }
 
     get employeeName() {
-        return this.expense.Employee__r
-            ? (this.expense.Employee__r.First_Name__c + ' ' + this.expense.Employee__r.Last_Name__c)
-            : '';
+        if (this.employee.First_Name__c) {
+            return this.employee.First_Name__c + ' ' + (this.employee.Last_Name__c || '');
+        }
+        return '';
+    }
+
+    get employeeBand() {
+        return this.employee.Band__c || '';
     }
 
     get expenseStartDate() {
@@ -792,6 +1096,14 @@ export default class ExpenseManager extends LightningElement {
         const monthIdx = MONTHS.findIndex(m => m.value === this.selectedMonth);
         const d = new Date(this.selectedYear, monthIdx + 1, 0);
         return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    get selectedDaysCount() {
+        return this.dayRows.filter(r => r.selected).length;
+    }
+
+    get hasSelectedDays() {
+        return this.selectedDaysCount > 0;
     }
 
     // ── Helpers ──────────────────────────────────────────────────

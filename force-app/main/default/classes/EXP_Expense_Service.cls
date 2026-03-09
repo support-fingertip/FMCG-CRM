@@ -1,8 +1,17 @@
 /**
  * @description Service class for the Expense Management (EXP) module.
- *              Encapsulates all business logic for expense lifecycle,
- *              eligibility calculation engine, and approval workflow.
- *              Designed to be called from ExpenseController and TriggerHandler layers.
+ *              Full-fledged dynamic expense management with:
+ *              - Configuration-driven expense types per band/travel type
+ *              - Auto-calculation of DA (working hours) and TA (distance × rate)
+ *              - Per-line-item approval status tracking
+ *              - Vehicle-type-specific TA rates (Bike/Car)
+ *              - City-based lodging limits (Metro/Non-Metro)
+ *              - Configurable receipt & remarks requirements
+ *              - File attachment validation before submit
+ *              - Comments history with timestamps
+ *              - Multi-level approval workflow (L1/L2/Finance)
+ *              - Back-dated entry control
+ *              Designed as a reusable base for any FMCG project.
  *
  * @author  SFA Development Team
  * @date    2026
@@ -18,6 +27,7 @@ public without sharing class EXP_Expense_Service {
     private static final String CFG_ALLOW_FUTURE_DATES    = 'ALLOW_FUTURE_DATES';
     private static final String CFG_MAX_OVERRIDE_PERCENT  = 'MAX_OVERRIDE_PERCENT';
     private static final String CFG_REPORT_LOCK_DAY       = 'REPORT_LOCK_DAY';
+    private static final String CFG_BACK_DATE_LIMIT_DAYS  = 'BACK_DATE_LIMIT_DAYS';
 
     // ── Month Helpers ─────────────────────────────────────────────────────
     private static final Map<String, Integer> MONTH_MAP = new Map<String, Integer>{
@@ -46,6 +56,62 @@ public without sharing class EXP_Expense_Service {
         'Finance Approved'  => new Set<String>{ 'Paid' }
     };
 
+    // ── DA Working Hour Thresholds ────────────────────────────────────────
+    private static final Decimal DA_MIN_HOURS      = 4;   // Below = no DA
+    private static final Decimal DA_HALF_DAY_HOURS = 8;   // 4-8 = half DA, >8 = full DA
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SINGLE BULK API — Returns all data needed by the LWC in one call
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public static Map<String, Object> getExpenseData(Id userId, String month, Integer year) {
+        Map<String, Object> result = new Map<String, Object>();
+
+        Employee__c emp = getEmployeeForUser(userId);
+        result.put('employee', emp);
+        result.put('band', emp.Band__c);
+
+        // Get or create report
+        Expense__c report = getOrCreateReport(userId, month, year);
+        result.put('expense', report);
+
+        // Eligibility rules for this band
+        List<Expense_Eligibility__c> rules = new List<Expense_Eligibility__c>();
+        if (String.isNotBlank(emp.Band__c)) {
+            rules = getEligibilityRules(emp.Band__c);
+        }
+        result.put('eligibilityRules', rules);
+
+        // Eligible dates (attendance records minus leaves)
+        List<Map<String, Object>> eligibleDates = getEligibleDates(userId, month, year);
+        result.put('eligibleDates', eligibleDates);
+
+        // All existing expense items for this report
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        if (report.Id != null) {
+            items = getAllExpenseItemsForReport(report.Id);
+        }
+        result.put('expenseItems', items);
+
+        // File attachments for all items
+        List<Id> itemIds = new List<Id>();
+        for (Expense_Item__c item : items) {
+            itemIds.add(item.Id);
+        }
+        List<Map<String, Object>> files = getExpenseItemFiles(itemIds);
+        result.put('files', files);
+
+        // Config
+        Map<String, Object> config = new Map<String, Object>();
+        config.put('maxOverridePercent', getConfigInteger(CFG_MAX_OVERRIDE_PERCENT, 150));
+        config.put('reportLockDay', getConfigInteger(CFG_REPORT_LOCK_DAY, 5));
+        config.put('allowFutureDates', getConfigBoolean(CFG_ALLOW_FUTURE_DATES, false));
+        config.put('backDateLimitDays', getConfigInteger(CFG_BACK_DATE_LIMIT_DAYS, 60));
+        result.put('config', config);
+
+        return result;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // REPORT LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════
@@ -57,7 +123,7 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
-                   Submitted_Date__c, Rejection_Reason__c
+                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c
             FROM Expense__c
             WHERE Employee__c = :emp.Id AND Month__c = :month AND Year__c = :year
             LIMIT 1
@@ -108,7 +174,7 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
-                   Submitted_Date__c, Rejection_Reason__c
+                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c
             FROM Expense__c
             WHERE Id = :report.Id
         ];
@@ -142,10 +208,11 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
-        // Get attendance records
+        // Get attendance records with hours worked
         List<Day_Attendance__c> attendances = [
             SELECT Id, Attendance_Date__c, Start_Time__c, End_Time__c,
-                   Distance_Traveled_Km__c
+                   Distance_Traveled_Km__c, Hours_Worked__c, Beat__r.Name,
+                   Status__c
             FROM Day_Attendance__c
             WHERE User__c = :emp.User__c
               AND Attendance_Date__c >= :periodStart
@@ -177,6 +244,8 @@ public without sharing class EXP_Expense_Service {
             dateInfo.put('checkIn', att.Start_Time__c);
             dateInfo.put('checkOut', att.End_Time__c);
             dateInfo.put('gpsDistance', att.Distance_Traveled_Km__c != null ? att.Distance_Traveled_Km__c : 0);
+            dateInfo.put('hoursWorked', att.Hours_Worked__c != null ? att.Hours_Worked__c : 0);
+            dateInfo.put('beatName', att.Beat__r != null ? att.Beat__r.Name : '');
             dateInfo.put('expenseCount', expenseCountByDate.containsKey(att.Attendance_Date__c)
                 ? expenseCountByDate.get(att.Attendance_Date__c) : 0);
             result.add(dateInfo);
@@ -196,7 +265,11 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Band__c, Expense_Type__c, Expense_Category__c,
                    Rate_Type__c, Rate_Amount__c, Max_Per_Day__c, Max_Per_Month__c,
                    Min_Distance_KM__c, Receipt_Required__c, Receipt_Threshold__c,
-                   Is_Active__c, Sort_Order__c, Description__c
+                   Is_Active__c, Sort_Order__c, Description__c,
+                   Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c,
+                   DA_Half_Day_Rate__c, Daily_KM_Limit__c,
+                   Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c,
+                   Per_KM_Bike_Rate__c
             FROM Expense_Eligibility__c
             WHERE Band__c = :band AND Is_Active__c = true
             ORDER BY Sort_Order__c ASC, Expense_Type__c ASC
@@ -222,9 +295,7 @@ public without sharing class EXP_Expense_Service {
         }
 
         // Check minimum distance
-        Decimal appliedDistance = item.Manual_Distance_KM__c != null
-            ? item.Manual_Distance_KM__c
-            : (item.GPS_Distance_KM__c != null ? item.GPS_Distance_KM__c : 0);
+        Decimal appliedDistance = getAppliedDistance(item);
 
         if (rule.Min_Distance_KM__c != null && rule.Min_Distance_KM__c > 0
             && appliedDistance < rule.Min_Distance_KM__c) {
@@ -235,15 +306,24 @@ public without sharing class EXP_Expense_Service {
         String rateType = rule.Rate_Type__c;
 
         if (rateType == 'Per Day') {
-            eligible = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
+            // DA calculation with working hours logic
+            eligible = calculateDAAmount(item, rule);
         } else if (rateType == 'Per KM') {
-            eligible = appliedDistance * (rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0);
+            // TA calculation with vehicle-type-specific rates
+            eligible = calculateTAAmount(item, rule);
         } else if (rateType == 'Flat Monthly') {
             if (workingDays > 0 && rule.Rate_Amount__c != null) {
                 eligible = (rule.Rate_Amount__c / workingDays).setScale(2, RoundingMode.HALF_UP);
             }
         } else if (rateType == 'Actual') {
             eligible = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
+            // For lodging with city-based limits
+            if (rule.Lodging_Metro_Limit__c != null || rule.Lodging_Non_Metro_Limit__c != null) {
+                Decimal limit_val = getLodgingLimit(item, rule);
+                if (limit_val > 0 && eligible > limit_val) {
+                    eligible = limit_val;
+                }
+            }
         }
 
         // Apply daily cap
@@ -254,8 +334,59 @@ public without sharing class EXP_Expense_Service {
         return eligible;
     }
 
+    private static Decimal calculateDAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
+        Decimal fullRate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
+        Decimal halfRate = rule.DA_Half_Day_Rate__c != null ? rule.DA_Half_Day_Rate__c : (fullRate / 2);
+
+        // If working hours available, apply DA logic
+        Decimal hours = item.Working_Hours__c != null ? item.Working_Hours__c : 0;
+        if (hours > 0) {
+            if (hours < DA_MIN_HOURS) {
+                return 0; // Less than 4 hours = no DA
+            } else if (hours <= DA_HALF_DAY_HOURS) {
+                return halfRate; // 4-8 hours = half DA
+            }
+        }
+        // > 8 hours or no hours data = full DA
+        return fullRate;
+    }
+
+    private static Decimal calculateTAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
+        Decimal appliedDistance = getAppliedDistance(item);
+
+        // Apply daily KM limit
+        if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
+            && appliedDistance > rule.Daily_KM_Limit__c) {
+            appliedDistance = rule.Daily_KM_Limit__c;
+        }
+
+        // Vehicle-type-specific rate
+        Decimal rate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
+        if (item.Vehicle_Type__c == 'Bike' && rule.Per_KM_Bike_Rate__c != null) {
+            rate = rule.Per_KM_Bike_Rate__c;
+        }
+        // Car uses default Rate_Amount__c
+
+        return appliedDistance * rate;
+    }
+
+    private static Decimal getLodgingLimit(Expense_Item__c item, Expense_Eligibility__c rule) {
+        if (item.Is_Metro__c == true && rule.Lodging_Metro_Limit__c != null) {
+            return rule.Lodging_Metro_Limit__c;
+        }
+        if (rule.Lodging_Non_Metro_Limit__c != null) {
+            return rule.Lodging_Non_Metro_Limit__c;
+        }
+        return 0;
+    }
+
+    private static Decimal getAppliedDistance(Expense_Item__c item) {
+        return item.Manual_Distance_KM__c != null
+            ? item.Manual_Distance_KM__c
+            : (item.GPS_Distance_KM__c != null ? item.GPS_Distance_KM__c : 0);
+    }
+
     public static void populateEligibilityFields(List<Expense_Item__c> items, Id expenseId) {
-        // Get the expense record for employee band + working days
         Expense__c expense = [
             SELECT Id, Employee__c, Employee__r.Band__c, Working_Days__c, User__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
@@ -273,7 +404,7 @@ public without sharing class EXP_Expense_Service {
             ruleByType.put(rule.Expense_Type__c, rule);
         }
 
-        // Get attendance records for GPS distance
+        // Get attendance records for GPS distance and working hours
         Set<Id> attendanceIds = new Set<Id>();
         Set<Date> expenseDates = new Set<Date>();
         for (Expense_Item__c item : items) {
@@ -285,7 +416,7 @@ public without sharing class EXP_Expense_Service {
         Map<Date, Day_Attendance__c> attByDate = new Map<Date, Day_Attendance__c>();
         if (!attendanceIds.isEmpty() || !expenseDates.isEmpty()) {
             for (Day_Attendance__c att : [
-                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c
+                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c
                 FROM Day_Attendance__c
                 WHERE (Id IN :attendanceIds OR Attendance_Date__c IN :expenseDates)
                   AND User__c = :expense.User__c
@@ -310,14 +441,16 @@ public without sharing class EXP_Expense_Service {
         for (Expense_Item__c item : items) {
             Expense_Eligibility__c rule = ruleByType.get(item.Expense_Type__c);
 
-            // Auto-populate GPS distance
-            if (item.GPS_Distance_KM__c == null) {
-                Day_Attendance__c att = item.Day_Attendance__c != null
-                    ? attMap.get(item.Day_Attendance__c)
-                    : attByDate.get(item.Expense_Date__c);
-                if (att != null && att.Distance_Traveled_Km__c != null) {
-                    item.GPS_Distance_KM__c = att.Distance_Traveled_Km__c;
-                }
+            // Auto-populate GPS distance and working hours from attendance
+            Day_Attendance__c att = item.Day_Attendance__c != null
+                ? attMap.get(item.Day_Attendance__c)
+                : attByDate.get(item.Expense_Date__c);
+
+            if (item.GPS_Distance_KM__c == null && att != null && att.Distance_Traveled_Km__c != null) {
+                item.GPS_Distance_KM__c = att.Distance_Traveled_Km__c;
+            }
+            if (item.Working_Hours__c == null && att != null && att.Hours_Worked__c != null) {
+                item.Working_Hours__c = att.Hours_Worked__c;
             }
 
             if (rule != null) {
@@ -344,9 +477,7 @@ public without sharing class EXP_Expense_Service {
                 item.Eligible_Amount__c = eligible;
 
                 // Check min distance eligibility
-                Decimal appliedDist = item.Manual_Distance_KM__c != null
-                    ? item.Manual_Distance_KM__c
-                    : (item.GPS_Distance_KM__c != null ? item.GPS_Distance_KM__c : 0);
+                Decimal appliedDist = getAppliedDistance(item);
                 if (rule.Min_Distance_KM__c != null && rule.Min_Distance_KM__c > 0
                     && appliedDist < rule.Min_Distance_KM__c) {
                     item.Is_Eligible__c = false;
@@ -371,6 +502,17 @@ public without sharing class EXP_Expense_Service {
     // EXPENSE ITEM CRUD
     // ═══════════════════════════════════════════════════════════════════════
 
+    private static final String ITEM_FIELDS_QUERY =
+        'Id, Expense__c, Day_Attendance__c, Expense_Date__c, ' +
+        'Expense_Type__c, Expense_Category__c, GPS_Distance_KM__c, ' +
+        'Manual_Distance_KM__c, Distance_Override_Reason__c, ' +
+        'Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c, ' +
+        'Approved_Amount__c, Receipt_URL__c, Receipt_Required__c, ' +
+        'Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c, ' +
+        'From_Location__c, To_Location__c, Approval_Status__c, ' +
+        'Approver_Comments__c, Vehicle_Type__c, Working_Hours__c, ' +
+        'City__c, Is_Metro__c';
+
     public static List<Expense_Item__c> getExpenseItemsForDate(Id expenseId, Date expenseDate) {
         return [
             SELECT Id, Expense__c, Day_Attendance__c, Expense_Date__c,
@@ -379,7 +521,9 @@ public without sharing class EXP_Expense_Service {
                    Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c,
                    Approved_Amount__c, Receipt_URL__c, Receipt_Required__c,
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
-                   From_Location__c, To_Location__c
+                   From_Location__c, To_Location__c, Approval_Status__c,
+                   Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
+                   City__c, Is_Metro__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c = :expenseDate
             ORDER BY Expense_Type__c ASC
@@ -395,7 +539,9 @@ public without sharing class EXP_Expense_Service {
                    Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c,
                    Approved_Amount__c, Receipt_URL__c, Receipt_Required__c,
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
-                   From_Location__c, To_Location__c
+                   From_Location__c, To_Location__c, Approval_Status__c,
+                   Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
+                   City__c, Is_Metro__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -418,6 +564,10 @@ public without sharing class EXP_Expense_Service {
             // Only set parent on new items (not writable on update for master-detail)
             if (item.Id == null) {
                 item.Expense__c = expenseId;
+                // Set default approval status for new items
+                if (String.isBlank(item.Approval_Status__c)) {
+                    item.Approval_Status__c = 'Not Submitted';
+                }
             }
 
             // Validate distance override
@@ -463,7 +613,9 @@ public without sharing class EXP_Expense_Service {
                    Applied_Distance_KM__c, Eligible_Amount__c, Claimed_Amount__c,
                    Approved_Amount__c, Receipt_URL__c, Receipt_Required__c,
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
-                   From_Location__c, To_Location__c
+                   From_Location__c, To_Location__c, Approval_Status__c,
+                   Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
+                   City__c, Is_Metro__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c IN :dates
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -484,12 +636,12 @@ public without sharing class EXP_Expense_Service {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // APPROVAL WORKFLOW
+    // APPROVAL WORKFLOW — Per-Item Granular Approval
     // ═══════════════════════════════════════════════════════════════════════
 
     public static Expense__c submitReport(Id expenseId) {
         Expense__c expense = [
-            SELECT Id, Status__c, Employee__c
+            SELECT Id, Status__c, Employee__c, Comments_History__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -497,15 +649,38 @@ public without sharing class EXP_Expense_Service {
             throw new AuraHandledException('Only Draft or Rejected expenses can be submitted.');
         }
 
-        // Validate receipt requirements
-        List<Expense_Item__c> items = [
-            SELECT Id, Expense_Type__c, Receipt_Required__c, Receipt_URL__c, Claimed_Amount__c
-            FROM Expense_Item__c
-            WHERE Expense__c = :expenseId AND Receipt_Required__c = true
-        ];
+        // Validate receipt and remarks requirements
+        validateReceiptsAndRemarks(expenseId, expense.Employee__c);
 
-        // Check receipt threshold from eligibility rules
-        Employee__c emp = [SELECT User__c FROM Employee__c WHERE Id = :expense.Employee__c LIMIT 1];
+        // Update all item statuses to Pending
+        List<Expense_Item__c> items = [
+            SELECT Id, Approval_Status__c
+            FROM Expense_Item__c
+            WHERE Expense__c = :expenseId
+        ];
+        for (Expense_Item__c item : items) {
+            item.Approval_Status__c = 'Pending';
+        }
+        if (!items.isEmpty()) update items;
+
+        expense.Status__c = 'Submitted';
+        expense.Submitted_Date__c = Datetime.now();
+        expense.Rejection_Reason__c = null;
+        expense.Comments_History__c = appendComment(
+            expense.Comments_History__c, 'Submitted for approval', UserInfo.getUserId()
+        );
+        update expense;
+
+        return [
+            SELECT Id, Name, Status__c, Month__c, Year__c, Total_Claimed__c,
+                   Total_Approved__c, Total_Eligible__c, Submitted_Date__c,
+                   Comments_History__c
+            FROM Expense__c WHERE Id = :expenseId
+        ];
+    }
+
+    private static void validateReceiptsAndRemarks(Id expenseId, Id employeeId) {
+        Employee__c emp = [SELECT User__c FROM Employee__c WHERE Id = :employeeId LIMIT 1];
         String band = getEmployeeBand(emp.User__c);
         Map<String, Expense_Eligibility__c> ruleMap = new Map<String, Expense_Eligibility__c>();
         if (String.isNotBlank(band)) {
@@ -514,53 +689,59 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
-        // Collect item IDs to check for attached files
-        Set<Id> receiptRequiredItemIds = new Set<Id>();
-        Map<Id, Expense_Item__c> itemById = new Map<Id, Expense_Item__c>();
-        for (Expense_Item__c item : items) {
-            receiptRequiredItemIds.add(item.Id);
-            itemById.put(item.Id, item);
-        }
+        List<Expense_Item__c> items = [
+            SELECT Id, Expense_Type__c, Receipt_Required__c, Receipt_URL__c,
+                   Claimed_Amount__c, Notes__c
+            FROM Expense_Item__c
+            WHERE Expense__c = :expenseId
+        ];
 
         // Check which items have files attached
+        Set<Id> allItemIds = new Set<Id>();
+        for (Expense_Item__c item : items) {
+            allItemIds.add(item.Id);
+        }
         Set<Id> itemsWithFiles = new Set<Id>();
         for (ContentDocumentLink cdl : [
             SELECT LinkedEntityId
             FROM ContentDocumentLink
-            WHERE LinkedEntityId IN :receiptRequiredItemIds
+            WHERE LinkedEntityId IN :allItemIds
         ]) {
             itemsWithFiles.add(cdl.LinkedEntityId);
         }
 
         for (Expense_Item__c item : items) {
-            Boolean hasReceipt = itemsWithFiles.contains(item.Id) || String.isNotBlank(item.Receipt_URL__c);
-            if (!hasReceipt) {
-                Expense_Eligibility__c rule = ruleMap.get(item.Expense_Type__c);
-                Decimal threshold = (rule != null && rule.Receipt_Threshold__c != null)
-                    ? rule.Receipt_Threshold__c : 0;
-                if (threshold == 0 || (item.Claimed_Amount__c != null && item.Claimed_Amount__c > threshold)) {
+            Expense_Eligibility__c rule = ruleMap.get(item.Expense_Type__c);
+
+            // Receipt validation
+            if (item.Receipt_Required__c == true) {
+                Boolean hasReceipt = itemsWithFiles.contains(item.Id) || String.isNotBlank(item.Receipt_URL__c);
+                if (!hasReceipt) {
+                    Decimal threshold = (rule != null && rule.Receipt_Threshold__c != null)
+                        ? rule.Receipt_Threshold__c : 0;
+                    if (threshold == 0 || (item.Claimed_Amount__c != null && item.Claimed_Amount__c > threshold)) {
+                        throw new AuraHandledException(
+                            'Receipt is required for ' + item.Expense_Type__c + '.'
+                        );
+                    }
+                }
+            }
+
+            // Mandatory remarks validation
+            if (rule != null && rule.Mandatory_Remarks__c == true) {
+                if (String.isBlank(item.Notes__c)) {
                     throw new AuraHandledException(
-                        'Receipt is required for ' + item.Expense_Type__c + '.'
+                        'Remarks are required for ' + item.Expense_Type__c + '.'
                     );
                 }
             }
         }
-
-        expense.Status__c = 'Submitted';
-        expense.Submitted_Date__c = Datetime.now();
-        expense.Rejection_Reason__c = null;
-        update expense;
-
-        return [
-            SELECT Id, Name, Status__c, Month__c, Year__c, Total_Claimed__c,
-                   Total_Approved__c, Total_Eligible__c, Submitted_Date__c
-            FROM Expense__c WHERE Id = :expenseId
-        ];
     }
 
     public static Expense__c approveReport(Id expenseId, String remarks, String level) {
         Expense__c expense = [
-            SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
+            SELECT Id, Status__c, Comments_History__c
+            FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
         if (level == 'manager') {
@@ -572,13 +753,16 @@ public without sharing class EXP_Expense_Service {
             expense.Manager_Approver__c = UserInfo.getUserId();
             expense.Manager_Remarks__c = remarks;
 
-            // Auto-set approved amounts = claimed amounts
+            // Update item approval statuses and set approved amounts
             List<Expense_Item__c> items = [
-                SELECT Id, Claimed_Amount__c, Approved_Amount__c
+                SELECT Id, Claimed_Amount__c, Approved_Amount__c, Approval_Status__c
                 FROM Expense_Item__c WHERE Expense__c = :expenseId
             ];
             for (Expense_Item__c item : items) {
-                item.Approved_Amount__c = item.Claimed_Amount__c;
+                if (item.Approved_Amount__c == null) {
+                    item.Approved_Amount__c = item.Claimed_Amount__c;
+                }
+                item.Approval_Status__c = 'L1 Approved';
             }
             if (!items.isEmpty()) update items;
 
@@ -590,23 +774,52 @@ public without sharing class EXP_Expense_Service {
             expense.Finance_Approved_Date__c = Datetime.now();
             expense.Finance_Approver__c = UserInfo.getUserId();
             expense.Finance_Remarks__c = remarks;
+
+            // Update item approval statuses
+            List<Expense_Item__c> items = [
+                SELECT Id, Approval_Status__c
+                FROM Expense_Item__c WHERE Expense__c = :expenseId
+            ];
+            for (Expense_Item__c item : items) {
+                item.Approval_Status__c = 'Finance Approved';
+            }
+            if (!items.isEmpty()) update items;
         }
 
+        expense.Comments_History__c = appendComment(
+            expense.Comments_History__c,
+            (level == 'manager' ? 'Manager' : 'Finance') + ' approved' +
+            (String.isNotBlank(remarks) ? ': ' + remarks : ''),
+            UserInfo.getUserId()
+        );
         update expense;
+
         return [
-            SELECT Id, Name, Status__c, Total_Claimed__c, Total_Approved__c, Total_Eligible__c
+            SELECT Id, Name, Status__c, Total_Claimed__c, Total_Approved__c,
+                   Total_Eligible__c, Comments_History__c
             FROM Expense__c WHERE Id = :expenseId
         ];
     }
 
     public static Expense__c rejectReport(Id expenseId, String reason, String level) {
         Expense__c expense = [
-            SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
+            SELECT Id, Status__c, Comments_History__c
+            FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
         if (expense.Status__c != 'Submitted' && expense.Status__c != 'Manager Approved') {
             throw new AuraHandledException('Only Submitted or Manager Approved expenses can be rejected.');
         }
+
+        // Update item approval statuses
+        List<Expense_Item__c> items = [
+            SELECT Id, Approval_Status__c
+            FROM Expense_Item__c WHERE Expense__c = :expenseId
+        ];
+        for (Expense_Item__c item : items) {
+            item.Approval_Status__c = 'Rejected';
+        }
+        if (!items.isEmpty()) update items;
 
         expense.Status__c = 'Rejected';
         expense.Rejection_Reason__c = reason;
@@ -615,25 +828,108 @@ public without sharing class EXP_Expense_Service {
         } else if (level == 'finance') {
             expense.Finance_Remarks__c = reason;
         }
+        expense.Comments_History__c = appendComment(
+            expense.Comments_History__c,
+            (level == 'manager' ? 'Manager' : 'Finance') + ' rejected: ' + reason,
+            UserInfo.getUserId()
+        );
         update expense;
 
         return [
-            SELECT Id, Name, Status__c, Rejection_Reason__c
+            SELECT Id, Name, Status__c, Rejection_Reason__c, Comments_History__c
             FROM Expense__c WHERE Id = :expenseId
         ];
     }
 
+    public static Map<String, Object> approveExpenseItems(List<Id> itemIds, String remarks, String level) {
+        List<Expense_Item__c> items = [
+            SELECT Id, Expense__c, Claimed_Amount__c, Approved_Amount__c,
+                   Approval_Status__c, Approver_Comments__c
+            FROM Expense_Item__c
+            WHERE Id IN :itemIds
+        ];
+
+        String newStatus = level == 'manager' ? 'L1 Approved' : 'Finance Approved';
+        for (Expense_Item__c item : items) {
+            item.Approval_Status__c = newStatus;
+            if (item.Approved_Amount__c == null) {
+                item.Approved_Amount__c = item.Claimed_Amount__c;
+            }
+            item.Approver_Comments__c = appendComment(
+                item.Approver_Comments__c, 'Approved: ' + (remarks != null ? remarks : ''),
+                UserInfo.getUserId()
+            );
+        }
+        update items;
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('items', items);
+        result.put('count', items.size());
+        return result;
+    }
+
+    public static Map<String, Object> rejectExpenseItems(List<Id> itemIds, String reason, String level) {
+        List<Expense_Item__c> items = [
+            SELECT Id, Expense__c, Approval_Status__c, Approver_Comments__c
+            FROM Expense_Item__c
+            WHERE Id IN :itemIds
+        ];
+
+        for (Expense_Item__c item : items) {
+            item.Approval_Status__c = 'Rejected';
+            item.Approver_Comments__c = appendComment(
+                item.Approver_Comments__c, 'Rejected: ' + reason,
+                UserInfo.getUserId()
+            );
+        }
+        update items;
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('items', items);
+        result.put('count', items.size());
+        return result;
+    }
+
+    public static Map<String, Object> updateApprovedAmounts(Map<Id, Decimal> itemAmounts) {
+        List<Expense_Item__c> items = [
+            SELECT Id, Approved_Amount__c, Approver_Comments__c
+            FROM Expense_Item__c
+            WHERE Id IN :itemAmounts.keySet()
+        ];
+        for (Expense_Item__c item : items) {
+            Decimal newAmount = itemAmounts.get(item.Id);
+            if (newAmount != null) {
+                item.Approved_Amount__c = newAmount;
+                item.Approver_Comments__c = appendComment(
+                    item.Approver_Comments__c,
+                    'Approved amount updated to ' + newAmount,
+                    UserInfo.getUserId()
+                );
+            }
+        }
+        update items;
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('items', items);
+        return result;
+    }
+
     public static Expense__c markAsPaid(Id expenseId) {
         Expense__c expense = [
-            SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
+            SELECT Id, Status__c, Comments_History__c
+            FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
         if (expense.Status__c != 'Finance Approved') {
             throw new AuraHandledException('Only Finance Approved expenses can be marked as Paid.');
         }
         expense.Status__c = 'Paid';
+        expense.Comments_History__c = appendComment(
+            expense.Comments_History__c, 'Marked as Paid', UserInfo.getUserId()
+        );
         update expense;
         return [
-            SELECT Id, Name, Status__c FROM Expense__c WHERE Id = :expenseId
+            SELECT Id, Name, Status__c, Comments_History__c
+            FROM Expense__c WHERE Id = :expenseId
         ];
     }
 
@@ -648,7 +944,8 @@ public without sharing class EXP_Expense_Service {
                    Employee__r.Band__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
                    Submitted_Date__c, Manager_Approved_Date__c, Manager_Remarks__c,
-                   Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c
+                   Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c,
+                   Comments_History__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -774,6 +1071,38 @@ public without sharing class EXP_Expense_Service {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // APPROVAL DATA — For approver component
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public static Map<String, Object> getExpenseForApproval(Id expenseId) {
+        Expense__c expense = [
+            SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c,
+                   Employee__r.First_Name__c, Employee__r.Last_Name__c,
+                   Employee__r.Band__c, Working_Days__c, Total_Distance_KM__c,
+                   Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
+                   Submitted_Date__c, Manager_Approved_Date__c, Manager_Remarks__c,
+                   Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c,
+                   Comments_History__c
+            FROM Expense__c WHERE Id = :expenseId LIMIT 1
+        ];
+
+        List<Expense_Item__c> items = getAllExpenseItemsForReport(expenseId);
+
+        // Get files for all items
+        List<Id> itemIds = new List<Id>();
+        for (Expense_Item__c item : items) {
+            itemIds.add(item.Id);
+        }
+        List<Map<String, Object>> files = getExpenseItemFiles(itemIds);
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('expense', expense);
+        result.put('items', items);
+        result.put('files', files);
+        return result;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // FILE / RECEIPT MANAGEMENT
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -808,6 +1137,20 @@ public without sharing class EXP_Expense_Service {
         if (!docs.isEmpty()) {
             delete docs;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMENTS HELPER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public static String appendComment(String existing, String comment, Id userId) {
+        String userName = UserInfo.getName();
+        String timestamp = Datetime.now().format('yyyy-MM-dd HH:mm');
+        String entry = '[' + timestamp + '] ' + userName + ': ' + comment;
+        if (String.isBlank(existing)) {
+            return entry;
+        }
+        return existing + '\n' + entry;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -864,7 +1207,8 @@ public without sharing class EXP_Expense_Service {
 
     private static Employee__c getEmployeeForUser(Id userId) {
         List<Employee__c> emps = [
-            SELECT Id, Band__c, User__c, Reporting_Manager__c
+            SELECT Id, Band__c, User__c, Reporting_Manager__c,
+                   First_Name__c, Last_Name__c
             FROM Employee__c
             WHERE User__c = :userId AND Is_Active__c = true
             LIMIT 1

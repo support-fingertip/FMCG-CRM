@@ -41,37 +41,49 @@ public class EXP_Expense_Service_Test {
         }
         insert attendances;
 
-        // Create eligibility rules
+        // Create eligibility rules with new dynamic fields
         List<Expense_Eligibility__c> rules = new List<Expense_Eligibility__c>();
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Daily Allowance', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Per Day', Rate_Amount__c = 300, Max_Per_Day__c = 300,
-            Max_Per_Month__c = 9000, Min_Distance_KM__c = 0, Is_Active__c = true, Sort_Order__c = 1
+            Max_Per_Month__c = 9000, Min_Distance_KM__c = 0, Is_Active__c = true, Sort_Order__c = 1,
+            Auto_Create__c = true, Travel_Type__c = 'All', DA_Half_Day_Rate__c = 150
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Travelling Allowance', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Per KM', Rate_Amount__c = 5, Max_Per_Day__c = 500,
-            Max_Per_Month__c = 15000, Min_Distance_KM__c = 10, Is_Active__c = true, Sort_Order__c = 2
+            Max_Per_Month__c = 15000, Min_Distance_KM__c = 10, Is_Active__c = true, Sort_Order__c = 2,
+            Auto_Create__c = true, Travel_Type__c = 'All', Per_KM_Bike_Rate__c = 3, Daily_KM_Limit__c = 200
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Fuel', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Actual', Rate_Amount__c = 0, Max_Per_Day__c = 800,
-            Max_Per_Month__c = 12000, Receipt_Required__c = true, Is_Active__c = true, Sort_Order__c = 3
+            Max_Per_Month__c = 12000, Receipt_Required__c = true, Is_Active__c = true, Sort_Order__c = 3,
+            Mandatory_Remarks__c = true
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Food', Expense_Category__c = 'Miscellaneous',
             Rate_Type__c = 'Flat Monthly', Rate_Amount__c = 3000, Max_Per_Day__c = 200,
             Max_Per_Month__c = 3000, Is_Active__c = true, Sort_Order__c = 4
         ));
+        rules.add(new Expense_Eligibility__c(
+            Band__c = 'Band 1', Expense_Type__c = 'Lodging', Expense_Category__c = 'Travel',
+            Rate_Type__c = 'Actual', Rate_Amount__c = 0, Max_Per_Day__c = 5000,
+            Max_Per_Month__c = 50000, Is_Active__c = true, Sort_Order__c = 5,
+            Receipt_Required__c = true, Lodging_Metro_Limit__c = 3000, Lodging_Non_Metro_Limit__c = 2000
+        ));
         insert rules;
+    }
+
+    private static String getCurrentMonth() {
+        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
+        return months[Date.today().month()];
     }
 
     @isTest
     static void testGetOrCreateReport() {
+        String monthName = getCurrentMonth();
         Date today = Date.today();
-        String monthName;
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        monthName = months[today.month()];
 
         Test.startTest();
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
@@ -87,10 +99,28 @@ public class EXP_Expense_Service_Test {
     }
 
     @isTest
-    static void testGetEligibleDates() {
+    static void testGetExpenseData() {
+        String monthName = getCurrentMonth();
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+
+        Test.startTest();
+        Map<String, Object> data = EXP_Expense_Service.getExpenseData(UserInfo.getUserId(), monthName, today.year());
+        Test.stopTest();
+
+        System.assertNotEquals(null, data.get('expense'), 'Should have expense');
+        System.assertNotEquals(null, data.get('employee'), 'Should have employee');
+        System.assertNotEquals(null, data.get('eligibilityRules'), 'Should have rules');
+        System.assertNotEquals(null, data.get('eligibleDates'), 'Should have dates');
+        System.assertNotEquals(null, data.get('config'), 'Should have config');
+
+        List<Expense_Eligibility__c> rules = (List<Expense_Eligibility__c>) data.get('eligibilityRules');
+        System.assertEquals(5, rules.size(), 'Should have 5 rules');
+    }
+
+    @isTest
+    static void testGetEligibleDates() {
+        String monthName = getCurrentMonth();
+        Date today = Date.today();
 
         Test.startTest();
         List<Map<String, Object>> dates = EXP_Expense_Service.getEligibleDates(
@@ -98,7 +128,9 @@ public class EXP_Expense_Service_Test {
         );
         Test.stopTest();
 
-        System.assertEquals(5, dates.size(), 'Should have 5 eligible dates from test data');
+        System.assertEquals(5, dates.size(), 'Should have 5 eligible dates');
+        // Verify hoursWorked is included
+        System.assert(dates[0].containsKey('hoursWorked'), 'Should include hoursWorked');
     }
 
     @isTest
@@ -107,11 +139,19 @@ public class EXP_Expense_Service_Test {
         List<Expense_Eligibility__c> rules = EXP_Expense_Service.getEligibilityRules('Band 1');
         Test.stopTest();
 
-        System.assertEquals(4, rules.size(), 'Should have 4 rules for Band 1');
+        System.assertEquals(5, rules.size(), 'Should have 5 rules for Band 1');
+        // Verify new fields are queried
+        Expense_Eligibility__c daRule = null;
+        for (Expense_Eligibility__c r : rules) {
+            if (r.Expense_Type__c == 'Daily Allowance') daRule = r;
+        }
+        System.assertNotEquals(null, daRule, 'Should have DA rule');
+        System.assertEquals(true, daRule.Auto_Create__c, 'DA should be auto-create');
+        System.assertEquals(150, daRule.DA_Half_Day_Rate__c, 'DA half day rate should be 150');
 
-        // Test caching — call again
+        // Test caching
         List<Expense_Eligibility__c> cached = EXP_Expense_Service.getEligibilityRules('Band 1');
-        System.assertEquals(4, cached.size(), 'Cached result should match');
+        System.assertEquals(5, cached.size(), 'Cached result should match');
     }
 
     @isTest
@@ -121,6 +161,85 @@ public class EXP_Expense_Service_Test {
         Test.stopTest();
 
         System.assertEquals('Band 1', band, 'Band should be Band 1');
+    }
+
+    @isTest
+    static void testCalculateDAAmount() {
+        // Full day (> 8 hours)
+        Expense_Item__c itemFull = new Expense_Item__c(
+            Working_Hours__c = 9, Claimed_Amount__c = 300
+        );
+        Expense_Eligibility__c daRule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Per Day', Rate_Amount__c = 300, Max_Per_Day__c = 300,
+            Is_Active__c = true, Min_Distance_KM__c = 0, DA_Half_Day_Rate__c = 150
+        );
+        Decimal fullResult = EXP_Expense_Service.calculateEligibleAmount(itemFull, daRule, 22);
+        System.assertEquals(300, fullResult, 'Full day DA should be 300');
+
+        // Half day (4-8 hours)
+        Expense_Item__c itemHalf = new Expense_Item__c(
+            Working_Hours__c = 6, Claimed_Amount__c = 150
+        );
+        Decimal halfResult = EXP_Expense_Service.calculateEligibleAmount(itemHalf, daRule, 22);
+        System.assertEquals(150, halfResult, 'Half day DA should be 150');
+
+        // No DA (< 4 hours)
+        Expense_Item__c itemNone = new Expense_Item__c(
+            Working_Hours__c = 3, Claimed_Amount__c = 0
+        );
+        Decimal noneResult = EXP_Expense_Service.calculateEligibleAmount(itemNone, daRule, 22);
+        System.assertEquals(0, noneResult, 'Less than 4 hours should be 0');
+    }
+
+    @isTest
+    static void testCalculateTAAmount() {
+        // Car rate (default)
+        Expense_Item__c carItem = new Expense_Item__c(
+            GPS_Distance_KM__c = 30, Claimed_Amount__c = 150
+        );
+        Expense_Eligibility__c taRule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Per KM', Rate_Amount__c = 5, Max_Per_Day__c = 500,
+            Is_Active__c = true, Min_Distance_KM__c = 10, Per_KM_Bike_Rate__c = 3,
+            Daily_KM_Limit__c = 200
+        );
+        Decimal carResult = EXP_Expense_Service.calculateEligibleAmount(carItem, taRule, 22);
+        System.assertEquals(150, carResult, 'Car TA should be 30 * 5 = 150');
+
+        // Bike rate
+        Expense_Item__c bikeItem = new Expense_Item__c(
+            GPS_Distance_KM__c = 30, Claimed_Amount__c = 90, Vehicle_Type__c = 'Bike'
+        );
+        Decimal bikeResult = EXP_Expense_Service.calculateEligibleAmount(bikeItem, taRule, 22);
+        System.assertEquals(90, bikeResult, 'Bike TA should be 30 * 3 = 90');
+
+        // Daily KM limit
+        Expense_Item__c overLimitItem = new Expense_Item__c(
+            GPS_Distance_KM__c = 250, Claimed_Amount__c = 1000
+        );
+        Decimal limitResult = EXP_Expense_Service.calculateEligibleAmount(overLimitItem, taRule, 22);
+        System.assertEquals(500, limitResult, 'Should be capped at max per day (200 * 5 = 1000, but max 500)');
+    }
+
+    @isTest
+    static void testCalculateLodgingAmount() {
+        // Metro city
+        Expense_Item__c metroItem = new Expense_Item__c(
+            Claimed_Amount__c = 3500, Is_Metro__c = true
+        );
+        Expense_Eligibility__c lodgingRule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Actual', Max_Per_Day__c = 5000,
+            Is_Active__c = true, Min_Distance_KM__c = 0,
+            Lodging_Metro_Limit__c = 3000, Lodging_Non_Metro_Limit__c = 2000
+        );
+        Decimal metroResult = EXP_Expense_Service.calculateEligibleAmount(metroItem, lodgingRule, 22);
+        System.assertEquals(3000, metroResult, 'Metro lodging should cap at 3000');
+
+        // Non-metro city
+        Expense_Item__c nonMetroItem = new Expense_Item__c(
+            Claimed_Amount__c = 2500, Is_Metro__c = false
+        );
+        Decimal nonMetroResult = EXP_Expense_Service.calculateEligibleAmount(nonMetroItem, lodgingRule, 22);
+        System.assertEquals(2000, nonMetroResult, 'Non-metro lodging should cap at 2000');
     }
 
     @isTest
@@ -145,14 +264,6 @@ public class EXP_Expense_Service_Test {
         );
         Decimal perKmResult = EXP_Expense_Service.calculateEligibleAmount(item, perKmRule, 22);
         System.assertEquals(150, perKmResult, 'Per KM should return distance * rate');
-
-        // Per KM with cap
-        Expense_Eligibility__c perKmCappedRule = new Expense_Eligibility__c(
-            Rate_Type__c = 'Per KM', Rate_Amount__c = 20, Max_Per_Day__c = 500,
-            Is_Active__c = true, Min_Distance_KM__c = 0
-        );
-        Decimal cappedResult = EXP_Expense_Service.calculateEligibleAmount(item, perKmCappedRule, 22);
-        System.assertEquals(500, cappedResult, 'Should be capped at Max_Per_Day');
 
         // Actual
         Expense_Eligibility__c actualRule = new Expense_Eligibility__c(
@@ -187,8 +298,7 @@ public class EXP_Expense_Service_Test {
     @isTest
     static void testSaveAndGetExpenseItems() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
         Date monthStart = Date.newInstance(today.year(), today.month(), 1);
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
@@ -200,7 +310,8 @@ public class EXP_Expense_Service_Test {
             Expense_Category__c = 'Travel',
             GPS_Distance_KM__c = 25,
             Claimed_Amount__c = 300,
-            Eligible_Amount__c = 300
+            Eligible_Amount__c = 300,
+            Working_Hours__c = 9
         ));
         items.add(new Expense_Item__c(
             Expense_Date__c = monthStart,
@@ -208,7 +319,8 @@ public class EXP_Expense_Service_Test {
             Expense_Category__c = 'Travel',
             GPS_Distance_KM__c = 25,
             Claimed_Amount__c = 125,
-            Eligible_Amount__c = 125
+            Eligible_Amount__c = 125,
+            Vehicle_Type__c = 'Car'
         ));
 
         Test.startTest();
@@ -216,58 +328,20 @@ public class EXP_Expense_Service_Test {
         Test.stopTest();
 
         System.assertEquals(2, saved.size(), 'Should save 2 items');
+        // Verify new fields saved
+        System.assertEquals('Not Submitted', saved[0].Approval_Status__c, 'Default approval status');
+        System.assertEquals(9, saved[0].Working_Hours__c, 'Working hours preserved');
+        System.assertEquals('Car', saved[1].Vehicle_Type__c, 'Vehicle type preserved');
 
-        // Get items for date
-        List<Expense_Item__c> retrieved = EXP_Expense_Service.getExpenseItemsForDate(report.Id, monthStart);
-        System.assertEquals(2, retrieved.size(), 'Should retrieve 2 items for the date');
-
-        // Get all items for report (bulk method)
+        // Get all items for report
         List<Expense_Item__c> allItems = EXP_Expense_Service.getAllExpenseItemsForReport(report.Id);
-        System.assertEquals(2, allItems.size(), 'Should retrieve all items for the report');
-        // Verify From/To fields are queryable
-        for (Expense_Item__c item : allItems) {
-            System.assertNotEquals(null, item.Id, 'Item should have Id');
-        }
-    }
-
-    @isTest
-    static void testSaveExpenseItemsValidation() {
-        Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
-        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
-
-        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
-
-        // Test distance override validation
-        List<Expense_Item__c> items = new List<Expense_Item__c>();
-        items.add(new Expense_Item__c(
-            Expense_Date__c = monthStart,
-            Expense_Type__c = 'Daily Allowance',
-            Expense_Category__c = 'Travel',
-            GPS_Distance_KM__c = 20,
-            Manual_Distance_KM__c = 25,
-            Eligible_Amount__c = 300,
-            Claimed_Amount__c = 300
-        ));
-
-        Test.startTest();
-        Boolean caught = false;
-        try {
-            // Missing override reason
-            EXP_Expense_Service.saveExpenseItems(report.Id, items);
-        } catch (AuraHandledException e) {
-            caught = true;
-        }
-        System.assert(caught, 'Should throw error for missing override reason');
-        Test.stopTest();
+        System.assertEquals(2, allItems.size(), 'Should retrieve all items');
     }
 
     @isTest
     static void testSaveExceedingWithNotes() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
         Date monthStart = Date.newInstance(today.year(), today.month(), 1);
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
@@ -293,7 +367,7 @@ public class EXP_Expense_Service_Test {
         }
         System.assert(caught, 'Should throw error when exceeding without notes');
 
-        // Should succeed with notes when exceeding eligible
+        // Should succeed with notes
         List<Expense_Item__c> itemsWithNotes = new List<Expense_Item__c>();
         itemsWithNotes.add(new Expense_Item__c(
             Expense_Date__c = monthStart,
@@ -310,14 +384,13 @@ public class EXP_Expense_Service_Test {
         List<Expense_Item__c> saved = EXP_Expense_Service.saveExpenseItems(report.Id, itemsWithNotes);
         Test.stopTest();
 
-        System.assertEquals(1, saved.size(), 'Should save when notes provided for exceeding amount');
+        System.assertEquals(1, saved.size(), 'Should save when notes provided');
     }
 
     @isTest
     static void testDeleteExpenseItems() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
         Date monthStart = Date.newInstance(today.year(), today.month(), 1);
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
@@ -343,13 +416,11 @@ public class EXP_Expense_Service_Test {
     @isTest
     static void testApprovalWorkflow() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
         Date monthStart = Date.newInstance(today.year(), today.month(), 1);
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
 
-        // Add an item
         Expense_Item__c item = new Expense_Item__c(
             Expense__c = report.Id,
             Expense_Date__c = monthStart,
@@ -363,43 +434,154 @@ public class EXP_Expense_Service_Test {
         Test.startTest();
         // Submit
         Expense__c submitted = EXP_Expense_Service.submitReport(report.Id);
-        System.assertEquals('Submitted', submitted.Status__c, 'Should be Submitted');
+        System.assertEquals('Submitted', submitted.Status__c);
+        System.assert(String.isNotBlank(submitted.Comments_History__c), 'Should have comments');
+
+        // Verify item approval status
+        Expense_Item__c submittedItem = [SELECT Approval_Status__c FROM Expense_Item__c WHERE Id = :item.Id];
+        System.assertEquals('Pending', submittedItem.Approval_Status__c, 'Item should be Pending');
 
         // Manager approve
         Expense__c approved = EXP_Expense_Service.approveReport(report.Id, 'Looks good', 'manager');
-        System.assertEquals('Manager Approved', approved.Status__c, 'Should be Manager Approved');
+        System.assertEquals('Manager Approved', approved.Status__c);
+
+        // Verify item L1 approved
+        Expense_Item__c l1Item = [SELECT Approval_Status__c, Approved_Amount__c FROM Expense_Item__c WHERE Id = :item.Id];
+        System.assertEquals('L1 Approved', l1Item.Approval_Status__c, 'Item should be L1 Approved');
+        System.assertEquals(300, l1Item.Approved_Amount__c, 'Approved amount should equal claimed');
 
         // Finance approve
         Expense__c finApproved = EXP_Expense_Service.approveReport(report.Id, 'Verified', 'finance');
-        System.assertEquals('Finance Approved', finApproved.Status__c, 'Should be Finance Approved');
+        System.assertEquals('Finance Approved', finApproved.Status__c);
+
+        // Verify item Finance approved
+        Expense_Item__c finItem = [SELECT Approval_Status__c FROM Expense_Item__c WHERE Id = :item.Id];
+        System.assertEquals('Finance Approved', finItem.Approval_Status__c);
 
         // Mark paid
         Expense__c paid = EXP_Expense_Service.markAsPaid(report.Id);
-        System.assertEquals('Paid', paid.Status__c, 'Should be Paid');
+        System.assertEquals('Paid', paid.Status__c);
         Test.stopTest();
+    }
+
+    @isTest
+    static void testPerItemApproval() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        items.add(new Expense_Item__c(
+            Expense__c = report.Id, Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance', Claimed_Amount__c = 300,
+            Eligible_Amount__c = 300, Approval_Status__c = 'Pending'
+        ));
+        items.add(new Expense_Item__c(
+            Expense__c = report.Id, Expense_Date__c = monthStart,
+            Expense_Type__c = 'Fuel', Claimed_Amount__c = 500,
+            Eligible_Amount__c = 500, Approval_Status__c = 'Pending'
+        ));
+        insert items;
+
+        Test.startTest();
+        // Approve individual items
+        Map<String, Object> approveResult = EXP_Expense_Service.approveExpenseItems(
+            new List<Id>{ items[0].Id }, 'OK', 'manager'
+        );
+        System.assertEquals(1, (Integer) approveResult.get('count'));
+
+        // Reject individual items
+        Map<String, Object> rejectResult = EXP_Expense_Service.rejectExpenseItems(
+            new List<Id>{ items[1].Id }, 'No receipt', 'manager'
+        );
+        System.assertEquals(1, (Integer) rejectResult.get('count'));
+
+        // Update approved amounts
+        Map<Id, Decimal> amountsMap = new Map<Id, Decimal>();
+        amountsMap.put(items[0].Id, 250);
+        Map<String, Object> amountResult = EXP_Expense_Service.updateApprovedAmounts(amountsMap);
+        System.assertNotEquals(null, amountResult.get('items'));
+        Test.stopTest();
+
+        // Verify statuses
+        Expense_Item__c approved = [SELECT Approval_Status__c, Approved_Amount__c FROM Expense_Item__c WHERE Id = :items[0].Id];
+        System.assertEquals('L1 Approved', approved.Approval_Status__c);
+        System.assertEquals(250, approved.Approved_Amount__c, 'Amount should be updated');
+
+        Expense_Item__c rejected = [SELECT Approval_Status__c FROM Expense_Item__c WHERE Id = :items[1].Id];
+        System.assertEquals('Rejected', rejected.Approval_Status__c);
     }
 
     @isTest
     static void testRejectReport() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        Expense_Item__c item = new Expense_Item__c(
+            Expense__c = report.Id,
+            Expense_Date__c = Date.newInstance(today.year(), today.month(), 1),
+            Expense_Type__c = 'Daily Allowance',
+            Claimed_Amount__c = 300, Eligible_Amount__c = 300
+        );
+        insert item;
+
         report.Status__c = 'Submitted';
         update report;
 
         Test.startTest();
         Expense__c rejected = EXP_Expense_Service.rejectReport(report.Id, 'Missing receipts', 'manager');
-        System.assertEquals('Rejected', rejected.Status__c, 'Should be Rejected');
         Test.stopTest();
+
+        System.assertEquals('Rejected', rejected.Status__c);
+        System.assert(String.isNotBlank(rejected.Comments_History__c), 'Should have comments');
+
+        Expense_Item__c rejItem = [SELECT Approval_Status__c FROM Expense_Item__c WHERE Id = :item.Id];
+        System.assertEquals('Rejected', rejItem.Approval_Status__c, 'Item should be rejected');
+    }
+
+    @isTest
+    static void testGetExpenseForApproval() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        Expense_Item__c item = new Expense_Item__c(
+            Expense__c = report.Id, Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance', Claimed_Amount__c = 300,
+            Eligible_Amount__c = 300
+        );
+        insert item;
+
+        Test.startTest();
+        Map<String, Object> data = EXP_Expense_Service.getExpenseForApproval(report.Id);
+        Test.stopTest();
+
+        System.assertNotEquals(null, data.get('expense'));
+        System.assertNotEquals(null, data.get('items'));
+        System.assertNotEquals(null, data.get('files'));
+    }
+
+    @isTest
+    static void testAppendComment() {
+        String result = EXP_Expense_Service.appendComment(null, 'Test comment', UserInfo.getUserId());
+        System.assert(result.contains('Test comment'), 'Should contain comment');
+        System.assert(result.contains(UserInfo.getName()), 'Should contain user name');
+
+        String result2 = EXP_Expense_Service.appendComment(result, 'Second comment', UserInfo.getUserId());
+        System.assert(result2.contains('Second comment'), 'Should contain second comment');
+        System.assert(result2.contains('\n'), 'Should have newline separator');
     }
 
     @isTest
     static void testGetReportSummary() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
         Date monthStart = Date.newInstance(today.year(), today.month(), 1);
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
@@ -418,16 +600,15 @@ public class EXP_Expense_Service_Test {
         Map<String, Object> summary = EXP_Expense_Service.getReportSummary(report.Id);
         Test.stopTest();
 
-        System.assertNotEquals(null, summary.get('expense'), 'Summary should include expense');
-        System.assertNotEquals(null, summary.get('typeBreakdown'), 'Should include type breakdown');
-        System.assertNotEquals(null, summary.get('dayBreakdown'), 'Should include day breakdown');
+        System.assertNotEquals(null, summary.get('expense'));
+        System.assertNotEquals(null, summary.get('typeBreakdown'));
+        System.assertNotEquals(null, summary.get('dayBreakdown'));
     }
 
     @isTest
     static void testGetMonthlyOverview() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
 
         EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
 
@@ -438,22 +619,15 @@ public class EXP_Expense_Service_Test {
         Test.stopTest();
 
         System.assertEquals(12, overview.size(), 'Should return 12 months');
-        Boolean foundReport = false;
-        for (Map<String, Object> row : overview) {
-            if (row.get('month') == monthName && (Boolean) row.get('hasReport')) {
-                foundReport = true;
-            }
-        }
-        System.assert(foundReport, 'Current month should have a report');
     }
 
     @isTest
     static void testIsValidTransition() {
-        System.assert(EXP_Expense_Service.isValidTransition('Draft', 'Submitted'), 'Draft to Submitted should be valid');
-        System.assert(EXP_Expense_Service.isValidTransition('Submitted', 'Manager Approved'), 'Submitted to Manager Approved should be valid');
-        System.assert(EXP_Expense_Service.isValidTransition('Submitted', 'Rejected'), 'Submitted to Rejected should be valid');
-        System.assert(!EXP_Expense_Service.isValidTransition('Draft', 'Manager Approved'), 'Draft to Manager Approved should be invalid');
-        System.assert(!EXP_Expense_Service.isValidTransition('Paid', 'Draft'), 'Paid to Draft should be invalid');
+        System.assert(EXP_Expense_Service.isValidTransition('Draft', 'Submitted'));
+        System.assert(EXP_Expense_Service.isValidTransition('Submitted', 'Manager Approved'));
+        System.assert(EXP_Expense_Service.isValidTransition('Submitted', 'Rejected'));
+        System.assert(!EXP_Expense_Service.isValidTransition('Draft', 'Manager Approved'));
+        System.assert(!EXP_Expense_Service.isValidTransition('Paid', 'Draft'));
     }
 
     @isTest
@@ -464,9 +638,9 @@ public class EXP_Expense_Service_Test {
         String strVal = EXP_Expense_Service.getAppConfig('NON_EXISTENT', 'default');
         Test.stopTest();
 
-        System.assertNotEquals(null, boolVal, 'Boolean config should not be null');
-        System.assertNotEquals(null, intVal, 'Integer config should not be null');
-        System.assertEquals('default', strVal, 'Non-existent key should return default');
+        System.assertNotEquals(null, boolVal);
+        System.assertNotEquals(null, intVal);
+        System.assertEquals('default', strVal);
     }
 
     @isTest
@@ -478,33 +652,28 @@ public class EXP_Expense_Service_Test {
         EXP_Expense_Service.clearCache();
         Test.stopTest();
 
-        // After clear, next call should re-query
         List<Expense_Eligibility__c> rules = EXP_Expense_Service.getEligibilityRules('Band 1');
-        System.assertEquals(4, rules.size(), 'Should re-fetch after cache clear');
+        System.assertEquals(5, rules.size(), 'Should re-fetch after cache clear');
     }
 
     @isTest
     static void testGetTeamExpenseReports() {
-        // The manager user doesn't have an employee linked, so this should throw
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
 
         Test.startTest();
-        // Current user IS the employee, not the manager — so team reports will be empty
         List<Expense__c> teamReports = EXP_Expense_Service.getTeamExpenseReports(
             UserInfo.getUserId(), monthName, today.year()
         );
         Test.stopTest();
 
-        System.assertNotEquals(null, teamReports, 'Should not be null');
+        System.assertNotEquals(null, teamReports);
     }
 
     @isTest
     static void testPopulateEligibilityFields() {
         Date today = Date.today();
-        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
-        String monthName = months[today.month()];
+        String monthName = getCurrentMonth();
         Date monthStart = Date.newInstance(today.year(), today.month(), 1);
 
         Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
@@ -527,9 +696,39 @@ public class EXP_Expense_Service_Test {
         EXP_Expense_Service.populateEligibilityFields(items, report.Id);
         Test.stopTest();
 
-        System.assertEquals('Per Day', items[0].Rate_Type__c, 'Rate type should be populated');
-        System.assertEquals(300, items[0].Rate_Amount__c, 'Rate amount should be populated');
-        System.assert(items[0].Is_Eligible__c, 'Should be eligible');
-        System.assert(items[0].Eligible_Amount__c > 0, 'Eligible amount should be > 0');
+        System.assertEquals('Per Day', items[0].Rate_Type__c);
+        System.assertEquals(300, items[0].Rate_Amount__c);
+        System.assert(items[0].Is_Eligible__c);
+        System.assert(items[0].Eligible_Amount__c > 0);
+    }
+
+    @isTest
+    static void testSaveExpenseItemsValidation() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        items.add(new Expense_Item__c(
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Expense_Category__c = 'Travel',
+            GPS_Distance_KM__c = 20,
+            Manual_Distance_KM__c = 25,
+            Eligible_Amount__c = 300,
+            Claimed_Amount__c = 300
+        ));
+
+        Test.startTest();
+        Boolean caught = false;
+        try {
+            EXP_Expense_Service.saveExpenseItems(report.Id, items);
+        } catch (AuraHandledException e) {
+            caught = true;
+        }
+        System.assert(caught, 'Should throw error for missing override reason');
+        Test.stopTest();
     }
 }

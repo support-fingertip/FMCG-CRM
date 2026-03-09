@@ -32,7 +32,7 @@
             </div>
         </div>
 
-        <!-- Info Bar: Date Range, Executive, Status -->
+        <!-- Info Bar: Date Range, Executive, Band, Status -->
         <div class="info-bar">
             <div class="info-bar-fields">
                 <div class="info-field">
@@ -59,10 +59,25 @@
                     <label class="info-label">Executive Name</label>
                     <span class="info-value">{employeeName}</span>
                 </div>
+                <div class="info-field info-field-sm">
+                    <label class="info-label">Band</label>
+                    <span class="info-value">{employeeBand}</span>
+                </div>
                 <template if:true={expense.Status__c}>
-                    <div class="info-field">
+                    <div class="info-field info-field-sm">
                         <label class="info-label">Status</label>
                         <span class={statusBadgeClass}>{expense.Status__c}</span>
+                    </div>
+                </template>
+                <template if:true={hasComments}>
+                    <div class="info-field info-field-sm">
+                        <lightning-button
+                            label="History"
+                            icon-name="utility:comments"
+                            variant="base"
+                            onclick={handleShowComments}
+                            class="comments-btn">
+                        </lightning-button>
                     </div>
                 </template>
             </div>
@@ -131,6 +146,13 @@
                     </button>
                 </div>
 
+                <!-- Date Range Info -->
+                <div class="date-range-info">
+                    <span>Period: {expenseStartDate} to {expenseEndDate}</span>
+                    <span class="date-range-separator">|</span>
+                    <span>{eligibleDates.length} eligible day(s)</span>
+                </div>
+
                 <!-- No Attendance Warning -->
                 <template if:false={hasEligibleDates}>
                     <div class="no-attendance-banner">
@@ -150,8 +172,11 @@
                 <div class="select-all-bar">
                     <label class="select-all-label">
                         <input type="checkbox" checked={selectAllDays} onchange={handleSelectAllDays} />
-                        <span>Select All Days</span>
+                        <span>Select All Days ({eligibleDates.length})</span>
                     </label>
+                    <template if:true={hasSelectedDays}>
+                        <span class="selected-count">{selectedDaysCount} selected</span>
+                    </template>
                 </div>
 
                 <!-- Day Rows -->
@@ -173,9 +198,12 @@
                             <span class="day-date-label">
                                 {day.formattedDate}
                                 <template if:true={day.beatName}>
-                                    ({day.beatName})
+                                    <span class="beat-name">({day.beatName})</span>
                                 </template>
                             </span>
+                            <template if:true={day.hoursWorked}>
+                                <span class="day-hours-badge">{day.hoursWorked}h</span>
+                            </template>
                             <span class="day-total-right">
                                 Total: <span class={day.dayTotalClass}>{day.dayTotal}</span>
                             </span>
@@ -193,30 +221,28 @@
                                             <template if:true={item.receiptRequired}>
                                                 <span class="receipt-required-badge">Receipt Required</span>
                                             </template>
+                                            <template if:true={item.mandatoryRemarks}>
+                                                <span class="remarks-required-badge">Remarks Required</span>
+                                            </template>
+                                            <span class="item-eligible-badge">
+                                                Eligible: {item.eligibleAmount}
+                                            </span>
                                             <div class="item-actions-right">
-                                                <template if:true={item.hasExisting}>
-                                                    <template if:true={canEdit}>
-                                                        <lightning-button-icon
-                                                            icon-name="utility:delete"
-                                                            alternative-text="Delete"
-                                                            variant="bare-destructive"
-                                                            size="small"
-                                                            data-key={item.key}
-                                                            onclick={handleDeleteItem}>
-                                                        </lightning-button-icon>
-                                                    </template>
+                                                <template if:true={canEdit}>
+                                                    <lightning-button-icon
+                                                        icon-name="utility:delete"
+                                                        alternative-text="Delete"
+                                                        variant="bare-destructive"
+                                                        size="small"
+                                                        data-key={item.key}
+                                                        onclick={handleDeleteItem}>
+                                                    </lightning-button-icon>
                                                 </template>
                                             </div>
                                         </div>
 
                                         <!-- Item Fields -->
                                         <div class="item-fields-row">
-                                            <!-- Expense Type (read-only) -->
-                                            <div class="item-field item-field-type">
-                                                <label class="field-label">Expense Type</label>
-                                                <span class="field-value-readonly">{item.expenseType}</span>
-                                            </div>
-
                                             <!-- From/To for travel types -->
                                             <template if:true={item.showFromTo}>
                                                 <div class="item-field">
@@ -228,7 +254,8 @@
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
                                                         disabled={cannotEdit}
-                                                        variant="label-stacked">
+                                                        variant="label-stacked"
+                                                        required>
                                                     </lightning-input>
                                                 </div>
                                                 <div class="item-field">
@@ -240,9 +267,30 @@
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
                                                         disabled={cannotEdit}
-                                                        variant="label-stacked">
+                                                        variant="label-stacked"
+                                                        required>
                                                     </lightning-input>
                                                 </div>
+                                            </template>
+
+                                            <!-- Vehicle Type (for Per KM with bike rate) -->
+                                            <template if:true={item.showVehicle}>
+                                                <div class="item-field item-field-sm">
+                                                    <lightning-combobox
+                                                        label="Vehicle"
+                                                        value={item.vehicleType}
+                                                        options={vehicleOptions}
+                                                        data-field="vehicleType"
+                                                        data-key={item.key}
+                                                        onchange={handleItemFieldChange}
+                                                        disabled={cannotEdit}
+                                                        variant="label-stacked">
+                                                    </lightning-combobox>
+                                                </div>
+                                            </template>
+
+                                            <!-- Daily KM (for travel) -->
+                                            <template if:true={item.showFromTo}>
                                                 <div class="item-field item-field-sm">
                                                     <lightning-input
                                                         label="Daily KM"
@@ -255,6 +303,53 @@
                                                         disabled={cannotEdit}
                                                         variant="label-stacked"
                                                         required>
+                                                    </lightning-input>
+                                                </div>
+                                            </template>
+
+                                            <!-- Working Hours (for DA) -->
+                                            <template if:true={item.isDA}>
+                                                <div class="item-field item-field-sm">
+                                                    <lightning-input
+                                                        label="Hours"
+                                                        type="number"
+                                                        step="0.5"
+                                                        value={item.workingHours}
+                                                        data-field="workingHours"
+                                                        data-key={item.key}
+                                                        onchange={handleItemFieldChange}
+                                                        disabled={cannotEdit}
+                                                        variant="label-stacked">
+                                                    </lightning-input>
+                                                </div>
+                                            </template>
+
+                                            <!-- City + Metro toggle (for Lodging) -->
+                                            <template if:true={item.showCity}>
+                                                <div class="item-field">
+                                                    <lightning-input
+                                                        label="City"
+                                                        type="text"
+                                                        value={item.city}
+                                                        data-field="city"
+                                                        data-key={item.key}
+                                                        onchange={handleItemFieldChange}
+                                                        disabled={cannotEdit}
+                                                        variant="label-stacked"
+                                                        required>
+                                                    </lightning-input>
+                                                </div>
+                                                <div class="item-field item-field-sm metro-toggle">
+                                                    <lightning-input
+                                                        label="Metro City"
+                                                        type="toggle"
+                                                        checked={item.isMetro}
+                                                        data-field="isMetro"
+                                                        data-key={item.key}
+                                                        onchange={handleItemFieldChange}
+                                                        disabled={cannotEdit}
+                                                        message-toggle-active="Yes"
+                                                        message-toggle-inactive="No">
                                                     </lightning-input>
                                                 </div>
                                             </template>
@@ -281,14 +376,14 @@
                                             <!-- GPS Distance (readonly, for travel) -->
                                             <template if:true={item.isTravel}>
                                                 <div class="item-field item-field-sm">
-                                                    <label class="field-label">System Distance</label>
+                                                    <label class="field-label">System KM</label>
                                                     <span class="field-value-readonly">{item.gpsDistance}</span>
                                                 </div>
                                             </template>
 
-                                            <!-- Remarks for Actual/Misc types -->
+                                            <!-- Remarks / Notes -->
                                             <template if:true={item.showRemarks}>
-                                                <div class="item-field">
+                                                <div class="item-field item-field-notes">
                                                     <lightning-input
                                                         label="Remarks"
                                                         type="text"
@@ -298,7 +393,7 @@
                                                         onchange={handleItemFieldChange}
                                                         disabled={cannotEdit}
                                                         variant="label-stacked"
-                                                        required>
+                                                        required={item.mandatoryRemarks}>
                                                     </lightning-input>
                                                 </div>
                                             </template>
@@ -346,6 +441,21 @@
                                                 </template>
                                             </div>
                                         </template>
+                                    </div>
+                                </template>
+
+                                <!-- Add Expense Type Button -->
+                                <template if:true={canEdit}>
+                                    <div class="add-line-item-row">
+                                        <lightning-combobox
+                                            label="Add Expense Type"
+                                            placeholder="Select type to add..."
+                                            options={availableExpenseTypes}
+                                            data-date={day.dateStr}
+                                            onchange={handleAddTypeChange}
+                                            variant="label-hidden"
+                                            class="add-type-combo">
+                                        </lightning-combobox>
                                     </div>
                                 </template>
                             </div>
@@ -576,6 +686,42 @@
                         variant={approvalActionVariant}
                         onclick={handleApprovalConfirm}>
                     </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ═══ COMMENTS HISTORY MODAL ═══ -->
+    <template if:true={showCommentsModal}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        onclick={closeCommentsModal}
+                        class="slds-modal__close">
+                    </lightning-button-icon>
+                    <h2 class="slds-text-heading_medium">Comments History</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template if:true={hasCommentsEntries}>
+                        <div class="comments-list">
+                            <template for:each={commentsHistory} for:item="comment">
+                                <div key={comment.key} class="comment-entry">
+                                    <lightning-icon icon-name="utility:chat" size="xx-small"></lightning-icon>
+                                    <span class="comment-text">{comment.text}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template if:false={hasCommentsEntries}>
+                        <p class="no-comments">No comments yet.</p>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Close" onclick={closeCommentsModal}></lightning-button>
                 </footer>
             </div>
         </section>

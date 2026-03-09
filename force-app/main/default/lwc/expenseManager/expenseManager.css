@@ -1,6 +1,6 @@
 /* ================================================================
    expenseManager.css
-   Responsive Expense Manager LWC — Accordion Day View
+   Full-fledged Dynamic Expense Manager — Accordion Day View
    ================================================================ */
 
 :host {
@@ -122,7 +122,7 @@
 }
 
 /* ================================================================
-   INFO BAR (Date Range, Executive, Status)
+   INFO BAR
    ================================================================ */
 .info-bar {
     background: white;
@@ -143,6 +143,11 @@
 .info-field {
     flex: 1;
     min-width: 140px;
+}
+
+.info-field-sm {
+    flex: 0 0 auto;
+    min-width: 80px;
 }
 
 .info-label {
@@ -166,12 +171,13 @@
     border-radius: 6px;
 }
 
-.month-select {
+.month-select,
+.year-select {
     width: 100%;
 }
 
-.year-select {
-    width: 100%;
+.comments-btn {
+    margin-top: 14px;
 }
 
 /* ================================================================
@@ -324,7 +330,7 @@
    ADD DAY EXPENSES BUTTON
    ================================================================ */
 .add-day-btn-wrap {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .add-day-btn {
@@ -352,6 +358,24 @@
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+}
+
+/* ================================================================
+   DATE RANGE INFO
+   ================================================================ */
+.date-range-info {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    padding: 8px;
+    background: var(--bg-light);
+    border-radius: 8px;
+}
+
+.date-range-separator {
+    margin: 0 8px;
+    color: var(--border-color);
 }
 
 /* ================================================================
@@ -393,6 +417,9 @@
     padding: 10px 16px;
     border-radius: 8px;
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .select-all-label {
@@ -411,11 +438,20 @@
     cursor: pointer;
 }
 
+.selected-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    background: white;
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
 /* ================================================================
    DAY ACCORDION
    ================================================================ */
 .day-accordion {
-    border: 2px solid var(--error-color);
+    border: 2px solid var(--brand-primary);
     border-radius: 10px;
     margin-bottom: 8px;
     overflow: hidden;
@@ -468,6 +504,21 @@
     font-weight: 700;
     color: var(--text-primary);
     flex: 1;
+}
+
+.beat-name {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.day-hours-badge {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--purple-light);
+    color: var(--purple-color);
+    padding: 2px 8px;
+    border-radius: 8px;
 }
 
 .day-total-right {
@@ -523,6 +574,7 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
+    flex-wrap: wrap;
 }
 
 .item-status {
@@ -544,6 +596,26 @@
     color: var(--success-color);
 }
 
+.item-status-pending {
+    background: #e8f4fd;
+    color: var(--brand-primary);
+}
+
+.item-status-approved {
+    background: var(--purple-light);
+    color: var(--purple-color);
+}
+
+.item-status-finance {
+    background: var(--teal-light);
+    color: var(--teal-color);
+}
+
+.item-status-rejected {
+    background: var(--error-light);
+    color: var(--error-color);
+}
+
 .item-type-label {
     font-size: 13px;
     font-weight: 700;
@@ -558,6 +630,25 @@
     border-radius: 8px;
     background: var(--warning-light);
     color: #8a5100;
+}
+
+.remarks-required-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: var(--purple-light);
+    color: var(--purple-color);
+}
+
+.item-eligible-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: var(--bg-light);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
 }
 
 .item-actions-right {
@@ -581,13 +672,18 @@
     min-width: 120px;
 }
 
-.item-field-type {
-    max-width: 160px;
-}
-
 .item-field-sm {
     max-width: 140px;
     min-width: 100px;
+}
+
+.item-field-notes {
+    flex: 2;
+    min-width: 200px;
+}
+
+.metro-toggle {
+    padding-top: 4px;
 }
 
 .field-label {
@@ -610,6 +706,19 @@
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-family: var(--font-mono);
+}
+
+/* ================================================================
+   ADD LINE ITEM ROW
+   ================================================================ */
+.add-line-item-row {
+    margin-top: 8px;
+    padding: 8px 0;
+    border-top: 1px dashed var(--border-color);
+}
+
+.add-type-combo {
+    max-width: 280px;
 }
 
 /* ================================================================
@@ -662,7 +771,7 @@
    ================================================================ */
 .save-error-msg {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     padding: 10px 14px;
     background: var(--error-light);
@@ -734,6 +843,39 @@
     justify-content: center;
     padding: 16px 0;
     gap: 12px;
+}
+
+/* ================================================================
+   COMMENTS
+   ================================================================ */
+.comments-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.comment-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+}
+
+.comment-entry:last-child {
+    border-bottom: none;
+}
+
+.comment-text {
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.no-comments {
+    text-align: center;
+    color: var(--text-weak);
+    font-style: italic;
+    padding: 20px;
 }
 
 /* ================================================================
@@ -892,7 +1034,8 @@
         gap: 10px;
     }
 
-    .info-field {
+    .info-field,
+    .info-field-sm {
         flex: none;
         width: 100%;
     }
@@ -922,7 +1065,9 @@
         gap: 8px;
     }
 
-    .item-field, .item-field-type, .item-field-sm {
+    .item-field,
+    .item-field-sm,
+    .item-field-notes {
         flex: none;
         width: 100%;
         max-width: none;
@@ -1013,5 +1158,13 @@
 
     .btn-sm {
         font-size: 11px;
+    }
+
+    .item-row-header {
+        gap: 4px;
+    }
+
+    .item-eligible-badge {
+        display: none;
     }
 }
