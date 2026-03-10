@@ -422,9 +422,21 @@
     font-weight: 600;
 }
 
+/* City Tier Panel - allow combobox dropdown to overflow */
+.city-tier-panel {
+    overflow: visible;
+}
+
+.city-tier-container {
+    overflow-x: auto;
+    overflow-y: visible;
+    max-height: calc(100vh - 280px);
+}
+
 /* City Tier Table */
 .city-tier-table tbody td {
     vertical-align: middle;
+    overflow: visible;
 }
 
 /* ==========================================
