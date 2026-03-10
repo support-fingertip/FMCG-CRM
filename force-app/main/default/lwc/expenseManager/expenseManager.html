@@ -188,6 +188,9 @@
                             </label>
                             <span class="day-date-label">
                                 {day.formattedDate}
+                                <template if:true={day.dutyType}>
+                                    <span class={day.dutyTypeClass}>{day.dutyType}</span>
+                                </template>
                                 <template if:true={day.beatName}>
                                     <span class="beat-name">({day.beatName})</span>
                                 </template>
@@ -277,7 +280,7 @@
                                                     <lightning-combobox
                                                         label="Travel Mode"
                                                         value={item.travelMode}
-                                                        options={travelModeOptions}
+                                                        options={item.allowedTravelModes}
                                                         data-field="travelMode"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
@@ -338,19 +341,36 @@
                                                         required>
                                                     </lightning-input>
                                                 </div>
-                                                <div class="item-field item-field-sm metro-toggle">
-                                                    <lightning-input
-                                                        label="Metro City"
-                                                        type="toggle"
-                                                        checked={item.isMetro}
-                                                        data-field="isMetro"
-                                                        data-key={item.key}
-                                                        onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
-                                                        message-toggle-active="Yes"
-                                                        message-toggle-inactive="No">
-                                                    </lightning-input>
-                                                </div>
+                                                <template if:true={item.showCityTier}>
+                                                    <div class="item-field item-field-sm">
+                                                        <lightning-combobox
+                                                            label="City Tier"
+                                                            value={item.cityTier}
+                                                            options={cityTierOptions}
+                                                            data-field="cityTier"
+                                                            data-key={item.key}
+                                                            onchange={handleItemFieldChange}
+                                                            disabled={cannotEdit}
+                                                            variant="label-stacked"
+                                                            placeholder="Select tier...">
+                                                        </lightning-combobox>
+                                                    </div>
+                                                </template>
+                                                <template if:false={item.showCityTier}>
+                                                    <div class="item-field item-field-sm metro-toggle">
+                                                        <lightning-input
+                                                            label="Metro City"
+                                                            type="toggle"
+                                                            checked={item.isMetro}
+                                                            data-field="isMetro"
+                                                            data-key={item.key}
+                                                            onchange={handleItemFieldChange}
+                                                            disabled={cannotEdit}
+                                                            message-toggle-active="Yes"
+                                                            message-toggle-inactive="No">
+                                                        </lightning-input>
+                                                    </div>
+                                                </template>
                                             </template>
 
                                             <!-- Amount -->

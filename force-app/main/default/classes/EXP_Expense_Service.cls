@@ -70,6 +70,7 @@ public without sharing class EXP_Expense_Service {
         Employee__c emp = getEmployeeForUser(userId);
         result.put('employee', emp);
         result.put('band', emp.Band__c);
+        result.put('hqCity', emp.HQ_City__c);
 
         // Get or create report
         Expense__c report = getOrCreateReport(userId, month, year);
@@ -78,9 +79,16 @@ public without sharing class EXP_Expense_Service {
         // Eligibility rules for this band
         List<Expense_Eligibility__c> rules = new List<Expense_Eligibility__c>();
         if (String.isNotBlank(emp.Band__c)) {
-            rules = getEligibilityRules(emp.Band__c);
+            rules = getEligibilityRules(emp.Band__c, report.Period_Start__c, report.Period_End__c);
         }
         result.put('eligibilityRules', rules);
+
+        List<City_Tier__c> cityTiers = [SELECT Name, Tier__c FROM City_Tier__c WHERE Is_Active__c = true];
+        Map<String, String> cityTierMap = new Map<String, String>();
+        for (City_Tier__c ct : cityTiers) {
+            cityTierMap.put(ct.Name, ct.Tier__c);
+        }
+        result.put('cityTiers', cityTierMap);
 
         // Eligible dates (attendance records minus leaves)
         List<Map<String, Object>> eligibleDates = getEligibleDates(userId, month, year);
@@ -226,7 +234,7 @@ public without sharing class EXP_Expense_Service {
         List<Day_Attendance__c> attendances = [
             SELECT Id, Attendance_Date__c, Start_Time__c, End_Time__c,
                    Distance_Traveled_Km__c, Hours_Worked__c, Beat__r.Name,
-                   Status__c
+                   Status__c, Duty_Type__c
             FROM Day_Attendance__c
             WHERE User__c = :emp.User__c
               AND Attendance_Date__c >= :periodStart
@@ -260,6 +268,7 @@ public without sharing class EXP_Expense_Service {
             dateInfo.put('gpsDistance', att.Distance_Traveled_Km__c != null ? att.Distance_Traveled_Km__c : 0);
             dateInfo.put('hoursWorked', att.Hours_Worked__c != null ? att.Hours_Worked__c : 0);
             dateInfo.put('beatName', att.Beat__r != null ? att.Beat__r.Name : '');
+            dateInfo.put('dutyType', att.Duty_Type__c != null ? att.Duty_Type__c : 'HQ');
             dateInfo.put('expenseCount', expenseCountByDate.containsKey(att.Attendance_Date__c)
                 ? expenseCountByDate.get(att.Attendance_Date__c) : 0);
             result.add(dateInfo);
@@ -272,23 +281,35 @@ public without sharing class EXP_Expense_Service {
     // ═══════════════════════════════════════════════════════════════════════
 
     public static List<Expense_Eligibility__c> getEligibilityRules(String band) {
-        if (eligibilityCache.containsKey(band)) {
-            return eligibilityCache.get(band);
+        return getEligibilityRules(band, null, null);
+    }
+
+    public static List<Expense_Eligibility__c> getEligibilityRules(String band, Date periodStart, Date periodEnd) {
+        String cacheKey = band + '_' + String.valueOf(periodStart);
+        if (eligibilityCache.containsKey(cacheKey)) {
+            return eligibilityCache.get(cacheKey);
         }
-        List<Expense_Eligibility__c> rules = [
-            SELECT Id, Band__c, Expense_Type__c, Expense_Category__c,
-                   Rate_Type__c, Rate_Amount__c, Max_Per_Day__c, Max_Per_Month__c,
-                   Min_Distance_KM__c, Receipt_Required__c, Receipt_Threshold__c,
-                   Is_Active__c, Sort_Order__c, Description__c,
-                   Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c,
-                   Daily_KM_Limit__c,
-                   Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c,
-                   Travel_Mode__c
-            FROM Expense_Eligibility__c
-            WHERE Band__c = :band AND Is_Active__c = true
-            ORDER BY Sort_Order__c ASC, Expense_Type__c ASC
-        ];
-        eligibilityCache.put(band, rules);
+        String query = 'SELECT Id, Band__c, Expense_Type__c, Expense_Category__c, ' +
+            'Rate_Type__c, Rate_Amount__c, Max_Per_Day__c, Max_Per_Month__c, ' +
+            'Min_Distance_KM__c, Receipt_Required__c, Receipt_Threshold__c, ' +
+            'Is_Active__c, Sort_Order__c, Description__c, ' +
+            'Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c, ' +
+            'Daily_KM_Limit__c, ' +
+            'Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c, ' +
+            'Travel_Mode__c, ' +
+            'Allowed_Travel_Modes__c, City_Tier_1_Limit__c, City_Tier_2_Limit__c, City_Tier_3_Limit__c, ' +
+            'Effective_From__c, Effective_To__c, ' +
+            '(SELECT Travel_Mode__c, Rate_Type__c, Rate_Amount__c, Max_Amount__c, Distance_From__c, Distance_To__c, Sort_Order__c ' +
+            'FROM Expense_Rate_Slabs__r ORDER BY Travel_Mode__c ASC, Sort_Order__c ASC) ' +
+            'FROM Expense_Eligibility__c ' +
+            'WHERE Band__c = :band AND Is_Active__c = true';
+        if (periodStart != null && periodEnd != null) {
+            query += ' AND (Effective_From__c = null OR Effective_From__c <= :periodEnd)';
+            query += ' AND (Effective_To__c = null OR Effective_To__c >= :periodStart)';
+        }
+        query += ' ORDER BY Sort_Order__c ASC, Expense_Type__c ASC';
+        List<Expense_Eligibility__c> rules = Database.query(query);
+        eligibilityCache.put(cacheKey, rules);
         return rules;
     }
 
@@ -319,7 +340,10 @@ public without sharing class EXP_Expense_Service {
         Decimal eligible = 0;
         String rateType = rule.Rate_Type__c;
 
-        if (rateType == 'Per Day') {
+        // For TA: always use TA calculator (handles both Per KM and Actual modes)
+        if (item.Expense_Type__c == 'TA') {
+            eligible = calculateTAAmount(item, rule);
+        } else if (rateType == 'Per Day') {
             // DA calculation with working hours logic
             eligible = calculateDAAmount(item, rule);
         } else if (rateType == 'Per KM') {
@@ -332,7 +356,7 @@ public without sharing class EXP_Expense_Service {
         } else if (rateType == 'Actual') {
             eligible = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
             // For lodging with city-based limits
-            if (rule.Lodging_Metro_Limit__c != null || rule.Lodging_Non_Metro_Limit__c != null) {
+            if (rule.Lodging_Metro_Limit__c != null || rule.Lodging_Non_Metro_Limit__c != null || rule.City_Tier_1_Limit__c != null || rule.City_Tier_2_Limit__c != null || rule.City_Tier_3_Limit__c != null) {
                 Decimal limit_val = getLodgingLimit(item, rule);
                 if (limit_val > 0 && eligible > limit_val) {
                     eligible = limit_val;
@@ -366,25 +390,60 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static Decimal calculateTAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
-        Decimal appliedDistance = getAppliedDistance(item);
+        String mode = item.Travel_Mode__c;
 
-        // Apply daily KM limit
+        // Check for per-mode slab rates
+        List<Expense_Rate_Slab__c> slabs = getSlabsForMode(rule, mode);
+        if (!slabs.isEmpty()) {
+            Decimal appliedDist = getAppliedDistance(item);
+            if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
+                && appliedDist > rule.Daily_KM_Limit__c) {
+                appliedDist = rule.Daily_KM_Limit__c;
+            }
+            return calculateSlabAmount(slabs, appliedDist);
+        }
+
+        // Check for per-mode flat config (handles Actual modes like Train/Flight)
+        Expense_Rate_Slab__c modeConfig = getModeRateConfig(rule, mode);
+        if (modeConfig != null) {
+            if (modeConfig.Rate_Type__c == 'Actual') {
+                Decimal claimed = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
+                if (modeConfig.Max_Amount__c != null && modeConfig.Max_Amount__c > 0 && claimed > modeConfig.Max_Amount__c) {
+                    return modeConfig.Max_Amount__c;
+                }
+                return claimed;
+            }
+            // Per KM flat from mode config
+            Decimal appliedDist = getAppliedDistance(item);
+            if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
+                && appliedDist > rule.Daily_KM_Limit__c) {
+                appliedDist = rule.Daily_KM_Limit__c;
+            }
+            return appliedDist * (modeConfig.Rate_Amount__c != null ? modeConfig.Rate_Amount__c : 0);
+        }
+
+        // Fallback: parent rule's flat rate (backward compatible)
+        Decimal appliedDistance = getAppliedDistance(item);
         if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
             && appliedDistance > rule.Daily_KM_Limit__c) {
             appliedDistance = rule.Daily_KM_Limit__c;
         }
-
-        // Rate comes from the matched travel-mode-specific rule
         Decimal rate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
-
         return appliedDistance * rate;
     }
 
     private static Decimal getLodgingLimit(Expense_Item__c item, Expense_Eligibility__c rule) {
+        // Priority 1: City tier-based limits
+        String cityTier = item.City_Tier__c;
+        if (String.isNotBlank(cityTier)) {
+            if (cityTier == 'Tier 1' && rule.City_Tier_1_Limit__c != null) return rule.City_Tier_1_Limit__c;
+            if (cityTier == 'Tier 2' && rule.City_Tier_2_Limit__c != null) return rule.City_Tier_2_Limit__c;
+            if (cityTier == 'Tier 3' && rule.City_Tier_3_Limit__c != null) return rule.City_Tier_3_Limit__c;
+        }
+        // Priority 2: Legacy metro/non-metro fallback
         if (item.Is_Metro__c == true && rule.Lodging_Metro_Limit__c != null) {
             return rule.Lodging_Metro_Limit__c;
-        }
-        if (rule.Lodging_Non_Metro_Limit__c != null) {
+        } else if (rule.Lodging_Non_Metro_Limit__c != null) {
             return rule.Lodging_Non_Metro_Limit__c;
         }
         return 0;
@@ -396,13 +455,55 @@ public without sharing class EXP_Expense_Service {
             : (item.GPS_Distance_KM__c != null ? item.GPS_Distance_KM__c : 0);
     }
 
+    private static Expense_Rate_Slab__c getModeRateConfig(Expense_Eligibility__c rule, String travelMode) {
+        if (rule.Expense_Rate_Slabs__r == null || String.isBlank(travelMode)) return null;
+        for (Expense_Rate_Slab__c slab : rule.Expense_Rate_Slabs__r) {
+            if (slab.Travel_Mode__c == travelMode && slab.Distance_From__c == null) {
+                return slab;
+            }
+        }
+        return null;
+    }
+
+    private static List<Expense_Rate_Slab__c> getSlabsForMode(Expense_Eligibility__c rule, String travelMode) {
+        List<Expense_Rate_Slab__c> slabs = new List<Expense_Rate_Slab__c>();
+        if (rule.Expense_Rate_Slabs__r == null || String.isBlank(travelMode)) return slabs;
+        for (Expense_Rate_Slab__c slab : rule.Expense_Rate_Slabs__r) {
+            if (slab.Travel_Mode__c == travelMode && slab.Distance_From__c != null) {
+                slabs.add(slab);
+            }
+        }
+        return slabs;
+    }
+
+    private static Decimal calculateSlabAmount(List<Expense_Rate_Slab__c> slabs, Decimal distance) {
+        Decimal total = 0;
+        for (Expense_Rate_Slab__c slab : slabs) {
+            Decimal slabEnd = (slab.Distance_To__c != null && slab.Distance_To__c > 0)
+                ? slab.Distance_To__c : distance;
+            Decimal slabStart = slab.Distance_From__c != null ? slab.Distance_From__c : 0;
+            Decimal effectiveEnd = Math.min(distance, slabEnd);
+            Decimal slabDist = effectiveEnd - slabStart;
+            if (slabDist > 0) {
+                total += slabDist * (slab.Rate_Amount__c != null ? slab.Rate_Amount__c : 0);
+            }
+            if (distance <= slabEnd) break;
+        }
+        return total;
+    }
+
+    private static String resolveCityTier(String cityName, Map<String, String> cityTierMap) {
+        if (String.isBlank(cityName) || cityTierMap == null) return null;
+        return cityTierMap.get(cityName);
+    }
+
     private static Expense_Eligibility__c findRule(
         Map<String, Expense_Eligibility__c> ruleMap,
-        String expType, String travelMode) {
-        String tm = String.isNotBlank(travelMode) ? travelMode : 'All';
-        Expense_Eligibility__c rule = ruleMap.get(expType + '|' + tm);
-        if (rule != null) return rule;
-        return ruleMap.get(expType + '|All');
+        String expType, String dutyType) {
+        String dt = String.isNotBlank(dutyType) ? dutyType : 'All';
+        Expense_Eligibility__c rule = ruleMap.get(expType + '|' + dt);
+        if (rule == null) rule = ruleMap.get(expType + '|All');
+        return rule;
     }
 
     public static void populateEligibilityFields(List<Expense_Item__c> items, Id expenseId) {
@@ -420,8 +521,8 @@ public without sharing class EXP_Expense_Service {
         List<Expense_Eligibility__c> rules = getEligibilityRules(band);
         Map<String, Expense_Eligibility__c> ruleMap = new Map<String, Expense_Eligibility__c>();
         for (Expense_Eligibility__c rule : rules) {
-            String tm = rule.Travel_Mode__c != null ? rule.Travel_Mode__c : 'All';
-            ruleMap.put(rule.Expense_Type__c + '|' + tm, rule);
+            String dt = rule.Travel_Type__c != null ? rule.Travel_Type__c : 'All';
+            ruleMap.put(rule.Expense_Type__c + '|' + dt, rule);
         }
 
         // Get attendance records for GPS distance and working hours
@@ -436,7 +537,7 @@ public without sharing class EXP_Expense_Service {
         Map<Date, Day_Attendance__c> attByDate = new Map<Date, Day_Attendance__c>();
         if (!attendanceIds.isEmpty() || !expenseDates.isEmpty()) {
             for (Day_Attendance__c att : [
-                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c
+                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c, Duty_Type__c
                 FROM Day_Attendance__c
                 WHERE (Id IN :attendanceIds OR Attendance_Date__c IN :expenseDates)
                   AND User__c = :expense.User__c
@@ -459,18 +560,34 @@ public without sharing class EXP_Expense_Service {
         }
 
         for (Expense_Item__c item : items) {
-            Expense_Eligibility__c rule = findRule(ruleMap, item.Expense_Type__c, item.Travel_Mode__c);
-
-            // Auto-populate GPS distance and working hours from attendance
+            // Get duty type from attendance
             Day_Attendance__c att = item.Day_Attendance__c != null
                 ? attMap.get(item.Day_Attendance__c)
                 : attByDate.get(item.Expense_Date__c);
+            String dutyType = (att != null && att.Duty_Type__c != null) ? att.Duty_Type__c : 'HQ';
 
+            Expense_Eligibility__c rule = findRule(ruleMap, item.Expense_Type__c, dutyType);
+
+            // Auto-populate GPS distance and working hours from attendance
             if (item.GPS_Distance_KM__c == null && att != null && att.Distance_Traveled_Km__c != null) {
                 item.GPS_Distance_KM__c = att.Distance_Traveled_Km__c;
             }
             if (item.Working_Hours__c == null && att != null && att.Hours_Worked__c != null) {
                 item.Working_Hours__c = att.Hours_Worked__c;
+            }
+
+            item.Duty_Type__c = dutyType;
+
+            // For TA: validate travel mode is in allowed list
+            if (item.Expense_Type__c == 'TA' && String.isNotBlank(item.Travel_Mode__c) && rule != null) {
+                String allowedModes = rule.Allowed_Travel_Modes__c;
+                if (String.isNotBlank(allowedModes) && !allowedModes.contains('All')
+                    && !allowedModes.contains(item.Travel_Mode__c)) {
+                    item.Is_Eligible__c = false;
+                    item.Eligible_Amount__c = 0;
+                    item.System_Calculated_Amount__c = 0;
+                    continue;
+                }
             }
 
             if (rule != null) {
@@ -533,7 +650,8 @@ public without sharing class EXP_Expense_Service {
         'Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c, ' +
         'From_Location__c, To_Location__c, Approval_Status__c, ' +
         'Approver_Comments__c, Vehicle_Type__c, Working_Hours__c, ' +
-        'City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c';
+        'City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c, ' +
+        'Duty_Type__c, City_Tier__c';
 
     public static List<Expense_Item__c> getExpenseItemsForDate(Id expenseId, Date expenseDate) {
         return [
@@ -545,7 +663,8 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c,
+                   Duty_Type__c, City_Tier__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c = :expenseDate
             ORDER BY Expense_Type__c ASC
@@ -563,7 +682,8 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c,
+                   Duty_Type__c, City_Tier__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -637,7 +757,8 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c,
+                   Duty_Type__c, City_Tier__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c IN :dates
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -1331,7 +1452,7 @@ public without sharing class EXP_Expense_Service {
     private static Employee__c getEmployeeForUser(Id userId) {
         List<Employee__c> emps = [
             SELECT Id, Band__c, User__c, Reporting_Manager__c,
-                   First_Name__c, Last_Name__c
+                   First_Name__c, Last_Name__c, HQ_City__c
             FROM Employee__c
             WHERE User__c = :userId AND Is_Active__c = true
             LIMIT 1

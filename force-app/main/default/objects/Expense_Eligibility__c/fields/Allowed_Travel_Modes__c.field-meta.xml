@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Travel_Mode__c</fullName>
-    <description>Mode of travel for TA expense items (Bike, Car, Bus, Train, Auto, Public Transport)</description>
+    <fullName>Allowed_Travel_Modes__c</fullName>
+    <description>Travel modes and classes eligible for this band/type</description>
     <externalId>false</externalId>
-    <label>Travel Mode</label>
+    <label>Allowed Travel Modes</label>
     <required>false</required>
     <trackTrending>false</trackTrending>
-    <type>Picklist</type>
+    <type>MultiselectPicklist</type>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
+            <value>
+                <fullName>All</fullName>
+                <default>true</default>
+                <label>All</label>
+            </value>
             <value>
                 <fullName>Bike</fullName>
                 <default>false</default>
@@ -22,34 +27,19 @@
                 <label>Car</label>
             </value>
             <value>
-                <fullName>Bus</fullName>
-                <default>false</default>
-                <label>Bus</label>
-            </value>
-            <value>
-                <fullName>Train</fullName>
-                <default>false</default>
-                <label>Train</label>
-            </value>
-            <value>
                 <fullName>Auto</fullName>
                 <default>false</default>
                 <label>Auto</label>
             </value>
             <value>
-                <fullName>Public Transport</fullName>
-                <default>false</default>
-                <label>Public Transport</label>
-            </value>
-            <value>
-                <fullName>Flight</fullName>
-                <default>false</default>
-                <label>Flight</label>
-            </value>
-            <value>
                 <fullName>Own Vehicle</fullName>
                 <default>false</default>
                 <label>Own Vehicle</label>
+            </value>
+            <value>
+                <fullName>Public Transport</fullName>
+                <default>false</default>
+                <label>Public Transport</label>
             </value>
             <value>
                 <fullName>Bus: AC</fullName>
@@ -103,4 +93,5 @@
             </value>
         </valueSetDefinition>
     </valueSet>
+    <visibleLines>6</visibleLines>
 </CustomField>
