@@ -57,8 +57,18 @@ const VEHICLE_OPTIONS = [
     { label: 'Car', value: 'Car' },
     { label: 'Auto', value: 'Auto' },
     { label: 'Bus', value: 'Bus' },
+    { label: 'Bus: AC', value: 'Bus: AC' },
+    { label: 'Bus: Non-AC', value: 'Bus: Non-AC' },
     { label: 'Train', value: 'Train' },
+    { label: 'Train: 1AC', value: 'Train: 1AC' },
+    { label: 'Train: 2AC', value: 'Train: 2AC' },
+    { label: 'Train: 3AC', value: 'Train: 3AC' },
+    { label: 'Train: Sleeper', value: 'Train: Sleeper' },
+    { label: 'Train: General', value: 'Train: General' },
     { label: 'Flight', value: 'Flight' },
+    { label: 'Flight: Business', value: 'Flight: Business' },
+    { label: 'Flight: Economy', value: 'Flight: Economy' },
+    { label: 'Flight: Premium Economy', value: 'Flight: Premium Economy' },
     { label: 'Own Vehicle', value: 'Own Vehicle' },
     { label: 'Public Transport', value: 'Public Transport' }
 ];
@@ -741,7 +751,7 @@ export default class ExpenseManager extends LightningElement {
                     break;
                 case 'travelMode':
                     item.travelMode = value;
-                    item.vehicleType = value.includes(':') ? value.split(':')[0].trim() : value;
+                    item.vehicleType = value;
                     // Look up mode config from rule's children
                     {
                         const matchedRule = this.findRuleForItem(item.expenseType, item.dutyType);
