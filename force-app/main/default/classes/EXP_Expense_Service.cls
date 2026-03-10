@@ -1283,11 +1283,12 @@ public without sharing class EXP_Expense_Service {
         insert cv;
 
         // Get the ContentDocumentId
-        cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
+        cv = [SELECT ContentDocumentId, Title, FileExtension FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
 
         Map<String, Object> result = new Map<String, Object>();
         result.put('contentDocumentId', cv.ContentDocumentId);
         result.put('title', cv.Title);
+        result.put('fileExtension', cv.FileExtension);
         result.put('expenseItemId', expenseItemId);
         return result;
     }
