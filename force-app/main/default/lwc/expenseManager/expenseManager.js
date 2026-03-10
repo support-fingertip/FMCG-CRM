@@ -741,7 +741,7 @@ export default class ExpenseManager extends LightningElement {
                     break;
                 case 'travelMode':
                     item.travelMode = value;
-                    item.vehicleType = value; // keep vehicleType in sync
+                    item.vehicleType = value.includes(':') ? value.split(':')[0].trim() : value;
                     // Look up mode config from rule's children
                     {
                         const matchedRule = this.findRuleForItem(item.expenseType, item.dutyType);
