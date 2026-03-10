@@ -408,9 +408,9 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             Auto_Create__c: false,
             Mandatory_Remarks__c: false,
             Sort_Order__c: null,
-            Tier_1_Limit__c: null,
-            Tier_2_Limit__c: null,
-            Tier_3_Limit__c: null
+            City_Tier_1_Limit__c: null,
+            City_Tier_2_Limit__c: null,
+            City_Tier_3_Limit__c: null
         };
         this.isEditing = true;
         this.isNewRule = true;
