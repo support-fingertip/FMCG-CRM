@@ -798,6 +798,23 @@
     color: var(--text-secondary);
 }
 
+.pending-upload-row {
+    margin-top: 6px;
+}
+
+.pending-upload-row input[type="file"] {
+    font-size: 12px;
+}
+
+.pending-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-warning, #dd7a01);
+    background: #fff3e0;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
 .save-first-msg {
     font-size: 12px;
     color: var(--text-secondary);

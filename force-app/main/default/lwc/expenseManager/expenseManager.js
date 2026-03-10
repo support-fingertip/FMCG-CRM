@@ -32,6 +32,7 @@ import getTeamExpenseReports from '@salesforce/apex/ExpenseController.getTeamExp
 import getExpenseItemFiles from '@salesforce/apex/ExpenseController.getExpenseItemFiles';
 import deleteExpenseItemFile from '@salesforce/apex/ExpenseController.deleteExpenseItemFile';
 import getSubmitSummary from '@salesforce/apex/ExpenseController.getSubmitSummary';
+import uploadReceiptBase64 from '@salesforce/apex/ExpenseController.uploadReceiptBase64';
 
 const MONTHS = [
     { label: 'January', value: 'January' },
@@ -452,6 +453,8 @@ export default class ExpenseManager extends LightningElement {
             files: itemFiles,
             hasFiles: itemFiles.length > 0,
             hasAnyFiles: itemFiles.length > 0,
+            pendingFiles: [],
+            hasPendingFiles: false,
             dirty: false
         };
 
@@ -530,6 +533,8 @@ export default class ExpenseManager extends LightningElement {
             files: [],
             hasFiles: false,
             hasAnyFiles: false,
+            pendingFiles: [],
+            hasPendingFiles: false,
             dirty: false
         };
     }
@@ -979,6 +984,97 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
+    handlePendingFileChange(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        const files = event.currentTarget.files;
+        if (!files || files.length === 0) return;
+
+        const readers = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            readers.push(new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    resolve({
+                        fileName: file.name,
+                        base64: reader.result.split(',')[1],
+                        size: file.size,
+                        key: file.name + '-' + Date.now() + '-' + i
+                    });
+                };
+                reader.readAsDataURL(file);
+            }));
+        }
+
+        Promise.all(readers).then(pendingFiles => {
+            this.dayRows = this.dayRows.map(row => ({
+                ...row,
+                items: row.items.map(item => {
+                    if (item.key !== itemKey) return item;
+                    const allPending = [...(item.pendingFiles || []), ...pendingFiles];
+                    return {
+                        ...item,
+                        pendingFiles: allPending,
+                        hasPendingFiles: allPending.length > 0,
+                        hasAnyFiles: item.hasFiles || allPending.length > 0
+                    };
+                })
+            }));
+        });
+    }
+
+    handleRemovePendingFile(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        const fileKey = event.currentTarget.dataset.filekey;
+
+        this.dayRows = this.dayRows.map(row => ({
+            ...row,
+            items: row.items.map(item => {
+                if (item.key !== itemKey) return item;
+                const pendingFiles = (item.pendingFiles || []).filter(f => f.key !== fileKey);
+                return {
+                    ...item,
+                    pendingFiles,
+                    hasPendingFiles: pendingFiles.length > 0,
+                    hasAnyFiles: item.hasFiles || pendingFiles.length > 0
+                };
+            })
+        }));
+    }
+
+    async uploadPendingFiles() {
+        const uploads = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if (item.id && item.pendingFiles && item.pendingFiles.length > 0) {
+                    item.pendingFiles.forEach(pf => {
+                        uploads.push(
+                            uploadReceiptBase64({
+                                expenseItemId: item.id,
+                                fileName: pf.fileName,
+                                base64Data: pf.base64
+                            })
+                        );
+                    });
+                }
+            });
+        });
+
+        if (uploads.length > 0) {
+            await Promise.all(uploads);
+
+            // Clear pending files
+            this.dayRows = this.dayRows.map(row => ({
+                ...row,
+                items: row.items.map(item => ({
+                    ...item,
+                    pendingFiles: [],
+                    hasPendingFiles: false
+                }))
+            }));
+        }
+    }
+
     async handleDeleteFile(event) {
         const docId = event.currentTarget.dataset.docid;
         try {
@@ -1042,6 +1138,9 @@ export default class ExpenseManager extends LightningElement {
 
                 this.showSuccess('All expense items saved successfully.');
             }
+
+            // Upload any pending (staged) receipt files now that items have IDs
+            await this.uploadPendingFiles();
 
             // Refresh file attachments and expense totals
             await this.loadAllFiles();
