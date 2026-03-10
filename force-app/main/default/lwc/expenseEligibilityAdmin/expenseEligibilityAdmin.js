@@ -376,12 +376,12 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         }
     }
 
-    async loadRuleSlabs(ruleId) {
-        try {
-            const data = await getAdminData({ ruleId });
-            this.rateSlabs = data.rateSlabs || [];
-        } catch (error) {
-            this.handleError(error, 'Error loading rate slabs');
+    loadRuleSlabs(ruleId) {
+        const rule = this.rules.find(r => r.Id === ruleId);
+        if (rule && rule.Expense_Rate_Slabs__r) {
+            this.rateSlabs = [...rule.Expense_Rate_Slabs__r];
+        } else {
+            this.rateSlabs = [];
         }
     }
 
@@ -510,8 +510,9 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
                     Eligibility_Rule__c: savedRule.Id
                 }));
                 await saveRateSlabs({
+                    eligibilityId: savedRule.Id,
                     slabs: slabsToSave,
-                    deletedIds: this.deletedSlabIds
+                    deletedSlabIds: this.deletedSlabIds
                 });
             }
 
@@ -590,8 +591,8 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         try {
             const clonedRule = await cloneEligibilityRule({
                 sourceRuleId: this.selectedRule.Id,
-                targetBand: this.cloneBand,
-                targetDutyType: this.cloneDutyType
+                newBand: this.cloneBand,
+                newDutyType: this.cloneDutyType
             });
             this.showToast('Success', 'Rule cloned successfully.', 'success');
             await this.loadData();
@@ -725,7 +726,6 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     handleNewCityTier() {
         const newTier = {
             Name: '',
-            City_Name__c: '',
             Tier__c: 'Tier 1',
             State__c: '',
             Is_Active__c: true,
@@ -765,7 +765,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         const index = parseInt(event.currentTarget.dataset.index, 10);
         const tier = this.cityTiers[index];
 
-        if (!tier.City_Name__c || !tier.Tier__c) {
+        if (!tier.Name || !tier.Tier__c) {
             this.showToast('Validation Error', 'City Name and Tier are required.', 'error');
             return;
         }
@@ -777,7 +777,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             delete tierToSave.isNew;
             delete tierToSave._tempId;
 
-            await saveCityTier({ tier: tierToSave });
+            await saveCityTier({ cityTier: tierToSave });
             this.showToast('Success', 'City tier saved.', 'success');
             await this.loadData();
         } catch (error) {
@@ -813,7 +813,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
 
         this.isLoading = true;
         try {
-            await deleteCityTier({ tierId: tier.Id });
+            await deleteCityTier({ cityTierId: tier.Id });
             this.showToast('Success', 'City tier deleted.', 'success');
             await this.loadData();
         } catch (error) {
