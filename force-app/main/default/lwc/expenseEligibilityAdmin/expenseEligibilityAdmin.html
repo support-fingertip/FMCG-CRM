@@ -98,7 +98,7 @@
                                                 <td>{rule.Band__c}</td>
                                                 <td>{rule.Expense_Type__c}</td>
                                                 <td>
-                                                    <span class={rule.dutyBadgeClass}>{rule.Duty_Type__c}</span>
+                                                    <span class={rule.dutyBadgeClass}>{rule.Travel_Type__c}</span>
                                                 </td>
                                                 <td>{rule.Rate_Type__c}</td>
                                                 <td>{rule.Rate_Amount__c}</td>
@@ -187,20 +187,20 @@
                                         <div class="form-field">
                                             <lightning-combobox
                                                 label="Duty Type"
-                                                value={selectedRule.Duty_Type__c}
+                                                value={selectedRule.Travel_Type__c}
                                                 options={dutyTypeOptions}
                                                 onchange={handleFieldChange}
-                                                data-field="Duty_Type__c"
+                                                data-field="Travel_Type__c"
                                             ></lightning-combobox>
                                         </div>
                                     </template>
                                     <div class="form-field">
                                         <lightning-combobox
                                             label="Category"
-                                            value={selectedRule.Category__c}
+                                            value={selectedRule.Expense_Category__c}
                                             options={categoryOptions}
                                             onchange={handleFieldChange}
-                                            data-field="Category__c"
+                                            data-field="Expense_Category__c"
                                         ></lightning-combobox>
                                     </div>
                                 </div>
@@ -271,9 +271,9 @@
                                             <lightning-input
                                                 type="number"
                                                 label="Min Distance (KM)"
-                                                value={selectedRule.Min_Distance__c}
+                                                value={selectedRule.Min_Distance_KM__c}
                                                 onchange={handleFieldChange}
-                                                data-field="Min_Distance__c"
+                                                data-field="Min_Distance_KM__c"
                                                 step="1"
                                             ></lightning-input>
                                         </div>

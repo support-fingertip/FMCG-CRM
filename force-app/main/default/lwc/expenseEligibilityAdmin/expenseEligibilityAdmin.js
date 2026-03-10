@@ -21,8 +21,8 @@ const BAND_OPTIONS = [
 
 const EXPENSE_TYPE_OPTIONS = [
     { label: 'All Types', value: '' },
-    { label: 'DA', value: 'DA' },
-    { label: 'TA', value: 'TA' },
+    { label: 'Daily Allowance', value: 'Daily Allowance' },
+    { label: 'Travelling Allowance', value: 'Travelling Allowance' },
     { label: 'Fuel', value: 'Fuel' },
     { label: 'Lodging', value: 'Lodging' },
     { label: 'Food', value: 'Food' },
@@ -138,7 +138,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
 
     // Computed properties
     get showTravelModes() {
-        return this.selectedRule?.Expense_Type__c === 'TA' || this.selectedRule?.Expense_Type__c === 'Fuel';
+        return this.selectedRule?.Expense_Type__c === 'Travelling Allowance' || this.selectedRule?.Expense_Type__c === 'Fuel';
     }
 
     get showCityTierLimits() {
@@ -146,11 +146,11 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     }
 
     get showDistanceSettings() {
-        return this.selectedRule?.Expense_Type__c === 'TA' || this.selectedRule?.Expense_Type__c === 'Fuel';
+        return this.selectedRule?.Expense_Type__c === 'Travelling Allowance' || this.selectedRule?.Expense_Type__c === 'Fuel';
     }
 
     get showMaxPerDay() {
-        return ['DA', 'Food', 'Toll'].includes(this.selectedRule?.Expense_Type__c);
+        return ['Daily Allowance', 'Food', 'Toll'].includes(this.selectedRule?.Expense_Type__c);
     }
 
     get showMaxPerMonth() {
@@ -158,7 +158,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     }
 
     get showDutyType() {
-        return ['DA', 'TA', 'Fuel', 'Lodging', 'Food'].includes(this.selectedRule?.Expense_Type__c);
+        return ['Daily Allowance', 'Travelling Allowance', 'Fuel', 'Lodging', 'Food'].includes(this.selectedRule?.Expense_Type__c);
     }
 
     get showRateAmount() {
@@ -346,14 +346,14 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             filtered = filtered.filter(r => r.Expense_Type__c === this.typeFilter);
         }
         if (this.dutyTypeFilter) {
-            filtered = filtered.filter(r => r.Duty_Type__c === this.dutyTypeFilter);
+            filtered = filtered.filter(r => r.Travel_Type__c === this.dutyTypeFilter);
         }
 
         this.filteredRules = filtered.map(r => ({
             ...r,
             isSelected: this.selectedRule?.Id === r.Id,
             rowClass: 'rule-row' + (this.selectedRule?.Id === r.Id ? ' selected' : ''),
-            dutyBadgeClass: 'duty-badge duty-' + (r.Duty_Type__c || 'all').toLowerCase().replace('-', ''),
+            dutyBadgeClass: 'duty-badge duty-' + (r.Travel_Type__c || 'all').toLowerCase().replace('-', ''),
             modeCount: r.Allowed_Travel_Modes__c
                 ? r.Allowed_Travel_Modes__c.split(';').filter(s => s.trim()).length
                 : 0,
@@ -391,13 +391,13 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         this.selectedRule = {
             Band__c: '',
             Expense_Type__c: '',
-            Duty_Type__c: 'All',
-            Category__c: 'Travel',
+            Travel_Type__c: 'All',
+            Expense_Category__c: 'Travel',
             Rate_Type__c: 'Per Day',
             Rate_Amount__c: null,
             Max_Per_Day__c: null,
             Max_Per_Month__c: null,
-            Min_Distance__c: null,
+            Min_Distance_KM__c: null,
             Daily_KM_Limit__c: null,
             Allowed_Travel_Modes__c: '',
             Receipt_Required__c: false,
@@ -435,10 +435,10 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         let rateType = 'Per Day';
         let category = 'Miscellaneous';
 
-        if (expenseType === 'TA' || expenseType === 'Fuel') {
+        if (expenseType === 'Travelling Allowance' || expenseType === 'Fuel') {
             rateType = 'Per KM';
             category = 'Travel';
-        } else if (expenseType === 'DA' || expenseType === 'Food') {
+        } else if (expenseType === 'Daily Allowance' || expenseType === 'Food') {
             rateType = 'Per Day';
             category = 'Travel';
         } else if (expenseType === 'Lodging') {
@@ -459,7 +459,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             ...this.selectedRule,
             Expense_Type__c: expenseType,
             Rate_Type__c: rateType,
-            Category__c: category,
+            Expense_Category__c: category,
             Allowed_Travel_Modes__c: ''
         };
     }
@@ -565,7 +565,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     // Clone Rule
     handleCloneRule() {
         this.cloneBand = this.selectedRule?.Band__c || '';
-        this.cloneDutyType = this.selectedRule?.Duty_Type__c || 'All';
+        this.cloneDutyType = this.selectedRule?.Travel_Type__c || 'All';
         this.showCloneModal = true;
     }
 
