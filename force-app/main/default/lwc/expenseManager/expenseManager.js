@@ -976,18 +976,19 @@ export default class ExpenseManager extends LightningElement {
         }
     }
 
-    async handleUploadFinished(event) {
-        const uploadedFiles = event.detail.files;
-        if (uploadedFiles && uploadedFiles.length > 0) {
-            this.showSuccess(uploadedFiles.length + ' receipt(s) uploaded.');
-            await this.loadAllFiles();
-        }
-    }
-
-    handlePendingFileChange(event) {
+    handleFileSelect(event) {
         const itemKey = event.currentTarget.dataset.key;
         const files = event.currentTarget.files;
         if (!files || files.length === 0) return;
+
+        // Find the item to check if it's saved
+        let targetItem = null;
+        for (const row of this.dayRows) {
+            for (const item of row.items) {
+                if (item.key === itemKey) { targetItem = item; break; }
+            }
+            if (targetItem) break;
+        }
 
         const readers = [];
         for (let i = 0; i < files.length; i++) {
@@ -1006,21 +1007,46 @@ export default class ExpenseManager extends LightningElement {
             }));
         }
 
-        Promise.all(readers).then(pendingFiles => {
-            this.dayRows = this.dayRows.map(row => ({
-                ...row,
-                items: row.items.map(item => {
-                    if (item.key !== itemKey) return item;
-                    const allPending = [...(item.pendingFiles || []), ...pendingFiles];
-                    return {
-                        ...item,
-                        pendingFiles: allPending,
-                        hasPendingFiles: allPending.length > 0,
-                        hasAnyFiles: item.hasFiles || allPending.length > 0
-                    };
-                })
-            }));
+        Promise.all(readers).then(async (readFiles) => {
+            if (targetItem && targetItem.id) {
+                // Saved item: upload immediately via base64
+                try {
+                    this.isLoading = true;
+                    const uploads = readFiles.map(pf =>
+                        uploadReceiptBase64({
+                            expenseItemId: targetItem.id,
+                            fileName: pf.fileName,
+                            base64Data: pf.base64
+                        })
+                    );
+                    await Promise.all(uploads);
+                    this.showSuccess(readFiles.length + ' receipt(s) uploaded.');
+                    await this.loadAllFiles();
+                } catch (e) {
+                    this.showError('Failed to upload receipt: ' + (e.body?.message || e.message || e));
+                } finally {
+                    this.isLoading = false;
+                }
+            } else {
+                // Unsaved item: stage files locally
+                this.dayRows = this.dayRows.map(row => ({
+                    ...row,
+                    items: row.items.map(item => {
+                        if (item.key !== itemKey) return item;
+                        const allPending = [...(item.pendingFiles || []), ...readFiles];
+                        return {
+                            ...item,
+                            pendingFiles: allPending,
+                            hasPendingFiles: allPending.length > 0,
+                            hasAnyFiles: item.hasFiles || allPending.length > 0
+                        };
+                    })
+                }));
+            }
         });
+
+        // Reset file input so same file can be selected again
+        event.currentTarget.value = '';
     }
 
     handleRemovePendingFile(event) {

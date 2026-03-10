@@ -798,12 +798,61 @@
     color: var(--text-secondary);
 }
 
-.pending-upload-row {
+.receipt-upload-area {
     margin-top: 6px;
 }
 
-.pending-upload-row input[type="file"] {
+.receipt-upload-area .slds-file-selector__dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.receipt-upload-area .slds-file-selector__dropzone:hover {
+    border-color: var(--brand-primary);
+    background: #f0f7ff;
+}
+
+.receipt-upload-area .slds-file-selector__body {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.receipt-upload-area .slds-file-selector__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: white;
     font-size: 12px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    cursor: pointer;
+}
+
+.receipt-upload-area .slds-file-selector__text {
+    font-size: 12px;
+    color: var(--text-weak);
+}
+
+.receipt-upload-area .slds-assistive-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
 }
 
 .pending-badge {
