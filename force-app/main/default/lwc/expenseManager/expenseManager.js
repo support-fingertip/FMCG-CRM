@@ -812,7 +812,7 @@ export default class ExpenseManager extends LightningElement {
         if (item.minDistance > 0 && dist < item.minDistance) return 0;
 
         // TA: use mode-specific calculation
-        if (item.expenseType === 'TA' && item.travelMode) {
+        if (item.expenseType === 'Travelling Allowance' && item.travelMode) {
             eligible = this.calcTAForMode(item, dist);
         } else if (item.rateType === 'Per Day') {
             // DA with working hours logic

@@ -340,8 +340,8 @@ public without sharing class EXP_Expense_Service {
         Decimal eligible = 0;
         String rateType = rule.Rate_Type__c;
 
-        // For TA: always use TA calculator (handles both Per KM and Actual modes)
-        if (item.Expense_Type__c == 'TA') {
+        // For Travelling Allowance: always use TA calculator (handles both Per KM and Actual modes)
+        if (item.Expense_Type__c == 'Travelling Allowance') {
             eligible = calculateTAAmount(item, rule);
         } else if (rateType == 'Per Day') {
             // DA calculation with working hours logic
@@ -579,7 +579,7 @@ public without sharing class EXP_Expense_Service {
             item.Duty_Type__c = dutyType;
 
             // For TA: validate travel mode is in allowed list
-            if (item.Expense_Type__c == 'TA' && String.isNotBlank(item.Travel_Mode__c) && rule != null) {
+            if (item.Expense_Type__c == 'Travelling Allowance' && String.isNotBlank(item.Travel_Mode__c) && rule != null) {
                 String allowedModes = rule.Allowed_Travel_Modes__c;
                 if (String.isNotBlank(allowedModes) && !allowedModes.contains('All')
                     && !allowedModes.contains(item.Travel_Mode__c)) {
