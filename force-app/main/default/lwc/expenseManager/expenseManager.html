@@ -326,48 +326,31 @@
                                                 </div>
                                             </template>
 
-                                            <!-- City + Metro toggle (for Lodging) -->
+                                            <!-- City (from City Tier master) + Auto-resolved Tier -->
                                             <template if:true={item.showCity}>
                                                 <div class="item-field">
-                                                    <lightning-input
+                                                    <lightning-combobox
                                                         label="City"
-                                                        type="text"
                                                         value={item.city}
+                                                        options={cityOptions}
                                                         data-field="city"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
                                                         disabled={cannotEdit}
                                                         variant="label-stacked"
+                                                        placeholder="Search city..."
                                                         required>
-                                                    </lightning-input>
+                                                    </lightning-combobox>
                                                 </div>
                                                 <template if:true={item.showCityTier}>
                                                     <div class="item-field item-field-sm">
-                                                        <lightning-combobox
+                                                        <lightning-input
                                                             label="City Tier"
                                                             value={item.cityTier}
-                                                            options={cityTierOptions}
                                                             data-field="cityTier"
                                                             data-key={item.key}
-                                                            onchange={handleItemFieldChange}
-                                                            disabled={cannotEdit}
                                                             variant="label-stacked"
-                                                            placeholder="Select tier...">
-                                                        </lightning-combobox>
-                                                    </div>
-                                                </template>
-                                                <template if:false={item.showCityTier}>
-                                                    <div class="item-field item-field-sm metro-toggle">
-                                                        <lightning-input
-                                                            label="Metro City"
-                                                            type="toggle"
-                                                            checked={item.isMetro}
-                                                            data-field="isMetro"
-                                                            data-key={item.key}
-                                                            onchange={handleItemFieldChange}
-                                                            disabled={cannotEdit}
-                                                            message-toggle-active="Yes"
-                                                            message-toggle-inactive="No">
+                                                            read-only>
                                                         </lightning-input>
                                                     </div>
                                                 </template>

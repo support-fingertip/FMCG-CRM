@@ -142,7 +142,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     }
 
     get showCityTierLimits() {
-        return this.selectedRule?.Expense_Type__c === 'Lodging';
+        return ['Lodging', 'Travelling Allowance', 'Daily Allowance', 'Food'].includes(this.selectedRule?.Expense_Type__c);
     }
 
     get showDistanceSettings() {

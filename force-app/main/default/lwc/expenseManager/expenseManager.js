@@ -145,6 +145,7 @@ export default class ExpenseManager extends LightningElement {
     // City tier & employee data
     cityTiers = {};        // Map<cityName, tier>
     employeeHQCity = '';
+    @track cityOptions = [];  // [{label, value}] built from cityTiers
 
     get yearOptions() {
         const now = new Date();
@@ -185,6 +186,11 @@ export default class ExpenseManager extends LightningElement {
             this.config = data.config || {};
             this.cityTiers = data.cityTiers || {};
             this.employeeHQCity = data.hqCity || '';
+
+            // Build city options from cityTiers map for searchable combobox
+            this.cityOptions = Object.keys(this.cityTiers)
+                .sort()
+                .map(name => ({ label: name + ' (' + this.cityTiers[name] + ')', value: name }));
 
             // Store existing items and files for later use
             this._existingItems = data.expenseItems || [];
@@ -365,18 +371,22 @@ export default class ExpenseManager extends LightningElement {
         const isTravel = rule && (rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0));
         const isDA = rule && rule.Rate_Type__c === 'Per Day';
         const isActual = rule && rule.Rate_Type__c === 'Actual';
-        const isLodging = rule && (
-            rule.City_Tier_1_Limit__c > 0 || rule.City_Tier_2_Limit__c > 0 || rule.City_Tier_3_Limit__c > 0 ||
+        const hasCityTierLimits = rule && (
+            rule.City_Tier_1_Limit__c > 0 || rule.City_Tier_2_Limit__c > 0 || rule.City_Tier_3_Limit__c > 0
+        );
+        const hasMetroLimits = rule && (
             rule.Lodging_Metro_Limit__c > 0 || rule.Lodging_Non_Metro_Limit__c > 0
         );
+        const isLodging = hasCityTierLimits || hasMetroLimits;
         const isFood = rule && rule.Expense_Type__c === 'Food';
         const showFromTo = rule && rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM';
         const showVehicle = false; // consolidated into Travel Mode
         const allowedModes = rule ? this.getAllowedModesForRule(rule) : [];
         const showTravelMode = isTravel && allowedModes.length > 0;
         const showRemarks = rule && (isActual || rule.Expense_Category__c === 'Miscellaneous' || rule.Mandatory_Remarks__c);
-        const showCity = isLodging;
-        const showCityTier = isLodging;
+        const needsCity = isLodging || (rule && rule.Expense_Category__c === 'Travel' && hasCityTierLimits);
+        const showCity = needsCity;
+        const showCityTier = needsCity;
         const mandatoryRemarks = rule && rule.Mandatory_Remarks__c;
         const dutyType = existing ? existing.Duty_Type__c : (dayInfo.dutyType || 'HQ');
 
@@ -753,30 +763,18 @@ export default class ExpenseManager extends LightningElement {
                     break;
                 case 'city':
                     item.city = value;
-                    // Auto-resolve city tier
+                    // Auto-resolve city tier from City Tier master
                     {
                         const tier = this.cityTiers[value];
                         if (tier) {
                             item.cityTier = tier;
                             item.isMetro = (tier === 'Tier 1');
+                        } else {
+                            item.cityTier = '';
+                            item.isMetro = false;
                         }
                     }
-                    if (item.isLodging) {
-                        item.eligibleAmount = this.recalcEligible(item);
-                    }
-                    break;
-                case 'cityTier':
-                    item.cityTier = value;
-                    item.isMetro = (value === 'Tier 1');
-                    if (item.isLodging) {
-                        item.eligibleAmount = this.recalcEligible(item);
-                    }
-                    break;
-                case 'isMetro':
-                    item.isMetro = value;
-                    if (item.isLodging) {
-                        item.eligibleAmount = this.recalcEligible(item);
-                    }
+                    item.eligibleAmount = this.recalcEligible(item);
                     break;
                 case 'workingHours':
                     item.workingHours = value ? parseFloat(value) : 0;
