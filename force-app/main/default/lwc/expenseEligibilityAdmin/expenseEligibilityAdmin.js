@@ -7,6 +7,7 @@ import deleteEligibilityRule from '@salesforce/apex/EXP_EligibilityAdmin_Control
 import cloneEligibilityRule from '@salesforce/apex/EXP_EligibilityAdmin_Controller.cloneEligibilityRule';
 import saveCityTier from '@salesforce/apex/EXP_EligibilityAdmin_Controller.saveCityTier';
 import deleteCityTier from '@salesforce/apex/EXP_EligibilityAdmin_Controller.deleteCityTier';
+import refreshAdminData from '@salesforce/apex/EXP_EligibilityAdmin_Controller.refreshAdminData';
 
 const BAND_OPTIONS = [
     { label: 'All Bands', value: '' },
@@ -296,11 +297,11 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     }
 
     // Data Loading
-    async loadData() {
+    async loadData(skipCache = false) {
         this.isLoading = true;
         this.errorMessage = '';
         try {
-            const data = await getAdminData();
+            const data = skipCache ? await refreshAdminData() : await getAdminData();
             this.rules = data.rules || [];
             this.cityTiers = (data.cityTiers || []).map(ct => ({ ...ct, isEditing: false, _key: ct.Id }));
             this.applyFilters();
@@ -518,7 +519,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
 
             this.showToast('Success', 'Eligibility rule saved successfully.', 'success');
             this.isNewRule = false;
-            await this.loadData();
+            await this.loadData(true);
             this.selectedRule = { ...savedRule };
             this.isEditing = true;
             this.loadRuleSlabs(savedRule.Id);
@@ -553,7 +554,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             this.selectedRule = null;
             this.isEditing = false;
             this.isNewRule = false;
-            await this.loadData();
+            await this.loadData(true);
         } catch (error) {
             this.handleError(error, 'Error deleting rule');
         } finally {
@@ -595,7 +596,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
                 newDutyType: this.cloneDutyType
             });
             this.showToast('Success', 'Rule cloned successfully.', 'success');
-            await this.loadData();
+            await this.loadData(true);
             this.selectedRule = { ...clonedRule };
             this.isEditing = true;
             this.isNewRule = false;
@@ -777,10 +778,16 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             delete tierToSave.isEditing;
             delete tierToSave.isNew;
             delete tierToSave._tempId;
+            delete tierToSave._key;
 
-            await saveCityTier({ cityTier: tierToSave });
+            const savedTier = await saveCityTier({ cityTier: tierToSave });
+            this.cityTiers = this.cityTiers.map((ct, i) => {
+                if (i === index) {
+                    return { ...savedTier, isEditing: false, _key: savedTier.Id };
+                }
+                return ct;
+            });
             this.showToast('Success', 'City tier saved.', 'success');
-            await this.loadData();
         } catch (error) {
             this.handleError(error, 'Error saving city tier');
         } finally {
@@ -815,8 +822,8 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         this.isLoading = true;
         try {
             await deleteCityTier({ cityTierId: tier.Id });
+            this.cityTiers = this.cityTiers.filter((_, i) => i !== index);
             this.showToast('Success', 'City tier deleted.', 'success');
-            await this.loadData();
         } catch (error) {
             this.handleError(error, 'Error deleting city tier');
         } finally {

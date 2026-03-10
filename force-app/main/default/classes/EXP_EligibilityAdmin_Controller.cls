@@ -37,6 +37,11 @@ public with sharing class EXP_EligibilityAdmin_Controller {
     }
 
     @AuraEnabled
+    public static Map<String, Object> refreshAdminData() {
+        return getAdminData();
+    }
+
+    @AuraEnabled
     public static Expense_Eligibility__c saveEligibilityRule(Expense_Eligibility__c rule) {
         try {
             upsert rule;
