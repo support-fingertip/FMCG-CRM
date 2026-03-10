@@ -669,13 +669,13 @@
                                         <td class="num-col">{tr.Total_Claimed__c}</td>
                                         <td class="num-col">{tr.Total_Approved__c}</td>
                                         <td class="action-col">
-                                            <template if:true={tr.Status__c}>
+                                            <template if:true={tr._canApprove}>
                                                 <lightning-button-group>
                                                     <lightning-button
                                                         label="Approve"
                                                         variant="success"
                                                         data-action="approve"
-                                                        data-level="manager"
+                                                        data-level={tr._approvalLevel}
                                                         data-id={tr.Id}
                                                         onclick={handleOpenApproval}
                                                         class="btn-sm">
@@ -684,12 +684,22 @@
                                                         label="Reject"
                                                         variant="destructive"
                                                         data-action="reject"
-                                                        data-level="manager"
+                                                        data-level={tr._approvalLevel}
                                                         data-id={tr.Id}
                                                         onclick={handleOpenApproval}
                                                         class="btn-sm">
                                                     </lightning-button>
                                                 </lightning-button-group>
+                                            </template>
+                                            <template if:true={tr._canMarkPaid}>
+                                                <lightning-button
+                                                    label="Mark Paid"
+                                                    variant="brand"
+                                                    data-action="paid"
+                                                    data-id={tr.Id}
+                                                    onclick={handleOpenApproval}
+                                                    class="btn-sm">
+                                                </lightning-button>
                                             </template>
                                         </td>
                                     </tr>

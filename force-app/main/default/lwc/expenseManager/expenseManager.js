@@ -1494,10 +1494,16 @@ export default class ExpenseManager extends LightningElement {
     async loadTeamReports() {
         try {
             this.isLoading = true;
-            this.teamReports = await getTeamExpenseReports({
+            const reports = await getTeamExpenseReports({
                 month: this.selectedMonth,
                 year: this.selectedYear
             });
+            this.teamReports = reports.map(r => ({
+                ...r,
+                _approvalLevel: r.Status__c === 'Manager Approved' ? 'finance' : 'manager',
+                _canApprove: r.Status__c === 'Submitted' || r.Status__c === 'Manager Approved',
+                _canMarkPaid: r.Status__c === 'Finance Approved'
+            }));
         } catch (e) {
             this.showError(e);
             this.teamReports = [];
