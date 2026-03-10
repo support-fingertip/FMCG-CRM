@@ -187,7 +187,7 @@
                                     <template for:each={item.files} for:item="file">
                                         <span key={file.contentDocumentId}
                                             class="file-link"
-                                            data-versionid={file.versionId}
+                                            data-docid={file.contentDocumentId}
                                             onclick={handlePreviewFile}
                                             title={file.title}>
                                             {file.title}

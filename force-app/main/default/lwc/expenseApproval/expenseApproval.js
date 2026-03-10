@@ -227,14 +227,14 @@ export default class ExpenseApproval extends NavigationMixin(LightningElement) {
 
     // ── File Preview ─────────────────────────────────────────────
     handlePreviewFile(event) {
-        const versionId = event.currentTarget.dataset.versionid;
+        const docId = event.currentTarget.dataset.docid;
         this[NavigationMixin.Navigate]({
             type: 'standard__namedPage',
             attributes: {
                 pageName: 'filePreview'
             },
             state: {
-                selectedRecordId: versionId
+                selectedRecordId: docId
             }
         });
     }
