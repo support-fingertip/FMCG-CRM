@@ -54,6 +54,9 @@
     <tabs>Price_List__c</tabs>
     <tabs>Price_Change_Log__c</tabs>
     <tabs>Expense_Eligibility__c</tabs>
+    <tabs>Expense_Eligibility_Admin</tabs>
+    <tabs>Expense_Rate_Slab__c</tabs>
+    <tabs>City_Tier__c</tabs>
     <tabs>Expense_Manager</tabs>
     <tabs>Expense__c</tabs>
     <tabs>standard-Account</tabs>
