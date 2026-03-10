@@ -586,20 +586,20 @@
                         <tbody>
                             <template if:true={hasCityTiers}>
                                 <template for:each={cityTiers} for:item="tier" for:index="tierIndex">
-                                    <tr key={tier.Id}>
+                                    <tr key={tier._key}>
                                         <td>
                                             <template if:true={tier.isEditing}>
                                                 <lightning-input
                                                     type="text"
-                                                    value={tier.City_Name__c}
+                                                    value={tier.Name}
                                                     data-index={tierIndex}
-                                                    data-field="City_Name__c"
+                                                    data-field="Name"
                                                     onchange={handleCityTierFieldChange}
                                                     variant="label-hidden"
                                                 ></lightning-input>
                                             </template>
                                             <template if:false={tier.isEditing}>
-                                                {tier.City_Name__c}
+                                                {tier.Name}
                                             </template>
                                         </td>
                                         <td>

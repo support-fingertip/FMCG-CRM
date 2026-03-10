@@ -302,7 +302,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         try {
             const data = await getAdminData();
             this.rules = data.rules || [];
-            this.cityTiers = (data.cityTiers || []).map(ct => ({ ...ct, isEditing: false }));
+            this.cityTiers = (data.cityTiers || []).map(ct => ({ ...ct, isEditing: false, _key: ct.Id }));
             this.applyFilters();
         } catch (error) {
             this.handleError(error, 'Error loading admin data');
@@ -731,7 +731,8 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             Is_Active__c: true,
             isEditing: true,
             isNew: true,
-            _tempId: Date.now()
+            _tempId: Date.now(),
+            _key: 'new-' + Date.now()
         };
         this.cityTiers = [newTier, ...this.cityTiers];
     }
