@@ -730,13 +730,28 @@
    ADD LINE ITEM ROW
    ================================================================ */
 .add-line-item-row {
-    margin-top: 8px;
-    padding: 8px 0;
+    margin-top: 10px;
+    padding: 12px 14px;
     border-top: 1px dashed var(--border-color);
+    background: linear-gradient(135deg, #f0f7ff 0%, #f8fbff 100%);
+    border-radius: 0 0 10px 10px;
+}
+
+.add-type-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 320px;
+}
+
+.add-type-icon {
+    margin-bottom: 10px;
+    color: var(--brand-primary);
+    flex-shrink: 0;
 }
 
 .add-type-combo {
-    max-width: 280px;
+    flex: 1;
     position: relative;
     z-index: 1;
 }

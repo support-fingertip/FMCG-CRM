@@ -478,15 +478,17 @@
                                 <!-- Add Expense Type Button -->
                                 <template if:true={canEdit}>
                                     <div class="add-line-item-row">
-                                        <lightning-combobox
-                                            label="Add Expense Type"
-                                            placeholder="Select type to add..."
-                                            options={availableExpenseTypes}
-                                            data-date={day.dateStr}
-                                            onchange={handleAddTypeChange}
-                                            variant="label-hidden"
-                                            class="add-type-combo">
-                                        </lightning-combobox>
+                                        <div class="add-type-wrapper">
+                                            <lightning-icon icon-name="utility:add" size="xx-small" class="add-type-icon"></lightning-icon>
+                                            <lightning-combobox
+                                                label="Expense Type"
+                                                placeholder="Select expense type to add..."
+                                                options={availableExpenseTypes}
+                                                data-date={day.dateStr}
+                                                onchange={handleAddTypeChange}
+                                                class="add-type-combo">
+                                            </lightning-combobox>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
