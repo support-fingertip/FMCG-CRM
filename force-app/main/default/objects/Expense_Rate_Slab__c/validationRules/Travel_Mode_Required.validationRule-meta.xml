@@ -3,7 +3,7 @@
     <fullName>Travel_Mode_Required</fullName>
     <active>true</active>
     <description>Travel Mode is required on every rate slab record.</description>
-    <errorConditionFormula>ISBLANK(TEXT(Travel_Mode__c))</errorConditionFormula>
+    <errorConditionFormula>ISBLANK(Travel_Mode__c)</errorConditionFormula>
     <errorDisplayField>Travel_Mode__c</errorDisplayField>
     <errorMessage>Travel Mode is required.</errorMessage>
 </ValidationRule>
