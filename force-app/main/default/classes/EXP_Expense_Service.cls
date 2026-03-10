@@ -993,6 +993,7 @@ public without sharing class EXP_Expense_Service {
         ];
 
         String newStatus = level == 'manager' ? 'L1 Approved' : 'Finance Approved';
+        Set<Id> expenseIds = new Set<Id>();
         for (Expense_Item__c item : items) {
             item.Approval_Status__c = newStatus;
             if (item.Approved_Amount__c == null) {
@@ -1002,8 +1003,19 @@ public without sharing class EXP_Expense_Service {
                 item.Approver_Comments__c, 'Approved: ' + (remarks != null ? remarks : ''),
                 UserInfo.getUserId()
             );
+            expenseIds.add(item.Expense__c);
         }
         update items;
+
+        // Update parent expense comments history
+        List<Expense__c> expenses = [
+            SELECT Id, Comments_History__c FROM Expense__c WHERE Id IN :expenseIds
+        ];
+        String comment = 'Approved ' + items.size() + ' item(s)' + (String.isNotBlank(remarks) ? ': ' + remarks : '');
+        for (Expense__c exp : expenses) {
+            exp.Comments_History__c = appendComment(exp.Comments_History__c, comment, UserInfo.getUserId());
+        }
+        update expenses;
 
         Map<String, Object> result = new Map<String, Object>();
         result.put('items', items);
@@ -1018,14 +1030,26 @@ public without sharing class EXP_Expense_Service {
             WHERE Id IN :itemIds
         ];
 
+        Set<Id> expenseIds = new Set<Id>();
         for (Expense_Item__c item : items) {
             item.Approval_Status__c = 'Rejected';
             item.Approver_Comments__c = appendComment(
                 item.Approver_Comments__c, 'Rejected: ' + reason,
                 UserInfo.getUserId()
             );
+            expenseIds.add(item.Expense__c);
         }
         update items;
+
+        // Update parent expense comments history
+        List<Expense__c> expenses = [
+            SELECT Id, Comments_History__c FROM Expense__c WHERE Id IN :expenseIds
+        ];
+        String comment = 'Rejected ' + items.size() + ' item(s): ' + reason;
+        for (Expense__c exp : expenses) {
+            exp.Comments_History__c = appendComment(exp.Comments_History__c, comment, UserInfo.getUserId());
+        }
+        update expenses;
 
         Map<String, Object> result = new Map<String, Object>();
         result.put('items', items);
