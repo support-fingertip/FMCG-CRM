@@ -428,15 +428,15 @@
 }
 
 .city-tier-container {
-    overflow-x: auto;
-    overflow-y: visible;
-    max-height: calc(100vh - 280px);
+    overflow: visible;
+    min-height: 200px;
 }
 
 /* City Tier Table */
 .city-tier-table tbody td {
     vertical-align: middle;
     overflow: visible;
+    position: relative;
 }
 
 /* ==========================================
