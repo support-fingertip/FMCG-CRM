@@ -1007,13 +1007,47 @@ public without sharing class EXP_Expense_Service {
         }
         update items;
 
-        // Update parent expense comments history
+        // Update parent expense: comments history + auto-advance status if all items approved
         List<Expense__c> expenses = [
-            SELECT Id, Comments_History__c FROM Expense__c WHERE Id IN :expenseIds
+            SELECT Id, Status__c, Comments_History__c,
+                   Manager_Approved_Date__c, Manager_Approver__c, Manager_Remarks__c,
+                   Finance_Approved_Date__c, Finance_Approver__c, Finance_Remarks__c
+            FROM Expense__c WHERE Id IN :expenseIds
         ];
         String comment = 'Approved ' + items.size() + ' item(s)' + (String.isNotBlank(remarks) ? ': ' + remarks : '');
         for (Expense__c exp : expenses) {
             exp.Comments_History__c = appendComment(exp.Comments_History__c, comment, UserInfo.getUserId());
+
+            // Check if all items in this report have reached the target status
+            List<Expense_Item__c> allItems = [
+                SELECT Id, Approval_Status__c FROM Expense_Item__c WHERE Expense__c = :exp.Id
+            ];
+            Boolean allAtLevel = true;
+            for (Expense_Item__c ai : allItems) {
+                if (ai.Approval_Status__c != newStatus && ai.Approval_Status__c != 'Finance Approved') {
+                    allAtLevel = false;
+                    break;
+                }
+            }
+            if (allAtLevel) {
+                if (level == 'manager' && exp.Status__c == 'Submitted') {
+                    exp.Status__c = 'Manager Approved';
+                    exp.Manager_Approved_Date__c = Datetime.now();
+                    exp.Manager_Approver__c = UserInfo.getUserId();
+                    exp.Manager_Remarks__c = remarks;
+                    exp.Comments_History__c = appendComment(
+                        exp.Comments_History__c, 'All items L1 approved — report advanced to Manager Approved', UserInfo.getUserId()
+                    );
+                } else if (level == 'finance' && exp.Status__c == 'Manager Approved') {
+                    exp.Status__c = 'Finance Approved';
+                    exp.Finance_Approved_Date__c = Datetime.now();
+                    exp.Finance_Approver__c = UserInfo.getUserId();
+                    exp.Finance_Remarks__c = remarks;
+                    exp.Comments_History__c = appendComment(
+                        exp.Comments_History__c, 'All items finance approved — report advanced to Finance Approved', UserInfo.getUserId()
+                    );
+                }
+            }
         }
         update expenses;
 
