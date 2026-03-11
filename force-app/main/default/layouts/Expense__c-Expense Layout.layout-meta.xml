@@ -82,6 +82,10 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>L1_Approver__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>Manager_Approver__c</field>
             </layoutItems>
             <layoutItems>
@@ -103,6 +107,10 @@
         <editHeading>true</editHeading>
         <label>Finance Approval</label>
         <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>L2_Approver__c</field>
+            </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Finance_Approver__c</field>
