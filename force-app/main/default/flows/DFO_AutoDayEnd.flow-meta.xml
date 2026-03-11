@@ -2,7 +2,7 @@
 <Flow xmlns="http://soap.sforce.com/2006/metadata">
     <apiVersion>59.0</apiVersion>
     <label>DFO - Auto Day End</label>
-    <description>Automatically closes day attendance records that were not manually ended by cutoff time. Handles both Started and In_Progress statuses, sets Auto_Closed flag, and updates end time.</description>
+    <description>Automatically closes day attendance records that were not manually ended by cutoff time. Runs on a daily schedule. Handles both Started and In Progress statuses, sets Auto_Closed flag, and updates end time.</description>
     <processType>AutoLaunchedFlow</processType>
     <status>Active</status>
     <interviewLabel>Auto Day End {!$Flow.CurrentDateTime}</interviewLabel>
@@ -12,6 +12,12 @@
         <connector>
             <targetReference>Get_Open_Attendance</targetReference>
         </connector>
+        <schedule>
+            <frequency>Daily</frequency>
+            <startTime>21:00:00.000Z</startTime>
+            <startDate>2024-01-01</startDate>
+        </schedule>
+        <triggerType>Scheduled</triggerType>
     </start>
     <recordLookups>
         <name>Get_Open_Attendance</name>
@@ -30,7 +36,7 @@
                 <stringValue>Started</stringValue>
             </value>
             <value>
-                <stringValue>In_Progress</stringValue>
+                <stringValue>In Progress</stringValue>
             </value>
         </filters>
         <filters>
@@ -92,7 +98,7 @@
             <assignToReference>Loop_Records.Status__c</assignToReference>
             <operator>Assign</operator>
             <value>
-                <stringValue>Ended</stringValue>
+                <stringValue>Auto-Closed</stringValue>
             </value>
         </assignmentItems>
         <assignmentItems>
