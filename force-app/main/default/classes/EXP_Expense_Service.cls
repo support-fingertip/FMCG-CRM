@@ -1531,9 +1531,8 @@ public without sharing class EXP_Expense_Service {
     // NOTIFICATIONS — Bell notifications with link to expense record
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static void sendExpenseNotification(Id expenseId, Set<Id> recipientUserIds, String title, String body) {
+    private static void sendExpenseNotification(Id expenseId, Set<String> recipientUserIds, String title, String body) {
         if (recipientUserIds == null || recipientUserIds.isEmpty()) return;
-        // Remove null entries
         recipientUserIds.remove(null);
         if (recipientUserIds.isEmpty()) return;
 
@@ -1557,10 +1556,9 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static void notifyApproversOnSubmit(Expense__c expense) {
-        Set<Id> recipients = new Set<Id>();
-        // Notify L1 approver when expense is submitted
+        Set<String> recipients = new Set<String>();
         if (expense.L1_Approver__c != null) {
-            recipients.add(expense.L1_Approver__c);
+            recipients.add(String.valueOf(expense.L1_Approver__c));
         }
         String empName = getSubmitterName(expense.Employee__c);
         sendExpenseNotification(
@@ -1572,10 +1570,9 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static void notifyOnManagerApproval(Expense__c expense) {
-        Set<Id> recipients = new Set<Id>();
-        // Notify the employee that their expense was approved
+        Set<String> recipients = new Set<String>();
         if (expense.User__c != null) {
-            recipients.add(expense.User__c);
+            recipients.add(String.valueOf(expense.User__c));
         }
         sendExpenseNotification(
             expense.Id,
@@ -1586,7 +1583,7 @@ public without sharing class EXP_Expense_Service {
 
         // Notify L2 approver that expense is ready for finance review
         if (expense.L2_Approver__c != null) {
-            Set<Id> financeRecipients = new Set<Id>{ expense.L2_Approver__c };
+            Set<String> financeRecipients = new Set<String>{ String.valueOf(expense.L2_Approver__c) };
             sendExpenseNotification(
                 expense.Id,
                 financeRecipients,
@@ -1597,9 +1594,9 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static void notifyOnFinanceApproval(Expense__c expense) {
-        Set<Id> recipients = new Set<Id>();
+        Set<String> recipients = new Set<String>();
         if (expense.User__c != null) {
-            recipients.add(expense.User__c);
+            recipients.add(String.valueOf(expense.User__c));
         }
         sendExpenseNotification(
             expense.Id,
@@ -1610,9 +1607,9 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static void notifyOnRejection(Expense__c expense, String reason, String level) {
-        Set<Id> recipients = new Set<Id>();
+        Set<String> recipients = new Set<String>();
         if (expense.User__c != null) {
-            recipients.add(expense.User__c);
+            recipients.add(String.valueOf(expense.User__c));
         }
         String levelLabel = level == 'manager' ? 'Manager' : 'Finance';
         sendExpenseNotification(
