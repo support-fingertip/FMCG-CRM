@@ -47,9 +47,14 @@
                 <label>Flight</label>
             </value>
             <value>
-                <fullName>Own Vehicle</fullName>
+                <fullName>Own Bike</fullName>
                 <default>false</default>
-                <label>Own Vehicle</label>
+                <label>Own Bike</label>
+            </value>
+            <value>
+                <fullName>Own Car</fullName>
+                <default>false</default>
+                <label>Own Car</label>
             </value>
             <value>
                 <fullName>Bus: AC</fullName>

@@ -229,15 +229,17 @@
                                                 Eligible: {item.eligibleAmount}
                                             </span>
                                             <div class="item-actions-right">
-                                                <template if:true={canEdit}>
-                                                    <lightning-button-icon
-                                                        icon-name="utility:delete"
-                                                        alternative-text="Delete"
-                                                        variant="bare-destructive"
-                                                        size="small"
-                                                        data-key={item.key}
-                                                        onclick={handleDeleteItem}>
-                                                    </lightning-button-icon>
+                                                <template if:false={item.isReadonly}>
+                                                    <template if:true={canEdit}>
+                                                        <lightning-button-icon
+                                                            icon-name="utility:delete"
+                                                            alternative-text="Delete"
+                                                            variant="bare-destructive"
+                                                            size="small"
+                                                            data-key={item.key}
+                                                            onclick={handleDeleteItem}>
+                                                        </lightning-button-icon>
+                                                    </template>
                                                 </template>
                                             </div>
                                         </div>
@@ -254,7 +256,7 @@
                                                         data-field="fromLocation"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked"
                                                         required>
                                                     </lightning-input>
@@ -267,7 +269,7 @@
                                                         data-field="toLocation"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked"
                                                         required>
                                                     </lightning-input>
@@ -284,7 +286,7 @@
                                                         data-field="travelMode"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked"
                                                         placeholder="Select...">
                                                     </lightning-combobox>
@@ -302,7 +304,7 @@
                                                         data-field="manualDistance"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked"
                                                         required>
                                                     </lightning-input>
@@ -320,7 +322,7 @@
                                                         data-field="workingHours"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked">
                                                     </lightning-input>
                                                 </div>
@@ -336,7 +338,7 @@
                                                         data-field="city"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked"
                                                         placeholder="Search city..."
                                                         required>
@@ -366,7 +368,7 @@
                                                     data-field="claimedAmount"
                                                     data-key={item.key}
                                                     onchange={handleItemFieldChange}
-                                                    disabled={cannotEdit}
+                                                    disabled={item.isReadonly}
                                                     variant="label-stacked"
                                                     required>
                                                 </lightning-input>
@@ -409,7 +411,7 @@
                                                         data-field="notes"
                                                         data-key={item.key}
                                                         onchange={handleItemFieldChange}
-                                                        disabled={cannotEdit}
+                                                        disabled={item.isReadonly}
                                                         variant="label-stacked"
                                                         required={item.mandatoryRemarks}>
                                                     </lightning-input>
@@ -436,6 +438,7 @@
                                                     </template>
                                                 </div>
                                                 <!-- File upload -->
+                                                <template if:false={item.isReadonly}>
                                                 <template if:true={canEdit}>
                                                     <div class="receipt-upload-area">
                                                         <label class="slds-file-selector slds-file-selector_files">
@@ -460,6 +463,7 @@
                                                             <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">Files will be uploaded when you save.</p>
                                                         </template>
                                                     </div>
+                                                </template>
                                                 </template>
                                                 <!-- Pending (staged) files for unsaved items -->
                                                 <template if:true={item.hasPendingFiles}>

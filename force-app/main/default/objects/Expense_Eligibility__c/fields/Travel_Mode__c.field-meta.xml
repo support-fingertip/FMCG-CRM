@@ -18,7 +18,8 @@
             <value><fullName>Bus</fullName><default>false</default><label>Bus</label></value>
             <value><fullName>Train</fullName><default>false</default><label>Train</label></value>
             <value><fullName>Flight</fullName><default>false</default><label>Flight</label></value>
-            <value><fullName>Own Vehicle</fullName><default>false</default><label>Own Vehicle</label></value>
+            <value><fullName>Own Bike</fullName><default>false</default><label>Own Bike</label></value>
+            <value><fullName>Own Car</fullName><default>false</default><label>Own Car</label></value>
             <value><fullName>Public Transport</fullName><default>false</default><label>Public Transport</label></value>
         </valueSetDefinition>
     </valueSet>

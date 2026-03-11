@@ -57,7 +57,8 @@ const TRAVEL_MODE_GROUPS = [
         { label: 'Bike', value: 'Bike' },
         { label: 'Car', value: 'Car' },
         { label: 'Auto', value: 'Auto' },
-        { label: 'Own Vehicle', value: 'Own Vehicle' },
+        { label: 'Own Bike', value: 'Own Bike' },
+        { label: 'Own Car', value: 'Own Car' },
         { label: 'Public Transport', value: 'Public Transport' }
     ]},
     { group: 'Bus', groupKey: 'bus', modes: [
@@ -138,15 +139,15 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
 
     // Computed properties
     get showTravelModes() {
-        return this.selectedRule?.Expense_Type__c === 'Travelling Allowance' || this.selectedRule?.Expense_Type__c === 'Fuel';
+        return this.selectedRule?.Expense_Type__c === 'Travelling Allowance';
     }
 
     get showCityTierLimits() {
-        return ['Lodging', 'Travelling Allowance', 'Daily Allowance', 'Food'].includes(this.selectedRule?.Expense_Type__c);
+        return ['Travelling Allowance'].includes(this.selectedRule?.Expense_Type__c);
     }
 
     get showDistanceSettings() {
-        return this.selectedRule?.Expense_Type__c === 'Travelling Allowance' || this.selectedRule?.Expense_Type__c === 'Fuel';
+        return this.selectedRule?.Expense_Type__c === 'Travelling Allowance';
     }
 
     get showMaxPerDay() {
@@ -209,7 +210,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         return selected.map(mode => {
             const config = this.rateSlabs.find(s => s.Travel_Mode__c === mode && !s.Distance_From__c && s.Distance_From__c !== 0);
             const slabCount = this.rateSlabs.filter(s => s.Travel_Mode__c === mode && (s.Distance_From__c || s.Distance_From__c === 0)).length;
-            const isDistanceBased = ['Bike', 'Car', 'Auto', 'Own Vehicle', 'Public Transport'].includes(mode);
+            const isDistanceBased = ['Bike', 'Car', 'Auto', 'Own Bike', 'Own Car', 'Public Transport'].includes(mode);
             return {
                 mode,
                 key: mode,
@@ -435,14 +436,17 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
         let rateType = 'Per Day';
         let category = 'Miscellaneous';
 
-        if (expenseType === 'Travelling Allowance' || expenseType === 'Fuel') {
+        if (expenseType === 'Travelling Allowance') {
             rateType = 'Per KM';
+            category = 'Travel';
+        } else if (expenseType === 'Fuel') {
+            rateType = 'Actual';
             category = 'Travel';
         } else if (expenseType === 'Daily Allowance' || expenseType === 'Food') {
             rateType = 'Per Day';
             category = 'Travel';
         } else if (expenseType === 'Lodging') {
-            rateType = 'Actual';
+            rateType = 'Per Day';
             category = 'Travel';
         } else if (expenseType === 'Toll') {
             rateType = 'Actual';

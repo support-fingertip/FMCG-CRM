@@ -69,7 +69,8 @@ const VEHICLE_OPTIONS = [
     { label: 'Flight: Business', value: 'Flight: Business' },
     { label: 'Flight: Economy', value: 'Flight: Economy' },
     { label: 'Flight: Premium Economy', value: 'Flight: Premium Economy' },
-    { label: 'Own Vehicle', value: 'Own Vehicle' },
+    { label: 'Own Bike', value: 'Own Bike' },
+    { label: 'Own Car', value: 'Own Car' },
     { label: 'Public Transport', value: 'Public Transport' }
 ];
 
@@ -90,7 +91,8 @@ const TRAVEL_MODE_OPTIONS = [
     { label: 'Flight: Business', value: 'Flight: Business' },
     { label: 'Flight: Economy', value: 'Flight: Economy' },
     { label: 'Flight: Premium Economy', value: 'Flight: Premium Economy' },
-    { label: 'Own Vehicle', value: 'Own Vehicle' },
+    { label: 'Own Bike', value: 'Own Bike' },
+    { label: 'Own Car', value: 'Own Car' },
     { label: 'Public Transport', value: 'Public Transport' }
 ];
 
@@ -394,7 +396,7 @@ export default class ExpenseManager extends LightningElement {
         const showVehicle = false; // consolidated into Travel Mode
         const allowedModes = rule ? this.getAllowedModesForRule(rule) : [];
         const showTravelMode = isTravel && allowedModes.length > 0;
-        const showRemarks = rule && (isActual || rule.Expense_Category__c === 'Miscellaneous' || rule.Mandatory_Remarks__c);
+        const showRemarks = true;
         const needsCity = isLodging || (rule && rule.Expense_Category__c === 'Travel' && hasCityTierLimits);
         const showCity = needsCity;
         const showCityTier = needsCity;
@@ -460,6 +462,7 @@ export default class ExpenseManager extends LightningElement {
             exceedsEligible: false,
             statusLabel: existing ? this.getItemStatusLabel(existing.Approval_Status__c) : 'New',
             statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
+            isReadonly: existing ? ['Pending', 'L1 Approved', 'Finance Approved'].includes(existing.Approval_Status__c) : false,
             files: itemFiles,
             hasFiles: itemFiles.length > 0,
             hasAnyFiles: itemFiles.length > 0,
@@ -540,6 +543,7 @@ export default class ExpenseManager extends LightningElement {
             exceedsEligible: false,
             statusLabel: 'New',
             statusClass: 'item-status item-status-new',
+            isReadonly: false,
             files: [],
             hasFiles: false,
             hasAnyFiles: false,
@@ -1158,14 +1162,16 @@ export default class ExpenseManager extends LightningElement {
                             s => s.Expense_Date__c === row.dateStr && s.Expense_Type__c === item.expenseType
                         );
                         if (saved) {
+                            const approvalStatus = saved.Approval_Status__c || 'Not Submitted';
                             return {
                                 ...item,
                                 id: saved.Id,
                                 hasExisting: true,
                                 dirty: false,
-                                approvalStatus: saved.Approval_Status__c || 'Not Submitted',
+                                approvalStatus: approvalStatus,
                                 statusLabel: this.getItemStatusLabel(saved.Approval_Status__c),
-                                statusClass: this.getItemStatusClass(saved.Approval_Status__c)
+                                statusClass: this.getItemStatusClass(saved.Approval_Status__c),
+                                isReadonly: ['Pending', 'L1 Approved', 'Finance Approved'].includes(approvalStatus)
                             };
                         }
                         return item;
@@ -1225,6 +1231,7 @@ export default class ExpenseManager extends LightningElement {
         const itemsToSave = [];
         this.dayRows.forEach(row => {
             row.items.forEach(item => {
+                if (item.isReadonly) return;
                 if ((item.claimedAmount && item.claimedAmount > 0) || item.hasExisting) {
                     const rec = {
                         Expense_Date__c: row.dateStr,

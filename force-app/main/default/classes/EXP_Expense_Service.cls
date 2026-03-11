@@ -795,16 +795,21 @@ public without sharing class EXP_Expense_Service {
         // Validate receipt and remarks requirements
         validateReceiptsAndRemarks(expenseId, expense.Employee__c);
 
-        // Update all item statuses to Pending
+        // Update only non-approved item statuses to Pending (preserve already approved items)
         List<Expense_Item__c> items = [
             SELECT Id, Approval_Status__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId
         ];
+        List<Expense_Item__c> itemsToUpdate = new List<Expense_Item__c>();
         for (Expense_Item__c item : items) {
-            item.Approval_Status__c = 'Pending';
+            if (item.Approval_Status__c != 'L1 Approved' &&
+                item.Approval_Status__c != 'Finance Approved') {
+                item.Approval_Status__c = 'Pending';
+                itemsToUpdate.add(item);
+            }
         }
-        if (!items.isEmpty()) update items;
+        if (!itemsToUpdate.isEmpty()) update itemsToUpdate;
 
         expense.Status__c = 'Submitted';
         expense.Submitted_Date__c = Datetime.now();
