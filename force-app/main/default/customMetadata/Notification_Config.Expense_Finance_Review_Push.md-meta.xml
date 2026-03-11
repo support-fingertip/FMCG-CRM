@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Recipient_Type__c</field>
-        <value xsi:type="xsd:string">L2_Approver</value>
+        <value xsi:type="xsd:string">Custom</value>
     </values>
     <values>
         <field>Template__c</field>
