@@ -28,6 +28,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     // Resolved employee ID for current user (used when no employeeId/recordId provided)
     _resolvedEmployeeId;
+    _calendarLeaves = [];
 
     // ── Core Data ────────────────────────────────────────────────
     @track employee = {};
@@ -154,16 +155,26 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadAttendanceData() {
         this.isTabLoading = true;
         try {
-            const result = await getAttendanceHistory({
-                employeeId: this.effectiveEmployeeId,
-                year: this.calendarYear,
-                month: this.calendarMonth + 1
-            });
-            this.attendanceRecords = result || [];
+            const [attendanceResult, leaveResult] = await Promise.all([
+                getAttendanceHistory({
+                    employeeId: this.effectiveEmployeeId,
+                    year: this.calendarYear,
+                    month: this.calendarMonth + 1
+                }),
+                getLeaveHistory({
+                    employeeId: this.effectiveEmployeeId,
+                    year: this.calendarYear
+                })
+            ]);
+            this.attendanceRecords = attendanceResult || [];
+            this._calendarLeaves = (leaveResult || []).filter(l =>
+                l.Status__c === 'Approved' || l.Status__c === 'Pending'
+            );
             this.buildCalendar();
         } catch (error) {
             console.error('Error loading attendance:', error);
             this.attendanceRecords = [];
+            this._calendarLeaves = [];
             this.buildCalendar();
         } finally {
             this.isTabLoading = false;
@@ -297,6 +308,20 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
             }
         });
 
+        // Build leave date lookup from approved/pending leave requests
+        const leaveDaySet = new Set();
+        (this._calendarLeaves || []).forEach(leave => {
+            if (leave.Start_Date__c && leave.End_Date__c) {
+                const start = new Date(leave.Start_Date__c);
+                const end = new Date(leave.End_Date__c);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    if (d.getFullYear() === year && d.getMonth() === month) {
+                        leaveDaySet.add(d.getDate());
+                    }
+                }
+            }
+        });
+
         const weeks = [];
         let currentWeek = [];
 
@@ -341,6 +366,10 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 } else {
                     cssClass += isWeekend ? ' cal-day-weekend' : '';
                 }
+            } else if (leaveDaySet.has(day)) {
+                // No attendance record but has an approved/pending leave
+                status = 'leave';
+                cssClass += ' cal-day-leave';
             } else {
                 if (isWeekend) {
                     cssClass += ' cal-day-weekend';
@@ -753,7 +782,47 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get attendanceSummaryLeave() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'leave' || (r.Status__c || '').toLowerCase() === 'on leave').length;
+        // Count leave days from attendance records with leave status
+        const fromAttendance = this.attendanceRecords.filter(r =>
+            (r.Status__c || '').toLowerCase() === 'leave' || (r.Status__c || '').toLowerCase() === 'on leave'
+        ).length;
+
+        // Count leave days from Leave_Request__c records that fall in this month
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+
+        const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
+        const attendanceDaySet = new Set();
+        this.attendanceRecords.forEach(r => {
+            const dateStr = r.Attendance_Date__c || r.Date__c;
+            if (dateStr && presentStatuses.includes((r.Status__c || '').toLowerCase())) {
+                attendanceDaySet.add(new Date(dateStr).getDate());
+            }
+        });
+
+        let leaveDaysFromRequests = 0;
+        (this._calendarLeaves || []).forEach(leave => {
+            if (leave.Start_Date__c && leave.End_Date__c) {
+                const start = new Date(leave.Start_Date__c);
+                const end = new Date(leave.End_Date__c);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    if (d.getFullYear() === year && d.getMonth() === month) {
+                        const dayNum = d.getDate();
+                        const dayOfWeek = d.getDay();
+                        // Only count weekdays that don't already have an attendance record, up to today
+                        if (dayNum <= lastDate && dayOfWeek !== 0 && dayOfWeek !== 6 && !attendanceDaySet.has(dayNum)) {
+                            leaveDaysFromRequests++;
+                        }
+                    }
+                }
+            }
+        });
+
+        return fromAttendance + leaveDaysFromRequests;
     }
 
     get attendanceSummaryHoliday() {
