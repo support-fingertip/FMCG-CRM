@@ -79,7 +79,7 @@ public with sharing class EmployeeThreeSixtyController {
             WHERE User__c = :userId
             AND Attendance_Date__c >= :mtdStart
             AND Attendance_Date__c <= :today
-            AND Status__c IN ('Started', 'Completed')
+            AND Status__c IN ('Present', 'Started', 'Completed', 'Ended', 'Auto-Closed', 'In Progress', 'Half Day')
         ];
         kpis.put('mtdAttendanceCount', attendanceCount);
 
@@ -531,7 +531,7 @@ public with sharing class EmployeeThreeSixtyController {
                 WHERE User__c IN :userIds
                 AND Attendance_Date__c >= :mtdStart
                 AND Attendance_Date__c <= :today
-                AND Status__c IN ('Started', 'Completed')
+                AND Status__c IN ('Present', 'Started', 'Completed', 'Ended', 'Auto-Closed', 'In Progress', 'Half Day')
                 GROUP BY User__c
             ];
             for (AggregateResult ar : attAgg) {
