@@ -1744,11 +1744,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense__c.Employee__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense__c.Finance_Approved_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
