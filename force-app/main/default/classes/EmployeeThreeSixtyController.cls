@@ -513,6 +513,28 @@ public with sharing class EmployeeThreeSixtyController {
         return results;
     }
 
+    // ── Get Current User's Employee Id ────────────────────────────────────────
+
+    /**
+     * @description Resolves the Employee__c record Id for the current logged-in user.
+     *              Used when the component is placed on a Tab without an explicit employeeId.
+     * @return The Employee__c record Id for the current user.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Id getMyEmployeeId() {
+        Id currentUserId = UserInfo.getUserId();
+        List<Employee__c> employees = [
+            SELECT Id FROM Employee__c
+            WHERE User__c = :currentUserId
+            AND Is_Active__c = true
+            LIMIT 1
+        ];
+        if (employees.isEmpty()) {
+            throw new AuraHandledException('No Employee record found for the current user.');
+        }
+        return employees[0].Id;
+    }
+
     // ── Private Helpers ───────────────────────────────────────────────────────
 
     /**

@@ -10,6 +10,7 @@ import getAssignedBeats from '@salesforce/apex/EmployeeThreeSixtyController.getA
 import getPerformanceTrend from '@salesforce/apex/EmployeeThreeSixtyController.getPerformanceTrend';
 import getRecentActivity from '@salesforce/apex/EmployeeThreeSixtyController.getRecentActivity';
 import getDirectReports from '@salesforce/apex/EmployeeThreeSixtyController.getDirectReports';
+import getMyEmployeeId from '@salesforce/apex/EmployeeThreeSixtyController.getMyEmployeeId';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -22,8 +23,11 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     @api recordId;
 
     get effectiveEmployeeId() {
-        return this.employeeId || this.recordId;
+        return this.employeeId || this.recordId || this._resolvedEmployeeId;
     }
+
+    // Resolved employee ID for current user (used when no employeeId/recordId provided)
+    _resolvedEmployeeId;
 
     // ── Core Data ────────────────────────────────────────────────
     @track employee = {};
@@ -64,6 +68,10 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadInitialData() {
         this.isLoading = true;
         try {
+            // If no employeeId or recordId provided (e.g. Tab context), resolve from current user
+            if (!this.effectiveEmployeeId) {
+                this._resolvedEmployeeId = await getMyEmployeeId();
+            }
             await Promise.all([
                 this.loadEmployeeDetails(),
                 this.loadKPIs()
@@ -606,36 +614,36 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     // ── Computed Properties: KPI Tiles ───────────────────────────
 
     get attendancePercent() {
-        return this.kpis.attendancePercent != null ? Number(this.kpis.attendancePercent).toFixed(0) : '0';
+        return this.kpis.attendancePercentage != null ? Number(this.kpis.attendancePercentage).toFixed(0) : '0';
     }
 
     get attendanceColorClass() {
-        const pct = Number(this.kpis.attendancePercent || 0);
+        const pct = Number(this.kpis.attendancePercentage || 0);
         if (pct >= 90) return 'kpi-color-success';
         if (pct >= 75) return 'kpi-color-warning';
         return 'kpi-color-error';
     }
 
     get attendanceRingDasharray() {
-        const pct = Math.min(Number(this.kpis.attendancePercent || 0), 100);
+        const pct = Math.min(Number(this.kpis.attendancePercentage || 0), 100);
         const circumference = 2 * Math.PI * 16;
         const filled = (pct / 100) * circumference;
         return filled + ' ' + circumference;
     }
 
     get attendanceRingColor() {
-        const pct = Number(this.kpis.attendancePercent || 0);
+        const pct = Number(this.kpis.attendancePercentage || 0);
         if (pct >= 90) return '#2e844a';
         if (pct >= 75) return '#dd7a01';
         return '#ea001e';
     }
 
     get mtdAttendance() {
-        return this.kpis.mtdAttendance || 0;
+        return this.kpis.mtdAttendanceCount || 0;
     }
 
     get totalWorkingDays() {
-        return this.kpis.totalWorkingDays || 0;
+        return this.kpis.mtdTotalWorkingDays || 0;
     }
 
     get mtdOrderCount() {
@@ -647,11 +655,11 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get mtdCollection() {
-        return this.formatCurrencyShort(this.kpis.mtdCollection || 0);
+        return this.formatCurrencyShort(this.kpis.mtdCollectionTotal || 0);
     }
 
     get mtdVisits() {
-        return this.kpis.mtdVisits || 0;
+        return this.kpis.mtdVisitCount || 0;
     }
 
     get mtdProductiveCalls() {
@@ -659,18 +667,18 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get productivePercent() {
-        const visits = this.kpis.mtdVisits || 0;
+        const visits = this.kpis.mtdVisitCount || 0;
         const productive = this.kpis.mtdProductiveCalls || 0;
         if (visits === 0) return '0';
         return Math.round((productive / visits) * 100);
     }
 
     get totalBeats() {
-        return this.kpis.totalBeats || 0;
+        return this.kpis.totalBeatsAssigned || 0;
     }
 
     get totalOutlets() {
-        return this.kpis.totalOutlets || 0;
+        return this.kpis.totalOutletsCovered || 0;
     }
 
     get totalLeaveBalance() {
