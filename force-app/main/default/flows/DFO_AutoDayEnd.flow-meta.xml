@@ -28,13 +28,17 @@
             <targetReference>Check_Records_Found</targetReference>
         </connector>
         <object>Day_Attendance__c</object>
-        <filterLogic>and</filterLogic>
+        <filterLogic>(1 OR 2) AND 3</filterLogic>
         <filters>
             <field>Status__c</field>
-            <operator>In</operator>
+            <operator>EqualTo</operator>
             <value>
                 <stringValue>Started</stringValue>
             </value>
+        </filters>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
             <value>
                 <stringValue>In Progress</stringValue>
             </value>
