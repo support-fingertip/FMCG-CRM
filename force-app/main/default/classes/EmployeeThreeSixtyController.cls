@@ -342,7 +342,7 @@ public with sharing class EmployeeThreeSixtyController {
                        Is_Active__c, Sequence__c
                 FROM Beat__c
                 WHERE Assigned_User__c = :userId
-                ORDER BY Day_of_Week__c, Sequence__c
+                ORDER BY Sequence__c NULLS LAST, Name
             ];
 
             // Second fallback: try beats owned by the user
@@ -354,7 +354,7 @@ public with sharing class EmployeeThreeSixtyController {
                            Is_Active__c, Sequence__c
                     FROM Beat__c
                     WHERE OwnerId = :userId
-                    ORDER BY Day_of_Week__c, Sequence__c
+                    ORDER BY Sequence__c NULLS LAST, Name
                 ];
             }
         }
@@ -369,7 +369,7 @@ public with sharing class EmployeeThreeSixtyController {
                        Is_Active__c, Sequence__c
                 FROM Beat__c
                 WHERE Territory__c = :territoryId
-                ORDER BY Day_of_Week__c, Sequence__c
+                ORDER BY Sequence__c NULLS LAST, Name
             ];
         }
 
