@@ -402,17 +402,21 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 }
             }
 
-            // For future dates, add dimming class but preserve the actual status
-            // so holiday/leave/weekoff indicators still render
+            // Determine if this day is in the future
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const isFuture = date > today;
+
             if (isFuture) {
+                // Future dates: add dimming but preserve holiday/leave/weekoff indicators
                 cssClass += ' cal-day-future';
-                // Only override status if no meaningful status was set
                 if (status === 'none') {
                     status = 'future';
                 }
+            } else if (status === 'none' && !isWeekOff) {
+                // Past/today working day with no record, no leave, no holiday = Absent
+                status = 'absent';
+                cssClass += ' cal-day-absent';
             }
 
             // Add holiday name for tooltip display
