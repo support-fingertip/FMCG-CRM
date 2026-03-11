@@ -282,38 +282,61 @@ public with sharing class EmployeeThreeSixtyController {
      */
     @AuraEnabled(cacheable=true)
     public static List<Beat__c> getAssignedBeats(Id employeeId) {
-        Id userId = getEmployeeUserId(employeeId);
-
-        // First try beats directly assigned to the user
-        List<Beat__c> beats = [
-            SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
-                   Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name,
-                   Is_Active__c, Sequence__c
-            FROM Beat__c
-            WHERE Assigned_User__c = :userId
-            AND Is_Active__c = true
-            ORDER BY Day_of_Week__c, Sequence__c
+        List<Employee__c> emps = [
+            SELECT User__c, Territory__c
+            FROM Employee__c
+            WHERE Id = :employeeId
+            LIMIT 1
         ];
+        if (emps.isEmpty()) {
+            throw new AuraHandledException('Employee not found.');
+        }
 
-        // Fallback: if no directly assigned beats, show beats in the employee's territory
-        if (beats.isEmpty()) {
-            List<Employee__c> emps = [
-                SELECT Territory__c FROM Employee__c WHERE Id = :employeeId LIMIT 1
+        Employee__c emp = emps[0];
+        List<Beat__c> beats = new List<Beat__c>();
+
+        // First try beats directly assigned to the user (by Assigned_User__c)
+        if (emp.User__c != null) {
+            Id userId = emp.User__c;
+            beats = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Assigned_User__c = :userId
+                AND Is_Active__c = true
+                ORDER BY Day_of_Week__c, Sequence__c
             ];
-            if (!emps.isEmpty() && emps[0].Territory__c != null) {
-                Id territoryId = emps[0].Territory__c;
+
+            // Second fallback: try beats owned by the user
+            if (beats.isEmpty()) {
                 beats = [
                     SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                            Total_Outlets__c, Pincode_Cluster__c, Description__c,
                            Territory__c, Territory__r.Name,
                            Is_Active__c, Sequence__c
                     FROM Beat__c
-                    WHERE Territory__c = :territoryId
+                    WHERE OwnerId = :userId
                     AND Is_Active__c = true
                     ORDER BY Day_of_Week__c, Sequence__c
                 ];
             }
+        }
+
+        // Third fallback: show beats in the employee's territory
+        if (beats.isEmpty() && emp.Territory__c != null) {
+            Id territoryId = emp.Territory__c;
+            beats = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Territory__c = :territoryId
+                AND Is_Active__c = true
+                ORDER BY Day_of_Week__c, Sequence__c
+            ];
         }
 
         return beats;
@@ -556,6 +579,56 @@ public with sharing class EmployeeThreeSixtyController {
             throw new AuraHandledException('No Employee record found for the current user.');
         }
         return employees[0].Id;
+    }
+
+    // ── Get Holidays for Month ─────────────────────────────────────────────
+
+    /**
+     * @description Retrieves active Holiday__c records for a given month/year,
+     *              optionally filtered by the employee's territory.
+     * @param employeeId The Employee__c record Id (used for territory filtering).
+     * @param year       The four-digit year.
+     * @param month      The month (1-12).
+     * @return List of Holiday__c records for the month.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Holiday__c> getHolidaysForMonth(Id employeeId, Integer year, Integer month) {
+        Date startDate = Date.newInstance(year, month, 1);
+        Date endDate = startDate.addMonths(1).addDays(-1);
+
+        // Get employee's territory for filtering regional holidays
+        Id territoryId = null;
+        if (employeeId != null) {
+            List<Employee__c> emps = [
+                SELECT Territory__c FROM Employee__c WHERE Id = :employeeId LIMIT 1
+            ];
+            if (!emps.isEmpty()) {
+                territoryId = emps[0].Territory__c;
+            }
+        }
+
+        // Return holidays that are either not territory-specific or match the employee's territory
+        if (territoryId != null) {
+            return [
+                SELECT Id, Name, Holiday_Date__c, Type__c, Description__c
+                FROM Holiday__c
+                WHERE Holiday_Date__c >= :startDate
+                AND Holiday_Date__c <= :endDate
+                AND Is_Active__c = true
+                AND (Territory__c = null OR Territory__c = :territoryId)
+                ORDER BY Holiday_Date__c ASC
+            ];
+        } else {
+            return [
+                SELECT Id, Name, Holiday_Date__c, Type__c, Description__c
+                FROM Holiday__c
+                WHERE Holiday_Date__c >= :startDate
+                AND Holiday_Date__c <= :endDate
+                AND Is_Active__c = true
+                AND Territory__c = null
+                ORDER BY Holiday_Date__c ASC
+            ];
+        }
     }
 
     // ── Private Helpers ───────────────────────────────────────────────────────

@@ -11,6 +11,7 @@ import getPerformanceTrend from '@salesforce/apex/EmployeeThreeSixtyController.g
 import getRecentActivity from '@salesforce/apex/EmployeeThreeSixtyController.getRecentActivity';
 import getDirectReports from '@salesforce/apex/EmployeeThreeSixtyController.getDirectReports';
 import getMyEmployeeId from '@salesforce/apex/EmployeeThreeSixtyController.getMyEmployeeId';
+import getHolidaysForMonth from '@salesforce/apex/EmployeeThreeSixtyController.getHolidaysForMonth';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -29,6 +30,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     // Resolved employee ID for current user (used when no employeeId/recordId provided)
     _resolvedEmployeeId;
     _calendarLeaves = [];
+    _calendarHolidays = [];
 
     // ── Core Data ────────────────────────────────────────────────
     @track employee = {};
@@ -155,7 +157,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadAttendanceData() {
         this.isTabLoading = true;
         try {
-            const [attendanceResult, leaveResult] = await Promise.all([
+            const [attendanceResult, leaveResult, holidayResult] = await Promise.all([
                 getAttendanceHistory({
                     employeeId: this.effectiveEmployeeId,
                     year: this.calendarYear,
@@ -164,17 +166,24 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 getLeaveHistory({
                     employeeId: this.effectiveEmployeeId,
                     year: this.calendarYear
+                }),
+                getHolidaysForMonth({
+                    employeeId: this.effectiveEmployeeId,
+                    year: this.calendarYear,
+                    month: this.calendarMonth + 1
                 })
             ]);
             this.attendanceRecords = attendanceResult || [];
             this._calendarLeaves = (leaveResult || []).filter(l =>
                 l.Status__c === 'Approved' || l.Status__c === 'Pending'
             );
+            this._calendarHolidays = holidayResult || [];
             this.buildCalendar();
         } catch (error) {
             console.error('Error loading attendance:', error);
             this.attendanceRecords = [];
             this._calendarLeaves = [];
+            this._calendarHolidays = [];
             this.buildCalendar();
         } finally {
             this.isTabLoading = false;
@@ -322,6 +331,15 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
             }
         });
 
+        // Build holiday date lookup from Holiday__c records
+        const holidayDayMap = {};
+        (this._calendarHolidays || []).forEach(h => {
+            if (h.Holiday_Date__c) {
+                const day = new Date(h.Holiday_Date__c).getDate();
+                holidayDayMap[day] = h;
+            }
+        });
+
         const weeks = [];
         let currentWeek = [];
 
@@ -366,6 +384,10 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 } else {
                     cssClass += isWeekend ? ' cal-day-weekend' : '';
                 }
+            } else if (holidayDayMap[day]) {
+                // No attendance record but is a holiday from Holiday__c
+                status = 'holiday';
+                cssClass += ' cal-day-holiday';
             } else if (leaveDaySet.has(day)) {
                 // No attendance record but has an approved/pending leave
                 status = 'leave';
@@ -385,6 +407,9 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 status = 'future';
             }
 
+            // Add holiday name for tooltip display
+            const holidayName = holidayDayMap[day] ? holidayDayMap[day].Name : '';
+
             currentWeek.push({
                 key: 'day-' + day,
                 day: day,
@@ -397,7 +422,8 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 isLeave: status === 'leave',
                 isHoliday: status === 'holiday',
                 isWeekend: status === 'weekend',
-                showHours: !!hours
+                showHours: !!hours,
+                holidayName: holidayName
             });
 
             if (currentWeek.length === 7) {
@@ -826,7 +852,40 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get attendanceSummaryHoliday() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'holiday').length;
+        // Count holidays from attendance records with holiday status
+        const fromAttendance = this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'holiday').length;
+
+        // Count holidays from Holiday__c records that fall on weekdays in this month
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+
+        // Build set of days already accounted for from attendance records
+        const attendanceDaySet = new Set();
+        this.attendanceRecords.forEach(r => {
+            const dateStr = r.Attendance_Date__c || r.Date__c;
+            if (dateStr) {
+                attendanceDaySet.add(new Date(dateStr).getDate());
+            }
+        });
+
+        let holidaysFromRecords = 0;
+        (this._calendarHolidays || []).forEach(h => {
+            if (h.Holiday_Date__c) {
+                const hDate = new Date(h.Holiday_Date__c);
+                const dayNum = hDate.getDate();
+                const dayOfWeek = hDate.getDay();
+                // Count weekday holidays not already tracked in attendance, up to today
+                if (dayNum <= lastDate && dayOfWeek !== 0 && dayOfWeek !== 6 && !attendanceDaySet.has(dayNum)) {
+                    holidaysFromRecords++;
+                }
+            }
+        });
+
+        return fromAttendance + holidaysFromRecords;
     }
 
     get calendarAttendancePercent() {

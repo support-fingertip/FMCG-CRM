@@ -497,7 +497,7 @@
                                                         <span class="cal-status-icon cal-icon-leave">L</span>
                                                     </template>
                                                     <template if:true={day.isHoliday}>
-                                                        <span class="cal-status-icon cal-icon-holiday">H</span>
+                                                        <span class="cal-status-icon cal-icon-holiday" title={day.holidayName}>H</span>
                                                     </template>
                                                     <template if:true={day.showHours}>
                                                         <span class="cal-hours">{day.hours}</span>
