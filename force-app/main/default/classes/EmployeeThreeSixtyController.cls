@@ -57,7 +57,7 @@ public with sharing class EmployeeThreeSixtyController {
 
         // ── Fetch employee to get User__c link and leave balances ────
         List<Employee__c> employees = [
-            SELECT Id, User__c,
+            SELECT Id, User__c, Week_Off_Days__c,
                    CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
             FROM Employee__c
             WHERE Id = :employeeId
@@ -83,13 +83,19 @@ public with sharing class EmployeeThreeSixtyController {
         ];
         kpis.put('mtdAttendanceCount', attendanceCount);
 
-        // ── MTD Total Working Days (weekdays elapsed so far) ────────
+        // ── MTD Total Working Days (non week-off days elapsed so far) ─
+        // Respect employee-level Week_Off_Days__c (e.g. "Sunday" or "Saturday;Sunday")
+        Set<String> weekOffDays = new Set<String>();
+        String weekOffStr = emp.Week_Off_Days__c != null ? emp.Week_Off_Days__c : 'Sunday';
+        for (String d : weekOffStr.split(';')) {
+            weekOffDays.add(d.trim().toLowerCase());
+        }
         Integer totalWorkingDays = 0;
         Date cursor = mtdStart;
         while (cursor <= today) {
             Datetime dt = Datetime.newInstance(cursor, Time.newInstance(0, 0, 0, 0));
-            String dayOfWeek = dt.format('EEEE');
-            if (dayOfWeek != 'Saturday' && dayOfWeek != 'Sunday') {
+            String dayOfWeek = dt.format('EEEE').toLowerCase();
+            if (!weekOffDays.contains(dayOfWeek)) {
                 totalWorkingDays++;
             }
             cursor = cursor.addDays(1);
