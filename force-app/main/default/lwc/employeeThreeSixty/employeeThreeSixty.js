@@ -348,10 +348,13 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
             currentWeek.push({ key: 'blank-' + i, day: '', isEmpty: true, cssClass: 'cal-day cal-day-empty' });
         }
 
+        // Build week-off day indices from employee's Week_Off_Days__c
+        const weekOffIndices = this.getWeekOffDayIndices();
+
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dayOfWeek = date.getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isWeekOff = weekOffIndices.has(dayOfWeek);
             const rec = attendanceMap[day];
 
             let status = 'none';
@@ -382,7 +385,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                     cssClass += ' cal-day-present';
                     hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : '';
                 } else {
-                    cssClass += isWeekend ? ' cal-day-weekend' : '';
+                    cssClass += isWeekOff ? ' cal-day-weekend' : '';
                 }
             } else if (holidayDayMap[day]) {
                 // No attendance record but is a holiday from Holiday__c
@@ -393,18 +396,23 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 status = 'leave';
                 cssClass += ' cal-day-leave';
             } else {
-                if (isWeekend) {
+                if (isWeekOff) {
                     cssClass += ' cal-day-weekend';
                     status = 'weekend';
                 }
             }
 
-            // Check if this day is in the future
+            // For future dates, add dimming class but preserve the actual status
+            // so holiday/leave/weekoff indicators still render
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            if (date > today) {
+            const isFuture = date > today;
+            if (isFuture) {
                 cssClass += ' cal-day-future';
-                status = 'future';
+                // Only override status if no meaningful status was set
+                if (status === 'none') {
+                    status = 'future';
+                }
             }
 
             // Add holiday name for tooltip display
@@ -476,6 +484,24 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     handleNextLeaveYear() {
         this.leaveYear++;
         this.loadLeaveData();
+    }
+
+    // ── Week Off Day Helper ─────────────────────────────────────
+
+    getWeekOffDayIndices() {
+        const weekOffStr = this.employee.Week_Off_Days__c || 'Sunday';
+        const dayNameToIndex = {
+            'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+            'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        const indices = new Set();
+        weekOffStr.split(';').forEach(d => {
+            const idx = dayNameToIndex[d.trim().toLowerCase()];
+            if (idx !== undefined) {
+                indices.add(idx);
+            }
+        });
+        return indices;
     }
 
     // ── Beat Day Indicators ──────────────────────────────────────
@@ -798,10 +824,11 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
         const lastDate = (year === today.getFullYear() && month === today.getMonth())
             ? today.getDate()
             : new Date(year, month + 1, 0).getDate();
+        const weekOffIndices = this.getWeekOffDayIndices();
         let workingDays = 0;
         for (let d = 1; d <= lastDate; d++) {
             const dayOfWeek = new Date(year, month, d).getDay();
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) workingDays++;
+            if (!weekOffIndices.has(dayOfWeek)) workingDays++;
         }
         const absent = workingDays - this.attendanceSummaryPresent - this.attendanceSummaryLeave - this.attendanceSummaryHoliday;
         return Math.max(absent, 0);
@@ -821,6 +848,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
             ? today.getDate()
             : new Date(year, month + 1, 0).getDate();
 
+        const weekOffIndices = this.getWeekOffDayIndices();
         const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
         const attendanceDaySet = new Set();
         this.attendanceRecords.forEach(r => {
@@ -839,8 +867,8 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                     if (d.getFullYear() === year && d.getMonth() === month) {
                         const dayNum = d.getDate();
                         const dayOfWeek = d.getDay();
-                        // Only count weekdays that don't already have an attendance record, up to today
-                        if (dayNum <= lastDate && dayOfWeek !== 0 && dayOfWeek !== 6 && !attendanceDaySet.has(dayNum)) {
+                        // Only count working days that don't already have an attendance record, up to today
+                        if (dayNum <= lastDate && !weekOffIndices.has(dayOfWeek) && !attendanceDaySet.has(dayNum)) {
                             leaveDaysFromRequests++;
                         }
                     }
@@ -855,13 +883,15 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
         // Count holidays from attendance records with holiday status
         const fromAttendance = this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'holiday').length;
 
-        // Count holidays from Holiday__c records that fall on weekdays in this month
+        // Count holidays from Holiday__c records that fall on working days in this month
         const year = this.calendarYear;
         const month = this.calendarMonth;
         const today = new Date();
         const lastDate = (year === today.getFullYear() && month === today.getMonth())
             ? today.getDate()
             : new Date(year, month + 1, 0).getDate();
+
+        const weekOffIndices = this.getWeekOffDayIndices();
 
         // Build set of days already accounted for from attendance records
         const attendanceDaySet = new Set();
@@ -878,8 +908,8 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 const hDate = new Date(h.Holiday_Date__c);
                 const dayNum = hDate.getDate();
                 const dayOfWeek = hDate.getDay();
-                // Count weekday holidays not already tracked in attendance, up to today
-                if (dayNum <= lastDate && dayOfWeek !== 0 && dayOfWeek !== 6 && !attendanceDaySet.has(dayNum)) {
+                // Count working-day holidays not already tracked in attendance, up to today
+                if (dayNum <= lastDate && !weekOffIndices.has(dayOfWeek) && !attendanceDaySet.has(dayNum)) {
                     holidaysFromRecords++;
                 }
             }
@@ -889,17 +919,18 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get calendarAttendancePercent() {
-        // Calculate total working days (weekdays) in the displayed month up to today
+        // Calculate total working days (non week-off) in the displayed month up to today
         const year = this.calendarYear;
         const month = this.calendarMonth;
         const today = new Date();
         const lastDate = (year === today.getFullYear() && month === today.getMonth())
             ? today.getDate()
             : new Date(year, month + 1, 0).getDate();
+        const weekOffIndices = this.getWeekOffDayIndices();
         let workingDays = 0;
         for (let d = 1; d <= lastDate; d++) {
             const dayOfWeek = new Date(year, month, d).getDay();
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) workingDays++;
+            if (!weekOffIndices.has(dayOfWeek)) workingDays++;
         }
         if (workingDays === 0) return 0;
         return Math.round((this.attendanceSummaryPresent / workingDays) * 100);
