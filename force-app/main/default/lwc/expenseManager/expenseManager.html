@@ -385,14 +385,6 @@
                                                 </div>
                                             </template>
 
-                                            <!-- Daily Limit (readonly, for food types) -->
-                                            <template if:true={item.isFood}>
-                                                <div class="item-field item-field-sm">
-                                                    <label class="field-label">Daily Limit</label>
-                                                    <span class="field-value-readonly">{item.maxPerDay}</span>
-                                                </div>
-                                            </template>
-
                                             <!-- GPS Distance (readonly, for travel) -->
                                             <template if:true={item.isTravel}>
                                                 <div class="item-field item-field-sm">

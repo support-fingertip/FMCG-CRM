@@ -861,9 +861,6 @@ export default class ExpenseManager extends LightningElement {
             eligible = wd > 0 ? item.rateAmount / wd : 0;
         }
 
-        if (item.maxPerDay > 0 && eligible > item.maxPerDay) {
-            eligible = item.maxPerDay;
-        }
         return Math.round(eligible * 100) / 100;
     }
 

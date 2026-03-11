@@ -151,11 +151,11 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     }
 
     get showMaxPerDay() {
-        return ['Daily Allowance', 'Food', 'Toll'].includes(this.selectedRule?.Expense_Type__c);
+        return false;
     }
 
     get showMaxPerMonth() {
-        return ['Mobile', 'Stationery', 'Miscellaneous', 'Printing'].includes(this.selectedRule?.Expense_Type__c);
+        return false;
     }
 
     get showDutyType() {

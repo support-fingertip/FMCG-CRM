@@ -364,11 +364,6 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
-        // Apply daily cap
-        if (rule.Max_Per_Day__c != null && rule.Max_Per_Day__c > 0 && eligible > rule.Max_Per_Day__c) {
-            eligible = rule.Max_Per_Day__c;
-        }
-
         return eligible;
     }
 
@@ -547,18 +542,6 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
-        // Calculate monthly running totals for cap enforcement
-        Map<String, Decimal> monthlyTotals = new Map<String, Decimal>();
-        for (AggregateResult ar : [
-            SELECT Expense_Type__c typ, SUM(Eligible_Amount__c) total
-            FROM Expense_Item__c
-            WHERE Expense__c = :expenseId
-              AND Id NOT IN :getItemIds(items)
-            GROUP BY Expense_Type__c
-        ]) {
-            monthlyTotals.put((String) ar.get('typ'), (Decimal) ar.get('total'));
-        }
-
         for (Expense_Item__c item : items) {
             // Get duty type from attendance
             Day_Attendance__c att = item.Day_Attendance__c != null
@@ -598,18 +581,6 @@ public without sharing class EXP_Expense_Service {
                 item.Is_Eligible__c = true;
 
                 Decimal eligible = calculateEligibleAmount(item, rule, workingDays);
-
-                // Enforce monthly cap
-                if (rule.Max_Per_Month__c != null && rule.Max_Per_Month__c > 0) {
-                    Decimal alreadyUsed = monthlyTotals.containsKey(item.Expense_Type__c)
-                        ? monthlyTotals.get(item.Expense_Type__c) : 0;
-                    Decimal remaining = rule.Max_Per_Month__c - alreadyUsed;
-                    if (remaining < 0) remaining = 0;
-                    if (eligible > remaining) {
-                        eligible = remaining;
-                    }
-                    monthlyTotals.put(item.Expense_Type__c, alreadyUsed + eligible);
-                }
 
                 item.Eligible_Amount__c = eligible;
                 item.System_Calculated_Amount__c = eligible;
