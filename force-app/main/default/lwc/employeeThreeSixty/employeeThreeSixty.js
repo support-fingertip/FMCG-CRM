@@ -139,7 +139,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 hoursWorked: item.Hours_Worked__c ? Number(item.Hours_Worked__c).toFixed(1) : '0.0',
                 statusClass: this.getActivityStatusClass(item.Status__c),
                 statusIcon: this.getActivityStatusIcon(item.Status__c),
-                isPresent: item.Status__c === 'Present',
+                isPresent: ['Present', 'Started', 'Completed', 'Ended', 'Auto-Closed', 'In Progress'].includes(item.Status__c),
                 isLast: false
             }));
             if (this.recentActivity.length > 0) {
@@ -207,7 +207,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 statusLabel: beat.Is_Active__c !== false ? 'Active' : 'Inactive',
                 statusClass: beat.Is_Active__c !== false ? 'beat-status-active' : 'beat-status-inactive',
                 territoryName: beat.Territory__r ? beat.Territory__r.Name : '',
-                dayIndicators: this.buildDayIndicators(beat.Visit_Days__c || beat.Days_of_Week__c || '')
+                dayIndicators: this.buildDayIndicators(beat.Day_of_Week__c || beat.Visit_Days__c || beat.Days_of_Week__c || '')
             }));
         } catch (error) {
             console.error('Error loading beats:', error);
@@ -317,7 +317,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
             if (rec) {
                 const recStatus = (rec.Status__c || '').toLowerCase();
-                if (recStatus === 'present') {
+                if (recStatus === 'present' || recStatus === 'started' || recStatus === 'completed' || recStatus === 'ended' || recStatus === 'auto-closed') {
                     status = 'present';
                     cssClass += ' cal-day-present';
                     hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : '';
@@ -334,6 +334,10 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                     status = 'present';
                     cssClass += ' cal-day-present';
                     hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : 'HD';
+                } else if (recStatus === 'in progress') {
+                    status = 'present';
+                    cssClass += ' cal-day-present';
+                    hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : '';
                 } else {
                     cssClass += isWeekend ? ' cal-day-weekend' : '';
                 }
@@ -726,7 +730,8 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get attendanceSummaryPresent() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'present' || (r.Status__c || '').toLowerCase() === 'half day' || (r.Status__c || '').toLowerCase() === 'half-day').length;
+        const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
+        return this.attendanceRecords.filter(r => presentStatuses.includes((r.Status__c || '').toLowerCase())).length;
     }
 
     get attendanceSummaryAbsent() {
@@ -752,8 +757,9 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get calendarAvgHours() {
+        const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
         const presentDays = this.attendanceRecords.filter(r =>
-            (r.Status__c || '').toLowerCase() === 'present' && r.Hours_Worked__c
+            presentStatuses.includes((r.Status__c || '').toLowerCase()) && r.Hours_Worked__c
         );
         if (presentDays.length === 0) return '0.0';
         const total = presentDays.reduce((sum, r) => sum + (Number(r.Hours_Worked__c) || 0), 0);
@@ -910,7 +916,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     getActivityStatusClass(status) {
         const s = (status || '').toLowerCase();
-        if (s === 'present') return 'activity-dot-present';
+        if (s === 'present' || s === 'started' || s === 'completed' || s === 'ended' || s === 'auto-closed' || s === 'in progress') return 'activity-dot-present';
         if (s === 'absent') return 'activity-dot-absent';
         if (s === 'leave' || s === 'on leave') return 'activity-dot-leave';
         return 'activity-dot-default';
@@ -918,7 +924,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     getActivityStatusIcon(status) {
         const s = (status || '').toLowerCase();
-        if (s === 'present') return 'utility:check';
+        if (s === 'present' || s === 'started' || s === 'completed' || s === 'ended' || s === 'auto-closed' || s === 'in progress') return 'utility:check';
         if (s === 'absent') return 'utility:close';
         if (s === 'leave' || s === 'on leave') return 'utility:event';
         return 'utility:record';
