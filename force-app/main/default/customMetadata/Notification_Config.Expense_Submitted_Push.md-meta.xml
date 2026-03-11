@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Expense Submitted Push</label>
+    <protected>false</protected>
+    <values>
+        <field>Event_Type__c</field>
+        <value xsi:type="xsd:string">Expense_Submitted</value>
+    </values>
+    <values>
+        <field>Channel__c</field>
+        <value xsi:type="xsd:string">Push</value>
+    </values>
+    <values>
+        <field>Recipient_Type__c</field>
+        <value xsi:type="xsd:string">L1_Approver</value>
+    </values>
+    <values>
+        <field>Template__c</field>
+        <value xsi:type="xsd:string">{!Employee_Name} has submitted expense report {!Expense_Name} for your review.</value>
+    </values>
+    <values>
+        <field>Is_Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>

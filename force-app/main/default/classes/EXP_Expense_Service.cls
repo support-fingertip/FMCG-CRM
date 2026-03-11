@@ -145,7 +145,8 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
-                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c
+                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c
             WHERE Employee__c = :emp.Id AND Month__c = :month AND Year__c = :year
             LIMIT 1
@@ -188,7 +189,9 @@ public without sharing class EXP_Expense_Service {
             Period_End__c = periodEnd,
             Status__c = 'Draft',
             Working_Days__c = workingDays,
-            Total_Distance_KM__c = totalDist
+            Total_Distance_KM__c = totalDist,
+            L1_Approver__c = emp.L1_Approver__c,
+            L2_Approver__c = emp.L2_Approver__c
         );
         insert report;
 
@@ -196,7 +199,8 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
-                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c
+                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c
             WHERE Id = :report.Id
         ];
@@ -755,7 +759,8 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c submitReport(Id expenseId) {
         Expense__c expense = [
-            SELECT Id, Status__c, Employee__c, Comments_History__c
+            SELECT Id, Name, Status__c, Employee__c, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -789,6 +794,9 @@ public without sharing class EXP_Expense_Service {
             expense.Comments_History__c, 'Submitted for approval', UserInfo.getUserId()
         );
         update expense;
+
+        // Send notification to designated L1 approver
+        notifyApproversOnSubmit(expense);
 
         return [
             SELECT Id, Name, Status__c, Month__c, Year__c, Total_Claimed__c,
@@ -859,7 +867,8 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c approveReport(Id expenseId, String remarks, String level) {
         Expense__c expense = [
-            SELECT Id, Status__c, Comments_History__c
+            SELECT Id, Name, Status__c, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -913,6 +922,13 @@ public without sharing class EXP_Expense_Service {
         );
         update expense;
 
+        // Send notifications
+        if (level == 'manager') {
+            notifyOnManagerApproval(expense);
+        } else if (level == 'finance') {
+            notifyOnFinanceApproval(expense);
+        }
+
         return [
             SELECT Id, Name, Status__c, Total_Claimed__c, Total_Approved__c,
                    Total_Eligible__c, Comments_History__c
@@ -922,7 +938,8 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c rejectReport(Id expenseId, String reason, String level) {
         Expense__c expense = [
-            SELECT Id, Status__c, Comments_History__c
+            SELECT Id, Name, Status__c, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -953,6 +970,9 @@ public without sharing class EXP_Expense_Service {
             UserInfo.getUserId()
         );
         update expense;
+
+        // Notify employee about rejection
+        notifyOnRejection(expense, reason, level);
 
         return [
             SELECT Id, Name, Status__c, Rejection_Reason__c, Comments_History__c
@@ -985,9 +1005,10 @@ public without sharing class EXP_Expense_Service {
 
         // Update parent expense: comments history + auto-advance status if all items approved
         List<Expense__c> expenses = [
-            SELECT Id, Status__c, Comments_History__c,
+            SELECT Id, Name, Status__c, User__c, Comments_History__c,
                    Manager_Approved_Date__c, Manager_Approver__c, Manager_Remarks__c,
-                   Finance_Approved_Date__c, Finance_Approver__c, Finance_Remarks__c
+                   Finance_Approved_Date__c, Finance_Approver__c, Finance_Remarks__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id IN :expenseIds
         ];
         String comment = 'Approved ' + items.size() + ' item(s)' + (String.isNotBlank(remarks) ? ': ' + remarks : '');
@@ -1014,6 +1035,7 @@ public without sharing class EXP_Expense_Service {
                     exp.Comments_History__c = appendComment(
                         exp.Comments_History__c, 'All items L1 approved — report advanced to Manager Approved', UserInfo.getUserId()
                     );
+                    notifyOnManagerApproval(exp);
                 } else if (level == 'finance' && exp.Status__c == 'Manager Approved') {
                     exp.Status__c = 'Finance Approved';
                     exp.Finance_Approved_Date__c = Datetime.now();
@@ -1022,6 +1044,7 @@ public without sharing class EXP_Expense_Service {
                     exp.Comments_History__c = appendComment(
                         exp.Comments_History__c, 'All items finance approved — report advanced to Finance Approved', UserInfo.getUserId()
                     );
+                    notifyOnFinanceApproval(exp);
                 }
             }
         }
@@ -1053,11 +1076,14 @@ public without sharing class EXP_Expense_Service {
 
         // Update parent expense comments history
         List<Expense__c> expenses = [
-            SELECT Id, Comments_History__c FROM Expense__c WHERE Id IN :expenseIds
+            SELECT Id, Name, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
+            FROM Expense__c WHERE Id IN :expenseIds
         ];
         String comment = 'Rejected ' + items.size() + ' item(s): ' + reason;
         for (Expense__c exp : expenses) {
             exp.Comments_History__c = appendComment(exp.Comments_History__c, comment, UserInfo.getUserId());
+            notifyOnRejection(exp, reason, level);
         }
         update expenses;
 
@@ -1122,7 +1148,7 @@ public without sharing class EXP_Expense_Service {
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
                    Submitted_Date__c, Manager_Approved_Date__c, Manager_Remarks__c,
                    Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c,
-                   Comments_History__c
+                   Comments_History__c, L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -1233,15 +1259,17 @@ public without sharing class EXP_Expense_Service {
             directReportIds.add(emp.Id);
         }
 
-        if (directReportIds.isEmpty()) return new List<Expense__c>();
-
+        // Return expenses where user is either the reporting manager OR the designated L1/L2 approver
         return [
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c,
                    Employee__r.First_Name__c, Employee__r.Last_Name__c,
                    Employee__r.Band__c, Total_Claimed__c, Total_Approved__c,
-                   Total_Eligible__c, Working_Days__c, Submitted_Date__c
+                   Total_Eligible__c, Working_Days__c, Submitted_Date__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c
-            WHERE Employee__c IN :directReportIds
+            WHERE (Employee__c IN :directReportIds
+                   OR L1_Approver__c = :managerId
+                   OR L2_Approver__c = :managerId)
               AND Month__c = :month AND Year__c = :year
             ORDER BY Employee__r.First_Name__c ASC
         ];
@@ -1259,7 +1287,7 @@ public without sharing class EXP_Expense_Service {
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
                    Submitted_Date__c, Manager_Approved_Date__c, Manager_Remarks__c,
                    Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c,
-                   Comments_History__c
+                   Comments_History__c, L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -1487,7 +1515,8 @@ public without sharing class EXP_Expense_Service {
     private static Employee__c getEmployeeForUser(Id userId) {
         List<Employee__c> emps = [
             SELECT Id, Band__c, User__c, Reporting_Manager__c,
-                   First_Name__c, Last_Name__c, HQ_City__c
+                   First_Name__c, Last_Name__c, HQ_City__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Employee__c
             WHERE User__c = :userId AND Is_Active__c = true
             LIMIT 1
@@ -1496,5 +1525,113 @@ public without sharing class EXP_Expense_Service {
             throw new AuraHandledException('No active employee record found for the current user.');
         }
         return emps[0];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NOTIFICATIONS — Bell notifications with link to expense record
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static void sendExpenseNotification(Id expenseId, Set<Id> recipientUserIds, String title, String body) {
+        if (recipientUserIds == null || recipientUserIds.isEmpty()) return;
+        // Remove null entries
+        recipientUserIds.remove(null);
+        if (recipientUserIds.isEmpty()) return;
+
+        try {
+            List<CustomNotificationType> notifTypes = [
+                SELECT Id FROM CustomNotificationType
+                WHERE DeveloperName = 'Expense_Approval_Notification' LIMIT 1
+            ];
+            if (notifTypes.isEmpty()) return;
+
+            Messaging.CustomNotification notification = new Messaging.CustomNotification();
+            notification.setNotificationTypeId(notifTypes[0].Id);
+            notification.setTitle(title);
+            notification.setBody(body);
+            notification.setTargetId(expenseId);
+            notification.send(recipientUserIds);
+        } catch (Exception e) {
+            // Notification failures should not block the main workflow
+            System.debug(LoggingLevel.WARN, 'Expense notification failed: ' + e.getMessage());
+        }
+    }
+
+    private static void notifyApproversOnSubmit(Expense__c expense) {
+        Set<Id> recipients = new Set<Id>();
+        // Notify L1 approver when expense is submitted
+        if (expense.L1_Approver__c != null) {
+            recipients.add(expense.L1_Approver__c);
+        }
+        String empName = getSubmitterName(expense.Employee__c);
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense Submitted for Approval',
+            empName + ' has submitted expense report ' + expense.Name + ' for your review.'
+        );
+    }
+
+    private static void notifyOnManagerApproval(Expense__c expense) {
+        Set<Id> recipients = new Set<Id>();
+        // Notify the employee that their expense was approved
+        if (expense.User__c != null) {
+            recipients.add(expense.User__c);
+        }
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense Manager Approved',
+            'Your expense report ' + expense.Name + ' has been approved by manager.'
+        );
+
+        // Notify L2 approver that expense is ready for finance review
+        if (expense.L2_Approver__c != null) {
+            Set<Id> financeRecipients = new Set<Id>{ expense.L2_Approver__c };
+            sendExpenseNotification(
+                expense.Id,
+                financeRecipients,
+                'Expense Pending Finance Approval',
+                'Expense report ' + expense.Name + ' has been manager-approved and requires your finance review.'
+            );
+        }
+    }
+
+    private static void notifyOnFinanceApproval(Expense__c expense) {
+        Set<Id> recipients = new Set<Id>();
+        if (expense.User__c != null) {
+            recipients.add(expense.User__c);
+        }
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense Finance Approved',
+            'Your expense report ' + expense.Name + ' has been approved by finance.'
+        );
+    }
+
+    private static void notifyOnRejection(Expense__c expense, String reason, String level) {
+        Set<Id> recipients = new Set<Id>();
+        if (expense.User__c != null) {
+            recipients.add(expense.User__c);
+        }
+        String levelLabel = level == 'manager' ? 'Manager' : 'Finance';
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense Rejected by ' + levelLabel,
+            'Your expense report ' + expense.Name + ' has been rejected: ' + reason
+        );
+    }
+
+    private static String getSubmitterName(Id employeeId) {
+        List<Employee__c> emps = [
+            SELECT First_Name__c, Last_Name__c FROM Employee__c WHERE Id = :employeeId LIMIT 1
+        ];
+        if (emps.isEmpty()) return 'An employee';
+        Employee__c emp = emps[0];
+        String name = '';
+        if (String.isNotBlank(emp.First_Name__c)) name += emp.First_Name__c;
+        if (String.isNotBlank(emp.Last_Name__c)) name += ' ' + emp.Last_Name__c;
+        return String.isBlank(name) ? 'An employee' : name.trim();
     }
 }

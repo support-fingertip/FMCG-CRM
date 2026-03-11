@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Expense Finance Review Push</label>
+    <protected>false</protected>
+    <values>
+        <field>Event_Type__c</field>
+        <value xsi:type="xsd:string">Expense_Finance_Review</value>
+    </values>
+    <values>
+        <field>Channel__c</field>
+        <value xsi:type="xsd:string">Push</value>
+    </values>
+    <values>
+        <field>Recipient_Type__c</field>
+        <value xsi:type="xsd:string">L2_Approver</value>
+    </values>
+    <values>
+        <field>Template__c</field>
+        <value xsi:type="xsd:string">Expense report {!Expense_Name} has been manager-approved and requires your finance review.</value>
+    </values>
+    <values>
+        <field>Is_Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>
