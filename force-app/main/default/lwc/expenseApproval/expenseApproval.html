@@ -222,9 +222,9 @@
                                                 </lightning-textarea>
                                             </div>
                                         </template>
-                                        <template if:true={item.approverComments}>
-                                            <span class="prev-comments" title={item.approverComments}>Previous comments</span>
-                                        </template>
+                                    </template>
+                                    <template if:true={item.approverComments}>
+                                        <span class="prev-comments" title={item.approverComments}>{item.approverComments}</span>
                                     </template>
                                 </td>
                             </template>
