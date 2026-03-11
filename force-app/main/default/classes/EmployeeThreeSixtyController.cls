@@ -284,7 +284,8 @@ public with sharing class EmployeeThreeSixtyController {
     public static List<Beat__c> getAssignedBeats(Id employeeId) {
         Id userId = getEmployeeUserId(employeeId);
 
-        return [
+        // First try beats directly assigned to the user
+        List<Beat__c> beats = [
             SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
                    Total_Outlets__c, Pincode_Cluster__c, Description__c,
                    Territory__c, Territory__r.Name,
@@ -294,6 +295,28 @@ public with sharing class EmployeeThreeSixtyController {
             AND Is_Active__c = true
             ORDER BY Day_of_Week__c, Sequence__c
         ];
+
+        // Fallback: if no directly assigned beats, show beats in the employee's territory
+        if (beats.isEmpty()) {
+            List<Employee__c> emps = [
+                SELECT Territory__c FROM Employee__c WHERE Id = :employeeId LIMIT 1
+            ];
+            if (!emps.isEmpty() && emps[0].Territory__c != null) {
+                Id territoryId = emps[0].Territory__c;
+                beats = [
+                    SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                           Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                           Territory__c, Territory__r.Name,
+                           Is_Active__c, Sequence__c
+                    FROM Beat__c
+                    WHERE Territory__c = :territoryId
+                    AND Is_Active__c = true
+                    ORDER BY Day_of_Week__c, Sequence__c
+                ];
+            }
+        }
+
+        return beats;
     }
 
     // ── Get Performance Trend ─────────────────────────────────────────────────

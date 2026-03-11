@@ -735,7 +735,21 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get attendanceSummaryAbsent() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'absent').length;
+        // Absent days are days without any attendance record (not explicitly tracked)
+        // Calculate as: working days - present - leave - holiday
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+        let workingDays = 0;
+        for (let d = 1; d <= lastDate; d++) {
+            const dayOfWeek = new Date(year, month, d).getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) workingDays++;
+        }
+        const absent = workingDays - this.attendanceSummaryPresent - this.attendanceSummaryLeave - this.attendanceSummaryHoliday;
+        return Math.max(absent, 0);
     }
 
     get attendanceSummaryLeave() {
@@ -747,9 +761,20 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get calendarAttendancePercent() {
-        const total = this.attendanceSummaryPresent + this.attendanceSummaryAbsent;
-        if (total === 0) return 0;
-        return Math.round((this.attendanceSummaryPresent / total) * 100);
+        // Calculate total working days (weekdays) in the displayed month up to today
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+        let workingDays = 0;
+        for (let d = 1; d <= lastDate; d++) {
+            const dayOfWeek = new Date(year, month, d).getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) workingDays++;
+        }
+        if (workingDays === 0) return 0;
+        return Math.round((this.attendanceSummaryPresent / workingDays) * 100);
     }
 
     get calendarAttendanceBarStyle() {
