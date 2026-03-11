@@ -158,12 +158,27 @@ public with sharing class EmployeeThreeSixtyController {
         kpis.put('mtdProductiveCalls', mtdProductiveCalls);
 
         // ── Total Beats Assigned ────────────────────────────────────
+        // Check by Assigned_User__c first, then OwnerId, then Territory
         Integer totalBeats = [
             SELECT COUNT()
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-            AND Is_Active__c = true
         ];
+        if (totalBeats == 0) {
+            totalBeats = [
+                SELECT COUNT()
+                FROM Beat__c
+                WHERE OwnerId = :userId
+            ];
+        }
+        if (totalBeats == 0 && emp.Territory__c != null) {
+            Id kpiTerritoryId = emp.Territory__c;
+            totalBeats = [
+                SELECT COUNT()
+                FROM Beat__c
+                WHERE Territory__c = :kpiTerritoryId
+            ];
+        }
         kpis.put('totalBeatsAssigned', totalBeats);
 
         // ── Total Outlets Covered ───────────────────────────────────
@@ -171,12 +186,34 @@ public with sharing class EmployeeThreeSixtyController {
             SELECT SUM(Total_Outlets__c) totalOutlets
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-            AND Is_Active__c = true
         ];
         Integer totalOutlets = 0;
         if (!outletAgg.isEmpty()) {
             Decimal ol = (Decimal)outletAgg[0].get('totalOutlets');
             totalOutlets = ol != null ? ol.intValue() : 0;
+        }
+        if (totalOutlets == 0) {
+            outletAgg = [
+                SELECT SUM(Total_Outlets__c) totalOutlets
+                FROM Beat__c
+                WHERE OwnerId = :userId
+            ];
+            if (!outletAgg.isEmpty()) {
+                Decimal ol = (Decimal)outletAgg[0].get('totalOutlets');
+                totalOutlets = ol != null ? ol.intValue() : 0;
+            }
+        }
+        if (totalOutlets == 0 && emp.Territory__c != null) {
+            Id kpiTerritoryId = emp.Territory__c;
+            outletAgg = [
+                SELECT SUM(Total_Outlets__c) totalOutlets
+                FROM Beat__c
+                WHERE Territory__c = :kpiTerritoryId
+            ];
+            if (!outletAgg.isEmpty()) {
+                Decimal ol = (Decimal)outletAgg[0].get('totalOutlets');
+                totalOutlets = ol != null ? ol.intValue() : 0;
+            }
         }
         kpis.put('totalOutletsCovered', totalOutlets);
 
@@ -305,7 +342,6 @@ public with sharing class EmployeeThreeSixtyController {
                        Is_Active__c, Sequence__c
                 FROM Beat__c
                 WHERE Assigned_User__c = :userId
-                AND Is_Active__c = true
                 ORDER BY Day_of_Week__c, Sequence__c
             ];
 
@@ -318,13 +354,12 @@ public with sharing class EmployeeThreeSixtyController {
                            Is_Active__c, Sequence__c
                     FROM Beat__c
                     WHERE OwnerId = :userId
-                    AND Is_Active__c = true
                     ORDER BY Day_of_Week__c, Sequence__c
                 ];
             }
         }
 
-        // Third fallback: show beats in the employee's territory
+        // Third fallback: show all beats in the employee's territory
         if (beats.isEmpty() && emp.Territory__c != null) {
             Id territoryId = emp.Territory__c;
             beats = [
@@ -334,7 +369,6 @@ public with sharing class EmployeeThreeSixtyController {
                        Is_Active__c, Sequence__c
                 FROM Beat__c
                 WHERE Territory__c = :territoryId
-                AND Is_Active__c = true
                 ORDER BY Day_of_Week__c, Sequence__c
             ];
         }
