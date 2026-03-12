@@ -4,8 +4,8 @@
     <label>Product Extension</label>
     <type>Lookup</type>
     <referenceTo>Product_Extension__c</referenceTo>
-    <relationshipLabel>Distributor Stock</relationshipLabel>
-    <relationshipName>Distributor_Stock</relationshipName>
+    <relationshipLabel>Distributor Stock (Ext)</relationshipLabel>
+    <relationshipName>Distributor_Stock_Ext</relationshipName>
     <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>
