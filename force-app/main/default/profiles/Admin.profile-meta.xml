@@ -5952,10 +5952,6 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>Day_Start_End</tab>
-        <visibility>Hidden</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
         <tab>Distributor_Stock__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
