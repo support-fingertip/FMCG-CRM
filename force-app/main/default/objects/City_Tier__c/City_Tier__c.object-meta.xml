@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Maps cities to tier classifications for lodging and expense limits</description>
+    <label>City Tier</label>
+    <nameField>
+        <label>City Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>City Tiers</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

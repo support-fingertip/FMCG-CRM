@@ -10,6 +10,8 @@ import getAssignedBeats from '@salesforce/apex/EmployeeThreeSixtyController.getA
 import getPerformanceTrend from '@salesforce/apex/EmployeeThreeSixtyController.getPerformanceTrend';
 import getRecentActivity from '@salesforce/apex/EmployeeThreeSixtyController.getRecentActivity';
 import getDirectReports from '@salesforce/apex/EmployeeThreeSixtyController.getDirectReports';
+import getMyEmployeeId from '@salesforce/apex/EmployeeThreeSixtyController.getMyEmployeeId';
+import getHolidaysForMonth from '@salesforce/apex/EmployeeThreeSixtyController.getHolidaysForMonth';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -22,8 +24,13 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     @api recordId;
 
     get effectiveEmployeeId() {
-        return this.employeeId || this.recordId;
+        return this.employeeId || this.recordId || this._resolvedEmployeeId;
     }
+
+    // Resolved employee ID for current user (used when no employeeId/recordId provided)
+    _resolvedEmployeeId;
+    _calendarLeaves = [];
+    _calendarHolidays = [];
 
     // ── Core Data ────────────────────────────────────────────────
     @track employee = {};
@@ -64,6 +71,10 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadInitialData() {
         this.isLoading = true;
         try {
+            // If no employeeId or recordId provided (e.g. Tab context), resolve from current user
+            if (!this.effectiveEmployeeId) {
+                this._resolvedEmployeeId = await getMyEmployeeId();
+            }
             await Promise.all([
                 this.loadEmployeeDetails(),
                 this.loadKPIs()
@@ -131,7 +142,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 hoursWorked: item.Hours_Worked__c ? Number(item.Hours_Worked__c).toFixed(1) : '0.0',
                 statusClass: this.getActivityStatusClass(item.Status__c),
                 statusIcon: this.getActivityStatusIcon(item.Status__c),
-                isPresent: item.Status__c === 'Present',
+                isPresent: ['Present', 'Started', 'Completed', 'Ended', 'Auto-Closed', 'In Progress'].includes(item.Status__c),
                 isLast: false
             }));
             if (this.recentActivity.length > 0) {
@@ -146,16 +157,33 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     async loadAttendanceData() {
         this.isTabLoading = true;
         try {
-            const result = await getAttendanceHistory({
-                employeeId: this.effectiveEmployeeId,
-                year: this.calendarYear,
-                month: this.calendarMonth + 1
-            });
-            this.attendanceRecords = result || [];
+            const [attendanceResult, leaveResult, holidayResult] = await Promise.all([
+                getAttendanceHistory({
+                    employeeId: this.effectiveEmployeeId,
+                    year: this.calendarYear,
+                    month: this.calendarMonth + 1
+                }),
+                getLeaveHistory({
+                    employeeId: this.effectiveEmployeeId,
+                    year: this.calendarYear
+                }),
+                getHolidaysForMonth({
+                    employeeId: this.effectiveEmployeeId,
+                    year: this.calendarYear,
+                    month: this.calendarMonth + 1
+                })
+            ]);
+            this.attendanceRecords = attendanceResult || [];
+            this._calendarLeaves = (leaveResult || []).filter(l =>
+                l.Status__c === 'Approved' || l.Status__c === 'Pending'
+            );
+            this._calendarHolidays = holidayResult || [];
             this.buildCalendar();
         } catch (error) {
             console.error('Error loading attendance:', error);
             this.attendanceRecords = [];
+            this._calendarLeaves = [];
+            this._calendarHolidays = [];
             this.buildCalendar();
         } finally {
             this.isTabLoading = false;
@@ -199,7 +227,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 statusLabel: beat.Is_Active__c !== false ? 'Active' : 'Inactive',
                 statusClass: beat.Is_Active__c !== false ? 'beat-status-active' : 'beat-status-inactive',
                 territoryName: beat.Territory__r ? beat.Territory__r.Name : '',
-                dayIndicators: this.buildDayIndicators(beat.Visit_Days__c || beat.Days_of_Week__c || '')
+                dayIndicators: this.buildDayIndicators(beat.Day_of_Week__c || beat.Visit_Days__c || beat.Days_of_Week__c || '')
             }));
         } catch (error) {
             console.error('Error loading beats:', error);
@@ -289,6 +317,29 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
             }
         });
 
+        // Build leave date lookup from approved/pending leave requests
+        const leaveDaySet = new Set();
+        (this._calendarLeaves || []).forEach(leave => {
+            if (leave.Start_Date__c && leave.End_Date__c) {
+                const start = new Date(leave.Start_Date__c);
+                const end = new Date(leave.End_Date__c);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    if (d.getFullYear() === year && d.getMonth() === month) {
+                        leaveDaySet.add(d.getDate());
+                    }
+                }
+            }
+        });
+
+        // Build holiday date lookup from Holiday__c records
+        const holidayDayMap = {};
+        (this._calendarHolidays || []).forEach(h => {
+            if (h.Holiday_Date__c) {
+                const day = new Date(h.Holiday_Date__c).getDate();
+                holidayDayMap[day] = h;
+            }
+        });
+
         const weeks = [];
         let currentWeek = [];
 
@@ -297,10 +348,13 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
             currentWeek.push({ key: 'blank-' + i, day: '', isEmpty: true, cssClass: 'cal-day cal-day-empty' });
         }
 
+        // Build week-off day indices from employee's Week_Off_Days__c
+        const weekOffIndices = this.getWeekOffDayIndices();
+
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dayOfWeek = date.getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isWeekOff = weekOffIndices.has(dayOfWeek);
             const rec = attendanceMap[day];
 
             let status = 'none';
@@ -309,7 +363,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
             if (rec) {
                 const recStatus = (rec.Status__c || '').toLowerCase();
-                if (recStatus === 'present') {
+                if (recStatus === 'present' || recStatus === 'started' || recStatus === 'completed' || recStatus === 'ended' || recStatus === 'auto-closed') {
                     status = 'present';
                     cssClass += ' cal-day-present';
                     hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : '';
@@ -326,23 +380,47 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                     status = 'present';
                     cssClass += ' cal-day-present';
                     hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : 'HD';
+                } else if (recStatus === 'in progress') {
+                    status = 'present';
+                    cssClass += ' cal-day-present';
+                    hours = rec.Hours_Worked__c ? Number(rec.Hours_Worked__c).toFixed(1) + 'h' : '';
                 } else {
-                    cssClass += isWeekend ? ' cal-day-weekend' : '';
+                    cssClass += isWeekOff ? ' cal-day-weekend' : '';
                 }
+            } else if (holidayDayMap[day]) {
+                // No attendance record but is a holiday from Holiday__c
+                status = 'holiday';
+                cssClass += ' cal-day-holiday';
+            } else if (leaveDaySet.has(day)) {
+                // No attendance record but has an approved/pending leave
+                status = 'leave';
+                cssClass += ' cal-day-leave';
             } else {
-                if (isWeekend) {
+                if (isWeekOff) {
                     cssClass += ' cal-day-weekend';
                     status = 'weekend';
                 }
             }
 
-            // Check if this day is in the future
+            // Determine if this day is in the future
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            if (date > today) {
+            const isFuture = date > today;
+
+            if (isFuture) {
+                // Future dates: add dimming but preserve holiday/leave/weekoff indicators
                 cssClass += ' cal-day-future';
-                status = 'future';
+                if (status === 'none') {
+                    status = 'future';
+                }
+            } else if (status === 'none' && !isWeekOff) {
+                // Past/today working day with no record, no leave, no holiday = Absent
+                status = 'absent';
+                cssClass += ' cal-day-absent';
             }
+
+            // Add holiday name for tooltip display
+            const holidayName = holidayDayMap[day] ? holidayDayMap[day].Name : '';
 
             currentWeek.push({
                 key: 'day-' + day,
@@ -356,7 +434,8 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
                 isLeave: status === 'leave',
                 isHoliday: status === 'holiday',
                 isWeekend: status === 'weekend',
-                showHours: !!hours
+                showHours: !!hours,
+                holidayName: holidayName
             });
 
             if (currentWeek.length === 7) {
@@ -409,6 +488,24 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     handleNextLeaveYear() {
         this.leaveYear++;
         this.loadLeaveData();
+    }
+
+    // ── Week Off Day Helper ─────────────────────────────────────
+
+    getWeekOffDayIndices() {
+        const weekOffStr = this.employee.Week_Off_Days__c || 'Sunday';
+        const dayNameToIndex = {
+            'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+            'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        const indices = new Set();
+        weekOffStr.split(';').forEach(d => {
+            const idx = dayNameToIndex[d.trim().toLowerCase()];
+            if (idx !== undefined) {
+                indices.add(idx);
+            }
+        });
+        return indices;
     }
 
     // ── Beat Day Indicators ──────────────────────────────────────
@@ -606,36 +703,36 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     // ── Computed Properties: KPI Tiles ───────────────────────────
 
     get attendancePercent() {
-        return this.kpis.attendancePercent != null ? Number(this.kpis.attendancePercent).toFixed(0) : '0';
+        return this.kpis.attendancePercentage != null ? Number(this.kpis.attendancePercentage).toFixed(0) : '0';
     }
 
     get attendanceColorClass() {
-        const pct = Number(this.kpis.attendancePercent || 0);
+        const pct = Number(this.kpis.attendancePercentage || 0);
         if (pct >= 90) return 'kpi-color-success';
         if (pct >= 75) return 'kpi-color-warning';
         return 'kpi-color-error';
     }
 
     get attendanceRingDasharray() {
-        const pct = Math.min(Number(this.kpis.attendancePercent || 0), 100);
+        const pct = Math.min(Number(this.kpis.attendancePercentage || 0), 100);
         const circumference = 2 * Math.PI * 16;
         const filled = (pct / 100) * circumference;
         return filled + ' ' + circumference;
     }
 
     get attendanceRingColor() {
-        const pct = Number(this.kpis.attendancePercent || 0);
+        const pct = Number(this.kpis.attendancePercentage || 0);
         if (pct >= 90) return '#2e844a';
         if (pct >= 75) return '#dd7a01';
         return '#ea001e';
     }
 
     get mtdAttendance() {
-        return this.kpis.mtdAttendance || 0;
+        return this.kpis.mtdAttendanceCount || 0;
     }
 
     get totalWorkingDays() {
-        return this.kpis.totalWorkingDays || 0;
+        return this.kpis.mtdTotalWorkingDays || 0;
     }
 
     get mtdOrderCount() {
@@ -647,11 +744,11 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get mtdCollection() {
-        return this.formatCurrencyShort(this.kpis.mtdCollection || 0);
+        return this.formatCurrencyShort(this.kpis.mtdCollectionTotal || 0);
     }
 
     get mtdVisits() {
-        return this.kpis.mtdVisits || 0;
+        return this.kpis.mtdVisitCount || 0;
     }
 
     get mtdProductiveCalls() {
@@ -659,18 +756,18 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get productivePercent() {
-        const visits = this.kpis.mtdVisits || 0;
+        const visits = this.kpis.mtdVisitCount || 0;
         const productive = this.kpis.mtdProductiveCalls || 0;
         if (visits === 0) return '0';
         return Math.round((productive / visits) * 100);
     }
 
     get totalBeats() {
-        return this.kpis.totalBeats || 0;
+        return this.kpis.totalBeatsAssigned || 0;
     }
 
     get totalOutlets() {
-        return this.kpis.totalOutlets || 0;
+        return this.kpis.totalOutletsCovered || 0;
     }
 
     get totalLeaveBalance() {
@@ -718,25 +815,129 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get attendanceSummaryPresent() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'present' || (r.Status__c || '').toLowerCase() === 'half day' || (r.Status__c || '').toLowerCase() === 'half-day').length;
+        const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
+        return this.attendanceRecords.filter(r => presentStatuses.includes((r.Status__c || '').toLowerCase())).length;
     }
 
     get attendanceSummaryAbsent() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'absent').length;
+        // Absent days are days without any attendance record (not explicitly tracked)
+        // Calculate as: working days - present - leave - holiday
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+        const weekOffIndices = this.getWeekOffDayIndices();
+        let workingDays = 0;
+        for (let d = 1; d <= lastDate; d++) {
+            const dayOfWeek = new Date(year, month, d).getDay();
+            if (!weekOffIndices.has(dayOfWeek)) workingDays++;
+        }
+        const absent = workingDays - this.attendanceSummaryPresent - this.attendanceSummaryLeave - this.attendanceSummaryHoliday;
+        return Math.max(absent, 0);
     }
 
     get attendanceSummaryLeave() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'leave' || (r.Status__c || '').toLowerCase() === 'on leave').length;
+        // Count leave days from attendance records with leave status
+        const fromAttendance = this.attendanceRecords.filter(r =>
+            (r.Status__c || '').toLowerCase() === 'leave' || (r.Status__c || '').toLowerCase() === 'on leave'
+        ).length;
+
+        // Count leave days from Leave_Request__c records that fall in this month
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+
+        const weekOffIndices = this.getWeekOffDayIndices();
+        const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
+        const attendanceDaySet = new Set();
+        this.attendanceRecords.forEach(r => {
+            const dateStr = r.Attendance_Date__c || r.Date__c;
+            if (dateStr && presentStatuses.includes((r.Status__c || '').toLowerCase())) {
+                attendanceDaySet.add(new Date(dateStr).getDate());
+            }
+        });
+
+        let leaveDaysFromRequests = 0;
+        (this._calendarLeaves || []).forEach(leave => {
+            if (leave.Start_Date__c && leave.End_Date__c) {
+                const start = new Date(leave.Start_Date__c);
+                const end = new Date(leave.End_Date__c);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    if (d.getFullYear() === year && d.getMonth() === month) {
+                        const dayNum = d.getDate();
+                        const dayOfWeek = d.getDay();
+                        // Only count working days that don't already have an attendance record, up to today
+                        if (dayNum <= lastDate && !weekOffIndices.has(dayOfWeek) && !attendanceDaySet.has(dayNum)) {
+                            leaveDaysFromRequests++;
+                        }
+                    }
+                }
+            }
+        });
+
+        return fromAttendance + leaveDaysFromRequests;
     }
 
     get attendanceSummaryHoliday() {
-        return this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'holiday').length;
+        // Count holidays from attendance records with holiday status
+        const fromAttendance = this.attendanceRecords.filter(r => (r.Status__c || '').toLowerCase() === 'holiday').length;
+
+        // Count holidays from Holiday__c records that fall on working days in this month
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+
+        const weekOffIndices = this.getWeekOffDayIndices();
+
+        // Build set of days already accounted for from attendance records
+        const attendanceDaySet = new Set();
+        this.attendanceRecords.forEach(r => {
+            const dateStr = r.Attendance_Date__c || r.Date__c;
+            if (dateStr) {
+                attendanceDaySet.add(new Date(dateStr).getDate());
+            }
+        });
+
+        let holidaysFromRecords = 0;
+        (this._calendarHolidays || []).forEach(h => {
+            if (h.Holiday_Date__c) {
+                const hDate = new Date(h.Holiday_Date__c);
+                const dayNum = hDate.getDate();
+                const dayOfWeek = hDate.getDay();
+                // Count working-day holidays not already tracked in attendance, up to today
+                if (dayNum <= lastDate && !weekOffIndices.has(dayOfWeek) && !attendanceDaySet.has(dayNum)) {
+                    holidaysFromRecords++;
+                }
+            }
+        });
+
+        return fromAttendance + holidaysFromRecords;
     }
 
     get calendarAttendancePercent() {
-        const total = this.attendanceSummaryPresent + this.attendanceSummaryAbsent;
-        if (total === 0) return 0;
-        return Math.round((this.attendanceSummaryPresent / total) * 100);
+        // Calculate total working days (non week-off) in the displayed month up to today
+        const year = this.calendarYear;
+        const month = this.calendarMonth;
+        const today = new Date();
+        const lastDate = (year === today.getFullYear() && month === today.getMonth())
+            ? today.getDate()
+            : new Date(year, month + 1, 0).getDate();
+        const weekOffIndices = this.getWeekOffDayIndices();
+        let workingDays = 0;
+        for (let d = 1; d <= lastDate; d++) {
+            const dayOfWeek = new Date(year, month, d).getDay();
+            if (!weekOffIndices.has(dayOfWeek)) workingDays++;
+        }
+        if (workingDays === 0) return 0;
+        return Math.round((this.attendanceSummaryPresent / workingDays) * 100);
     }
 
     get calendarAttendanceBarStyle() {
@@ -744,8 +945,9 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get calendarAvgHours() {
+        const presentStatuses = ['present', 'started', 'completed', 'ended', 'auto-closed', 'in progress', 'half day', 'half-day'];
         const presentDays = this.attendanceRecords.filter(r =>
-            (r.Status__c || '').toLowerCase() === 'present' && r.Hours_Worked__c
+            presentStatuses.includes((r.Status__c || '').toLowerCase()) && r.Hours_Worked__c
         );
         if (presentDays.length === 0) return '0.0';
         const total = presentDays.reduce((sum, r) => sum + (Number(r.Hours_Worked__c) || 0), 0);
@@ -902,7 +1104,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     getActivityStatusClass(status) {
         const s = (status || '').toLowerCase();
-        if (s === 'present') return 'activity-dot-present';
+        if (s === 'present' || s === 'started' || s === 'completed' || s === 'ended' || s === 'auto-closed' || s === 'in progress') return 'activity-dot-present';
         if (s === 'absent') return 'activity-dot-absent';
         if (s === 'leave' || s === 'on leave') return 'activity-dot-leave';
         return 'activity-dot-default';
@@ -910,7 +1112,7 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
 
     getActivityStatusIcon(status) {
         const s = (status || '').toLowerCase();
-        if (s === 'present') return 'utility:check';
+        if (s === 'present' || s === 'started' || s === 'completed' || s === 'ended' || s === 'auto-closed' || s === 'in progress') return 'utility:check';
         if (s === 'absent') return 'utility:close';
         if (s === 'leave' || s === 'on leave') return 'utility:event';
         return 'utility:record';

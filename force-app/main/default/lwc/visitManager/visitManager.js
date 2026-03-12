@@ -70,6 +70,7 @@ export default class VisitManager extends LightningElement {
     @track showBeatConfirmModal = false;
 
     // ── DAY START FORM ──
+    @track dutyType = 'HQ';
     @track odometerStart = null;
     @track withCompanion = false;
     @track companionId = null;
@@ -324,6 +325,16 @@ export default class VisitManager extends LightningElement {
             (this.config.selfieRequired && !this._startSelfieBase64);
     }
 
+    get dutyTypeOptions() {
+        return [
+            { label: 'HQ', value: 'HQ' },
+            { label: 'EX-HQ', value: 'EX-HQ' },
+            { label: 'OS', value: 'OS' }
+        ];
+    }
+
+    handleDutyTypeChange(e) { this.dutyType = e.detail.value; }
+
     handleOdometerStartChange(e) { this.odometerStart = e.detail.value ? Number(e.detail.value) : null; }
 
     handleCompanionToggle(e) {
@@ -394,6 +405,7 @@ export default class VisitManager extends LightningElement {
                 batteryLevel: this.batteryLevel,
                 networkStatus: this.networkStatus,
                 deviceInfo: this._deviceInfo,
+                dutyType: this.dutyType || 'HQ',
                 odometerStart: this.odometerStart || 0,
                 withCompanion: this.withCompanion,
                 companionId: this.companionId

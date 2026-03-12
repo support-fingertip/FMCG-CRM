@@ -10,7 +10,7 @@
     <filters>
         <field>Status__c</field>
         <operation>equals</operation>
-        <value>Submitted</value>
+        <value>Submitted,Manager Approved</value>
     </filters>
     <filterScope>Everything</filterScope>
     <label>Pending Approval</label>

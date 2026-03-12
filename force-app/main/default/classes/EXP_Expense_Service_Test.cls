@@ -47,30 +47,38 @@ public class EXP_Expense_Service_Test {
             Band__c = 'Band 1', Expense_Type__c = 'Daily Allowance', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Per Day', Rate_Amount__c = 300, Max_Per_Day__c = 300,
             Max_Per_Month__c = 9000, Min_Distance_KM__c = 0, Is_Active__c = true, Sort_Order__c = 1,
-            Auto_Create__c = true, Travel_Type__c = 'All', DA_Half_Day_Rate__c = 150
+            Auto_Create__c = true, Travel_Type__c = 'All', Travel_Mode__c = 'All'
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Travelling Allowance', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Per KM', Rate_Amount__c = 5, Max_Per_Day__c = 500,
             Max_Per_Month__c = 15000, Min_Distance_KM__c = 10, Is_Active__c = true, Sort_Order__c = 2,
-            Auto_Create__c = true, Travel_Type__c = 'All', Per_KM_Bike_Rate__c = 3, Daily_KM_Limit__c = 200
+            Auto_Create__c = true, Travel_Type__c = 'All', Travel_Mode__c = 'Car', Daily_KM_Limit__c = 200
+        ));
+        rules.add(new Expense_Eligibility__c(
+            Band__c = 'Band 1', Expense_Type__c = 'Travelling Allowance', Expense_Category__c = 'Travel',
+            Rate_Type__c = 'Per KM', Rate_Amount__c = 3, Max_Per_Day__c = 500,
+            Max_Per_Month__c = 15000, Min_Distance_KM__c = 10, Is_Active__c = true, Sort_Order__c = 2,
+            Auto_Create__c = false, Travel_Type__c = 'All', Travel_Mode__c = 'Bike', Daily_KM_Limit__c = 200
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Fuel', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Actual', Rate_Amount__c = 0, Max_Per_Day__c = 800,
             Max_Per_Month__c = 12000, Receipt_Required__c = true, Is_Active__c = true, Sort_Order__c = 3,
-            Mandatory_Remarks__c = true
+            Mandatory_Remarks__c = true, Travel_Mode__c = 'All'
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Food', Expense_Category__c = 'Miscellaneous',
             Rate_Type__c = 'Flat Monthly', Rate_Amount__c = 3000, Max_Per_Day__c = 200,
-            Max_Per_Month__c = 3000, Is_Active__c = true, Sort_Order__c = 4
+            Max_Per_Month__c = 3000, Is_Active__c = true, Sort_Order__c = 4,
+            Travel_Mode__c = 'All'
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Lodging', Expense_Category__c = 'Travel',
             Rate_Type__c = 'Actual', Rate_Amount__c = 0, Max_Per_Day__c = 5000,
             Max_Per_Month__c = 50000, Is_Active__c = true, Sort_Order__c = 5,
-            Receipt_Required__c = true, Lodging_Metro_Limit__c = 3000, Lodging_Non_Metro_Limit__c = 2000
+            Receipt_Required__c = true, Lodging_Metro_Limit__c = 3000, Lodging_Non_Metro_Limit__c = 2000,
+            Travel_Mode__c = 'All'
         ));
         insert rules;
     }
@@ -114,7 +122,7 @@ public class EXP_Expense_Service_Test {
         System.assertNotEquals(null, data.get('config'), 'Should have config');
 
         List<Expense_Eligibility__c> rules = (List<Expense_Eligibility__c>) data.get('eligibilityRules');
-        System.assertEquals(5, rules.size(), 'Should have 5 rules');
+        System.assertEquals(6, rules.size(), 'Should have 6 rules');
     }
 
     @isTest
@@ -139,7 +147,7 @@ public class EXP_Expense_Service_Test {
         List<Expense_Eligibility__c> rules = EXP_Expense_Service.getEligibilityRules('Band 1');
         Test.stopTest();
 
-        System.assertEquals(5, rules.size(), 'Should have 5 rules for Band 1');
+        System.assertEquals(6, rules.size(), 'Should have 6 rules for Band 1');
         // Verify new fields are queried
         Expense_Eligibility__c daRule = null;
         for (Expense_Eligibility__c r : rules) {
@@ -147,11 +155,11 @@ public class EXP_Expense_Service_Test {
         }
         System.assertNotEquals(null, daRule, 'Should have DA rule');
         System.assertEquals(true, daRule.Auto_Create__c, 'DA should be auto-create');
-        System.assertEquals(150, daRule.DA_Half_Day_Rate__c, 'DA half day rate should be 150');
+        System.assertEquals('All', daRule.Travel_Mode__c, 'DA travel mode should be All');
 
         // Test caching
         List<Expense_Eligibility__c> cached = EXP_Expense_Service.getEligibilityRules('Band 1');
-        System.assertEquals(5, cached.size(), 'Cached result should match');
+        System.assertEquals(6, cached.size(), 'Cached result should match');
     }
 
     @isTest
@@ -171,7 +179,7 @@ public class EXP_Expense_Service_Test {
         );
         Expense_Eligibility__c daRule = new Expense_Eligibility__c(
             Rate_Type__c = 'Per Day', Rate_Amount__c = 300, Max_Per_Day__c = 300,
-            Is_Active__c = true, Min_Distance_KM__c = 0, DA_Half_Day_Rate__c = 150
+            Is_Active__c = true, Min_Distance_KM__c = 0
         );
         Decimal fullResult = EXP_Expense_Service.calculateEligibleAmount(itemFull, daRule, 22);
         System.assertEquals(300, fullResult, 'Full day DA should be 300');
@@ -193,30 +201,35 @@ public class EXP_Expense_Service_Test {
 
     @isTest
     static void testCalculateTAAmount() {
-        // Car rate (default)
+        // Car rate
         Expense_Item__c carItem = new Expense_Item__c(
             GPS_Distance_KM__c = 30, Claimed_Amount__c = 150
         );
-        Expense_Eligibility__c taRule = new Expense_Eligibility__c(
+        Expense_Eligibility__c carRule = new Expense_Eligibility__c(
             Rate_Type__c = 'Per KM', Rate_Amount__c = 5, Max_Per_Day__c = 500,
-            Is_Active__c = true, Min_Distance_KM__c = 10, Per_KM_Bike_Rate__c = 3,
-            Daily_KM_Limit__c = 200
+            Is_Active__c = true, Min_Distance_KM__c = 10,
+            Daily_KM_Limit__c = 200, Travel_Mode__c = 'Car'
         );
-        Decimal carResult = EXP_Expense_Service.calculateEligibleAmount(carItem, taRule, 22);
+        Decimal carResult = EXP_Expense_Service.calculateEligibleAmount(carItem, carRule, 22);
         System.assertEquals(150, carResult, 'Car TA should be 30 * 5 = 150');
 
-        // Bike rate
+        // Bike rate (separate rule with its own Rate_Amount)
         Expense_Item__c bikeItem = new Expense_Item__c(
             GPS_Distance_KM__c = 30, Claimed_Amount__c = 90, Vehicle_Type__c = 'Bike'
         );
-        Decimal bikeResult = EXP_Expense_Service.calculateEligibleAmount(bikeItem, taRule, 22);
+        Expense_Eligibility__c bikeRule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Per KM', Rate_Amount__c = 3, Max_Per_Day__c = 500,
+            Is_Active__c = true, Min_Distance_KM__c = 10,
+            Daily_KM_Limit__c = 200, Travel_Mode__c = 'Bike'
+        );
+        Decimal bikeResult = EXP_Expense_Service.calculateEligibleAmount(bikeItem, bikeRule, 22);
         System.assertEquals(90, bikeResult, 'Bike TA should be 30 * 3 = 90');
 
         // Daily KM limit
         Expense_Item__c overLimitItem = new Expense_Item__c(
             GPS_Distance_KM__c = 250, Claimed_Amount__c = 1000
         );
-        Decimal limitResult = EXP_Expense_Service.calculateEligibleAmount(overLimitItem, taRule, 22);
+        Decimal limitResult = EXP_Expense_Service.calculateEligibleAmount(overLimitItem, carRule, 22);
         System.assertEquals(500, limitResult, 'Should be capped at max per day (200 * 5 = 1000, but max 500)');
     }
 
@@ -655,7 +668,7 @@ public class EXP_Expense_Service_Test {
         Test.stopTest();
 
         List<Expense_Eligibility__c> rules = EXP_Expense_Service.getEligibilityRules('Band 1');
-        System.assertEquals(5, rules.size(), 'Should re-fetch after cache clear');
+        System.assertEquals(6, rules.size(), 'Should re-fetch after cache clear');
     }
 
     @isTest
@@ -702,6 +715,114 @@ public class EXP_Expense_Service_Test {
         System.assertEquals(300, items[0].Rate_Amount__c);
         System.assert(items[0].Is_Eligible__c);
         System.assert(items[0].Eligible_Amount__c > 0);
+    }
+
+    @isTest
+    static void testGetSubmitSummary() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        Expense_Item__c item = new Expense_Item__c(
+            Expense__c = report.Id,
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Expense_Category__c = 'Travel',
+            Claimed_Amount__c = 300,
+            Eligible_Amount__c = 300
+        );
+        insert item;
+
+        Test.startTest();
+        Map<String, Object> summary = EXP_Expense_Service.getSubmitSummary(report.Id);
+        Test.stopTest();
+
+        System.assertEquals(1, (Integer) summary.get('totalItems'), 'Should have 1 item');
+        System.assertEquals(1, (Integer) summary.get('dayCount'), 'Should have 1 day');
+        System.assertEquals(300, (Decimal) summary.get('totalClaimed'), 'Total claimed should be 300');
+        System.assertEquals(300, (Decimal) summary.get('totalEligible'), 'Total eligible should be 300');
+        System.assertNotEquals(null, summary.get('typeBreakdown'), 'Should have type breakdown');
+        System.assertEquals(true, summary.get('canSubmit'), 'Should be able to submit');
+    }
+
+    @isTest
+    static void testFoodLimitCalculation() {
+        Expense_Item__c foodItem = new Expense_Item__c(
+            Claimed_Amount__c = 500
+        );
+        // Food limit is now enforced via Max_Per_Day__c
+        Expense_Eligibility__c foodRule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Actual', Max_Per_Day__c = 300,
+            Is_Active__c = true, Min_Distance_KM__c = 0,
+            Travel_Mode__c = 'All'
+        );
+
+        Test.startTest();
+        Decimal result = EXP_Expense_Service.calculateEligibleAmount(foodItem, foodRule, 22);
+        Test.stopTest();
+
+        System.assertEquals(300, result, 'Food daily limit should cap at 300 via Max_Per_Day');
+    }
+
+    @isTest
+    static void testSystemCalculatedAmountPopulated() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        Day_Attendance__c att = [
+            SELECT Id FROM Day_Attendance__c
+            WHERE Attendance_Date__c = :monthStart LIMIT 1
+        ];
+
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        items.add(new Expense_Item__c(
+            Expense__c = report.Id,
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Day_Attendance__c = att.Id,
+            Claimed_Amount__c = 300
+        ));
+
+        Test.startTest();
+        EXP_Expense_Service.populateEligibilityFields(items, report.Id);
+        Test.stopTest();
+
+        System.assertNotEquals(null, items[0].System_Calculated_Amount__c, 'System calc amount should be populated');
+        System.assert(items[0].System_Calculated_Amount__c > 0, 'System calc amount should be > 0');
+        System.assertEquals(items[0].Eligible_Amount__c, items[0].System_Calculated_Amount__c, 'System calc should equal eligible');
+    }
+
+    @isTest
+    static void testSaveWithTravelMode() {
+        Date today = Date.today();
+        String monthName = getCurrentMonth();
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = EXP_Expense_Service.getOrCreateReport(UserInfo.getUserId(), monthName, today.year());
+
+        List<Expense_Item__c> items = new List<Expense_Item__c>();
+        items.add(new Expense_Item__c(
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Travelling Allowance',
+            Expense_Category__c = 'Travel',
+            GPS_Distance_KM__c = 30,
+            Claimed_Amount__c = 150,
+            Eligible_Amount__c = 150,
+            Vehicle_Type__c = 'Car',
+            Travel_Mode__c = 'Car'
+        ));
+
+        Test.startTest();
+        List<Expense_Item__c> saved = EXP_Expense_Service.saveExpenseItems(report.Id, items);
+        Test.stopTest();
+
+        System.assertEquals(1, saved.size(), 'Should save 1 item');
+        System.assertEquals('Car', saved[0].Travel_Mode__c, 'Travel mode should be preserved');
     }
 
     @isTest

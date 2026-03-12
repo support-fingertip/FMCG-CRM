@@ -37,6 +37,10 @@
                 <span class="emp-value">{expense.Month__c} {expense.Year__c}</span>
             </div>
             <div class="emp-field">
+                <span class="emp-label">Eligible</span>
+                <span class="emp-value emp-amount">{totalEligible}</span>
+            </div>
+            <div class="emp-field">
                 <span class="emp-label">Claimed</span>
                 <span class="emp-value emp-amount">{totalClaimed}</span>
             </div>
@@ -103,16 +107,20 @@
                         <th>From/To</th>
                         <th class="num-col">KM</th>
                         <th class="num-col">Eligible</th>
+                        <th class="num-col">System Calc.</th>
                         <th class="num-col">Claimed</th>
                         <th class="num-col">Approved</th>
                         <th>Status</th>
                         <th>Notes</th>
                         <th>Files</th>
+                        <template if:true={isApprover}>
+                            <th class="comment-col">Comment</th>
+                        </template>
                     </tr>
                 </thead>
                 <tbody>
                     <template for:each={items} for:item="item">
-                        <tr key={item.key}>
+                        <tr key={item.key} class={item.rowClass}>
                             <template if:true={isApprover}>
                                 <td class="check-col">
                                     <template if:true={item.isEditable}>
@@ -129,6 +137,9 @@
                                 <template if:true={item.vehicleType}>
                                     <span class="vehicle-badge">{item.vehicleType}</span>
                                 </template>
+                                <template if:true={item.travelMode}>
+                                    <span class="travel-mode-badge">{item.travelMode}</span>
+                                </template>
                             </td>
                             <td>
                                 <template if:true={item.fromLocation}>
@@ -140,6 +151,12 @@
                             </td>
                             <td class="num-col">{item.manualDistance}</td>
                             <td class="num-col">{item.eligibleAmount}</td>
+                            <td class="num-col">
+                                <span class="system-calc-value">{item.systemCalcAmount}</span>
+                                <template if:true={item.claimedExceedsSystem}>
+                                    <span class="exceeds-system-warn">!</span>
+                                </template>
+                            </td>
                             <td class="num-col">{item.claimedAmount}</td>
                             <td class="num-col">
                                 <template if:true={item.isEditable}>
@@ -166,10 +183,11 @@
                             <td class="notes-col" title={item.notes}>{item.notes}</td>
                             <td class="files-col">
                                 <template if:true={item.hasFiles}>
+                                    <span class="file-count-badge">{item.fileCount}</span>
                                     <template for:each={item.files} for:item="file">
                                         <span key={file.contentDocumentId}
                                             class="file-link"
-                                            data-versionid={file.versionId}
+                                            data-docid={file.contentDocumentId}
                                             onclick={handlePreviewFile}
                                             title={file.title}>
                                             {file.title}
@@ -180,6 +198,36 @@
                                     <span class="no-file">-</span>
                                 </template>
                             </td>
+                            <!-- Inline Comment -->
+                            <template if:true={isApprover}>
+                                <td class="comment-col">
+                                    <template if:true={item.isEditable}>
+                                        <lightning-button-icon
+                                            icon-name="utility:comments"
+                                            alternative-text="Add comment"
+                                            size="small"
+                                            variant="bare"
+                                            data-id={item.id}
+                                            onclick={handleToggleInlineComment}>
+                                        </lightning-button-icon>
+                                        <template if:true={item.showInlineComment}>
+                                            <div class="inline-comment-wrap">
+                                                <lightning-textarea
+                                                    value={item.inlineComment}
+                                                    data-id={item.id}
+                                                    onchange={handleInlineCommentChange}
+                                                    placeholder="Add comment..."
+                                                    max-length="1000"
+                                                    class="inline-comment-input">
+                                                </lightning-textarea>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:true={item.approverComments}>
+                                        <span class="prev-comments" title={item.approverComments}>{item.approverComments}</span>
+                                    </template>
+                                </td>
+                            </template>
                         </tr>
                     </template>
                 </tbody>

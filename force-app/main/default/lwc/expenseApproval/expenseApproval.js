@@ -85,17 +85,24 @@ export default class ExpenseApproval extends NavigationMixin(LightningElement) {
             eligibleAmount: item.Eligible_Amount__c || 0,
             claimedAmount: item.Claimed_Amount__c || 0,
             approvedAmount: item.Approved_Amount__c != null ? item.Approved_Amount__c : item.Claimed_Amount__c,
+            systemCalcAmount: item.System_Calculated_Amount__c || 0,
             notes: item.Notes__c || '',
             vehicleType: item.Vehicle_Type__c || '',
+            travelMode: item.Travel_Mode__c || '',
             city: item.City__c || '',
             approvalStatus: item.Approval_Status__c || 'Not Submitted',
             approverComments: item.Approver_Comments__c || '',
+            inlineComment: '',
+            showInlineComment: false,
             isEditable: isEditable,
             selected: false,
             files: files,
             hasFiles: files.length > 0,
+            fileCount: files.length,
             statusClass: this.getStatusClass(item.Approval_Status__c),
-            exceedsClaimed: false
+            rowClass: isEditable ? 'highlight-row' : '',
+            exceedsClaimed: false,
+            claimedExceedsSystem: (item.Claimed_Amount__c || 0) > (item.System_Calculated_Amount__c || 0) && (item.System_Calculated_Amount__c || 0) > 0
         };
     }
 
@@ -220,14 +227,14 @@ export default class ExpenseApproval extends NavigationMixin(LightningElement) {
 
     // ── File Preview ─────────────────────────────────────────────
     handlePreviewFile(event) {
-        const versionId = event.currentTarget.dataset.versionid;
+        const docId = event.currentTarget.dataset.docid;
         this[NavigationMixin.Navigate]({
             type: 'standard__namedPage',
             attributes: {
                 pageName: 'filePreview'
             },
             state: {
-                selectedRecordId: versionId
+                selectedRecordId: docId
             }
         });
     }
@@ -340,6 +347,28 @@ export default class ExpenseApproval extends NavigationMixin(LightningElement) {
 
     get actionConfirmVariant() {
         return this.actionType.includes('reject') ? 'destructive' : 'brand';
+    }
+
+    // ── Inline Comments ─────────────────────────────────────────
+    handleToggleInlineComment(event) {
+        const itemId = event.currentTarget.dataset.id;
+        this.items = this.items.map(item => {
+            if (item.id === itemId) {
+                return { ...item, showInlineComment: !item.showInlineComment };
+            }
+            return item;
+        });
+    }
+
+    handleInlineCommentChange(event) {
+        const itemId = event.currentTarget.dataset.id;
+        const value = event.detail.value;
+        this.items = this.items.map(item => {
+            if (item.id === itemId) {
+                return { ...item, inlineComment: value };
+            }
+            return item;
+        });
     }
 
     // ── Helpers ──────────────────────────────────────────────────

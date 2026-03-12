@@ -38,6 +38,7 @@ public without sharing class DFO_DayAttendance_Service {
         public Decimal batteryLevel;
         public String  networkStatus;
         public String  deviceInfo;
+        public String  dutyType;
         public Decimal odometerStart;
         public Boolean withCompanion;
         public Id      companionId;
@@ -149,6 +150,7 @@ public without sharing class DFO_DayAttendance_Service {
             dayRecord.Odometer_Start__c = request.odometerStart;
             dayRecord.With_Companion__c = request.withCompanion == true;
             dayRecord.Companion__c = request.withCompanion == true ? request.companionId : null;
+            dayRecord.Duty_Type__c = String.isNotBlank(request.dutyType) ? request.dutyType : 'HQ';
 
             // Initialize counters
             dayRecord.Total_Visits__c = 0;

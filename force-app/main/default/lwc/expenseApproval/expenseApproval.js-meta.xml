@@ -15,5 +15,11 @@
                 <object>Expense__c</object>
             </objects>
         </targetConfig>
+        <targetConfig targets="lightning__AppPage">
+            <supportedFormFactors>
+                <supportedFormFactor type="Large" />
+                <supportedFormFactor type="Small" />
+            </supportedFormFactors>
+        </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

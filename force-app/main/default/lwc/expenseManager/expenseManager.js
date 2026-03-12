@@ -4,7 +4,7 @@
  *              - Configuration-driven expense types per band/travel type
  *              - Auto-calculation of DA (working hours) and TA (distance × rate)
  *              - Dynamic add/remove expense line items per day
- *              - Vehicle-type-specific TA rates (Bike/Car)
+ *              - Travel-mode-specific TA rates (Bike/Car/Auto/Flight/etc.)
  *              - City-based lodging limits (Metro/Non-Metro)
  *              - Configurable receipt & remarks requirements
  *              - File upload with validation before submit
@@ -31,6 +31,8 @@ import getMonthlyOverview from '@salesforce/apex/ExpenseController.getMonthlyOve
 import getTeamExpenseReports from '@salesforce/apex/ExpenseController.getTeamExpenseReports';
 import getExpenseItemFiles from '@salesforce/apex/ExpenseController.getExpenseItemFiles';
 import deleteExpenseItemFile from '@salesforce/apex/ExpenseController.deleteExpenseItemFile';
+import getSubmitSummary from '@salesforce/apex/ExpenseController.getSubmitSummary';
+import uploadReceiptBase64 from '@salesforce/apex/ExpenseController.uploadReceiptBase64';
 
 const MONTHS = [
     { label: 'January', value: 'January' },
@@ -53,7 +55,51 @@ const DA_HALF_DAY_HOURS = 8;
 const VEHICLE_OPTIONS = [
     { label: 'Bike', value: 'Bike' },
     { label: 'Car', value: 'Car' },
+    { label: 'Auto', value: 'Auto' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Bus: AC', value: 'Bus: AC' },
+    { label: 'Bus: Non-AC', value: 'Bus: Non-AC' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Train: 1AC', value: 'Train: 1AC' },
+    { label: 'Train: 2AC', value: 'Train: 2AC' },
+    { label: 'Train: 3AC', value: 'Train: 3AC' },
+    { label: 'Train: Sleeper', value: 'Train: Sleeper' },
+    { label: 'Train: General', value: 'Train: General' },
+    { label: 'Flight', value: 'Flight' },
+    { label: 'Flight: Business', value: 'Flight: Business' },
+    { label: 'Flight: Economy', value: 'Flight: Economy' },
+    { label: 'Flight: Premium Economy', value: 'Flight: Premium Economy' },
+    { label: 'Own Bike', value: 'Own Bike' },
+    { label: 'Own Car', value: 'Own Car' },
     { label: 'Public Transport', value: 'Public Transport' }
+];
+
+const TRAVEL_MODE_OPTIONS = [
+    { label: 'Bike', value: 'Bike' },
+    { label: 'Car', value: 'Car' },
+    { label: 'Auto', value: 'Auto' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Bus: AC', value: 'Bus: AC' },
+    { label: 'Bus: Non-AC', value: 'Bus: Non-AC' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Train: 1AC', value: 'Train: 1AC' },
+    { label: 'Train: 2AC', value: 'Train: 2AC' },
+    { label: 'Train: 3AC', value: 'Train: 3AC' },
+    { label: 'Train: Sleeper', value: 'Train: Sleeper' },
+    { label: 'Train: General', value: 'Train: General' },
+    { label: 'Flight', value: 'Flight' },
+    { label: 'Flight: Business', value: 'Flight: Business' },
+    { label: 'Flight: Economy', value: 'Flight: Economy' },
+    { label: 'Flight: Premium Economy', value: 'Flight: Premium Economy' },
+    { label: 'Own Bike', value: 'Own Bike' },
+    { label: 'Own Car', value: 'Own Car' },
+    { label: 'Public Transport', value: 'Public Transport' }
+];
+
+const CITY_TIER_OPTIONS = [
+    { label: 'Tier 1 (Metro)', value: 'Tier 1' },
+    { label: 'Tier 2', value: 'Tier 2' },
+    { label: 'Tier 3', value: 'Tier 3' }
 ];
 
 export default class ExpenseManager extends LightningElement {
@@ -65,6 +111,7 @@ export default class ExpenseManager extends LightningElement {
     @track employee = {};
     @track eligibleDates = [];
     @track eligibilityRules = [];
+    @track expenseTypePicklist = [];
     @track config = {};
 
     // Accordion day list
@@ -84,6 +131,11 @@ export default class ExpenseManager extends LightningElement {
     @track approvalExpenseId = null;
     @track approvalLevel = '';
 
+    // Submit confirmation
+    @track showSubmitConfirmModal = false;
+    @track submitSummary = {};
+    @track submitRemarks = '';
+
     // Comments
     @track showCommentsModal = false;
     @track commentsHistory = [];
@@ -100,6 +152,13 @@ export default class ExpenseManager extends LightningElement {
     // Options
     monthOptions = MONTHS;
     vehicleOptions = VEHICLE_OPTIONS;
+    travelModeOptions = TRAVEL_MODE_OPTIONS;
+    cityTierOptions = CITY_TIER_OPTIONS;
+
+    // City tier & employee data
+    cityTiers = {};        // Map<cityName, tier>
+    employeeHQCity = '';
+    @track cityOptions = [];  // [{label, value}] built from cityTiers
 
     get yearOptions() {
         const now = new Date();
@@ -135,14 +194,27 @@ export default class ExpenseManager extends LightningElement {
             this.expense = data.expense || {};
             this.employee = data.employee || {};
             this.eligibilityRules = data.eligibilityRules || [];
+            this.expenseTypePicklist = data.expenseTypePicklist || [];
             this.eligibleDates = data.eligibleDates || [];
             this.config = data.config || {};
+            this.cityTiers = data.cityTiers || {};
+            this.employeeHQCity = data.hqCity || '';
+
+            // Build city options from cityTiers map for searchable combobox
+            this.cityOptions = Object.keys(this.cityTiers)
+                .sort()
+                .map(name => ({ label: name + ' (' + this.cityTiers[name] + ')', value: name }));
 
             // Store existing items and files for later use
             this._existingItems = data.expenseItems || [];
             this._existingFiles = data.files || [];
 
             this.currentScreen = 'MAIN';
+
+            // Auto-show day expenses if there are eligible dates
+            if (this.eligibleDates.length > 0) {
+                this.handleAddDayExpenses();
+            }
         } catch (e) {
             this.showError(e);
             this.currentScreen = 'MAIN';
@@ -202,26 +274,44 @@ export default class ExpenseManager extends LightningElement {
         this.dayRows = this.eligibleDates.map((dayInfo) => {
             const dateStr = dayInfo.date;
             const existingItems = itemsByDate[dateStr] || [];
-            const hoursWorked = dayInfo.hoursWorked || 0;
 
-            // Build items: auto-create from rules flagged Auto_Create,
-            // plus any additional existing items
+            // Auto-calculate hours from checkIn/checkOut if both available
+            let hoursWorked = dayInfo.hoursWorked || 0;
+            let missingCheckOut = false;
+            if (dayInfo.checkIn && dayInfo.checkOut) {
+                const diff = this.calcHoursBetween(dayInfo.checkIn, dayInfo.checkOut);
+                if (diff > 0) hoursWorked = diff;
+            } else if (dayInfo.checkIn && !dayInfo.checkOut) {
+                missingCheckOut = true;
+                // hoursWorked stays as server value or 0 for manual entry
+            }
+
+            // Build items: all eligibility expense types for each day
+            // (deduplicated by expense type)
             const items = [];
             const usedTypes = new Set();
 
-            // First add auto-create rules
+            const dutyType = dayInfo.dutyType || 'HQ';
+
+            const seenTypes = new Set();
             this.eligibilityRules.forEach(rule => {
-                if (rule.Auto_Create__c || existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c)) {
-                    const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
-                    items.push(this.buildItemFromRule(rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
-                    usedTypes.add(rule.Expense_Type__c);
-                }
+                if (seenTypes.has(rule.Expense_Type__c)) return;
+                // Match rule by duty type
+                const ruledt = rule.Travel_Type__c || 'All';
+                if (ruledt !== 'All' && ruledt !== dutyType) return;
+                const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
+                const matchedRule = existing
+                    ? this.findRuleForItem(existing.Expense_Type__c, dutyType)
+                    : rule;
+                items.push(this.buildItemFromRule(matchedRule || rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
+                usedTypes.add(rule.Expense_Type__c);
+                seenTypes.add(rule.Expense_Type__c);
             });
 
             // Add any existing items that don't match auto-create rules
             existingItems.forEach(existing => {
                 if (!usedTypes.has(existing.Expense_Type__c)) {
-                    const rule = this.eligibilityRules.find(r => r.Expense_Type__c === existing.Expense_Type__c);
+                    const rule = this.findRuleForItem(existing.Expense_Type__c, dutyType);
                     items.push(this.buildItemFromRule(rule, existing, dateStr, dayInfo, filesByItem, hoursWorked));
                 }
             });
@@ -236,6 +326,11 @@ export default class ExpenseManager extends LightningElement {
                 attendanceId: dayInfo.attendanceId,
                 gpsDistance: dayInfo.gpsDistance || 0,
                 hoursWorked: hoursWorked,
+                checkIn: dayInfo.checkIn || null,
+                checkOut: dayInfo.checkOut || null,
+                missingCheckOut: missingCheckOut,
+                dutyType: dutyType,
+                dutyTypeClass: 'duty-badge duty-' + dutyType.toLowerCase().replace('-', ''),
                 expanded: false,
                 selected: false,
                 items: items,
@@ -248,16 +343,65 @@ export default class ExpenseManager extends LightningElement {
         this.showDayExpenses = true;
     }
 
+    findRuleForItem(expenseType, dutyType) {
+        const dt = dutyType || 'All';
+        let rule = this.eligibilityRules.find(
+            r => r.Expense_Type__c === expenseType && (r.Travel_Type__c || 'All') === dt
+        );
+        if (!rule) {
+            rule = this.eligibilityRules.find(
+                r => r.Expense_Type__c === expenseType && (r.Travel_Type__c || 'All') === 'All'
+            );
+        }
+        if (!rule) {
+            rule = this.eligibilityRules.find(r => r.Expense_Type__c === expenseType);
+        }
+        return rule || null;
+    }
+
+    // Get allowed travel modes from rule's Allowed_Travel_Modes__c multi-select
+    getAllowedModesForRule(rule) {
+        if (!rule || !rule.Allowed_Travel_Modes__c) return TRAVEL_MODE_OPTIONS;
+        const allowed = rule.Allowed_Travel_Modes__c.split(';').map(s => s.trim());
+        if (allowed.includes('All')) return TRAVEL_MODE_OPTIONS;
+        return allowed.map(m => ({ label: m, value: m }));
+    }
+
+    // Get mode rate config from rule's child Expense_Rate_Slabs__r
+    getModeRateConfig(rule, travelMode) {
+        const slabs = rule?.Expense_Rate_Slabs__r || [];
+        return slabs.find(s => s.Travel_Mode__c === travelMode && s.Distance_From__c == null) || null;
+    }
+
+    // Get distance slabs for a specific mode
+    getSlabsForMode(rule, travelMode) {
+        const slabs = rule?.Expense_Rate_Slabs__r || [];
+        return slabs.filter(s => s.Travel_Mode__c === travelMode && s.Distance_From__c != null)
+            .sort((a, b) => (a.Sort_Order__c || 0) - (b.Sort_Order__c || 0));
+    }
+
     buildItemFromRule(rule, existing, dateStr, dayInfo, filesByItem, hoursWorked) {
         const isTravel = rule && (rule.Rate_Type__c === 'Per KM' || (rule.Min_Distance_KM__c && rule.Min_Distance_KM__c > 0));
         const isDA = rule && rule.Rate_Type__c === 'Per Day';
         const isActual = rule && rule.Rate_Type__c === 'Actual';
-        const isLodging = rule && (rule.Lodging_Metro_Limit__c > 0 || rule.Lodging_Non_Metro_Limit__c > 0);
+        const hasCityTierLimits = rule && (
+            rule.City_Tier_1_Limit__c > 0 || rule.City_Tier_2_Limit__c > 0 || rule.City_Tier_3_Limit__c > 0
+        );
+        const hasMetroLimits = rule && (
+            rule.Lodging_Metro_Limit__c > 0 || rule.Lodging_Non_Metro_Limit__c > 0
+        );
+        const isLodging = hasCityTierLimits || hasMetroLimits;
+        const isFood = rule && rule.Expense_Type__c === 'Food';
         const showFromTo = rule && rule.Expense_Category__c === 'Travel' && rule.Rate_Type__c === 'Per KM';
-        const showVehicle = rule && rule.Rate_Type__c === 'Per KM' && rule.Per_KM_Bike_Rate__c > 0;
-        const showRemarks = rule && (isActual || rule.Expense_Category__c === 'Miscellaneous' || rule.Mandatory_Remarks__c);
-        const showCity = isLodging;
+        const showVehicle = false; // consolidated into Travel Mode
+        const allowedModes = rule ? this.getAllowedModesForRule(rule) : [];
+        const showTravelMode = isTravel && allowedModes.length > 0;
+        const showRemarks = true;
+        const needsCity = isLodging || (rule && rule.Expense_Category__c === 'Travel' && hasCityTierLimits);
+        const showCity = needsCity;
+        const showCityTier = needsCity;
         const mandatoryRemarks = rule && rule.Mandatory_Remarks__c;
+        const dutyType = existing ? existing.Duty_Type__c : (dayInfo.dutyType || 'HQ');
 
         const itemFiles = existing && existing.Id ? (filesByItem[existing.Id] || []) : [];
 
@@ -274,8 +418,6 @@ export default class ExpenseManager extends LightningElement {
             receiptRequired: rule ? rule.Receipt_Required__c : (existing ? existing.Receipt_Required__c : false),
             receiptThreshold: rule ? (rule.Receipt_Threshold__c || 0) : 0,
             mandatoryRemarks: mandatoryRemarks,
-            daHalfDayRate: rule ? (rule.DA_Half_Day_Rate__c || 0) : 0,
-            perKmBikeRate: rule ? (rule.Per_KM_Bike_Rate__c || 0) : 0,
             lodgingMetroLimit: rule ? (rule.Lodging_Metro_Limit__c || 0) : 0,
             lodgingNonMetroLimit: rule ? (rule.Lodging_Non_Metro_Limit__c || 0) : 0,
             gpsDistance: existing ? existing.GPS_Distance_KM__c : (dayInfo.gpsDistance || 0),
@@ -287,36 +429,126 @@ export default class ExpenseManager extends LightningElement {
             fromLocation: existing ? existing.From_Location__c : '',
             toLocation: existing ? existing.To_Location__c : '',
             notes: existing ? existing.Notes__c : '',
-            vehicleType: existing ? existing.Vehicle_Type__c : (showVehicle ? 'Bike' : ''),
+            vehicleType: existing ? existing.Vehicle_Type__c : '',
+            travelMode: existing ? (existing.Travel_Mode__c || '') : '',
             city: existing ? existing.City__c : '',
             isMetro: existing ? existing.Is_Metro__c : false,
             workingHours: existing ? existing.Working_Hours__c : hoursWorked,
             approvalStatus: existing ? existing.Approval_Status__c : 'Not Submitted',
             approverComments: existing ? existing.Approver_Comments__c : '',
             isEligible: existing ? existing.Is_Eligible__c : true,
+            dutyType: dutyType,
+            cityTier: existing ? (existing.City_Tier__c || '') : '',
+            cityTier1Limit: rule ? (rule.City_Tier_1_Limit__c || 0) : 0,
+            cityTier2Limit: rule ? (rule.City_Tier_2_Limit__c || 0) : 0,
+            cityTier3Limit: rule ? (rule.City_Tier_3_Limit__c || 0) : 0,
+            allowedTravelModes: allowedModes,
+            modeRateConfig: null,
+            modeSlabs: [],
+            hasSlabs: false,
             hasExisting: !!existing,
             isActual: isActual,
             isTravel: isTravel,
             isDA: isDA,
             isLodging: isLodging,
+            isFood: isFood,
             showFromTo: showFromTo,
             showVehicle: showVehicle,
+            showTravelMode: showTravelMode,
             showRemarks: showRemarks,
             showCity: showCity,
+            showCityTier: showCityTier,
+            systemCalcAmount: existing ? (existing.System_Calculated_Amount__c || 0) : 0,
             exceedsEligible: false,
             statusLabel: existing ? this.getItemStatusLabel(existing.Approval_Status__c) : 'New',
             statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
+            isReadonly: existing ? ['Pending', 'L1 Approved', 'L2 Approved', 'Finance Approved'].includes(existing.Approval_Status__c) : false,
             files: itemFiles,
             hasFiles: itemFiles.length > 0,
+            hasAnyFiles: itemFiles.length > 0,
+            pendingFiles: [],
+            hasPendingFiles: false,
             dirty: false
         };
 
-        // Calculate eligible if new
-        if (!existing) {
-            item.eligibleAmount = this.recalcEligible(item);
+        // Resolve mode-specific rate config if travel mode is set
+        if (item.travelMode && rule) {
+            const modeConfig = this.getModeRateConfig(rule, item.travelMode);
+            const modeSlabs = this.getSlabsForMode(rule, item.travelMode);
+            item.modeRateConfig = modeConfig;
+            item.modeSlabs = modeSlabs;
+            item.hasSlabs = modeSlabs.length > 0;
+            if (modeConfig) {
+                item.rateType = modeConfig.Rate_Type__c || item.rateType;
+                item.rateAmount = modeConfig.Rate_Amount__c || item.rateAmount;
+                item.isActual = (modeConfig.Rate_Type__c === 'Actual');
+                item.isTravel = (modeConfig.Rate_Type__c === 'Per KM');
+                item.showFromTo = item.isTravel;
+            }
         }
 
+        // Always recalculate eligible amount from current rule + attendance data
+        item.eligibleAmount = this.recalcEligible(item);
+
         return item;
+    }
+
+    buildGenericItem(expenseType, dateStr, dayInfo) {
+        return {
+            key: dateStr + '-' + expenseType,
+            id: null,
+            expenseType: expenseType,
+            category: 'Miscellaneous',
+            rateType: 'Actual',
+            rateAmount: 0,
+            maxPerDay: 0,
+            minDistance: 0,
+            dailyKmLimit: 0,
+            receiptRequired: false,
+            receiptThreshold: 0,
+            mandatoryRemarks: false,
+            lodgingMetroLimit: 0,
+            lodgingNonMetroLimit: 0,
+            gpsDistance: dayInfo.gpsDistance || 0,
+            manualDistance: null,
+            overrideReason: '',
+            eligibleAmount: 0,
+            claimedAmount: 0,
+            approvedAmount: null,
+            fromLocation: '',
+            toLocation: '',
+            notes: '',
+            vehicleType: '',
+            travelMode: '',
+            city: '',
+            isMetro: false,
+            workingHours: dayInfo.hoursWorked || 0,
+            approvalStatus: 'Not Submitted',
+            approverComments: '',
+            isEligible: true,
+            hasExisting: false,
+            isActual: true,
+            isTravel: false,
+            isDA: false,
+            isLodging: false,
+            isFood: false,
+            showFromTo: false,
+            showVehicle: false,
+            showTravelMode: false,
+            showRemarks: true,
+            showCity: false,
+            systemCalcAmount: 0,
+            exceedsEligible: false,
+            statusLabel: 'New',
+            statusClass: 'item-status item-status-new',
+            isReadonly: false,
+            files: [],
+            hasFiles: false,
+            hasAnyFiles: false,
+            pendingFiles: [],
+            hasPendingFiles: false,
+            dirty: false
+        };
     }
 
     getItemStatusLabel(status) {
@@ -346,10 +578,24 @@ export default class ExpenseManager extends LightningElement {
     // ═══════════════════════════════════════════════════════════════
 
     get availableExpenseTypes() {
-        return this.eligibilityRules.map(r => ({
-            label: r.Expense_Type__c,
-            value: r.Expense_Type__c
-        }));
+        // Include all picklist values, plus any from eligibility rules
+        const seen = new Set();
+        const options = [];
+        // Eligibility rule types first
+        this.eligibilityRules.forEach(r => {
+            if (!seen.has(r.Expense_Type__c)) {
+                seen.add(r.Expense_Type__c);
+                options.push({ label: r.Expense_Type__c, value: r.Expense_Type__c });
+            }
+        });
+        // Then remaining picklist values
+        (this.expenseTypePicklist || []).forEach(val => {
+            if (!seen.has(val)) {
+                seen.add(val);
+                options.push({ label: val, value: val });
+            }
+        });
+        return options;
     }
 
     handleAddLineItem(event) {
@@ -357,7 +603,7 @@ export default class ExpenseManager extends LightningElement {
         const typeToAdd = event.currentTarget.dataset.type;
         if (!typeToAdd) return;
 
-        const rule = this.eligibilityRules.find(r => r.Expense_Type__c === typeToAdd);
+        const rule = this.findRuleForItem(typeToAdd, null);
         if (!rule) return;
 
         this.dayRows = this.dayRows.map(row => {
@@ -387,9 +633,6 @@ export default class ExpenseManager extends LightningElement {
         const typeToAdd = event.detail.value;
         if (!typeToAdd || !dateStr) return;
 
-        const rule = this.eligibilityRules.find(r => r.Expense_Type__c === typeToAdd);
-        if (!rule) return;
-
         this.dayRows = this.dayRows.map(row => {
             if (row.dateStr !== dateStr) return row;
 
@@ -398,7 +641,13 @@ export default class ExpenseManager extends LightningElement {
             }
 
             const dayInfo = this.eligibleDates.find(d => d.date === dateStr) || {};
-            const newItem = this.buildItemFromRule(rule, null, dateStr, dayInfo, {}, dayInfo.hoursWorked || 0);
+            const rule = this.findRuleForItem(typeToAdd, null);
+            let newItem;
+            if (rule) {
+                newItem = this.buildItemFromRule(rule, null, dateStr, dayInfo, {}, dayInfo.hoursWorked || 0);
+            } else {
+                newItem = this.buildGenericItem(typeToAdd, dateStr, dayInfo);
+            }
             const items = [...row.items, newItem];
             const dayTotal = items.reduce((sum, i) => sum + (i.claimedAmount || 0), 0);
 
@@ -409,6 +658,9 @@ export default class ExpenseManager extends LightningElement {
                 dayTotalClass: dayTotal > 0 ? 'day-total-badge day-total-positive' : 'day-total-badge'
             };
         });
+
+        // Reset the combobox value
+        event.currentTarget.value = '';
     }
 
     // ── Accordion Toggle ─────────────────────────────────────────
@@ -488,16 +740,58 @@ export default class ExpenseManager extends LightningElement {
                     break;
                 case 'vehicleType':
                     item.vehicleType = value;
+                    // Re-match eligibility rule for the vehicle/travel mode
+                    {
+                        const matchedRule = this.findRuleForItem(item.expenseType, value);
+                        if (matchedRule) {
+                            item.rateAmount = matchedRule.Rate_Amount__c || 0;
+                            item.maxPerDay = matchedRule.Max_Per_Day__c || 0;
+                            item.dailyKmLimit = matchedRule.Daily_KM_Limit__c || 0;
+                        }
+                    }
+                    item.eligibleAmount = this.recalcEligible(item);
+                    break;
+                case 'travelMode':
+                    item.travelMode = value;
+                    item.vehicleType = value;
+                    // Look up mode config from rule's children
+                    {
+                        const matchedRule = this.findRuleForItem(item.expenseType, item.dutyType);
+                        if (matchedRule) {
+                            const modeConfig = this.getModeRateConfig(matchedRule, value);
+                            const modeSlabs = this.getSlabsForMode(matchedRule, value);
+                            item.modeRateConfig = modeConfig;
+                            item.modeSlabs = modeSlabs;
+                            item.hasSlabs = modeSlabs.length > 0;
+                            if (modeConfig) {
+                                item.rateType = modeConfig.Rate_Type__c || item.rateType;
+                                item.rateAmount = modeConfig.Rate_Amount__c || item.rateAmount;
+                                item.isActual = (modeConfig.Rate_Type__c === 'Actual');
+                                item.isTravel = (modeConfig.Rate_Type__c === 'Per KM');
+                                item.showFromTo = item.isTravel;
+                            } else {
+                                item.rateAmount = matchedRule.Rate_Amount__c || 0;
+                                item.maxPerDay = matchedRule.Max_Per_Day__c || 0;
+                                item.dailyKmLimit = matchedRule.Daily_KM_Limit__c || 0;
+                            }
+                        }
+                    }
                     item.eligibleAmount = this.recalcEligible(item);
                     break;
                 case 'city':
                     item.city = value;
-                    break;
-                case 'isMetro':
-                    item.isMetro = value;
-                    if (item.isLodging) {
-                        item.eligibleAmount = this.recalcEligible(item);
+                    // Auto-resolve city tier from City Tier master
+                    {
+                        const tier = this.cityTiers[value];
+                        if (tier) {
+                            item.cityTier = tier;
+                            item.isMetro = (tier === 'Tier 1');
+                        } else {
+                            item.cityTier = '';
+                            item.isMetro = false;
+                        }
                     }
+                    item.eligibleAmount = this.recalcEligible(item);
                     break;
                 case 'workingHours':
                     item.workingHours = value ? parseFloat(value) : 0;
@@ -532,17 +826,30 @@ export default class ExpenseManager extends LightningElement {
 
         if (item.minDistance > 0 && dist < item.minDistance) return 0;
 
-        if (item.rateType === 'Per Day') {
+        // TA: use mode-specific calculation
+        if (item.expenseType === 'Travelling Allowance' && item.travelMode) {
+            eligible = this.calcTAForMode(item, dist);
+        } else if (item.rateType === 'Per Day') {
             // DA with working hours logic
             eligible = this.calcDA(item);
         } else if (item.rateType === 'Per KM') {
-            // TA with vehicle type
-            eligible = this.calcTA(item, dist);
+            // TA/Fuel with vehicle type
+            if (item.modeSlabs && item.modeSlabs.length > 0) {
+                eligible = this.calcTAWithSlabs(item, dist, item.modeSlabs);
+            } else {
+                eligible = this.calcTA(item, dist);
+            }
         } else if (item.rateType === 'Actual') {
             eligible = item.claimedAmount || 0;
-            // Lodging limits
+            // Lodging limits with city tier support
             if (item.isLodging) {
-                const limit = item.isMetro ? item.lodgingMetroLimit : item.lodgingNonMetroLimit;
+                let limit = 0;
+                // Priority 1: City tier limits
+                if (item.cityTier === 'Tier 1' && item.cityTier1Limit > 0) limit = item.cityTier1Limit;
+                else if (item.cityTier === 'Tier 2' && item.cityTier2Limit > 0) limit = item.cityTier2Limit;
+                else if (item.cityTier === 'Tier 3' && item.cityTier3Limit > 0) limit = item.cityTier3Limit;
+                // Priority 2: Legacy metro/non-metro
+                else limit = item.isMetro ? item.lodgingMetroLimit : item.lodgingNonMetroLimit;
                 if (limit > 0 && eligible > limit) {
                     eligible = limit;
                 }
@@ -552,15 +859,72 @@ export default class ExpenseManager extends LightningElement {
             eligible = wd > 0 ? item.rateAmount / wd : 0;
         }
 
-        if (item.maxPerDay > 0 && eligible > item.maxPerDay) {
-            eligible = item.maxPerDay;
-        }
         return Math.round(eligible * 100) / 100;
+    }
+
+    // Mode-aware TA calculation (handles both Per KM and Actual modes)
+    calcTAForMode(item, dist) {
+        // Check for slab rates for this mode
+        if (item.modeSlabs && item.modeSlabs.length > 0) {
+            return this.calcTAWithSlabs(item, dist, item.modeSlabs);
+        }
+        // Check for mode flat config
+        if (item.modeRateConfig) {
+            const config = item.modeRateConfig;
+            if (config.Rate_Type__c === 'Actual') {
+                const claimed = item.claimedAmount || 0;
+                const max = config.Max_Amount__c || 0;
+                return (max > 0 && claimed > max) ? max : claimed;
+            }
+            // Per KM flat
+            let appliedDist = dist;
+            if (item.dailyKmLimit > 0 && appliedDist > item.dailyKmLimit) appliedDist = item.dailyKmLimit;
+            return appliedDist * (config.Rate_Amount__c || 0);
+        }
+        // Fallback: parent rate
+        return this.calcTA(item, dist);
+    }
+
+    // Slab-based TA calculation
+    calcTAWithSlabs(item, dist, slabs) {
+        let appliedDist = dist;
+        if (item.dailyKmLimit > 0 && appliedDist > item.dailyKmLimit) appliedDist = item.dailyKmLimit;
+        let total = 0;
+        for (const slab of slabs) {
+            const slabEnd = (slab.Distance_To__c && slab.Distance_To__c > 0) ? slab.Distance_To__c : appliedDist;
+            const slabStart = slab.Distance_From__c || 0;
+            const slabDist = Math.min(appliedDist, slabEnd) - slabStart;
+            if (slabDist > 0) total += slabDist * (slab.Rate_Amount__c || slab.Rate__c || 0);
+            if (appliedDist <= slabEnd) break;
+        }
+        return total;
+    }
+
+    calcHoursBetween(startTime, endTime) {
+        // startTime/endTime can be ISO datetime strings or epoch millis from Salesforce Time fields
+        try {
+            let startMs, endMs;
+            if (typeof startTime === 'number') {
+                startMs = startTime;
+            } else {
+                startMs = new Date(startTime).getTime();
+            }
+            if (typeof endTime === 'number') {
+                endMs = endTime;
+            } else {
+                endMs = new Date(endTime).getTime();
+            }
+            if (isNaN(startMs) || isNaN(endMs)) return 0;
+            const diffHours = (endMs - startMs) / (1000 * 60 * 60);
+            return Math.round(diffHours * 10) / 10; // round to 1 decimal
+        } catch (e) {
+            return 0;
+        }
     }
 
     calcDA(item) {
         const fullRate = item.rateAmount || 0;
-        const halfRate = item.daHalfDayRate > 0 ? item.daHalfDayRate : fullRate / 2;
+        const halfRate = fullRate / 2;
         const hours = item.workingHours || 0;
 
         if (hours > 0) {
@@ -576,10 +940,7 @@ export default class ExpenseManager extends LightningElement {
             appliedDist = item.dailyKmLimit;
         }
 
-        let rate = item.rateAmount || 0;
-        if (item.vehicleType === 'Bike' && item.perKmBikeRate > 0) {
-            rate = item.perKmBikeRate;
-        }
+        const rate = item.rateAmount || 0;
 
         return appliedDist * rate;
     }
@@ -608,22 +969,144 @@ export default class ExpenseManager extends LightningElement {
 
             this.dayRows = this.dayRows.map(row => ({
                 ...row,
-                items: row.items.map(item => ({
-                    ...item,
-                    files: item.id ? (filesByItem[item.id] || []) : [],
-                    hasFiles: item.id ? (filesByItem[item.id] || []).length > 0 : false
-                }))
+                items: row.items.map(item => {
+                    const itemFiles = item.id ? (filesByItem[item.id] || []) : [];
+                    const hasFiles = itemFiles.length > 0;
+                    return {
+                        ...item,
+                        files: itemFiles,
+                        hasFiles: hasFiles,
+                        hasAnyFiles: hasFiles
+                    };
+                })
             }));
         } catch (e) {
             this.showError(e);
         }
     }
 
-    async handleUploadFinished(event) {
-        const uploadedFiles = event.detail.files;
-        if (uploadedFiles && uploadedFiles.length > 0) {
-            this.showSuccess(uploadedFiles.length + ' receipt(s) uploaded.');
-            await this.loadAllFiles();
+    handleFileSelect(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        const files = event.currentTarget.files;
+        if (!files || files.length === 0) return;
+
+        // Find the item to check if it's saved
+        let targetItem = null;
+        for (const row of this.dayRows) {
+            for (const item of row.items) {
+                if (item.key === itemKey) { targetItem = item; break; }
+            }
+            if (targetItem) break;
+        }
+
+        const readers = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            readers.push(new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    resolve({
+                        fileName: file.name,
+                        base64: reader.result.split(',')[1],
+                        size: file.size,
+                        key: file.name + '-' + Date.now() + '-' + i
+                    });
+                };
+                reader.readAsDataURL(file);
+            }));
+        }
+
+        Promise.all(readers).then(async (readFiles) => {
+            if (targetItem && targetItem.id) {
+                // Saved item: upload immediately via base64
+                try {
+                    this.isLoading = true;
+                    const uploads = readFiles.map(pf =>
+                        uploadReceiptBase64({
+                            expenseItemId: targetItem.id,
+                            fileName: pf.fileName,
+                            base64Data: pf.base64
+                        })
+                    );
+                    await Promise.all(uploads);
+                    this.showSuccess(readFiles.length + ' receipt(s) uploaded.');
+                    await this.loadAllFiles();
+                } catch (e) {
+                    this.showError('Failed to upload receipt: ' + (e.body?.message || e.message || e));
+                } finally {
+                    this.isLoading = false;
+                }
+            } else {
+                // Unsaved item: stage files locally
+                this.dayRows = this.dayRows.map(row => ({
+                    ...row,
+                    items: row.items.map(item => {
+                        if (item.key !== itemKey) return item;
+                        const allPending = [...(item.pendingFiles || []), ...readFiles];
+                        return {
+                            ...item,
+                            pendingFiles: allPending,
+                            hasPendingFiles: allPending.length > 0,
+                            hasAnyFiles: item.hasFiles || allPending.length > 0
+                        };
+                    })
+                }));
+            }
+        });
+
+        // Reset file input so same file can be selected again
+        event.currentTarget.value = '';
+    }
+
+    handleRemovePendingFile(event) {
+        const itemKey = event.currentTarget.dataset.key;
+        const fileKey = event.currentTarget.dataset.filekey;
+
+        this.dayRows = this.dayRows.map(row => ({
+            ...row,
+            items: row.items.map(item => {
+                if (item.key !== itemKey) return item;
+                const pendingFiles = (item.pendingFiles || []).filter(f => f.key !== fileKey);
+                return {
+                    ...item,
+                    pendingFiles,
+                    hasPendingFiles: pendingFiles.length > 0,
+                    hasAnyFiles: item.hasFiles || pendingFiles.length > 0
+                };
+            })
+        }));
+    }
+
+    async uploadPendingFiles() {
+        const uploads = [];
+        this.dayRows.forEach(row => {
+            row.items.forEach(item => {
+                if (item.id && item.pendingFiles && item.pendingFiles.length > 0) {
+                    item.pendingFiles.forEach(pf => {
+                        uploads.push(
+                            uploadReceiptBase64({
+                                expenseItemId: item.id,
+                                fileName: pf.fileName,
+                                base64Data: pf.base64
+                            })
+                        );
+                    });
+                }
+            });
+        });
+
+        if (uploads.length > 0) {
+            await Promise.all(uploads);
+
+            // Clear pending files
+            this.dayRows = this.dayRows.map(row => ({
+                ...row,
+                items: row.items.map(item => ({
+                    ...item,
+                    pendingFiles: [],
+                    hasPendingFiles: false
+                }))
+            }));
         }
     }
 
@@ -674,25 +1157,30 @@ export default class ExpenseManager extends LightningElement {
                             s => s.Expense_Date__c === row.dateStr && s.Expense_Type__c === item.expenseType
                         );
                         if (saved) {
+                            const approvalStatus = saved.Approval_Status__c || 'Not Submitted';
                             return {
                                 ...item,
                                 id: saved.Id,
                                 hasExisting: true,
                                 dirty: false,
-                                approvalStatus: saved.Approval_Status__c || 'Not Submitted',
+                                approvalStatus: approvalStatus,
                                 statusLabel: this.getItemStatusLabel(saved.Approval_Status__c),
-                                statusClass: this.getItemStatusClass(saved.Approval_Status__c)
+                                statusClass: this.getItemStatusClass(saved.Approval_Status__c),
+                                isReadonly: ['Pending', 'L1 Approved', 'L2 Approved', 'Finance Approved'].includes(approvalStatus)
                             };
                         }
                         return item;
                     })
                 }));
 
-                await this.loadAllFiles();
                 this.showSuccess('All expense items saved successfully.');
             }
 
-            // Refresh expense totals
+            // Upload any pending (staged) receipt files now that items have IDs
+            await this.uploadPendingFiles();
+
+            // Refresh file attachments and expense totals
+            await this.loadAllFiles();
             this.expense = await getOrCreateReport({ month: this.selectedMonth, year: this.selectedYear });
         } catch (e) {
             let msg = 'An error occurred.';
@@ -738,6 +1226,7 @@ export default class ExpenseManager extends LightningElement {
         const itemsToSave = [];
         this.dayRows.forEach(row => {
             row.items.forEach(item => {
+                if (item.isReadonly) return;
                 if ((item.claimedAmount && item.claimedAmount > 0) || item.hasExisting) {
                     const rec = {
                         Expense_Date__c: row.dateStr,
@@ -757,9 +1246,12 @@ export default class ExpenseManager extends LightningElement {
                         Is_Eligible__c: item.isEligible,
                         Day_Attendance__c: row.attendanceId || null,
                         Vehicle_Type__c: item.vehicleType || null,
+                        Travel_Mode__c: item.travelMode || null,
                         Working_Hours__c: item.workingHours || null,
                         City__c: item.city || null,
-                        Is_Metro__c: item.isMetro || false
+                        Is_Metro__c: item.isMetro || false,
+                        Duty_Type__c: item.dutyType || null,
+                        City_Tier__c: item.cityTier || null
                     };
                     if (item.id) rec.Id = item.id;
                     itemsToSave.push(rec);
@@ -769,28 +1261,60 @@ export default class ExpenseManager extends LightningElement {
         return itemsToSave;
     }
 
-    // ── Save & Submit ────────────────────────────────────────────
+    // ── Save & Submit with Confirmation ──────────────────────────
     async handleSaveAndSubmit() {
         await this.handleSaveAll();
         if (this.saveError) return;
 
-        // Check receipt requirements before submit
-        const receiptErrors = this.validateReceiptsForSubmit();
-        if (receiptErrors.length > 0) {
-            this.saveError = receiptErrors.join(' | ');
-            return;
-        }
-
+        // Show confirmation popup with summary
         try {
             this.isLoading = true;
-            this.expense = await submitReport({ expenseId: this.expense.Id });
-            this.showSuccess('Expense submitted for approval.');
-            this.showDayExpenses = false;
+            const summary = await getSubmitSummary({ expenseId: this.expense.Id });
+            this.submitSummary = summary;
+            this.submitRemarks = '';
+            this.showSubmitConfirmModal = true;
         } catch (e) {
             this.showError(e);
         } finally {
             this.isLoading = false;
         }
+    }
+
+    handleSubmitRemarksChange(event) {
+        this.submitRemarks = event.detail.value;
+    }
+
+    closeSubmitConfirmModal() {
+        this.showSubmitConfirmModal = false;
+    }
+
+    async handleConfirmSubmit() {
+        try {
+            this.isLoading = true;
+            this.showSubmitConfirmModal = false;
+            this.expense = await submitReport({ expenseId: this.expense.Id });
+            this.showSuccess('Expense submitted for approval.');
+        } catch (e) {
+            this.showError(e);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    get submitSummaryItems() {
+        return this.submitSummary.typeBreakdown || [];
+    }
+
+    get submitCanProceed() {
+        return this.submitSummary.canSubmit === true;
+    }
+
+    get submitMissingReceipts() {
+        return this.submitSummary.missingReceipts || 0;
+    }
+
+    get submitHasMissingReceipts() {
+        return this.submitMissingReceipts > 0;
     }
 
     validateReceiptsForSubmit() {
@@ -800,9 +1324,7 @@ export default class ExpenseManager extends LightningElement {
                 if (item.receiptRequired && item.claimedAmount > 0) {
                     const threshold = item.receiptThreshold || 0;
                     if (threshold === 0 || item.claimedAmount > threshold) {
-                        if (!item.hasFiles && !item.id) {
-                            errors.push('Save items first to upload receipts for ' + item.expenseType);
-                        } else if (item.id && !item.hasFiles) {
+                        if (!item.hasFiles) {
                             errors.push('Receipt required for ' + item.expenseType + ' on ' + row.formattedDate);
                         }
                     }
@@ -814,10 +1336,9 @@ export default class ExpenseManager extends LightningElement {
 
     // ── Cancel ───────────────────────────────────────────────────
     handleCancel() {
-        this.showDayExpenses = false;
-        this.dayRows = [];
         this.saveError = '';
         this.selectAllDays = false;
+        this.loadExpenseData();
     }
 
     // ── Delete Item ──────────────────────────────────────────────
@@ -975,10 +1496,16 @@ export default class ExpenseManager extends LightningElement {
     async loadTeamReports() {
         try {
             this.isLoading = true;
-            this.teamReports = await getTeamExpenseReports({
+            const reports = await getTeamExpenseReports({
                 month: this.selectedMonth,
                 year: this.selectedYear
             });
+            this.teamReports = reports.map(r => ({
+                ...r,
+                _approvalLevel: r.Status__c === 'Manager Approved' ? 'finance' : 'manager',
+                _canApprove: r.Status__c === 'Submitted' || r.Status__c === 'Manager Approved',
+                _canMarkPaid: r.Status__c === 'Finance Approved'
+            }));
         } catch (e) {
             this.showError(e);
             this.teamReports = [];
@@ -995,8 +1522,11 @@ export default class ExpenseManager extends LightningElement {
     get isDraft() { return this.expense.Status__c === 'Draft'; }
     get isSubmitted() { return this.expense.Status__c === 'Submitted'; }
     get isRejected() { return this.expense.Status__c === 'Rejected'; }
-    get canSubmit() { return this.isDraft || this.isRejected; }
-    get canEdit() { return this.isDraft || this.isRejected; }
+    get isFinanceApproved() { return this.expense.Status__c === 'Finance Approved'; }
+    get isPaid() { return this.expense.Status__c === 'Paid'; }
+    get canSubmit() { return !this.isFinanceApproved && !this.isPaid; }
+    get canEdit() { return !this.isFinanceApproved && !this.isPaid; }
+    get acceptedFileFormats() { return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']; }
     get cannotEdit() { return !this.canEdit; }
     get isExpenseTab() { return this.activeTab === 'expense'; }
     get isSummaryTab() { return this.activeTab === 'summary'; }
@@ -1051,6 +1581,20 @@ export default class ExpenseManager extends LightningElement {
 
     get acceptedFormats() {
         return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
+    }
+
+    // Receipt status helper — determines CSS class for receipt indicator
+    getReceiptStatusClass(item) {
+        if (!item.receiptRequired) return '';
+        if (item.hasFiles) return 'receipt-status receipt-uploaded';
+        return 'receipt-status receipt-missing';
+    }
+
+    getReceiptStatusLabel(item) {
+        if (!item.receiptRequired) return '';
+        if (item.hasFiles) return 'Receipt Uploaded';
+        if (!item.id) return 'Save to upload';
+        return 'Receipt Missing';
     }
 
     get approvalModalTitle() {

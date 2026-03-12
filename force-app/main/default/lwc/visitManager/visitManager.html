@@ -78,6 +78,9 @@
                     Additional Details
                 </h3>
                 <div class="vm-card">
+                    <lightning-combobox label="Duty Type" value={dutyType}
+                        options={dutyTypeOptions} onchange={handleDutyTypeChange}
+                        class="slds-m-bottom_small" required></lightning-combobox>
                     <lightning-input type="number" label="Odometer Start (km)" value={odometerStart}
                         onchange={handleOdometerStartChange} class="slds-m-bottom_small"></lightning-input>
                     <div class="slds-m-bottom_small">

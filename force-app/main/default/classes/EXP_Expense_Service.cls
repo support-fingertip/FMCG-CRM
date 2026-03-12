@@ -4,7 +4,7 @@
  *              - Configuration-driven expense types per band/travel type
  *              - Auto-calculation of DA (working hours) and TA (distance × rate)
  *              - Per-line-item approval status tracking
- *              - Vehicle-type-specific TA rates (Bike/Car)
+ *              - Travel-mode-specific TA rates (Bike/Car/Auto/Flight/etc.)
  *              - City-based lodging limits (Metro/Non-Metro)
  *              - Configurable receipt & remarks requirements
  *              - File attachment validation before submit
@@ -71,6 +71,7 @@ public without sharing class EXP_Expense_Service {
         Employee__c emp = getEmployeeForUser(userId);
         result.put('employee', emp);
         result.put('band', emp.Band__c);
+        result.put('hqCity', emp.HQ_City__c);
 
         // Get or create report
         Expense__c report = getOrCreateReport(userId, month, year);
@@ -79,9 +80,16 @@ public without sharing class EXP_Expense_Service {
         // Eligibility rules for this band
         List<Expense_Eligibility__c> rules = new List<Expense_Eligibility__c>();
         if (String.isNotBlank(emp.Band__c)) {
-            rules = getEligibilityRules(emp.Band__c);
+            rules = getEligibilityRules(emp.Band__c, report.Period_Start__c, report.Period_End__c);
         }
         result.put('eligibilityRules', rules);
+
+        List<City_Tier__c> cityTiers = [SELECT Name, Tier__c FROM City_Tier__c WHERE Is_Active__c = true];
+        Map<String, String> cityTierMap = new Map<String, String>();
+        for (City_Tier__c ct : cityTiers) {
+            cityTierMap.put(ct.Name, ct.Tier__c);
+        }
+        result.put('cityTiers', cityTierMap);
 
         // Eligible dates (attendance records minus leaves)
         List<Map<String, Object>> eligibleDates = getEligibleDates(userId, month, year);
@@ -110,7 +118,21 @@ public without sharing class EXP_Expense_Service {
         config.put('backDateLimitDays', getConfigInteger(CFG_BACK_DATE_LIMIT_DAYS, 60));
         result.put('config', config);
 
+        // Expense type picklist values for add-type dropdown
+        result.put('expenseTypePicklist', getExpenseTypePicklistValues());
+
         return result;
+    }
+
+    public static List<String> getExpenseTypePicklistValues() {
+        List<String> values = new List<String>();
+        Schema.DescribeFieldResult dfr = Expense_Item__c.Expense_Type__c.getDescribe();
+        for (Schema.PicklistEntry pe : dfr.getPicklistValues()) {
+            if (pe.isActive()) {
+                values.add(pe.getValue());
+            }
+        }
+        return values;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -124,7 +146,8 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
-                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c
+                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c
             WHERE Employee__c = :emp.Id AND Month__c = :month AND Year__c = :year
             LIMIT 1
@@ -167,7 +190,9 @@ public without sharing class EXP_Expense_Service {
             Period_End__c = periodEnd,
             Status__c = 'Draft',
             Working_Days__c = workingDays,
-            Total_Distance_KM__c = totalDist
+            Total_Distance_KM__c = totalDist,
+            L1_Approver__c = emp.L1_Approver__c,
+            L2_Approver__c = emp.L2_Approver__c
         );
         insert report;
 
@@ -175,7 +200,8 @@ public without sharing class EXP_Expense_Service {
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
-                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c
+                   Submitted_Date__c, Rejection_Reason__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c
             WHERE Id = :report.Id
         ];
@@ -213,7 +239,7 @@ public without sharing class EXP_Expense_Service {
         List<Day_Attendance__c> attendances = [
             SELECT Id, Attendance_Date__c, Start_Time__c, End_Time__c,
                    Distance_Traveled_Km__c, Hours_Worked__c, Beat__r.Name,
-                   Status__c
+                   Status__c, Duty_Type__c
             FROM Day_Attendance__c
             WHERE User__c = :emp.User__c
               AND Attendance_Date__c >= :periodStart
@@ -247,6 +273,7 @@ public without sharing class EXP_Expense_Service {
             dateInfo.put('gpsDistance', att.Distance_Traveled_Km__c != null ? att.Distance_Traveled_Km__c : 0);
             dateInfo.put('hoursWorked', att.Hours_Worked__c != null ? att.Hours_Worked__c : 0);
             dateInfo.put('beatName', att.Beat__r != null ? att.Beat__r.Name : '');
+            dateInfo.put('dutyType', att.Duty_Type__c != null ? att.Duty_Type__c : 'HQ');
             dateInfo.put('expenseCount', expenseCountByDate.containsKey(att.Attendance_Date__c)
                 ? expenseCountByDate.get(att.Attendance_Date__c) : 0);
             result.add(dateInfo);
@@ -259,23 +286,35 @@ public without sharing class EXP_Expense_Service {
     // ═══════════════════════════════════════════════════════════════════════
 
     public static List<Expense_Eligibility__c> getEligibilityRules(String band) {
-        if (eligibilityCache.containsKey(band)) {
-            return eligibilityCache.get(band);
+        return getEligibilityRules(band, null, null);
+    }
+
+    public static List<Expense_Eligibility__c> getEligibilityRules(String band, Date periodStart, Date periodEnd) {
+        String cacheKey = band + '_' + String.valueOf(periodStart);
+        if (eligibilityCache.containsKey(cacheKey)) {
+            return eligibilityCache.get(cacheKey);
         }
-        List<Expense_Eligibility__c> rules = [
-            SELECT Id, Band__c, Expense_Type__c, Expense_Category__c,
-                   Rate_Type__c, Rate_Amount__c, Max_Per_Day__c, Max_Per_Month__c,
-                   Min_Distance_KM__c, Receipt_Required__c, Receipt_Threshold__c,
-                   Is_Active__c, Sort_Order__c, Description__c,
-                   Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c,
-                   DA_Half_Day_Rate__c, Daily_KM_Limit__c,
-                   Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c,
-                   Per_KM_Bike_Rate__c
-            FROM Expense_Eligibility__c
-            WHERE Band__c = :band AND Is_Active__c = true
-            ORDER BY Sort_Order__c ASC, Expense_Type__c ASC
-        ];
-        eligibilityCache.put(band, rules);
+        String query = 'SELECT Id, Band__c, Expense_Type__c, Expense_Category__c, ' +
+            'Rate_Type__c, Rate_Amount__c, Max_Per_Day__c, Max_Per_Month__c, ' +
+            'Min_Distance_KM__c, Receipt_Required__c, Receipt_Threshold__c, ' +
+            'Is_Active__c, Sort_Order__c, Description__c, ' +
+            'Auto_Create__c, Travel_Type__c, Mandatory_Remarks__c, ' +
+            'Daily_KM_Limit__c, ' +
+            'Lodging_Metro_Limit__c, Lodging_Non_Metro_Limit__c, ' +
+            'Travel_Mode__c, ' +
+            'Allowed_Travel_Modes__c, City_Tier_1_Limit__c, City_Tier_2_Limit__c, City_Tier_3_Limit__c, ' +
+            'Effective_From__c, Effective_To__c, ' +
+            '(SELECT Travel_Mode__c, Rate_Type__c, Rate_Amount__c, Max_Amount__c, Distance_From__c, Distance_To__c, Sort_Order__c ' +
+            'FROM Expense_Rate_Slabs__r ORDER BY Travel_Mode__c ASC, Sort_Order__c ASC) ' +
+            'FROM Expense_Eligibility__c ' +
+            'WHERE Band__c = :band AND Is_Active__c = true';
+        if (periodStart != null && periodEnd != null) {
+            query += ' AND (Effective_From__c = null OR Effective_From__c <= :periodEnd)';
+            query += ' AND (Effective_To__c = null OR Effective_To__c >= :periodStart)';
+        }
+        query += ' ORDER BY Sort_Order__c ASC, Expense_Type__c ASC';
+        List<Expense_Eligibility__c> rules = Database.query(query);
+        eligibilityCache.put(cacheKey, rules);
         return rules;
     }
 
@@ -306,7 +345,10 @@ public without sharing class EXP_Expense_Service {
         Decimal eligible = 0;
         String rateType = rule.Rate_Type__c;
 
-        if (rateType == 'Per Day') {
+        // For Travelling Allowance: always use TA calculator (handles both Per KM and Actual modes)
+        if (item.Expense_Type__c == 'Travelling Allowance') {
+            eligible = calculateTAAmount(item, rule);
+        } else if (rateType == 'Per Day') {
             // DA calculation with working hours logic
             eligible = calculateDAAmount(item, rule);
         } else if (rateType == 'Per KM') {
@@ -319,7 +361,7 @@ public without sharing class EXP_Expense_Service {
         } else if (rateType == 'Actual') {
             eligible = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
             // For lodging with city-based limits
-            if (rule.Lodging_Metro_Limit__c != null || rule.Lodging_Non_Metro_Limit__c != null) {
+            if (rule.Lodging_Metro_Limit__c != null || rule.Lodging_Non_Metro_Limit__c != null || rule.City_Tier_1_Limit__c != null || rule.City_Tier_2_Limit__c != null || rule.City_Tier_3_Limit__c != null) {
                 Decimal limit_val = getLodgingLimit(item, rule);
                 if (limit_val > 0 && eligible > limit_val) {
                     eligible = limit_val;
@@ -327,17 +369,12 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
-        // Apply daily cap
-        if (rule.Max_Per_Day__c != null && rule.Max_Per_Day__c > 0 && eligible > rule.Max_Per_Day__c) {
-            eligible = rule.Max_Per_Day__c;
-        }
-
         return eligible;
     }
 
     private static Decimal calculateDAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
         Decimal fullRate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
-        Decimal halfRate = rule.DA_Half_Day_Rate__c != null ? rule.DA_Half_Day_Rate__c : (fullRate / 2);
+        Decimal halfRate = fullRate / 2;
 
         // If working hours available, apply DA logic
         Decimal hours = item.Working_Hours__c != null ? item.Working_Hours__c : 0;
@@ -353,29 +390,60 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static Decimal calculateTAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
-        Decimal appliedDistance = getAppliedDistance(item);
+        String mode = item.Travel_Mode__c;
 
-        // Apply daily KM limit
+        // Check for per-mode slab rates
+        List<Expense_Rate_Slab__c> slabs = getSlabsForMode(rule, mode);
+        if (!slabs.isEmpty()) {
+            Decimal appliedDist = getAppliedDistance(item);
+            if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
+                && appliedDist > rule.Daily_KM_Limit__c) {
+                appliedDist = rule.Daily_KM_Limit__c;
+            }
+            return calculateSlabAmount(slabs, appliedDist);
+        }
+
+        // Check for per-mode flat config (handles Actual modes like Train/Flight)
+        Expense_Rate_Slab__c modeConfig = getModeRateConfig(rule, mode);
+        if (modeConfig != null) {
+            if (modeConfig.Rate_Type__c == 'Actual') {
+                Decimal claimed = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
+                if (modeConfig.Max_Amount__c != null && modeConfig.Max_Amount__c > 0 && claimed > modeConfig.Max_Amount__c) {
+                    return modeConfig.Max_Amount__c;
+                }
+                return claimed;
+            }
+            // Per KM flat from mode config
+            Decimal appliedDist = getAppliedDistance(item);
+            if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
+                && appliedDist > rule.Daily_KM_Limit__c) {
+                appliedDist = rule.Daily_KM_Limit__c;
+            }
+            return appliedDist * (modeConfig.Rate_Amount__c != null ? modeConfig.Rate_Amount__c : 0);
+        }
+
+        // Fallback: parent rule's flat rate (backward compatible)
+        Decimal appliedDistance = getAppliedDistance(item);
         if (rule.Daily_KM_Limit__c != null && rule.Daily_KM_Limit__c > 0
             && appliedDistance > rule.Daily_KM_Limit__c) {
             appliedDistance = rule.Daily_KM_Limit__c;
         }
-
-        // Vehicle-type-specific rate
         Decimal rate = rule.Rate_Amount__c != null ? rule.Rate_Amount__c : 0;
-        if (item.Vehicle_Type__c == 'Bike' && rule.Per_KM_Bike_Rate__c != null) {
-            rate = rule.Per_KM_Bike_Rate__c;
-        }
-        // Car uses default Rate_Amount__c
-
         return appliedDistance * rate;
     }
 
     private static Decimal getLodgingLimit(Expense_Item__c item, Expense_Eligibility__c rule) {
+        // Priority 1: City tier-based limits
+        String cityTier = item.City_Tier__c;
+        if (String.isNotBlank(cityTier)) {
+            if (cityTier == 'Tier 1' && rule.City_Tier_1_Limit__c != null) return rule.City_Tier_1_Limit__c;
+            if (cityTier == 'Tier 2' && rule.City_Tier_2_Limit__c != null) return rule.City_Tier_2_Limit__c;
+            if (cityTier == 'Tier 3' && rule.City_Tier_3_Limit__c != null) return rule.City_Tier_3_Limit__c;
+        }
+        // Priority 2: Legacy metro/non-metro fallback
         if (item.Is_Metro__c == true && rule.Lodging_Metro_Limit__c != null) {
             return rule.Lodging_Metro_Limit__c;
-        }
-        if (rule.Lodging_Non_Metro_Limit__c != null) {
+        } else if (rule.Lodging_Non_Metro_Limit__c != null) {
             return rule.Lodging_Non_Metro_Limit__c;
         }
         return 0;
@@ -385,6 +453,57 @@ public without sharing class EXP_Expense_Service {
         return item.Manual_Distance_KM__c != null
             ? item.Manual_Distance_KM__c
             : (item.GPS_Distance_KM__c != null ? item.GPS_Distance_KM__c : 0);
+    }
+
+    private static Expense_Rate_Slab__c getModeRateConfig(Expense_Eligibility__c rule, String travelMode) {
+        if (rule.Expense_Rate_Slabs__r == null || String.isBlank(travelMode)) return null;
+        for (Expense_Rate_Slab__c slab : rule.Expense_Rate_Slabs__r) {
+            if (slab.Travel_Mode__c == travelMode && slab.Distance_From__c == null) {
+                return slab;
+            }
+        }
+        return null;
+    }
+
+    private static List<Expense_Rate_Slab__c> getSlabsForMode(Expense_Eligibility__c rule, String travelMode) {
+        List<Expense_Rate_Slab__c> slabs = new List<Expense_Rate_Slab__c>();
+        if (rule.Expense_Rate_Slabs__r == null || String.isBlank(travelMode)) return slabs;
+        for (Expense_Rate_Slab__c slab : rule.Expense_Rate_Slabs__r) {
+            if (slab.Travel_Mode__c == travelMode && slab.Distance_From__c != null) {
+                slabs.add(slab);
+            }
+        }
+        return slabs;
+    }
+
+    private static Decimal calculateSlabAmount(List<Expense_Rate_Slab__c> slabs, Decimal distance) {
+        Decimal total = 0;
+        for (Expense_Rate_Slab__c slab : slabs) {
+            Decimal slabEnd = (slab.Distance_To__c != null && slab.Distance_To__c > 0)
+                ? slab.Distance_To__c : distance;
+            Decimal slabStart = slab.Distance_From__c != null ? slab.Distance_From__c : 0;
+            Decimal effectiveEnd = Math.min(distance, slabEnd);
+            Decimal slabDist = effectiveEnd - slabStart;
+            if (slabDist > 0) {
+                total += slabDist * (slab.Rate_Amount__c != null ? slab.Rate_Amount__c : 0);
+            }
+            if (distance <= slabEnd) break;
+        }
+        return total;
+    }
+
+    private static String resolveCityTier(String cityName, Map<String, String> cityTierMap) {
+        if (String.isBlank(cityName) || cityTierMap == null) return null;
+        return cityTierMap.get(cityName);
+    }
+
+    private static Expense_Eligibility__c findRule(
+        Map<String, Expense_Eligibility__c> ruleMap,
+        String expType, String dutyType) {
+        String dt = String.isNotBlank(dutyType) ? dutyType : 'All';
+        Expense_Eligibility__c rule = ruleMap.get(expType + '|' + dt);
+        if (rule == null) rule = ruleMap.get(expType + '|All');
+        return rule;
     }
 
     public static void populateEligibilityFields(List<Expense_Item__c> items, Id expenseId) {
@@ -400,9 +519,10 @@ public without sharing class EXP_Expense_Service {
             ? (Integer) expense.Working_Days__c : 0;
 
         List<Expense_Eligibility__c> rules = getEligibilityRules(band);
-        Map<String, Expense_Eligibility__c> ruleByType = new Map<String, Expense_Eligibility__c>();
+        Map<String, Expense_Eligibility__c> ruleMap = new Map<String, Expense_Eligibility__c>();
         for (Expense_Eligibility__c rule : rules) {
-            ruleByType.put(rule.Expense_Type__c, rule);
+            String dt = rule.Travel_Type__c != null ? rule.Travel_Type__c : 'All';
+            ruleMap.put(rule.Expense_Type__c + '|' + dt, rule);
         }
 
         // Get attendance records for GPS distance and working hours
@@ -417,7 +537,8 @@ public without sharing class EXP_Expense_Service {
         Map<Date, Day_Attendance__c> attByDate = new Map<Date, Day_Attendance__c>();
         if (!attendanceIds.isEmpty() || !expenseDates.isEmpty()) {
             for (Day_Attendance__c att : [
-                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c
+                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c,
+                       Start_Time__c, End_Time__c, Duty_Type__c
                 FROM Day_Attendance__c
                 WHERE (Id IN :attendanceIds OR Attendance_Date__c IN :expenseDates)
                   AND User__c = :expense.User__c
@@ -427,31 +548,41 @@ public without sharing class EXP_Expense_Service {
             }
         }
 
-        // Calculate monthly running totals for cap enforcement
-        Map<String, Decimal> monthlyTotals = new Map<String, Decimal>();
-        for (AggregateResult ar : [
-            SELECT Expense_Type__c typ, SUM(Eligible_Amount__c) total
-            FROM Expense_Item__c
-            WHERE Expense__c = :expenseId
-              AND Id NOT IN :getItemIds(items)
-            GROUP BY Expense_Type__c
-        ]) {
-            monthlyTotals.put((String) ar.get('typ'), (Decimal) ar.get('total'));
-        }
-
         for (Expense_Item__c item : items) {
-            Expense_Eligibility__c rule = ruleByType.get(item.Expense_Type__c);
-
-            // Auto-populate GPS distance and working hours from attendance
+            // Get duty type from attendance
             Day_Attendance__c att = item.Day_Attendance__c != null
                 ? attMap.get(item.Day_Attendance__c)
                 : attByDate.get(item.Expense_Date__c);
+            String dutyType = (att != null && att.Duty_Type__c != null) ? att.Duty_Type__c : 'HQ';
 
+            Expense_Eligibility__c rule = findRule(ruleMap, item.Expense_Type__c, dutyType);
+
+            // Auto-populate GPS distance and working hours from attendance
             if (item.GPS_Distance_KM__c == null && att != null && att.Distance_Traveled_Km__c != null) {
                 item.GPS_Distance_KM__c = att.Distance_Traveled_Km__c;
             }
-            if (item.Working_Hours__c == null && att != null && att.Hours_Worked__c != null) {
-                item.Working_Hours__c = att.Hours_Worked__c;
+            if (item.Working_Hours__c == null && att != null) {
+                if (att.Hours_Worked__c != null) {
+                    item.Working_Hours__c = att.Hours_Worked__c;
+                } else if (att.Start_Time__c != null && att.End_Time__c != null) {
+                    // Compute hours from check-in/check-out times
+                    Long diffMs = att.End_Time__c.getTime() - att.Start_Time__c.getTime();
+                    item.Working_Hours__c = (Decimal.valueOf(diffMs) / (1000 * 60 * 60)).setScale(1, RoundingMode.HALF_UP);
+                }
+            }
+
+            item.Duty_Type__c = dutyType;
+
+            // For TA: validate travel mode is in allowed list
+            if (item.Expense_Type__c == 'Travelling Allowance' && String.isNotBlank(item.Travel_Mode__c) && rule != null) {
+                String allowedModes = rule.Allowed_Travel_Modes__c;
+                if (String.isNotBlank(allowedModes) && !allowedModes.contains('All')
+                    && !allowedModes.contains(item.Travel_Mode__c)) {
+                    item.Is_Eligible__c = false;
+                    item.Eligible_Amount__c = 0;
+                    item.System_Calculated_Amount__c = 0;
+                    continue;
+                }
             }
 
             if (rule != null) {
@@ -463,19 +594,8 @@ public without sharing class EXP_Expense_Service {
 
                 Decimal eligible = calculateEligibleAmount(item, rule, workingDays);
 
-                // Enforce monthly cap
-                if (rule.Max_Per_Month__c != null && rule.Max_Per_Month__c > 0) {
-                    Decimal alreadyUsed = monthlyTotals.containsKey(item.Expense_Type__c)
-                        ? monthlyTotals.get(item.Expense_Type__c) : 0;
-                    Decimal remaining = rule.Max_Per_Month__c - alreadyUsed;
-                    if (remaining < 0) remaining = 0;
-                    if (eligible > remaining) {
-                        eligible = remaining;
-                    }
-                    monthlyTotals.put(item.Expense_Type__c, alreadyUsed + eligible);
-                }
-
                 item.Eligible_Amount__c = eligible;
+                item.System_Calculated_Amount__c = eligible;
 
                 // Check min distance eligibility
                 Decimal appliedDist = getAppliedDistance(item);
@@ -487,6 +607,7 @@ public without sharing class EXP_Expense_Service {
             } else {
                 item.Is_Eligible__c = false;
                 item.Eligible_Amount__c = 0;
+                item.System_Calculated_Amount__c = 0;
             }
         }
     }
@@ -512,7 +633,8 @@ public without sharing class EXP_Expense_Service {
         'Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c, ' +
         'From_Location__c, To_Location__c, Approval_Status__c, ' +
         'Approver_Comments__c, Vehicle_Type__c, Working_Hours__c, ' +
-        'City__c, Is_Metro__c';
+        'City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c, ' +
+        'Duty_Type__c, City_Tier__c';
 
     public static List<Expense_Item__c> getExpenseItemsForDate(Id expenseId, Date expenseDate) {
         return [
@@ -524,7 +646,8 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c,
+                   Duty_Type__c, City_Tier__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c = :expenseDate
             ORDER BY Expense_Type__c ASC
@@ -542,7 +665,8 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c,
+                   Duty_Type__c, City_Tier__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -554,8 +678,8 @@ public without sharing class EXP_Expense_Service {
         Expense__c expense = [
             SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
-        if (expense.Status__c != 'Draft' && expense.Status__c != 'Rejected') {
-            throw new AuraHandledException('Expense must be in Draft or Rejected status to edit items.');
+        if (expense.Status__c == 'Finance Approved' || expense.Status__c == 'Paid') {
+            throw new AuraHandledException('Expense cannot be edited after finance approval or payment.');
         }
 
         // Validate distance override
@@ -616,7 +740,8 @@ public without sharing class EXP_Expense_Service {
                    Has_Receipt__c, Notes__c, Rate_Type__c, Rate_Amount__c, Is_Eligible__c,
                    From_Location__c, To_Location__c, Approval_Status__c,
                    Approver_Comments__c, Vehicle_Type__c, Working_Hours__c,
-                   City__c, Is_Metro__c
+                   City__c, Is_Metro__c, Travel_Mode__c, System_Calculated_Amount__c,
+                   Duty_Type__c, City_Tier__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId AND Expense_Date__c IN :dates
             ORDER BY Expense_Date__c ASC, Expense_Type__c ASC
@@ -629,9 +754,9 @@ public without sharing class EXP_Expense_Service {
             FROM Expense_Item__c
             WHERE Id IN :itemIds
         ];
-        if (!items.isEmpty() && items[0].Expense__r.Status__c != 'Draft'
-            && items[0].Expense__r.Status__c != 'Rejected') {
-            throw new AuraHandledException('Cannot delete items from a non-Draft expense.');
+        if (!items.isEmpty() && (items[0].Expense__r.Status__c == 'Finance Approved'
+            || items[0].Expense__r.Status__c == 'Paid')) {
+            throw new AuraHandledException('Cannot delete items from a finance-approved or paid expense.');
         }
         delete items;
     }
@@ -642,27 +767,33 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c submitReport(Id expenseId) {
         Expense__c expense = [
-            SELECT Id, Status__c, Employee__c, Comments_History__c
+            SELECT Id, Name, Status__c, Employee__c, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
-        if (expense.Status__c != 'Draft' && expense.Status__c != 'Rejected') {
-            throw new AuraHandledException('Only Draft or Rejected expenses can be submitted.');
+        if (expense.Status__c == 'Finance Approved' || expense.Status__c == 'Paid') {
+            throw new AuraHandledException('Expense cannot be re-submitted after finance approval or payment.');
         }
 
         // Validate receipt and remarks requirements
         validateReceiptsAndRemarks(expenseId, expense.Employee__c);
 
-        // Update all item statuses to Pending
+        // Update only non-approved item statuses to Pending (preserve already approved items)
         List<Expense_Item__c> items = [
             SELECT Id, Approval_Status__c
             FROM Expense_Item__c
             WHERE Expense__c = :expenseId
         ];
+        List<Expense_Item__c> itemsToUpdate = new List<Expense_Item__c>();
         for (Expense_Item__c item : items) {
-            item.Approval_Status__c = 'Pending';
+            if (item.Approval_Status__c != 'L1 Approved' &&
+                item.Approval_Status__c != 'Finance Approved') {
+                item.Approval_Status__c = 'Pending';
+                itemsToUpdate.add(item);
+            }
         }
-        if (!items.isEmpty()) update items;
+        if (!itemsToUpdate.isEmpty()) update itemsToUpdate;
 
         expense.Status__c = 'Submitted';
         expense.Submitted_Date__c = Datetime.now();
@@ -671,6 +802,9 @@ public without sharing class EXP_Expense_Service {
             expense.Comments_History__c, 'Submitted for approval', UserInfo.getUserId()
         );
         update expense;
+
+        // Send notification to designated L1 approver
+        notifyApproversOnSubmit(expense);
 
         return [
             SELECT Id, Name, Status__c, Month__c, Year__c, Total_Claimed__c,
@@ -741,7 +875,8 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c approveReport(Id expenseId, String remarks, String level) {
         Expense__c expense = [
-            SELECT Id, Status__c, Comments_History__c
+            SELECT Id, Name, Status__c, User__c, Employee__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -776,13 +911,13 @@ public without sharing class EXP_Expense_Service {
             expense.Finance_Approver__c = UserInfo.getUserId();
             expense.Finance_Remarks__c = remarks;
 
-            // Update item approval statuses
+            // Update item approval statuses to L2 Approved
             List<Expense_Item__c> items = [
                 SELECT Id, Approval_Status__c
                 FROM Expense_Item__c WHERE Expense__c = :expenseId
             ];
             for (Expense_Item__c item : items) {
-                item.Approval_Status__c = 'Finance Approved';
+                item.Approval_Status__c = 'L2 Approved';
             }
             if (!items.isEmpty()) update items;
         }
@@ -795,6 +930,13 @@ public without sharing class EXP_Expense_Service {
         );
         update expense;
 
+        // Send notifications
+        if (level == 'manager') {
+            notifyOnManagerApproval(expense);
+        } else if (level == 'finance') {
+            notifyOnFinanceApproval(expense);
+        }
+
         return [
             SELECT Id, Name, Status__c, Total_Claimed__c, Total_Approved__c,
                    Total_Eligible__c, Comments_History__c
@@ -804,7 +946,8 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c rejectReport(Id expenseId, String reason, String level) {
         Expense__c expense = [
-            SELECT Id, Status__c, Comments_History__c
+            SELECT Id, Name, Status__c, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -836,6 +979,9 @@ public without sharing class EXP_Expense_Service {
         );
         update expense;
 
+        // Notify employee about rejection
+        notifyOnRejection(expense, reason, level);
+
         return [
             SELECT Id, Name, Status__c, Rejection_Reason__c, Comments_History__c
             FROM Expense__c WHERE Id = :expenseId
@@ -850,9 +996,15 @@ public without sharing class EXP_Expense_Service {
             WHERE Id IN :itemIds
         ];
 
-        String newStatus = level == 'manager' ? 'L1 Approved' : 'Finance Approved';
+        // Determine next status per item based on current item status
+        // Pending → L1 Approved, L1 Approved → L2 Approved
+        Set<Id> expenseIds = new Set<Id>();
         for (Expense_Item__c item : items) {
-            item.Approval_Status__c = newStatus;
+            if (item.Approval_Status__c == 'L1 Approved') {
+                item.Approval_Status__c = 'L2 Approved';
+            } else {
+                item.Approval_Status__c = 'L1 Approved';
+            }
             if (item.Approved_Amount__c == null) {
                 item.Approved_Amount__c = item.Claimed_Amount__c;
             }
@@ -860,8 +1012,59 @@ public without sharing class EXP_Expense_Service {
                 item.Approver_Comments__c, 'Approved: ' + (remarks != null ? remarks : ''),
                 UserInfo.getUserId()
             );
+            expenseIds.add(item.Expense__c);
         }
         update items;
+
+        // Update parent expense: comments history + auto-advance status if all items approved
+        List<Expense__c> expenses = [
+            SELECT Id, Name, Status__c, User__c, Employee__c, Comments_History__c,
+                   Manager_Approved_Date__c, Manager_Approver__c, Manager_Remarks__c,
+                   Finance_Approved_Date__c, Finance_Approver__c, Finance_Remarks__c,
+                   L1_Approver__c, L2_Approver__c
+            FROM Expense__c WHERE Id IN :expenseIds
+        ];
+        String comment = 'Approved ' + items.size() + ' item(s)' + (String.isNotBlank(remarks) ? ': ' + remarks : '');
+        for (Expense__c exp : expenses) {
+            exp.Comments_History__c = appendComment(exp.Comments_History__c, comment, UserInfo.getUserId());
+
+            // Check item statuses to determine if expense should auto-advance
+            List<Expense_Item__c> allItems = [
+                SELECT Id, Approval_Status__c FROM Expense_Item__c WHERE Expense__c = :exp.Id
+            ];
+            Boolean allL1OrAbove = true;
+            Boolean allL2 = true;
+            for (Expense_Item__c ai : allItems) {
+                if (ai.Approval_Status__c != 'L1 Approved' && ai.Approval_Status__c != 'L2 Approved') {
+                    allL1OrAbove = false;
+                }
+                if (ai.Approval_Status__c != 'L2 Approved') {
+                    allL2 = false;
+                }
+            }
+
+            // Auto-advance expense one step at a time (respecting valid transitions)
+            if (allL2 && exp.Status__c == 'Manager Approved') {
+                exp.Status__c = 'Finance Approved';
+                exp.Finance_Approved_Date__c = Datetime.now();
+                exp.Finance_Approver__c = UserInfo.getUserId();
+                exp.Finance_Remarks__c = remarks;
+                exp.Comments_History__c = appendComment(
+                    exp.Comments_History__c, 'All items L2 approved — report advanced to Finance Approved', UserInfo.getUserId()
+                );
+                notifyOnFinanceApproval(exp);
+            } else if (allL1OrAbove && exp.Status__c == 'Submitted') {
+                exp.Status__c = 'Manager Approved';
+                exp.Manager_Approved_Date__c = Datetime.now();
+                exp.Manager_Approver__c = UserInfo.getUserId();
+                exp.Manager_Remarks__c = remarks;
+                exp.Comments_History__c = appendComment(
+                    exp.Comments_History__c, 'All items L1 approved — report advanced to Manager Approved', UserInfo.getUserId()
+                );
+                notifyOnManagerApproval(exp);
+            }
+        }
+        update expenses;
 
         Map<String, Object> result = new Map<String, Object>();
         result.put('items', items);
@@ -876,14 +1079,29 @@ public without sharing class EXP_Expense_Service {
             WHERE Id IN :itemIds
         ];
 
+        Set<Id> expenseIds = new Set<Id>();
         for (Expense_Item__c item : items) {
             item.Approval_Status__c = 'Rejected';
             item.Approver_Comments__c = appendComment(
                 item.Approver_Comments__c, 'Rejected: ' + reason,
                 UserInfo.getUserId()
             );
+            expenseIds.add(item.Expense__c);
         }
         update items;
+
+        // Update parent expense comments history
+        List<Expense__c> expenses = [
+            SELECT Id, Name, User__c, Comments_History__c,
+                   L1_Approver__c, L2_Approver__c
+            FROM Expense__c WHERE Id IN :expenseIds
+        ];
+        String comment = 'Rejected ' + items.size() + ' item(s): ' + reason;
+        for (Expense__c exp : expenses) {
+            exp.Comments_History__c = appendComment(exp.Comments_History__c, comment, UserInfo.getUserId());
+            notifyOnRejection(exp, reason, level);
+        }
+        update expenses;
 
         Map<String, Object> result = new Map<String, Object>();
         result.put('items', items);
@@ -946,7 +1164,7 @@ public without sharing class EXP_Expense_Service {
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
                    Submitted_Date__c, Manager_Approved_Date__c, Manager_Remarks__c,
                    Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c,
-                   Comments_History__c
+                   Comments_History__c, L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -1057,15 +1275,17 @@ public without sharing class EXP_Expense_Service {
             directReportIds.add(emp.Id);
         }
 
-        if (directReportIds.isEmpty()) return new List<Expense__c>();
-
+        // Return expenses where user is either the reporting manager OR the designated L1/L2 approver
         return [
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c,
                    Employee__r.First_Name__c, Employee__r.Last_Name__c,
                    Employee__r.Band__c, Total_Claimed__c, Total_Approved__c,
-                   Total_Eligible__c, Working_Days__c, Submitted_Date__c
+                   Total_Eligible__c, Working_Days__c, Submitted_Date__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Expense__c
-            WHERE Employee__c IN :directReportIds
+            WHERE (Employee__c IN :directReportIds
+                   OR L1_Approver__c = :managerId
+                   OR L2_Approver__c = :managerId)
               AND Month__c = :month AND Year__c = :year
             ORDER BY Employee__r.First_Name__c ASC
         ];
@@ -1083,7 +1303,7 @@ public without sharing class EXP_Expense_Service {
                    Total_Claimed__c, Total_Approved__c, Total_Eligible__c,
                    Submitted_Date__c, Manager_Approved_Date__c, Manager_Remarks__c,
                    Finance_Approved_Date__c, Finance_Remarks__c, Rejection_Reason__c,
-                   Comments_History__c
+                   Comments_History__c, L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
 
@@ -1131,6 +1351,26 @@ public without sharing class EXP_Expense_Service {
         return result;
     }
 
+    public static Map<String, Object> uploadReceiptBase64(Id expenseItemId, String fileName, String base64Data) {
+        // Create ContentVersion linked directly to expense item
+        ContentVersion cv = new ContentVersion();
+        cv.Title = fileName.substringBeforeLast('.');
+        cv.PathOnClient = fileName;
+        cv.VersionData = EncodingUtil.base64Decode(base64Data);
+        cv.FirstPublishLocationId = expenseItemId;
+        insert cv;
+
+        // Get the ContentDocumentId
+        cv = [SELECT ContentDocumentId, Title, FileExtension FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('contentDocumentId', cv.ContentDocumentId);
+        result.put('title', cv.Title);
+        result.put('fileExtension', cv.FileExtension);
+        result.put('expenseItemId', expenseItemId);
+        return result;
+    }
+
     public static void deleteExpenseItemFile(Id contentDocumentId) {
         List<ContentDocument> docs = [
             SELECT Id FROM ContentDocument WHERE Id = :contentDocumentId LIMIT 1
@@ -1138,6 +1378,88 @@ public without sharing class EXP_Expense_Service {
         if (!docs.isEmpty()) {
             delete docs;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUBMIT SUMMARY — Returns confirmation data before final submit
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public static Map<String, Object> getSubmitSummary(Id expenseId) {
+        Expense__c expense = [
+            SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c,
+                   Employee__r.First_Name__c, Employee__r.Last_Name__c,
+                   Employee__r.Band__c, Working_Days__c, Total_Distance_KM__c,
+                   Total_Claimed__c, Total_Eligible__c
+            FROM Expense__c WHERE Id = :expenseId LIMIT 1
+        ];
+
+        List<Expense_Item__c> items = getAllExpenseItemsForReport(expenseId);
+
+        // Count items, missing receipts, type totals
+        Integer totalItems = items.size();
+        Integer dayCount = 0;
+        Integer missingReceipts = 0;
+        Decimal totalClaimed = 0;
+        Decimal totalEligible = 0;
+
+        // Check files
+        Set<Id> allItemIds = new Set<Id>();
+        for (Expense_Item__c item : items) {
+            allItemIds.add(item.Id);
+        }
+        Set<Id> itemsWithFiles = new Set<Id>();
+        for (ContentDocumentLink cdl : [
+            SELECT LinkedEntityId FROM ContentDocumentLink WHERE LinkedEntityId IN :allItemIds
+        ]) {
+            itemsWithFiles.add(cdl.LinkedEntityId);
+        }
+
+        Set<Date> uniqueDates = new Set<Date>();
+        List<Map<String, Object>> typeBreakdown = new List<Map<String, Object>>();
+        Map<String, Decimal> claimedByType = new Map<String, Decimal>();
+        Map<String, Decimal> eligibleByType = new Map<String, Decimal>();
+        Map<String, Integer> countByType = new Map<String, Integer>();
+
+        for (Expense_Item__c item : items) {
+            uniqueDates.add(item.Expense_Date__c);
+            Decimal claimed = item.Claimed_Amount__c != null ? item.Claimed_Amount__c : 0;
+            Decimal eligible = item.Eligible_Amount__c != null ? item.Eligible_Amount__c : 0;
+            totalClaimed += claimed;
+            totalEligible += eligible;
+
+            String typ = item.Expense_Type__c;
+            claimedByType.put(typ, (claimedByType.containsKey(typ) ? claimedByType.get(typ) : 0) + claimed);
+            eligibleByType.put(typ, (eligibleByType.containsKey(typ) ? eligibleByType.get(typ) : 0) + eligible);
+            countByType.put(typ, (countByType.containsKey(typ) ? countByType.get(typ) : 0) + 1);
+
+            // Check missing receipts
+            if (item.Receipt_Required__c == true && !itemsWithFiles.contains(item.Id)
+                && String.isBlank(item.Receipt_URL__c)) {
+                missingReceipts++;
+            }
+        }
+        dayCount = uniqueDates.size();
+
+        for (String typ : claimedByType.keySet()) {
+            Map<String, Object> row = new Map<String, Object>();
+            row.put('type', typ);
+            row.put('claimed', claimedByType.get(typ));
+            row.put('eligible', eligibleByType.get(typ));
+            row.put('count', countByType.get(typ));
+            typeBreakdown.add(row);
+        }
+
+        Map<String, Object> summary = new Map<String, Object>();
+        summary.put('expense', expense);
+        summary.put('totalItems', totalItems);
+        summary.put('dayCount', dayCount);
+        summary.put('totalClaimed', totalClaimed);
+        summary.put('totalEligible', totalEligible);
+        summary.put('missingReceipts', missingReceipts);
+        summary.put('typeBreakdown', typeBreakdown);
+        summary.put('canSubmit', missingReceipts == 0);
+
+        return summary;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1209,7 +1531,8 @@ public without sharing class EXP_Expense_Service {
     private static Employee__c getEmployeeForUser(Id userId) {
         List<Employee__c> emps = [
             SELECT Id, Band__c, User__c, Reporting_Manager__c,
-                   First_Name__c, Last_Name__c
+                   First_Name__c, Last_Name__c, HQ_City__c,
+                   L1_Approver__c, L2_Approver__c
             FROM Employee__c
             WHERE User__c = :userId AND Is_Active__c = true
             LIMIT 1
@@ -1218,5 +1541,117 @@ public without sharing class EXP_Expense_Service {
             throw new AuraHandledException('No active employee record found for the current user.');
         }
         return emps[0];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NOTIFICATIONS — Bell notifications with link to expense record
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static void sendExpenseNotification(Id expenseId, Set<String> recipientUserIds, String title, String body) {
+        if (recipientUserIds == null || recipientUserIds.isEmpty()) return;
+        recipientUserIds.remove(null);
+        if (recipientUserIds.isEmpty()) return;
+
+        try {
+            List<CustomNotificationType> notifTypes = [
+                SELECT Id FROM CustomNotificationType
+                WHERE DeveloperName = 'Expense_Approval_Notification' LIMIT 1
+            ];
+            if (notifTypes.isEmpty()) return;
+
+            Messaging.CustomNotification notification = new Messaging.CustomNotification();
+            notification.setNotificationTypeId(notifTypes[0].Id);
+            notification.setTitle(title);
+            notification.setBody(body);
+            notification.setTargetId(expenseId);
+            notification.send(recipientUserIds);
+        } catch (Exception e) {
+            // Notification failures should not block the main workflow
+            System.debug(LoggingLevel.WARN, 'Expense notification failed: ' + e.getMessage());
+        }
+    }
+
+    private static void notifyApproversOnSubmit(Expense__c expense) {
+        Set<String> recipients = new Set<String>();
+        if (expense.L1_Approver__c != null) {
+            recipients.add(String.valueOf(expense.L1_Approver__c));
+        }
+        String empName = getSubmitterName(expense.Employee__c);
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense Submitted for Approval',
+            empName + ' has submitted expense report ' + expense.Name + ' for your review.'
+        );
+    }
+
+    private static void notifyOnManagerApproval(Expense__c expense) {
+        // Notify employee that expense has been L1 approved
+        Set<String> empRecipients = new Set<String>();
+        if (expense.User__c != null) {
+            empRecipients.add(String.valueOf(expense.User__c));
+        }
+        sendExpenseNotification(
+            expense.Id,
+            empRecipients,
+            'Expense L1 Approved',
+            'Your expense report ' + expense.Name + ' has been approved at L1 and is pending L2 approval.'
+        );
+
+        // Notify L2 approver that expense is ready for their review
+        if (expense.L2_Approver__c != null) {
+            Set<String> l2Recipients = new Set<String>{ String.valueOf(expense.L2_Approver__c) };
+            // Also include L1 approver context in notification
+            String empName = getSubmitterName(expense.Employee__c);
+            sendExpenseNotification(
+                expense.Id,
+                l2Recipients,
+                'Expense Pending L2 Approval',
+                empName + '\'s expense report ' + expense.Name + ' has been L1 approved and requires your L2 review.'
+            );
+        }
+    }
+
+    private static void notifyOnFinanceApproval(Expense__c expense) {
+        Set<String> recipients = new Set<String>();
+        if (expense.User__c != null) {
+            recipients.add(String.valueOf(expense.User__c));
+        }
+        // Also notify L1 approver
+        if (expense.L1_Approver__c != null) {
+            recipients.add(String.valueOf(expense.L1_Approver__c));
+        }
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense L2 Approved',
+            'Expense report ' + expense.Name + ' has been fully approved (L2).'
+        );
+    }
+
+    private static void notifyOnRejection(Expense__c expense, String reason, String level) {
+        Set<String> recipients = new Set<String>();
+        if (expense.User__c != null) {
+            recipients.add(String.valueOf(expense.User__c));
+        }
+        String levelLabel = level == 'manager' ? 'L1' : 'L2';
+        sendExpenseNotification(
+            expense.Id,
+            recipients,
+            'Expense Rejected by ' + levelLabel,
+            'Your expense report ' + expense.Name + ' has been rejected: ' + reason
+        );
+    }
+
+    private static String getSubmitterName(Id employeeId) {
+        List<Employee__c> emps = [
+            SELECT First_Name__c, Last_Name__c FROM Employee__c WHERE Id = :employeeId LIMIT 1
+        ];
+        if (emps.isEmpty()) return 'An employee';
+        Employee__c emp = emps[0];
+        String name = '';
+        if (String.isNotBlank(emp.First_Name__c)) name += emp.First_Name__c;
+        if (String.isNotBlank(emp.Last_Name__c)) name += ' ' + emp.Last_Name__c;
+        return String.isBlank(name) ? 'An employee' : name.trim();
     }
 }

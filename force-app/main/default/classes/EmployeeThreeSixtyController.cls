@@ -30,7 +30,8 @@ public with sharing class EmployeeThreeSixtyController {
                    Reporting_Manager__r.Designation__c,
                    User__c, Date_of_Joining__c, Is_Active__c,
                    Profile_Photo_URL__c, Address__c,
-                   CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
+                   CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c,
+                   Week_Off_Days__c
             FROM Employee__c
             WHERE Id = :employeeId
             LIMIT 1
@@ -56,7 +57,7 @@ public with sharing class EmployeeThreeSixtyController {
 
         // ── Fetch employee to get User__c link and leave balances ────
         List<Employee__c> employees = [
-            SELECT Id, User__c,
+            SELECT Id, User__c, Week_Off_Days__c,
                    CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
             FROM Employee__c
             WHERE Id = :employeeId
@@ -78,17 +79,23 @@ public with sharing class EmployeeThreeSixtyController {
             WHERE User__c = :userId
             AND Attendance_Date__c >= :mtdStart
             AND Attendance_Date__c <= :today
-            AND Status__c IN ('Started', 'Completed')
+            AND Status__c IN ('Present', 'Started', 'Completed', 'Ended', 'Auto-Closed', 'In Progress', 'Half Day')
         ];
         kpis.put('mtdAttendanceCount', attendanceCount);
 
-        // ── MTD Total Working Days (weekdays elapsed so far) ────────
+        // ── MTD Total Working Days (non week-off days elapsed so far) ─
+        // Respect employee-level Week_Off_Days__c (e.g. "Sunday" or "Saturday;Sunday")
+        Set<String> weekOffDays = new Set<String>();
+        String weekOffStr = emp.Week_Off_Days__c != null ? emp.Week_Off_Days__c : 'Sunday';
+        for (String d : weekOffStr.split(';')) {
+            weekOffDays.add(d.trim().toLowerCase());
+        }
         Integer totalWorkingDays = 0;
         Date cursor = mtdStart;
         while (cursor <= today) {
             Datetime dt = Datetime.newInstance(cursor, Time.newInstance(0, 0, 0, 0));
-            String dayOfWeek = dt.format('EEEE');
-            if (dayOfWeek != 'Saturday' && dayOfWeek != 'Sunday') {
+            String dayOfWeek = dt.format('EEEE').toLowerCase();
+            if (!weekOffDays.contains(dayOfWeek)) {
                 totalWorkingDays++;
             }
             cursor = cursor.addDays(1);
@@ -158,12 +165,27 @@ public with sharing class EmployeeThreeSixtyController {
         kpis.put('mtdProductiveCalls', mtdProductiveCalls);
 
         // ── Total Beats Assigned ────────────────────────────────────
+        // Check by Assigned_User__c first, then OwnerId, then Territory
         Integer totalBeats = [
             SELECT COUNT()
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-            AND Is_Active__c = true
         ];
+        if (totalBeats == 0) {
+            totalBeats = [
+                SELECT COUNT()
+                FROM Beat__c
+                WHERE OwnerId = :userId
+            ];
+        }
+        if (totalBeats == 0 && emp.Territory__c != null) {
+            Id kpiTerritoryId = emp.Territory__c;
+            totalBeats = [
+                SELECT COUNT()
+                FROM Beat__c
+                WHERE Territory__c = :kpiTerritoryId
+            ];
+        }
         kpis.put('totalBeatsAssigned', totalBeats);
 
         // ── Total Outlets Covered ───────────────────────────────────
@@ -171,12 +193,34 @@ public with sharing class EmployeeThreeSixtyController {
             SELECT SUM(Total_Outlets__c) totalOutlets
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-            AND Is_Active__c = true
         ];
         Integer totalOutlets = 0;
         if (!outletAgg.isEmpty()) {
             Decimal ol = (Decimal)outletAgg[0].get('totalOutlets');
             totalOutlets = ol != null ? ol.intValue() : 0;
+        }
+        if (totalOutlets == 0) {
+            outletAgg = [
+                SELECT SUM(Total_Outlets__c) totalOutlets
+                FROM Beat__c
+                WHERE OwnerId = :userId
+            ];
+            if (!outletAgg.isEmpty()) {
+                Decimal ol = (Decimal)outletAgg[0].get('totalOutlets');
+                totalOutlets = ol != null ? ol.intValue() : 0;
+            }
+        }
+        if (totalOutlets == 0 && emp.Territory__c != null) {
+            Id kpiTerritoryId = emp.Territory__c;
+            outletAgg = [
+                SELECT SUM(Total_Outlets__c) totalOutlets
+                FROM Beat__c
+                WHERE Territory__c = :kpiTerritoryId
+            ];
+            if (!outletAgg.isEmpty()) {
+                Decimal ol = (Decimal)outletAgg[0].get('totalOutlets');
+                totalOutlets = ol != null ? ol.intValue() : 0;
+            }
         }
         kpis.put('totalOutletsCovered', totalOutlets);
 
@@ -282,18 +326,61 @@ public with sharing class EmployeeThreeSixtyController {
      */
     @AuraEnabled(cacheable=true)
     public static List<Beat__c> getAssignedBeats(Id employeeId) {
-        Id userId = getEmployeeUserId(employeeId);
-
-        return [
-            SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
-                   Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name,
-                   Is_Active__c, Sequence__c
-            FROM Beat__c
-            WHERE Assigned_User__c = :userId
-            AND Is_Active__c = true
-            ORDER BY Day_of_Week__c, Sequence__c
+        List<Employee__c> emps = [
+            SELECT User__c, Territory__c
+            FROM Employee__c
+            WHERE Id = :employeeId
+            LIMIT 1
         ];
+        if (emps.isEmpty()) {
+            throw new AuraHandledException('Employee not found.');
+        }
+
+        Employee__c emp = emps[0];
+        List<Beat__c> beats = new List<Beat__c>();
+
+        // First try beats directly assigned to the user (by Assigned_User__c)
+        if (emp.User__c != null) {
+            Id userId = emp.User__c;
+            beats = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Assigned_User__c = :userId
+                ORDER BY Sequence__c NULLS LAST, Name
+            ];
+
+            // Second fallback: try beats owned by the user
+            if (beats.isEmpty()) {
+                beats = [
+                    SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                           Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                           Territory__c, Territory__r.Name,
+                           Is_Active__c, Sequence__c
+                    FROM Beat__c
+                    WHERE OwnerId = :userId
+                    ORDER BY Sequence__c NULLS LAST, Name
+                ];
+            }
+        }
+
+        // Third fallback: show all beats in the employee's territory
+        if (beats.isEmpty() && emp.Territory__c != null) {
+            Id territoryId = emp.Territory__c;
+            beats = [
+                SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
+                       Total_Outlets__c, Pincode_Cluster__c, Description__c,
+                       Territory__c, Territory__r.Name,
+                       Is_Active__c, Sequence__c
+                FROM Beat__c
+                WHERE Territory__c = :territoryId
+                ORDER BY Sequence__c NULLS LAST, Name
+            ];
+        }
+
+        return beats;
     }
 
     // ── Get Performance Trend ─────────────────────────────────────────────────
@@ -450,7 +537,7 @@ public with sharing class EmployeeThreeSixtyController {
                 WHERE User__c IN :userIds
                 AND Attendance_Date__c >= :mtdStart
                 AND Attendance_Date__c <= :today
-                AND Status__c IN ('Started', 'Completed')
+                AND Status__c IN ('Present', 'Started', 'Completed', 'Ended', 'Auto-Closed', 'In Progress', 'Half Day')
                 GROUP BY User__c
             ];
             for (AggregateResult ar : attAgg) {
@@ -511,6 +598,78 @@ public with sharing class EmployeeThreeSixtyController {
         }
 
         return results;
+    }
+
+    // ── Get Current User's Employee Id ────────────────────────────────────────
+
+    /**
+     * @description Resolves the Employee__c record Id for the current logged-in user.
+     *              Used when the component is placed on a Tab without an explicit employeeId.
+     * @return The Employee__c record Id for the current user.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Id getMyEmployeeId() {
+        Id currentUserId = UserInfo.getUserId();
+        List<Employee__c> employees = [
+            SELECT Id FROM Employee__c
+            WHERE User__c = :currentUserId
+            AND Is_Active__c = true
+            LIMIT 1
+        ];
+        if (employees.isEmpty()) {
+            throw new AuraHandledException('No Employee record found for the current user.');
+        }
+        return employees[0].Id;
+    }
+
+    // ── Get Holidays for Month ─────────────────────────────────────────────
+
+    /**
+     * @description Retrieves active Holiday__c records for a given month/year,
+     *              optionally filtered by the employee's territory.
+     * @param employeeId The Employee__c record Id (used for territory filtering).
+     * @param year       The four-digit year.
+     * @param month      The month (1-12).
+     * @return List of Holiday__c records for the month.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Holiday__c> getHolidaysForMonth(Id employeeId, Integer year, Integer month) {
+        Date startDate = Date.newInstance(year, month, 1);
+        Date endDate = startDate.addMonths(1).addDays(-1);
+
+        // Get employee's territory for filtering regional holidays
+        Id territoryId = null;
+        if (employeeId != null) {
+            List<Employee__c> emps = [
+                SELECT Territory__c FROM Employee__c WHERE Id = :employeeId LIMIT 1
+            ];
+            if (!emps.isEmpty()) {
+                territoryId = emps[0].Territory__c;
+            }
+        }
+
+        // Return holidays that are either not territory-specific or match the employee's territory
+        if (territoryId != null) {
+            return [
+                SELECT Id, Name, Holiday_Date__c, Type__c, Description__c
+                FROM Holiday__c
+                WHERE Holiday_Date__c >= :startDate
+                AND Holiday_Date__c <= :endDate
+                AND Is_Active__c = true
+                AND (Territory__c = null OR Territory__c = :territoryId)
+                ORDER BY Holiday_Date__c ASC
+            ];
+        } else {
+            return [
+                SELECT Id, Name, Holiday_Date__c, Type__c, Description__c
+                FROM Holiday__c
+                WHERE Holiday_Date__c >= :startDate
+                AND Holiday_Date__c <= :endDate
+                AND Is_Active__c = true
+                AND Territory__c = null
+                ORDER BY Holiday_Date__c ASC
+            ];
+        }
     }
 
     // ── Private Helpers ───────────────────────────────────────────────────────

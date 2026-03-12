@@ -22,9 +22,14 @@
                 <label>HQ</label>
             </value>
             <value>
-                <fullName>Up-Country</fullName>
+                <fullName>EX-HQ</fullName>
                 <default>false</default>
-                <label>Up-Country</label>
+                <label>EX-HQ</label>
+            </value>
+            <value>
+                <fullName>OS</fullName>
+                <default>false</default>
+                <label>OS</label>
             </value>
         </valueSetDefinition>
     </valueSet>

@@ -261,6 +261,21 @@ public with sharing class ExpenseController {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // SUBMIT SUMMARY
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @AuraEnabled
+    public static Map<String, Object> getSubmitSummary(Id expenseId) {
+        try {
+            return EXP_Expense_Service.getSubmitSummary(expenseId);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // FILES
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -268,6 +283,15 @@ public with sharing class ExpenseController {
     public static List<Map<String, Object>> getExpenseItemFiles(List<Id> itemIds) {
         try {
             return EXP_Expense_Service.getExpenseItemFiles(itemIds);
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static Map<String, Object> uploadReceiptBase64(Id expenseItemId, String fileName, String base64Data) {
+        try {
+            return EXP_Expense_Service.uploadReceiptBase64(expenseItemId, fileName, base64Data);
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

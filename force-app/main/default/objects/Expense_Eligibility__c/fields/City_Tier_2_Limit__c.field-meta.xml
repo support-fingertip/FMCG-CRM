@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Per_KM_Bike_Rate__c</fullName>
-    <description>Per KM rate for Bike travel. Rate_Amount__c is the default/car rate</description>
+    <fullName>City_Tier_2_Limit__c</fullName>
+    <description>Lodging limit for Tier 2 cities</description>
     <externalId>false</externalId>
-    <label>Per KM Bike Rate</label>
-    <precision>18</precision>
+    <label>City Tier 2 Limit</label>
+    <precision>16</precision>
     <required>false</required>
     <scale>2</scale>
     <trackTrending>false</trackTrending>

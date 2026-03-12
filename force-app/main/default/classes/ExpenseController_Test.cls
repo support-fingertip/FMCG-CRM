@@ -231,4 +231,32 @@ public class ExpenseController_Test {
 
         System.assertNotEquals(null, teamReports);
     }
+
+    @isTest
+    static void testGetSubmitSummary() {
+        Date today = Date.today();
+        List<String> months = new List<String>{'', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'};
+        String monthName = months[today.month()];
+        Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+
+        Expense__c report = ExpenseController.getOrCreateReport(monthName, today.year());
+
+        Expense_Item__c item = new Expense_Item__c(
+            Expense__c = report.Id,
+            Expense_Date__c = monthStart,
+            Expense_Type__c = 'Daily Allowance',
+            Expense_Category__c = 'Travel',
+            Claimed_Amount__c = 500,
+            Eligible_Amount__c = 500
+        );
+        insert item;
+
+        Test.startTest();
+        Map<String, Object> summary = ExpenseController.getSubmitSummary(report.Id);
+        Test.stopTest();
+
+        System.assertNotEquals(null, summary, 'Summary should not be null');
+        System.assertEquals(1, (Integer) summary.get('totalItems'), 'Should have 1 item');
+        System.assertEquals(500, (Decimal) summary.get('totalClaimed'), 'Total claimed should match');
+    }
 }
