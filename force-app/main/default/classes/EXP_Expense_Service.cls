@@ -678,9 +678,13 @@ public without sharing class EXP_Expense_Service {
         Expense__c expense = [
             SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
-        if (expense.Status__c == 'Finance Approved' || expense.Status__c == 'Paid') {
-            throw new AuraHandledException('Expense cannot be edited after finance approval or payment.');
+        if (expense.Status__c == 'Paid') {
+            throw new AuraHandledException('Expense cannot be edited after payment.');
         }
+
+        // Track if we need to revert status due to new items on an approved report
+        Boolean hasNewItems = false;
+        Boolean isApprovedReport = (expense.Status__c == 'Finance Approved' || expense.Status__c == 'Manager Approved' || expense.Status__c == 'Submitted');
 
         // Validate distance override
         Integer maxOverridePercent = getConfigInteger(CFG_MAX_OVERRIDE_PERCENT, 150);
@@ -689,6 +693,7 @@ public without sharing class EXP_Expense_Service {
             // Only set parent on new items (not writable on update for master-detail)
             if (item.Id == null) {
                 item.Expense__c = expenseId;
+                hasNewItems = true;
                 // Set default approval status for new items
                 if (String.isBlank(item.Approval_Status__c)) {
                     item.Approval_Status__c = 'Not Submitted';
@@ -725,6 +730,15 @@ public without sharing class EXP_Expense_Service {
         }
 
         upsert items;
+
+        // If new items were added to an approved report, revert status to Draft for re-submission
+        if (hasNewItems && isApprovedReport) {
+            expense.Status__c = 'Draft';
+            expense.Comments_History__c = appendComment(
+                expense.Comments_History__c, 'New expense items added — report reverted to Draft for re-submission', UserInfo.getUserId()
+            );
+            update expense;
+        }
 
         // Return all saved items (may span multiple dates)
         Set<Date> dates = new Set<Date>();
