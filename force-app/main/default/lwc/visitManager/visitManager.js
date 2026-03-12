@@ -283,7 +283,7 @@ export default class VisitManager extends LightningElement {
     get isReturnsActivity() { return this.activeActivityId === 'returns'; }
     get activeActivityTitle() {
         const titles = {
-            stock_check: 'Stock Check', competitor: 'Competitor Activity', merchandising: 'Merchandising Audit',
+            stock_check: 'Distributor Stock', competitor: 'Competitor Activity', merchandising: 'Merchandising Audit',
             survey: 'Survey / Feedback', scheme: 'Scheme Info', ticket: 'Ticket / Complaint',
             order: 'Order Entry', collection: 'Collection', returns: 'Returns'
         };
@@ -995,7 +995,7 @@ export default class VisitManager extends LightningElement {
                 stockJson: JSON.stringify(entries),
                 visitId: this.activeVisitId, accountId: this.activeAccountId
             });
-            this._toast('Success', 'Stock check saved.', 'success');
+            this._toast('Success', 'Distributor stock saved.', 'success');
             this.handleActivityBack();
         } catch (err) {
             this._toast('Error', this._err(err), 'error');
@@ -1405,7 +1405,7 @@ export default class VisitManager extends LightningElement {
 
     handleCheckoutClick() {
         this.checklistItems = [
-            { id: 'stock', label: 'Was stock check completed?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
+            { id: 'stock', label: 'Was distributor stock captured?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
             { id: 'display', label: 'Was product display verified?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
             { id: 'feedback', label: 'Was retailer feedback captured?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
             { id: 'scheme', label: 'Was scheme communication done?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' }

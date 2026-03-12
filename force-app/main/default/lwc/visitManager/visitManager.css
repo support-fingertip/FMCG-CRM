@@ -1614,7 +1614,31 @@
     border-color: var(--vm-text-secondary);
 }
 
-/* ── Stock Check Search Results ── */
+/* ── Distributor Stock ── */
+.vm-stock-search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.vm-stock-count-badge {
+    background: var(--vm-primary);
+    color: var(--vm-white);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+.vm-stock-hint {
+    color: var(--vm-text-light);
+    font-size: 12px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f0f4f8;
+    border-radius: var(--vm-radius-md);
+}
+
+/* ── Stock Search Results ── */
 .vm-search-results {
     background: var(--vm-white);
     border: 1px solid var(--vm-border);

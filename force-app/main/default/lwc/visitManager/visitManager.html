@@ -887,7 +887,7 @@
                 </div>
             </div>
 
-            <!-- STOCK CHECK -->
+            <!-- DISTRIBUTOR STOCK -->
             <template if:true={isStockCheckActivity}>
                 <div class="vm-activity-form">
                     <template if:true={stockIsLoading}>
@@ -895,24 +895,36 @@
                     </template>
                     <!-- Product Search -->
                     <div class="vm-card slds-m-bottom_small">
-                        <p class="vm-section-title">Add Product</p>
+                        <div class="vm-stock-search-header">
+                            <p class="vm-section-title">
+                                <lightning-icon icon-name="utility:search" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                Add Products
+                            </p>
+                            <template if:true={stockCheckLines.length}>
+                                <span class="vm-stock-count-badge">{stockCheckLines.length} product(s) added</span>
+                            </template>
+                        </div>
                         <lightning-input type="search" label="Search Products" value={stockProductSearch}
-                            onchange={handleStockProductSearch} placeholder="Search by name, SKU, or brand..."></lightning-input>
+                            onchange={handleStockProductSearch}
+                            placeholder="Search by name, SKU, or brand — add multiple products..."></lightning-input>
                         <template if:true={stockProductResults.length}>
                             <div class="vm-search-results">
                                 <template for:each={stockProductResults} for:item="prod">
                                     <div key={prod.Id} class="vm-search-item" data-id={prod.Id} onclick={handleStockProductAdd}>
                                         <span class="vm-search-item-name">{prod.Name}</span>
-                                        <span class="vm-search-item-sub">{prod.SKU_Code__c}</span>
+                                        <span class="vm-search-item-sub">{prod.SKU_Code__c} &bull; {prod.Brand__c}</span>
                                     </div>
                                 </template>
                             </div>
                         </template>
+                        <template if:false={stockCheckLines.length}>
+                            <p class="vm-stock-hint">Search and select products to record distributor stock. You can add multiple products.</p>
+                        </template>
                     </div>
-                    <!-- Stock Table -->
+                    <!-- Stock Entries -->
                     <template if:true={stockCheckLines.length}>
                         <div class="vm-card">
-                            <p class="vm-section-title">Stock Entries</p>
+                            <p class="vm-section-title">Stock Entries ({stockCheckLines.length})</p>
                             <template for:each={stockCheckLines} for:item="line">
                                 <div key={line.lineKey} class="vm-stock-line">
                                     <div class="vm-stock-line-header">
@@ -944,7 +956,7 @@
                     <!-- Save / Cancel -->
                     <div class="vm-activity-actions">
                         <button class="slds-button slds-button_neutral" onclick={handleActivityBack}>Cancel</button>
-                        <button class="slds-button slds-button_brand" onclick={handleStockCheckSave} disabled={stockIsLoading}>Save Stock Check</button>
+                        <button class="slds-button slds-button_brand" onclick={handleStockCheckSave} disabled={stockIsLoading}>Save Distributor Stock</button>
                     </div>
                 </div>
             </template>

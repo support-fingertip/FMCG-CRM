@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomMetadata xmlns="http://soap.sforce.com/2006/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-    <label>OVE Stock Check</label>
+    <label>OVE Distributor Stock</label>
     <protected>false</protected>
     <values>
         <field>Module__c</field>
@@ -20,6 +20,6 @@
     </values>
     <values>
         <field>Description__c</field>
-        <value xsi:type="xsd:string">Stock check activity during outlet visits</value>
+        <value xsi:type="xsd:string">Distributor stock entry during outlet visits</value>
     </values>
 </CustomMetadata>

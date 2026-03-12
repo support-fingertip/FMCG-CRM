@@ -775,7 +775,7 @@ public without sharing class OVE_Visit_Service {
 
         // Feature-toggled activities
         if (BPM_FeatureToggle_Util.isEnabled('OVE-010')) {
-            activities.add(createActivity('stock_check', 'Stock Check', 'standard:product_item', true, stockCompleted));
+            activities.add(createActivity('stock_check', 'Distributor Stock', 'standard:product_item', true, stockCompleted));
         }
         if (BPM_FeatureToggle_Util.isEnabled('OVE-011')) {
             activities.add(createActivity('competitor', 'Competitor', 'standard:account', true, competitorCompleted));
