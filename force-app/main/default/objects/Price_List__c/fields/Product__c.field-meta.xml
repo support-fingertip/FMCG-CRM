@@ -4,7 +4,7 @@
     <label>Product</label>
     <type>Lookup</type>
     <required>false</required>
-    <referenceTo>Product2</referenceTo>
+    <referenceTo>Product_Extension__c</referenceTo>
     <relationshipLabel>Price Lists</relationshipLabel>
     <relationshipName>Price_Lists</relationshipName>
     <deleteConstraint>SetNull</deleteConstraint>

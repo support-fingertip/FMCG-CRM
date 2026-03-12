@@ -5098,7 +5098,7 @@
         <layout>Product_Category__c-Product Category Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>Product_Extension__c-Product Layout</layout>
+        <layout>Product_Extension__c-Product Extension Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Project_Site__c-Project Site Layout</layout>
@@ -6074,6 +6074,10 @@
     </tabVisibilities>
     <tabVisibilities>
         <tab>Stock_Transfer__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Survey_Question__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
