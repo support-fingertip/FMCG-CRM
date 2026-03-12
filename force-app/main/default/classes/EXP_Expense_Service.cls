@@ -874,7 +874,7 @@ public without sharing class EXP_Expense_Service {
 
     public static Expense__c approveReport(Id expenseId, String remarks, String level) {
         Expense__c expense = [
-            SELECT Id, Name, Status__c, User__c, Comments_History__c,
+            SELECT Id, Name, Status__c, User__c, Employee__c, Comments_History__c,
                    L1_Approver__c, L2_Approver__c
             FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
@@ -910,13 +910,13 @@ public without sharing class EXP_Expense_Service {
             expense.Finance_Approver__c = UserInfo.getUserId();
             expense.Finance_Remarks__c = remarks;
 
-            // Update item approval statuses
+            // Update item approval statuses to L2 Approved
             List<Expense_Item__c> items = [
                 SELECT Id, Approval_Status__c
                 FROM Expense_Item__c WHERE Expense__c = :expenseId
             ];
             for (Expense_Item__c item : items) {
-                item.Approval_Status__c = 'Finance Approved';
+                item.Approval_Status__c = 'L2 Approved';
             }
             if (!items.isEmpty()) update items;
         }
@@ -995,7 +995,7 @@ public without sharing class EXP_Expense_Service {
             WHERE Id IN :itemIds
         ];
 
-        String newStatus = level == 'manager' ? 'L1 Approved' : 'Finance Approved';
+        String newStatus = level == 'manager' ? 'L1 Approved' : 'L2 Approved';
         Set<Id> expenseIds = new Set<Id>();
         for (Expense_Item__c item : items) {
             item.Approval_Status__c = newStatus;
@@ -1012,7 +1012,7 @@ public without sharing class EXP_Expense_Service {
 
         // Update parent expense: comments history + auto-advance status if all items approved
         List<Expense__c> expenses = [
-            SELECT Id, Name, Status__c, User__c, Comments_History__c,
+            SELECT Id, Name, Status__c, User__c, Employee__c, Comments_History__c,
                    Manager_Approved_Date__c, Manager_Approver__c, Manager_Remarks__c,
                    Finance_Approved_Date__c, Finance_Approver__c, Finance_Remarks__c,
                    L1_Approver__c, L2_Approver__c
@@ -1028,7 +1028,7 @@ public without sharing class EXP_Expense_Service {
             ];
             Boolean allAtLevel = true;
             for (Expense_Item__c ai : allItems) {
-                if (ai.Approval_Status__c != newStatus && ai.Approval_Status__c != 'Finance Approved') {
+                if (ai.Approval_Status__c != newStatus && ai.Approval_Status__c != 'L2 Approved') {
                     allAtLevel = false;
                     break;
                 }
@@ -1049,7 +1049,7 @@ public without sharing class EXP_Expense_Service {
                     exp.Finance_Approver__c = UserInfo.getUserId();
                     exp.Finance_Remarks__c = remarks;
                     exp.Comments_History__c = appendComment(
-                        exp.Comments_History__c, 'All items finance approved — report advanced to Finance Approved', UserInfo.getUserId()
+                        exp.Comments_History__c, 'All items L2 approved — report advanced to Finance Approved', UserInfo.getUserId()
                     );
                     notifyOnFinanceApproval(exp);
                 }
@@ -1577,25 +1577,28 @@ public without sharing class EXP_Expense_Service {
     }
 
     private static void notifyOnManagerApproval(Expense__c expense) {
-        Set<String> recipients = new Set<String>();
+        // Notify employee that expense has been L1 approved
+        Set<String> empRecipients = new Set<String>();
         if (expense.User__c != null) {
-            recipients.add(String.valueOf(expense.User__c));
+            empRecipients.add(String.valueOf(expense.User__c));
         }
         sendExpenseNotification(
             expense.Id,
-            recipients,
-            'Expense Manager Approved',
-            'Your expense report ' + expense.Name + ' has been approved by manager.'
+            empRecipients,
+            'Expense L1 Approved',
+            'Your expense report ' + expense.Name + ' has been approved at L1 and is pending L2 approval.'
         );
 
-        // Notify L2 approver that expense is ready for finance review
+        // Notify L2 approver that expense is ready for their review
         if (expense.L2_Approver__c != null) {
-            Set<String> financeRecipients = new Set<String>{ String.valueOf(expense.L2_Approver__c) };
+            Set<String> l2Recipients = new Set<String>{ String.valueOf(expense.L2_Approver__c) };
+            // Also include L1 approver context in notification
+            String empName = getSubmitterName(expense.Employee__c);
             sendExpenseNotification(
                 expense.Id,
-                financeRecipients,
-                'Expense Pending Finance Approval',
-                'Expense report ' + expense.Name + ' has been manager-approved and requires your finance review.'
+                l2Recipients,
+                'Expense Pending L2 Approval',
+                empName + '\'s expense report ' + expense.Name + ' has been L1 approved and requires your L2 review.'
             );
         }
     }
@@ -1605,11 +1608,15 @@ public without sharing class EXP_Expense_Service {
         if (expense.User__c != null) {
             recipients.add(String.valueOf(expense.User__c));
         }
+        // Also notify L1 approver
+        if (expense.L1_Approver__c != null) {
+            recipients.add(String.valueOf(expense.L1_Approver__c));
+        }
         sendExpenseNotification(
             expense.Id,
             recipients,
-            'Expense Finance Approved',
-            'Your expense report ' + expense.Name + ' has been approved by finance.'
+            'Expense L2 Approved',
+            'Expense report ' + expense.Name + ' has been fully approved (L2).'
         );
     }
 
@@ -1618,7 +1625,7 @@ public without sharing class EXP_Expense_Service {
         if (expense.User__c != null) {
             recipients.add(String.valueOf(expense.User__c));
         }
-        String levelLabel = level == 'manager' ? 'Manager' : 'Finance';
+        String levelLabel = level == 'manager' ? 'L1' : 'L2';
         sendExpenseNotification(
             expense.Id,
             recipients,

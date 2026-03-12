@@ -462,7 +462,7 @@ export default class ExpenseManager extends LightningElement {
             exceedsEligible: false,
             statusLabel: existing ? this.getItemStatusLabel(existing.Approval_Status__c) : 'New',
             statusClass: existing ? this.getItemStatusClass(existing.Approval_Status__c) : 'item-status item-status-new',
-            isReadonly: existing ? ['Pending', 'L1 Approved', 'Finance Approved'].includes(existing.Approval_Status__c) : false,
+            isReadonly: existing ? ['Pending', 'L1 Approved', 'L2 Approved', 'Finance Approved'].includes(existing.Approval_Status__c) : false,
             files: itemFiles,
             hasFiles: itemFiles.length > 0,
             hasAnyFiles: itemFiles.length > 0,
@@ -1166,7 +1166,7 @@ export default class ExpenseManager extends LightningElement {
                                 approvalStatus: approvalStatus,
                                 statusLabel: this.getItemStatusLabel(saved.Approval_Status__c),
                                 statusClass: this.getItemStatusClass(saved.Approval_Status__c),
-                                isReadonly: ['Pending', 'L1 Approved', 'Finance Approved'].includes(approvalStatus)
+                                isReadonly: ['Pending', 'L1 Approved', 'L2 Approved', 'Finance Approved'].includes(approvalStatus)
                             };
                         }
                         return item;
