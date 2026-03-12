@@ -167,34 +167,6 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Batch_Number__c</fields>
-        <fields>Manufacturing_Date__c</fields>
-        <fields>Expiry_Date__c</fields>
-        <fields>Status__c</fields>
-        <fields>Quantity_Manufactured__c</fields>
-        <relatedList>Batch_Masters_Ext__r</relatedList>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Unit_Price__c</fields>
-        <fields>Channel__c</fields>
-        <fields>Region__c</fields>
-        <fields>Effective_From__c</fields>
-        <fields>Effective_To__c</fields>
-        <fields>Is_Active__c</fields>
-        <relatedList>Price_Lists_Ext__r</relatedList>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Account__c</fields>
-        <fields>Stock_Date__c</fields>
-        <fields>Opening_Stock__c</fields>
-        <fields>Closing_Stock__c</fields>
-        <fields>Is_Current__c</fields>
-        <relatedList>Distributor_Stock_Ext__r</relatedList>
-    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>
