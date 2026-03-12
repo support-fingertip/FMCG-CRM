@@ -16,13 +16,13 @@ public without sharing class OVE_StockCheck_Service {
             return new List<Distributor_Stock__c>();
         }
         return [
-            SELECT Id, Name, Product__c, Product__r.Name, Opening_Stock__c,
+            SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Opening_Stock__c,
                    Received_Qty__c, Sold_Qty__c, Closing_Stock__c, Damaged_Qty__c,
                    Batch_No__c, Expiry_Date__c, Is_Current__c, Stock_Date__c
             FROM Distributor_Stock__c
             WHERE Account__c = :accountId
               AND Is_Current__c = true
-            ORDER BY Product__r.Name
+            ORDER BY Product_Ext__r.Name
             LIMIT 200
         ];
     }
@@ -57,7 +57,7 @@ public without sharing class OVE_StockCheck_Service {
             }
             stock.Account__c = accountId;
             stock.Visit__c = visitId;
-            stock.Product__c = (Id) entry.get('productId');
+            stock.Product_Ext__c = (Id) entry.get('productId');
             stock.Opening_Stock__c = entry.containsKey('opening') ? ((Decimal) entry.get('opening')) : 0;
             stock.Received_Qty__c = entry.containsKey('received') ? ((Decimal) entry.get('received')) : 0;
             stock.Sold_Qty__c = entry.containsKey('sold') ? ((Decimal) entry.get('sold')) : 0;
@@ -86,13 +86,13 @@ public without sharing class OVE_StockCheck_Service {
      */
     public static List<Distributor_Stock__c> getLastStockCheck(Id accountId) {
         return [
-            SELECT Id, Product__c, Product__r.Name, Opening_Stock__c,
+            SELECT Id, Product_Ext__c, Product_Ext__r.Name, Opening_Stock__c,
                    Received_Qty__c, Sold_Qty__c, Closing_Stock__c, Damaged_Qty__c,
                    Batch_No__c, Expiry_Date__c, Stock_Date__c
             FROM Distributor_Stock__c
             WHERE Account__c = :accountId
               AND Is_Current__c = true
-            ORDER BY Product__r.Name
+            ORDER BY Product_Ext__r.Name
             LIMIT 200
         ];
     }

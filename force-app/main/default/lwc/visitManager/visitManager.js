@@ -921,7 +921,7 @@ export default class VisitManager extends LightningElement {
             const stock = await getDistributorStock({ accountId: this.activeAccountId });
             this.stockCheckLines = (stock || []).map((s, idx) => ({
                 ...s, lineKey: s.Id || ('new-' + idx),
-                productName: s.Product__r ? s.Product__r.Name : '',
+                productName: s.Product_Ext__r ? s.Product_Ext__r.Name : '',
                 opening: s.Opening_Stock__c || 0, received: s.Received_Qty__c || 0,
                 sold: s.Sold_Qty__c || 0, closing: s.Closing_Stock__c || 0,
                 damaged: s.Damaged_Qty__c || 0, batch: s.Batch_No__c || '',
@@ -948,11 +948,11 @@ export default class VisitManager extends LightningElement {
         const productId = e.currentTarget.dataset.id;
         const product = this.stockProductResults.find(p => p.Id === productId);
         if (!product) return;
-        if (this.stockCheckLines.some(l => l.Product__c === productId)) {
+        if (this.stockCheckLines.some(l => l.Product_Ext__c === productId)) {
             this._toast('Info', 'Product already added.', 'info'); return;
         }
         this.stockCheckLines = [...this.stockCheckLines, {
-            lineKey: 'new-' + Date.now(), Product__c: productId,
+            lineKey: 'new-' + Date.now(), Product_Ext__c: productId,
             productName: product.Name, opening: 0, received: 0,
             sold: 0, closing: 0, damaged: 0, batch: '', expiry: null
         }];
@@ -986,7 +986,7 @@ export default class VisitManager extends LightningElement {
         this.stockIsLoading = true;
         try {
             const entries = this.stockCheckLines.map(l => ({
-                id: l.Id || null, productId: l.Product__c,
+                id: l.Id || null, productId: l.Product_Ext__c,
                 opening: l.opening, received: l.received, sold: l.sold,
                 closing: l.closing, damaged: l.damaged,
                 batch: l.batch, expiry: l.expiry

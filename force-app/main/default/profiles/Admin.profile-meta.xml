@@ -717,6 +717,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Batch_Master__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Batch_Master__c.Quantity_Manufactured__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1378,6 +1383,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Distributor_Stock__c.Product__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Distributor_Stock__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2963,6 +2973,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Price_List__c.Product__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Price_List__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

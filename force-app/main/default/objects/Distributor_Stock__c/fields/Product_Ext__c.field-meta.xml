@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
-    <fullName>Product__c</fullName>
-    <label>Product</label>
+    <fullName>Product_Ext__c</fullName>
+    <label>Product Extension</label>
     <type>Lookup</type>
-    <referenceTo>Product2</referenceTo>
+    <referenceTo>Product_Extension__c</referenceTo>
     <relationshipLabel>Distributor Stock</relationshipLabel>
     <relationshipName>Distributor_Stock</relationshipName>
     <required>false</required>
