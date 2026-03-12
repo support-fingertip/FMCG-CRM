@@ -47,10 +47,11 @@ public without sharing class OVE_StockCheck_Service {
      * Save stock entries linked to a visit
      */
     public static List<Distributor_Stock__c> saveStockEntries(String stockJson, Id visitId, Id accountId) {
-        List<Map<String, Object>> entries = (List<Map<String, Object>>) JSON.deserializeUntyped(stockJson);
+        List<Object> rawEntries = (List<Object>) JSON.deserializeUntyped(stockJson);
         List<Distributor_Stock__c> stockRecords = new List<Distributor_Stock__c>();
 
-        for (Map<String, Object> entry : entries) {
+        for (Object rawEntry : rawEntries) {
+            Map<String, Object> entry = (Map<String, Object>) rawEntry;
             Distributor_Stock__c stock = new Distributor_Stock__c();
             if (entry.containsKey('id') && entry.get('id') != null) {
                 stock.Id = (Id) entry.get('id');
