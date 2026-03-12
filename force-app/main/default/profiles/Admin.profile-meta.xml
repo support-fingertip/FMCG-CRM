@@ -5988,10 +5988,6 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>Employee_360</tab>
-        <visibility>DefaultOn</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
         <tab>Employee_Manager</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
