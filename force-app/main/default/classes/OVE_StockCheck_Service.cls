@@ -59,14 +59,14 @@ public without sharing class OVE_StockCheck_Service {
             stock.Account__c = accountId;
             stock.Visit__c = visitId;
             stock.Product_Ext__c = (Id) entry.get('productId');
-            stock.Opening_Stock__c = entry.containsKey('opening') ? ((Decimal) entry.get('opening')) : 0;
-            stock.Received_Qty__c = entry.containsKey('received') ? ((Decimal) entry.get('received')) : 0;
-            stock.Sold_Qty__c = entry.containsKey('sold') ? ((Decimal) entry.get('sold')) : 0;
-            stock.Closing_Stock__c = entry.containsKey('closing') ? ((Decimal) entry.get('closing')) : 0;
-            stock.Damaged_Qty__c = entry.containsKey('damaged') ? ((Decimal) entry.get('damaged')) : 0;
-            stock.Batch_No__c = (String) entry.get('batch');
+            stock.Opening_Stock__c = toDecimal(entry.get('opening'));
+            stock.Received_Qty__c = toDecimal(entry.get('received'));
+            stock.Sold_Qty__c = toDecimal(entry.get('sold'));
+            stock.Closing_Stock__c = toDecimal(entry.get('closing'));
+            stock.Damaged_Qty__c = toDecimal(entry.get('damaged'));
+            stock.Batch_No__c = entry.get('batch') != null ? String.valueOf(entry.get('batch')) : null;
             if (entry.containsKey('expiry') && entry.get('expiry') != null) {
-                stock.Expiry_Date__c = Date.valueOf((String) entry.get('expiry'));
+                stock.Expiry_Date__c = Date.valueOf(String.valueOf(entry.get('expiry')));
             }
             stock.Stock_Date__c = Date.today();
             stock.Is_Current__c = true;
@@ -96,5 +96,14 @@ public without sharing class OVE_StockCheck_Service {
             ORDER BY Product_Ext__r.Name
             LIMIT 200
         ];
+    }
+
+    private static Decimal toDecimal(Object val) {
+        if (val == null) return 0;
+        if (val instanceof Decimal) return (Decimal) val;
+        if (val instanceof Integer) return Decimal.valueOf((Integer) val);
+        if (val instanceof Long) return Decimal.valueOf((Long) val);
+        if (val instanceof Double) return Decimal.valueOf((Double) val);
+        return Decimal.valueOf(String.valueOf(val));
     }
 }
