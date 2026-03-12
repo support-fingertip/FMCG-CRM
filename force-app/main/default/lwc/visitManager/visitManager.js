@@ -706,7 +706,8 @@ export default class VisitManager extends LightningElement {
         const accountId = e.currentTarget.dataset.accountId;
         const beatId = e.currentTarget.dataset.beatId;
         const jpdayId = e.currentTarget.dataset.jpdayId;
-        const existingVisitId = e.currentTarget.dataset.id || null;
+        const rawId = e.currentTarget.dataset.id || null;
+        const existingVisitId = (rawId && rawId.startsWith('planned_')) ? null : rawId;
 
         if (!accountId) { this._toast('Error', 'No outlet found.', 'error'); return; }
 
