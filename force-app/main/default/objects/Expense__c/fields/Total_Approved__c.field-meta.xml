@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Total_Approved__c</fullName>
+    <label>Total Approved</label>
+    <type>Summary</type>
+    <summarizedField>Expense_Item__c.Approved_Amount__c</summarizedField>
+    <summaryForeignKey>Expense_Item__c.Expense__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+</CustomField>

@@ -497,7 +497,7 @@
                                                         <span class="cal-status-icon cal-icon-leave">L</span>
                                                     </template>
                                                     <template if:true={day.isHoliday}>
-                                                        <span class="cal-status-icon cal-icon-holiday">H</span>
+                                                        <span class="cal-status-icon cal-icon-holiday" title={day.holidayName}>H</span>
                                                     </template>
                                                     <template if:true={day.showHours}>
                                                         <span class="cal-hours">{day.hours}</span>
@@ -515,7 +515,7 @@
                                 <span class="legend-item"><span class="legend-dot legend-absent"></span> Absent</span>
                                 <span class="legend-item"><span class="legend-dot legend-leave"></span> Leave</span>
                                 <span class="legend-item"><span class="legend-dot legend-holiday"></span> Holiday</span>
-                                <span class="legend-item"><span class="legend-dot legend-weekend"></span> Weekend</span>
+                                <span class="legend-item"><span class="legend-dot legend-weekend"></span> Week Off</span>
                             </div>
                         </div>
 

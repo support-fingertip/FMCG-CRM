@@ -29,6 +29,11 @@
                 <label>Owner Absent</label>
             </value>
             <value>
+                <fullName>Visit Skipped</fullName>
+                <default>false</default>
+                <label>Visit Skipped</label>
+            </value>
+            <value>
                 <fullName>Other</fullName>
                 <default>false</default>
                 <label>Other</label>

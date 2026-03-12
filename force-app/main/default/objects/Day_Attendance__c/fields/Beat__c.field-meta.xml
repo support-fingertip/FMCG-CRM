@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Beat__c</fullName>
+    <label>Beat</label>
+    <type>Lookup</type>
+    <referenceTo>Beat__c</referenceTo>
+    <relationshipLabel>Day Attendance Records</relationshipLabel>
+    <relationshipName>Day_Attendance_Records</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Primary beat assigned for this day from journey plan</description>
+</CustomField>

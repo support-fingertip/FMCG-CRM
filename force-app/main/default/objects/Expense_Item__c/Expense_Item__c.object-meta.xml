@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Expense Item</label>
+    <pluralLabel>Expense Items</pluralLabel>
+    <nameField>
+        <label>Expense Item Number</label>
+        <displayFormat>EXPI-{00000}</displayFormat>
+        <type>AutoNumber</type>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ControlledByParent</sharingModel>
+    <description>Individual expense claim line item per expense type per day. Child of Expense__c via Master-Detail relationship. Stores GPS/manual distance, eligible/claimed/approved amounts, and receipt information.</description>
+</CustomObject>

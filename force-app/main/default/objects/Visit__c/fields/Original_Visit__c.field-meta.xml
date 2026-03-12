@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Original_Visit__c</fullName>
+    <description>Reference to the original missed visit that this rescheduled visit replaces.</description>
+    <label>Original Visit</label>
+    <type>Lookup</type>
+    <referenceTo>Visit__c</referenceTo>
+    <relationshipLabel>Rescheduled Visits</relationshipLabel>
+    <relationshipName>Rescheduled_Visits</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

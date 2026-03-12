@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Distance_To_Outlet__c</fullName>
+    <label>Distance To Outlet</label>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <description>Calculated distance in meters from check-in location to outlet registered location</description>
+</CustomField>

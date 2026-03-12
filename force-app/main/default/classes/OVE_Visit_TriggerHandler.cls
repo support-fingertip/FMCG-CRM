@@ -1,248 +1,269 @@
 /**
  * @description Trigger handler for Visit__c. Manages geo-fence validation at
- *              check-in, Day_Attendance__c total updates, and productive call
- *              tracking upon visit completion.
+ *              check-in, Day_Attendance__c total updates, status transition
+ *              enforcement, and productive call tracking upon visit completion.
+ *              All business logic delegates to OVE_Visit_Service and
+ *              DFO_DayAttendance_Service.
  *
  * @author  SFA Development Team
- * @date    2024
+ * @date    2026
  */
 public class OVE_Visit_TriggerHandler extends TriggerHandler {
 
-    /** Default geo-fence radius in meters (configurable via SFA_Settings__c). */
     private static final Double DEFAULT_GEOFENCE_RADIUS = 500.0;
 
     // ── Before Insert ─────────────────────────────────────────────────────────
 
-    /**
-     * @description Validates that the check-in location is within the
-     *              configurable radius of the outlet's registered location.
-     */
     protected override void beforeInsert() {
+        if (!BPM_FeatureToggle_Util.isEnabled(OVE_Visit_Service.FEATURE_VISIT_EXECUTION)) {
+            return;
+        }
+
         List<Visit__c> newRecords = (List<Visit__c>) Trigger.new;
+        setDefaults(newRecords);
         validateGeoFence(newRecords);
+    }
+
+    // ── Before Update ─────────────────────────────────────────────────────────
+
+    protected override void beforeUpdate() {
+        if (!BPM_FeatureToggle_Util.isEnabled(OVE_Visit_Service.FEATURE_VISIT_EXECUTION)) {
+            return;
+        }
+
+        List<Visit__c> newRecords = (List<Visit__c>) Trigger.new;
+        Map<Id, Visit__c> oldMap = (Map<Id, Visit__c>) Trigger.oldMap;
+
+        validateStatusTransitions(newRecords, oldMap);
+        calculateDurationOnCompletion(newRecords, oldMap);
     }
 
     // ── After Insert ──────────────────────────────────────────────────────────
 
-    /**
-     * @description Increments Total_Visits__c on the associated Day_Attendance__c
-     *              record for each new visit.
-     */
     protected override void afterInsert() {
+        if (!BPM_FeatureToggle_Util.isEnabled(OVE_Visit_Service.FEATURE_VISIT_EXECUTION)) {
+            return;
+        }
+
         List<Visit__c> newRecords = (List<Visit__c>) Trigger.new;
-        updateDayAttendanceTotals(newRecords, null);
+        updateDayAttendanceTotals(newRecords);
     }
 
     // ── After Update ──────────────────────────────────────────────────────────
 
-    /**
-     * @description When Visit_Status__c changes to 'Completed', updates
-     *              productive call counts and order values on Day_Attendance__c.
-     */
     protected override void afterUpdate() {
+        if (!BPM_FeatureToggle_Util.isEnabled(OVE_Visit_Service.FEATURE_VISIT_EXECUTION)) {
+            return;
+        }
+
         List<Visit__c> newRecords = (List<Visit__c>) Trigger.new;
         Map<Id, Visit__c> oldMap = (Map<Id, Visit__c>) Trigger.oldMap;
 
         List<Visit__c> completedVisits = new List<Visit__c>();
+        List<Visit__c> skippedVisits = new List<Visit__c>();
+
         for (Visit__c rec : newRecords) {
             Visit__c oldRec = oldMap.get(rec.Id);
-            if (rec.Visit_Status__c == 'Completed' &&
-                oldRec.Visit_Status__c != 'Completed') {
+            if (rec.Visit_Status__c == 'Completed' && oldRec.Visit_Status__c != 'Completed') {
                 completedVisits.add(rec);
+            }
+            if (rec.Visit_Status__c == 'Skipped' && oldRec.Visit_Status__c != 'Skipped') {
+                skippedVisits.add(rec);
             }
         }
 
         if (!completedVisits.isEmpty()) {
             updateProductiveCallCounts(completedVisits);
         }
+        if (!skippedVisits.isEmpty()) {
+            updateDayAttendanceTotals(skippedVisits);
+        }
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    // ── Private Helpers ───────────────────────────────────────────────────────
 
-    /**
-     * @description Validates check-in geo-coordinates against the outlet's
-     *              registered location using the Haversine formula.
-     * @param records The Visit__c records to validate.
-     */
-    private void validateGeoFence(List<Visit__c> records) {
-        // Collect outlet (Account) IDs for location lookup
-        Set<Id> outletIds = new Set<Id>();
+    private void setDefaults(List<Visit__c> records) {
         for (Visit__c visit : records) {
-            if (visit.Outlet__c != null) {
-                outletIds.add(visit.Outlet__c);
-            }
+            if (visit.Order_Value__c == null) visit.Order_Value__c = 0;
+            if (visit.Collection_Amount__c == null) visit.Collection_Amount__c = 0;
+            if (visit.Total_Orders_Count__c == null) visit.Total_Orders_Count__c = 0;
+            if (visit.Visit_Date__c == null) visit.Visit_Date__c = Date.today();
         }
+    }
 
-        if (outletIds.isEmpty()) {
+    private void validateGeoFence(List<Visit__c> records) {
+        if (!BPM_FeatureToggle_Util.isEnabled(OVE_Visit_Service.FEATURE_GEOFENCE)) {
             return;
         }
 
-        // Fetch outlet locations
+        Set<Id> outletIds = new Set<Id>();
+        for (Visit__c visit : records) {
+            Id oid = visit.Outlet__c != null ? visit.Outlet__c : visit.Account__c;
+            if (oid != null) outletIds.add(oid);
+        }
+        if (outletIds.isEmpty()) return;
+
         Map<Id, Account> outletMap = new Map<Id, Account>([
-            SELECT Id, Outlet_Latitude__c, Outlet_Longitude__c,
-                   Geofence_Radius__c
-            FROM Account
-            WHERE Id IN :outletIds
+            SELECT Id, Outlet_Latitude__c, Outlet_Longitude__c, Geofence_Radius__c
+            FROM Account WHERE Id IN :outletIds
         ]);
 
-        // Get configurable default radius
         Double defaultRadius = getConfiguredRadius();
+        Boolean allowOverride = DFO_DayAttendance_Service.getConfigBoolean('ALLOW_GEOFENCE_OVERRIDE', true);
 
         for (Visit__c visit : records) {
-            // Skip validation if no GPS coordinates provided
-            if (visit.Check_In_Latitude__c == null ||
-                visit.Check_In_Longitude__c == null) {
-                continue;
-            }
+            if (visit.Check_In_Latitude__c == null || visit.Check_In_Longitude__c == null) continue;
 
-            Account outlet = outletMap.get(visit.Outlet__c);
-            if (outlet == null ||
-                outlet.Outlet_Latitude__c == null ||
-                outlet.Outlet_Longitude__c == null) {
-                continue;
-            }
+            Id outletId = visit.Outlet__c != null ? visit.Outlet__c : visit.Account__c;
+            Account outlet = outletMap.get(outletId);
+            if (outlet == null || outlet.Outlet_Latitude__c == null || outlet.Outlet_Longitude__c == null) continue;
 
-            // Use outlet-specific radius or default
-            Double radiusMeters = outlet.Geofence_Radius__c != null
-                ? outlet.Geofence_Radius__c
-                : defaultRadius;
+            Double radiusMeters = outlet.Geofence_Radius__c != null ? outlet.Geofence_Radius__c : defaultRadius;
 
-            Boolean withinRadius = OVE_GeoValidation_Service.validateCheckInProximity(
-                (Double) visit.Check_In_Latitude__c,
-                (Double) visit.Check_In_Longitude__c,
-                (Double) outlet.Outlet_Latitude__c,
-                (Double) outlet.Outlet_Longitude__c,
-                radiusMeters
+            Double distance = OVE_GeoValidation_Service.calculateDistance(
+                (Double) visit.Check_In_Latitude__c, (Double) visit.Check_In_Longitude__c,
+                (Double) outlet.Outlet_Latitude__c, (Double) outlet.Outlet_Longitude__c
             );
 
-            if (!withinRadius) {
-                Double distance = OVE_GeoValidation_Service.calculateDistance(
-                    (Double) visit.Check_In_Latitude__c,
-                    (Double) visit.Check_In_Longitude__c,
-                    (Double) outlet.Outlet_Latitude__c,
-                    (Double) outlet.Outlet_Longitude__c
-                );
+            visit.Distance_To_Outlet__c = distance;
+            visit.Is_Geo_Fenced__c = (distance <= radiusMeters);
 
+            if (!visit.Is_Geo_Fenced__c) {
+                if (allowOverride && String.isNotBlank(visit.Geo_Fence_Override_Reason__c)) {
+                    continue;
+                }
                 visit.addError(
                     'Check-in location is ' + String.valueOf(Math.round(distance)) +
                     'm from the outlet, which exceeds the allowed radius of ' +
-                    String.valueOf(Math.round(radiusMeters)) + 'm. ' +
-                    'Please check in from the outlet\'s registered location.'
+                    String.valueOf(Math.round(radiusMeters)) + 'm.' +
+                    (allowOverride ? ' You may override with a reason.' : '')
                 );
             }
         }
     }
 
-    /**
-     * @description Updates Total_Visits__c on Day_Attendance__c records.
-     *              Aggregates visit counts per attendance record for bulk safety.
-     * @param newVisits The new Visit__c records.
-     * @param oldMap    Map of old Visit__c values (null for insert context).
-     */
-    private void updateDayAttendanceTotals(
-        List<Visit__c> newVisits,
-        Map<Id, Visit__c> oldMap
-    ) {
-        // Collect Day_Attendance__c IDs
-        Set<Id> attendanceIds = new Set<Id>();
-        for (Visit__c visit : newVisits) {
-            if (visit.Day_Attendance__c != null) {
-                attendanceIds.add(visit.Day_Attendance__c);
+    private void validateStatusTransitions(List<Visit__c> newRecords, Map<Id, Visit__c> oldMap) {
+        for (Visit__c rec : newRecords) {
+            Visit__c oldRec = oldMap.get(rec.Id);
+            if (rec.Visit_Status__c != oldRec.Visit_Status__c) {
+                if (!DFO_DayAttendance_Service.isValidStatusTransition(
+                    'Visit__c', oldRec.Visit_Status__c, rec.Visit_Status__c)) {
+                    rec.addError('Invalid status transition from "' +
+                        oldRec.Visit_Status__c + '" to "' + rec.Visit_Status__c + '".');
+                }
             }
         }
+    }
 
-        if (attendanceIds.isEmpty()) {
-            return;
+    private void calculateDurationOnCompletion(List<Visit__c> newRecords, Map<Id, Visit__c> oldMap) {
+        for (Visit__c rec : newRecords) {
+            Visit__c oldRec = oldMap.get(rec.Id);
+            if (rec.Visit_Status__c == 'Completed' && oldRec.Visit_Status__c != 'Completed') {
+                if (rec.Check_In_Time__c != null && rec.Check_Out_Time__c != null) {
+                    Long durationMs = rec.Check_Out_Time__c.getTime() - rec.Check_In_Time__c.getTime();
+                    rec.Duration_Minutes__c = (Decimal.valueOf(durationMs) / 60000.0)
+                        .setScale(1, RoundingMode.HALF_UP);
+                }
+            }
         }
+    }
 
-        // Aggregate total visits per attendance record
+    private void updateDayAttendanceTotals(List<Visit__c> visits) {
+        Set<Id> attendanceIds = new Set<Id>();
+        for (Visit__c visit : visits) {
+            if (visit.Day_Attendance__c != null) attendanceIds.add(visit.Day_Attendance__c);
+        }
+        if (attendanceIds.isEmpty()) return;
+
         Map<Id, Integer> visitCountByAttendance = new Map<Id, Integer>();
         for (AggregateResult ar : [
             SELECT Day_Attendance__c attendanceId, COUNT(Id) visitCount
-            FROM Visit__c
-            WHERE Day_Attendance__c IN :attendanceIds
+            FROM Visit__c WHERE Day_Attendance__c IN :attendanceIds
             GROUP BY Day_Attendance__c
         ]) {
-            Id attId = (Id) ar.get('attendanceId');
-            Integer count = (Integer) ar.get('visitCount');
-            visitCountByAttendance.put(attId, count);
+            visitCountByAttendance.put((Id) ar.get('attendanceId'), (Integer) ar.get('visitCount'));
         }
 
-        // Update Day_Attendance__c records
-        List<Day_Attendance__c> attendancesToUpdate = new List<Day_Attendance__c>();
+        List<Day_Attendance__c> updates = new List<Day_Attendance__c>();
         for (Id attId : attendanceIds) {
-            attendancesToUpdate.add(new Day_Attendance__c(
+            updates.add(new Day_Attendance__c(
                 Id = attId,
-                Total_Visits__c = visitCountByAttendance.containsKey(attId)
-                    ? visitCountByAttendance.get(attId) : 0
+                Total_Visits__c = visitCountByAttendance.containsKey(attId) ? visitCountByAttendance.get(attId) : 0
             ));
         }
 
-        if (!attendancesToUpdate.isEmpty()) {
-            update attendancesToUpdate;
+        if (!updates.isEmpty()) {
+            TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
+            update updates;
+            TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
         }
     }
 
-    /**
-     * @description Updates productive call counts and order values on
-     *              Day_Attendance__c when visits are completed.
-     * @param completedVisits The visits that just transitioned to 'Completed'.
-     */
     private void updateProductiveCallCounts(List<Visit__c> completedVisits) {
-        // Collect Day_Attendance__c IDs from completed visits
         Set<Id> attendanceIds = new Set<Id>();
         for (Visit__c visit : completedVisits) {
-            if (visit.Day_Attendance__c != null) {
-                attendanceIds.add(visit.Day_Attendance__c);
-            }
+            if (visit.Day_Attendance__c != null) attendanceIds.add(visit.Day_Attendance__c);
         }
+        if (attendanceIds.isEmpty()) return;
 
-        if (attendanceIds.isEmpty()) {
-            return;
-        }
-
-        // Aggregate productive visits and order values per attendance record
-        Map<Id, Integer> productiveCountByAttendance = new Map<Id, Integer>();
-        Map<Id, Decimal> orderValueByAttendance = new Map<Id, Decimal>();
+        Map<Id, Integer> productiveMap = new Map<Id, Integer>();
+        Map<Id, Integer> nonProductiveMap = new Map<Id, Integer>();
+        Map<Id, Decimal> orderValueMap = new Map<Id, Decimal>();
+        Map<Id, Decimal> collectionMap = new Map<Id, Decimal>();
 
         for (AggregateResult ar : [
-            SELECT Day_Attendance__c attendanceId,
-                   COUNT(Id) productiveCount,
-                   SUM(Order_Value__c) totalOrderValue
+            SELECT Day_Attendance__c attId, COUNT(Id) cnt,
+                   SUM(Order_Value__c) ov, SUM(Collection_Amount__c) cv
             FROM Visit__c
             WHERE Day_Attendance__c IN :attendanceIds
-              AND Visit_Status__c = 'Completed'
-              AND Is_Productive__c = true
+              AND Visit_Status__c = 'Completed' AND Is_Productive__c = true
             GROUP BY Day_Attendance__c
         ]) {
-            Id attId = (Id) ar.get('attendanceId');
-            productiveCountByAttendance.put(attId, (Integer) ar.get('productiveCount'));
-            Decimal orderVal = (Decimal) ar.get('totalOrderValue');
-            orderValueByAttendance.put(attId, orderVal != null ? orderVal : 0);
+            Id attId = (Id) ar.get('attId');
+            productiveMap.put(attId, (Integer) ar.get('cnt'));
+            Decimal ov = (Decimal) ar.get('ov');
+            orderValueMap.put(attId, ov != null ? ov : 0);
+            Decimal cv = (Decimal) ar.get('cv');
+            collectionMap.put(attId, cv != null ? cv : 0);
         }
 
-        // Update Day_Attendance__c records
-        List<Day_Attendance__c> attendancesToUpdate = new List<Day_Attendance__c>();
+        for (AggregateResult ar : [
+            SELECT Day_Attendance__c attId, COUNT(Id) cnt
+            FROM Visit__c
+            WHERE Day_Attendance__c IN :attendanceIds
+              AND Visit_Status__c = 'Completed' AND Is_Productive__c = false
+            GROUP BY Day_Attendance__c
+        ]) {
+            nonProductiveMap.put((Id) ar.get('attId'), (Integer) ar.get('cnt'));
+        }
+
+        List<Day_Attendance__c> updates = new List<Day_Attendance__c>();
         for (Id attId : attendanceIds) {
-            attendancesToUpdate.add(new Day_Attendance__c(
+            Integer prod = productiveMap.containsKey(attId) ? productiveMap.get(attId) : 0;
+            Integer nonProd = nonProductiveMap.containsKey(attId) ? nonProductiveMap.get(attId) : 0;
+            Integer total = prod + nonProd;
+            Decimal pct = total > 0
+                ? (Decimal.valueOf(prod) / Decimal.valueOf(total) * 100).setScale(2, RoundingMode.HALF_UP) : 0;
+
+            updates.add(new Day_Attendance__c(
                 Id = attId,
-                Productive_Calls__c = productiveCountByAttendance.containsKey(attId)
-                    ? productiveCountByAttendance.get(attId) : 0,
-                Total_Order_Value__c = orderValueByAttendance.containsKey(attId)
-                    ? orderValueByAttendance.get(attId) : 0
+                Productive_Calls__c = prod,
+                Non_Productive_Visits__c = nonProd,
+                Total_Order_Value__c = orderValueMap.containsKey(attId) ? orderValueMap.get(attId) : 0,
+                Total_Orders_Value__c = orderValueMap.containsKey(attId) ? orderValueMap.get(attId) : 0,
+                Total_Collection__c = collectionMap.containsKey(attId) ? collectionMap.get(attId) : 0,
+                Total_Collections__c = collectionMap.containsKey(attId) ? collectionMap.get(attId) : 0,
+                Productivity_Percent__c = pct
             ));
         }
 
-        if (!attendancesToUpdate.isEmpty()) {
-            update attendancesToUpdate;
+        if (!updates.isEmpty()) {
+            TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
+            update updates;
+            TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
         }
     }
 
-    /**
-     * @description Retrieves the configured default geo-fence radius from
-     *              SFA_Settings__c custom setting.
-     * @return The configured radius in meters, or the default value.
-     */
     private Double getConfiguredRadius() {
         try {
             List<Geo_Config__mdt> configs = [
@@ -253,7 +274,7 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
                 return Double.valueOf(configs[0].Value__c);
             }
         } catch (Exception e) {
-            // Custom metadata may not exist; fall back to default
+            // Fall back to default
         }
         return DEFAULT_GEOFENCE_RADIUS;
     }

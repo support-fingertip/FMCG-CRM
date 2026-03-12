@@ -113,17 +113,6 @@ private class BeatPlanController_Test {
     }
 
     @isTest
-    static void testGetBeatsForTerritory() {
-        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c LIMIT 1];
-
-        Test.startTest();
-        List<Beat__c> beats = BeatPlanController.getBeatsForTerritory(territory.Id);
-        Test.stopTest();
-
-        System.assertEquals(5, beats.size(), 'Should return 5 active beats for the territory');
-    }
-
-    @isTest
     static void testGetBeatsForUser() {
         Test.startTest();
         List<Beat__c> beats = BeatPlanController.getBeatsForUser(UserInfo.getUserId());
@@ -149,81 +138,6 @@ private class BeatPlanController_Test {
                 'Error should mention plan is already approved');
         }
         Test.stopTest();
-    }
-
-    @isTest
-    static void testSaveJourneyPlanDays() {
-        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
-        Beat__c beat = [SELECT Id FROM Beat__c LIMIT 1];
-
-        List<Journey_Plan_Day__c> newDays = new List<Journey_Plan_Day__c>();
-        newDays.add(new Journey_Plan_Day__c(
-            Journey_Plan__c = jp.Id,
-            Beat__c = beat.Id,
-            Day_of_Week__c = 'Saturday',
-            Week_Number__c = 'Week 2',
-            Planned_Outlets__c = 3
-        ));
-
-        Test.startTest();
-        List<Journey_Plan_Day__c> saved = BeatPlanController.saveJourneyPlanDays(newDays);
-        Test.stopTest();
-
-        System.assertEquals(1, saved.size(), 'Should save one day');
-        System.assertNotEquals(null, saved[0].Id, 'Saved day should have an Id');
-    }
-
-    @isTest
-    static void testSaveJourneyPlanDaysLocked() {
-        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
-        jp.Status__c = 'Submitted';
-        update jp;
-        jp.Status__c = 'Approved';
-        update jp;
-
-        Beat__c beat = [SELECT Id FROM Beat__c LIMIT 1];
-        List<Journey_Plan_Day__c> newDays = new List<Journey_Plan_Day__c>();
-        newDays.add(new Journey_Plan_Day__c(
-            Journey_Plan__c = jp.Id,
-            Beat__c = beat.Id,
-            Day_of_Week__c = 'Saturday',
-            Planned_Outlets__c = 3
-        ));
-
-        Test.startTest();
-        try {
-            BeatPlanController.saveJourneyPlanDays(newDays);
-            System.assert(false, 'Should throw exception for locked plan');
-        } catch (AuraHandledException e) {
-            System.assert(e.getMessage().contains('submitted or approved'),
-                'Error should mention plan is locked');
-        }
-        Test.stopTest();
-    }
-
-    @isTest
-    static void testSaveJourneyPlanDaysEmpty() {
-        Test.startTest();
-        try {
-            BeatPlanController.saveJourneyPlanDays(new List<Journey_Plan_Day__c>());
-            System.assert(false, 'Should throw exception for empty list');
-        } catch (AuraHandledException e) {
-            System.assert(e.getMessage().contains('No journey plan day'),
-                'Error should mention no entries provided');
-        }
-        Test.stopTest();
-    }
-
-    @isTest
-    static void testGetPlanCompliance() {
-        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
-
-        Test.startTest();
-        Decimal compliance = BeatPlanController.getPlanCompliance(jp.Id);
-        Test.stopTest();
-
-        System.assert(compliance >= 0 && compliance <= 100,
-            'Compliance should be between 0 and 100');
     }
 
     // ── Beat CRUD Tests ──────────────────────────────────────────────
@@ -343,35 +257,6 @@ private class BeatPlanController_Test {
 
         List<Beat_Outlet__c> remaining = [SELECT Id FROM Beat_Outlet__c WHERE Id = :outlet.Id];
         System.assertEquals(0, remaining.size(), 'Outlet should be removed');
-    }
-
-    // ── Account Search Tests ──────────────────────────────────────────
-
-    @isTest
-    static void testSearchAccounts() {
-        Test.startTest();
-        List<Account> results = BeatPlanController.searchAccounts('BPC Outlet');
-        Test.stopTest();
-
-        System.assert(results.size() > 0, 'Should find accounts matching search term');
-    }
-
-    @isTest
-    static void testSearchAccountsTooShort() {
-        Test.startTest();
-        List<Account> results = BeatPlanController.searchAccounts('B');
-        Test.stopTest();
-
-        System.assertEquals(0, results.size(), 'Should return empty for short search term');
-    }
-
-    @isTest
-    static void testSearchAccountsBlank() {
-        Test.startTest();
-        List<Account> results = BeatPlanController.searchAccounts('');
-        Test.stopTest();
-
-        System.assertEquals(0, results.size(), 'Should return empty for blank search');
     }
 
     // ── Calendar Day Persistence Tests ────────────────────────────────

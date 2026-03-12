@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Reschedule_Date__c</fullName>
+    <description>Date to which this missed visit has been rescheduled.</description>
+    <label>Reschedule Date</label>
+    <type>Date</type>
+    <required>false</required>
+</CustomField>

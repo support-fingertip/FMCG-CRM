@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Is_Rescheduled__c</fullName>
+    <description>Indicates whether this visit was created as a reschedule of a missed visit.</description>
+    <defaultValue>false</defaultValue>
+    <label>Is Rescheduled</label>
+    <type>Checkbox</type>
+</CustomField>

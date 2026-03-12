@@ -118,27 +118,6 @@ public with sharing class BeatPlanController {
         return result;
     }
 
-    // ── Get Beats for Territory ───────────────────────────────────────────────
-
-    /**
-     * @description Retrieves all active beats within a territory.
-     * @param territoryId The Territory_Master__c Id.
-     * @return List of Beat__c records.
-     */
-    @AuraEnabled
-    public static List<Beat__c> getBeatsForTerritory(Id territoryId) {
-        return [
-            SELECT Id, Name, Beat_Code__c, Day_of_Week__c, Frequency__c,
-                   Total_Outlets__c, Pincode_Cluster__c, Description__c,
-                   Territory__c, Territory__r.Name, Assigned_User__c,
-                   Is_Active__c, Sequence__c
-            FROM Beat__c
-            WHERE Territory__c = :territoryId
-            AND Is_Active__c = true
-            ORDER BY Beat_Code__c
-        ];
-    }
-
     /**
      * @description Retrieves all active beats for a salesperson by looking up
      *              their assigned territory from Journey Plans or Territory assignments.
@@ -279,120 +258,6 @@ public with sharing class BeatPlanController {
             throw ahe;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
-        }
-    }
-
-    // ── Save Journey Plan Days ────────────────────────────────────────────────
-
-    @AuraEnabled
-    public static List<Journey_Plan_Day__c> saveJourneyPlanDays(List<Journey_Plan_Day__c> days) {
-        try {
-            if (days == null || days.isEmpty()) {
-                throw new AuraHandledException('No journey plan day entries provided.');
-            }
-
-            Set<Id> planIds = new Set<Id>();
-            for (Journey_Plan_Day__c day : days) {
-                if (day.Journey_Plan__c != null) {
-                    planIds.add(day.Journey_Plan__c);
-                }
-            }
-
-            if (!planIds.isEmpty()) {
-                List<Journey_Plan__c> plans = [
-                    SELECT Id, Status__c
-                    FROM Journey_Plan__c
-                    WHERE Id IN :planIds
-                    AND Status__c IN ('Approved', 'Submitted')
-                ];
-                if (!plans.isEmpty()) {
-                    throw new AuraHandledException(
-                        'Cannot modify days for a journey plan that is already submitted or approved.'
-                    );
-                }
-            }
-
-            upsert days;
-
-            if (!planIds.isEmpty()) {
-                recalculatePlannedVisits(planIds);
-            }
-
-            return days;
-        } catch (AuraHandledException ahe) {
-            throw ahe;
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
-    }
-
-    // ── Get Plan Compliance ───────────────────────────────────────────────────
-
-    @AuraEnabled(cacheable=true)
-    public static Decimal getPlanCompliance(Id journeyPlanId) {
-        Journey_Plan__c plan = [
-            SELECT Id, Salesperson__c, Effective_From__c, Effective_To__c,
-                   Total_Planned_Visits__c,
-                   (SELECT Id, Beat__c, Day_of_Week__c, Week_Number__c, Planned_Outlets__c
-                    FROM Journey_Plan_Days__r)
-            FROM Journey_Plan__c
-            WHERE Id = :journeyPlanId
-            LIMIT 1
-        ];
-
-        if (plan.Journey_Plan_Days__r == null || plan.Journey_Plan_Days__r.isEmpty()) {
-            return 0;
-        }
-
-        Integer totalPlanned = plan.Journey_Plan_Days__r.size();
-
-        Set<Id> plannedBeatIds = new Set<Id>();
-        for (Journey_Plan_Day__c day : plan.Journey_Plan_Days__r) {
-            if (day.Beat__c != null) {
-                plannedBeatIds.add(day.Beat__c);
-            }
-        }
-
-        Date startDate = plan.Effective_From__c != null ? plan.Effective_From__c : Date.today().toStartOfMonth();
-        Date endDate = plan.Effective_To__c != null ? plan.Effective_To__c : startDate.addMonths(1).addDays(-1);
-
-        Integer actualVisits = [
-            SELECT COUNT()
-            FROM Visit__c
-            WHERE Salesperson__c = :plan.Salesperson__c
-            AND Visit_Date__c >= :startDate
-            AND Visit_Date__c <= :endDate
-            AND Beat__c IN :plannedBeatIds
-            AND Visit_Status__c = 'Completed'
-        ];
-
-        if (totalPlanned == 0) {
-            return 0;
-        }
-
-        Decimal compliance = (Decimal.valueOf(actualVisits) / Decimal.valueOf(totalPlanned)) * 100;
-        return compliance.setScale(2, RoundingMode.HALF_UP);
-    }
-
-    // ── Private Helpers ───────────────────────────────────────────────────────
-
-    private static void recalculatePlannedVisits(Set<Id> planIds) {
-        List<AggregateResult> aggResults = [
-            SELECT Journey_Plan__c planId, SUM(Planned_Outlets__c) totalOutlets
-            FROM Journey_Plan_Day__c
-            WHERE Journey_Plan__c IN :planIds
-            GROUP BY Journey_Plan__c
-        ];
-
-        List<Journey_Plan__c> plansToUpdate = new List<Journey_Plan__c>();
-        for (AggregateResult ar : aggResults) {
-            plansToUpdate.add(new Journey_Plan__c(
-                Id = (Id)ar.get('planId'),
-                Total_Planned_Visits__c = (Decimal)ar.get('totalOutlets')
-            ));
-        }
-        if (!plansToUpdate.isEmpty()) {
-            update plansToUpdate;
         }
     }
 
@@ -681,21 +546,6 @@ public with sharing class BeatPlanController {
         }
     }
 
-    @AuraEnabled
-    public static List<Account> searchAccounts(String searchTerm) {
-        if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
-            return new List<Account>();
-        }
-        String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
-        return [
-            SELECT Id, Name, Type, BillingCity, BillingState
-            FROM Account
-            WHERE Name LIKE :searchPattern
-            ORDER BY Name
-            LIMIT 50
-        ];
-    }
-
     /**
      * @description Retrieves accounts filtered by territory with pagination and
      *              optional search. Returns accounts belonging to the same territory
@@ -957,6 +807,8 @@ public with sharing class BeatPlanController {
         Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs
     ) {
         try {
+            // Always use server-side today to avoid browser/server timezone mismatch
+            fromDate = Date.today();
             return BPM_JourneyPlan_Service.generatePlanForDateRange(
                 userId, territoryId, fromDate, toDate,
                 excludeHolidays, excludeLeaves, excludeWeekOffs

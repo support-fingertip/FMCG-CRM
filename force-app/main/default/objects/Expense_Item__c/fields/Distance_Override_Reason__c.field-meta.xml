@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Distance_Override_Reason__c</fullName>
+    <label>Distance Override Reason</label>
+    <type>Text</type>
+    <length>255</length>
+    <required>false</required>
+    <description>Mandatory justification when manual distance differs from GPS distance.</description>
+</CustomField>

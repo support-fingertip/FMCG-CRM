@@ -33,6 +33,11 @@
                 <default>false</default>
                 <label>Skipped</label>
             </value>
+            <value>
+                <fullName>Missed</fullName>
+                <default>false</default>
+                <label>Missed</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

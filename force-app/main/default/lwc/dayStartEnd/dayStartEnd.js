@@ -1,46 +1,143 @@
 import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import Id from '@salesforce/user/Id';
 
 import startDay from '@salesforce/apex/DayAttendanceController.startDay';
 import endDay from '@salesforce/apex/DayAttendanceController.endDay';
 import getDayStats from '@salesforce/apex/DayAttendanceController.getDayStats';
 import getCurrentDayAttendance from '@salesforce/apex/DayAttendanceController.getCurrentDayAttendance';
+import logGPS from '@salesforce/apex/DayAttendanceController.logGPS';
+import syncOfflineGPSLogs from '@salesforce/apex/DayAttendanceController.syncOfflineGPSLogs';
+import getAttendanceConfig from '@salesforce/apex/DayAttendanceController.getAttendanceConfig';
+import searchEmployees from '@salesforce/apex/DayAttendanceController.searchEmployees';
+
+/** Local storage key for offline GPS queue */
+const GPS_QUEUE_STORAGE_KEY = 'dayStartEnd_offlineGpsQueue';
+
+/** INR currency formatter */
+const INR_FORMATTER = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+});
 
 export default class DayStartEnd extends LightningElement {
-    @track dayRecord = {};
-    @track isStarted = false;
-    @track stats = {
-        plannedVisits: 0,
-        completedVisits: 0,
-        productivePercent: 0,
-        productiveCalls: 0,
-        nonProductiveCalls: 0,
-        ordersToday: 0,
-        orderValue: 0,
-        orderValueFormatted: '0',
-        collectionTotal: 0,
-        collectionTotalFormatted: '0',
-        distanceCovered: '0.0'
-    };
+    currentUserId = Id;
 
-    isProcessing = false;
-    showEndDayModal = false;
-    dayDuration = 0;
-    timerInterval = null;
-    clockInterval = null;
-    statsInterval = null;
-    currentTime = new Date();
-    location = { latitude: null, longitude: null };
-    batteryLevel = 'N/A';
-    networkStatus = 'Online';
-    dayStartTime = null;
+    // ── Reactive tracked properties ──────────────────────────────────
+    @track dayRecord = null;
+    @track isDayActive = false;
+    @track isProcessing = false;
+    @track showEndDayModal = false;
+    @track isOffline = false;
+    @track currentTime = new Date();
 
-    startPhotoPreview = null;
-    startPhotoData = null;
-    endPhotoPreview = null;
-    endPhotoData = null;
+    // Stats
+    @track plannedVisits = 0;
+    @track completedVisits = 0;
+    @track productiveCalls = 0;
+    @track nonProductiveCalls = 0;
+    @track ordersToday = 0;
+    @track orderValue = 0;
+    @track collectionTotal = 0;
+    @track distanceCovered = '0.0';
+    @track productivityPercent = 0;
+
+    // Device info
+    @track batteryLevelDisplay = 'N/A';
+    @track networkStatusText = 'Online';
+    @track locationLatitude = null;
+    @track locationLongitude = null;
+    @track locationAccuracy = null;
+
+    // Photos
+    @track startSelfiePreview = null;
+    @track endSelfiePreview = null;
+
+    // GPS tracking
+    @track offlineGpsQueueCount = 0;
+
+    // Odometer
+    @track odometerStart = null;
+    @track odometerEnd = null;
+
+    // Companion
+    @track withCompanion = false;
+    @track companionId = null;
+    @track companionName = '';
+    @track companionSearchTerm = '';
+    @track companionSearchResults = [];
+    @track showCompanionDropdown = false;
+
+    // ── Non-reactive internal state ──────────────────────────────────
+    startSelfieBase64 = null;
+    endSelfieBase64 = null;
     endDayRemarks = '';
+    dayStartTime = null;
+    dayDuration = 0;
+    batteryLevelRaw = null;
+    deviceInfo = '';
+    _companionSearchTimer = null;
 
+    // Configuration (from getAttendanceConfig)
+    configSelfieRequired = false;
+    configGpsTrackingInterval = 300; // seconds, default 5 min
+    configStatsRefreshInterval = 60; // seconds, default 1 min
+    configGpsTrackingEnabled = false;
+
+    // Interval references for cleanup
+    _clockInterval = null;
+    _timerInterval = null;
+    _statsInterval = null;
+    _gpsInterval = null;
+
+    // GPS offline queue (in-memory mirror of localStorage)
+    _offlineGpsQueue = [];
+
+    // ══════════════════════════════════════════════════════════════════
+    //  LIFECYCLE
+    // ══════════════════════════════════════════════════════════════════
+
+    connectedCallback() {
+        this._detectDeviceInfo();
+        this._captureLocation();
+        this._captureBattery();
+        this._initNetworkListeners();
+        this._loadOfflineGpsQueue();
+        this._loadConfig();
+        this._checkExistingAttendance();
+
+        // Live clock: update every second
+        this._clockInterval = setInterval(() => {
+            this.currentTime = new Date();
+            if (this.isDayActive) {
+                this.dayDuration = this.dayStartTime
+                    ? Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000)
+                    : 0;
+            }
+        }, 1000);
+    }
+
+    disconnectedCallback() {
+        this._clearAllIntervals();
+        window.removeEventListener('online', this._handleOnline);
+        window.removeEventListener('offline', this._handleOffline);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  COMPUTED GETTERS
+    // ══════════════════════════════════════════════════════════════════
+
+    /** Greeting based on time of day */
+    get greetingMessage() {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning!';
+        if (hour < 17) return 'Good Afternoon!';
+        return 'Good Evening!';
+    }
+
+    /** Formatted date: "Monday, 02 March 2026" */
     get todayDateDisplay() {
         return new Date().toLocaleDateString('en-IN', {
             weekday: 'long',
@@ -50,6 +147,7 @@ export default class DayStartEnd extends LightningElement {
         });
     }
 
+    /** Formatted live clock: "02:35:12 PM" */
     get currentTimeDisplay() {
         return this.currentTime.toLocaleTimeString('en-IN', {
             hour: '2-digit',
@@ -59,15 +157,29 @@ export default class DayStartEnd extends LightningElement {
         });
     }
 
-    get locationStatus() {
-        if (this.location.latitude && this.location.longitude) {
+    /** Location capture status text */
+    get locationStatusText() {
+        if (this.locationLatitude && this.locationLongitude) {
             return 'Captured (' +
-                this.location.latitude.toFixed(4) + ', ' +
-                this.location.longitude.toFixed(4) + ')';
+                this.locationLatitude.toFixed(4) + ', ' +
+                this.locationLongitude.toFixed(4) + ')';
         }
         return 'Fetching...';
     }
 
+    /** Network icon: wifi or offline */
+    get networkIcon() {
+        return this.isOffline ? 'utility:offline' : 'utility:wifi';
+    }
+
+    /** Network status CSS class */
+    get networkStatusClass() {
+        return this.isOffline
+            ? 'info-value network-offline'
+            : 'info-value network-online';
+    }
+
+    /** Day start time formatted */
     get dayStartTimeDisplay() {
         if (!this.dayStartTime) return '';
         return this.dayStartTime.toLocaleTimeString('en-IN', {
@@ -77,178 +189,162 @@ export default class DayStartEnd extends LightningElement {
         });
     }
 
+    /** HH:MM:SS duration display */
     get dayDurationDisplay() {
-        const hours = Math.floor(this.dayDuration / 3600);
-        const minutes = Math.floor((this.dayDuration % 3600) / 60);
-        const seconds = this.dayDuration % 60;
-        return this.padZero(hours) + ':' + this.padZero(minutes) + ':' + this.padZero(seconds);
+        const h = Math.floor(this.dayDuration / 3600);
+        const m = Math.floor((this.dayDuration % 3600) / 60);
+        const s = this.dayDuration % 60;
+        return this._padZero(h) + ':' + this._padZero(m) + ':' + this._padZero(s);
     }
 
+    /** INR-formatted order value */
+    get orderValueFormatted() {
+        return INR_FORMATTER.format(this.orderValue || 0);
+    }
+
+    /** INR-formatted collection total */
+    get collectionTotalFormatted() {
+        return INR_FORMATTER.format(this.collectionTotal || 0);
+    }
+
+    /** Visit progress percentage */
+    get visitProgressPercent() {
+        if (!this.plannedVisits || this.plannedVisits === 0) return 0;
+        return Math.min(Math.round((this.completedVisits / this.plannedVisits) * 100), 100);
+    }
+
+    /** Progress bar inline style with dynamic color */
     get progressBarStyle() {
-        const pct = this.stats.plannedVisits > 0
-            ? Math.round((this.stats.completedVisits / this.stats.plannedVisits) * 100)
-            : 0;
-        const color = pct >= 80 ? '#2e844a' : pct >= 50 ? '#dd7a01' : '#ea001e';
-        return 'width: ' + Math.min(pct, 100) + '%; background-color: ' + color;
+        const pct = this.visitProgressPercent;
+        let color;
+        if (pct >= 80) {
+            color = '#2e844a'; // green
+        } else if (pct >= 50) {
+            color = '#dd7a01'; // amber
+        } else {
+            color = '#ea001e'; // red
+        }
+        return 'width:' + pct + '%;background-color:' + color;
     }
 
-    connectedCallback() {
-        this.captureLocation();
-        this.getBatteryInfo();
-        this.checkNetworkStatus();
-        this.checkCurrentDayAttendance();
-
-        // Update clock every second
-        this.clockInterval = setInterval(() => {
-            this.currentTime = new Date();
-        }, 1000);
+    /** Start Day button disabled state */
+    get startDayDisabled() {
+        if (this.isProcessing) return true;
+        if (!this.locationLatitude || !this.locationLongitude) return true;
+        if (this.configSelfieRequired && !this.startSelfieBase64) return true;
+        return false;
     }
 
-    disconnectedCallback() {
-        if (this.timerInterval) clearInterval(this.timerInterval);
-        if (this.clockInterval) clearInterval(this.clockInterval);
-        if (this.statsInterval) clearInterval(this.statsInterval);
+    /** GPS tracking indicator dot class */
+    get gpsIndicatorClass() {
+        return this.isDayActive && this.configGpsTrackingEnabled
+            ? 'gps-indicator gps-indicator-active'
+            : 'gps-indicator gps-indicator-inactive';
     }
 
-    async checkCurrentDayAttendance() {
+    /** GPS tracking status label */
+    get gpsTrackingStatusText() {
+        return this.isDayActive && this.configGpsTrackingEnabled ? 'Active' : 'Inactive';
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  INITIALIZATION
+    // ══════════════════════════════════════════════════════════════════
+
+    /** Load admin configuration from Apex */
+    async _loadConfig() {
         try {
-            const result = await getCurrentDayAttendance({});
-            if (result && result.Id) {
-                this.dayRecord = result;
-                this.isStarted = true;
-                this.dayStartTime = new Date(result.Start_Time__c || result.CreatedDate);
-
-                // Calculate elapsed duration
-                const now = new Date();
-                this.dayDuration = Math.floor((now - this.dayStartTime) / 1000);
-                this.startDayTimer();
-                this.loadDayStats();
-                this.startStatsPolling();
+            const config = await getAttendanceConfig();
+            if (config) {
+                this.configSelfieRequired = config.selfieRequired === true;
+                this.configGpsTrackingInterval = config.gpsTrackingInterval || 300;
+                this.configStatsRefreshInterval = config.statsRefreshInterval || 60;
+                this.configGpsTrackingEnabled = config.gpsTrackingEnabled === true;
             }
         } catch (error) {
-            console.error('Error checking attendance:', error);
+            console.error('DayStartEnd: Error loading config', error);
         }
     }
 
-    captureLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    this.location = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy
-                    };
-                },
-                (error) => {
-                    console.error('Location error:', error);
-                    this.showToast('Warning', 'Unable to get GPS location', 'warning');
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-            );
-        }
-    }
-
-    async getBatteryInfo() {
+    /** Check if user already has an active day attendance */
+    async _checkExistingAttendance() {
         try {
-            if (navigator.getBattery) {
-                const battery = await navigator.getBattery();
-                this.batteryLevel = Math.round(battery.level * 100) + '%' +
-                    (battery.charging ? ' (Charging)' : '');
-                battery.addEventListener('levelchange', () => {
-                    this.batteryLevel = Math.round(battery.level * 100) + '%' +
-                        (battery.charging ? ' (Charging)' : '');
-                });
+            const record = await getCurrentDayAttendance({ userId: this.currentUserId });
+            if (record && record.Id) {
+                this.dayRecord = record;
+                this.isDayActive = true;
+                this.dayStartTime = new Date(record.Start_Time__c || record.CreatedDate);
+                this.dayDuration = Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000);
+                this._startActiveIntervals();
+                this._loadDayStats();
             }
         } catch (error) {
-            this.batteryLevel = 'N/A';
+            console.error('DayStartEnd: Error checking attendance', error);
         }
     }
 
-    checkNetworkStatus() {
-        this.networkStatus = navigator.onLine ? 'Online' : 'Offline';
-        window.addEventListener('online', () => { this.networkStatus = 'Online'; });
-        window.addEventListener('offline', () => { this.networkStatus = 'Offline'; });
-    }
-
-    triggerStartPhotoCapture() {
-        const fileInput = this.template.querySelector('.day-start-panel input[type="file"]');
-        if (fileInput) fileInput.click();
-    }
-
-    handleStartPhotoCapture(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.startPhotoPreview = reader.result;
-            this.startPhotoData = reader.result.split(',')[1];
-        };
-        reader.readAsDataURL(file);
-    }
-
-    removeStartPhoto() {
-        this.startPhotoPreview = null;
-        this.startPhotoData = null;
-    }
-
-    triggerEndPhotoCapture() {
-        const fileInput = this.template.querySelector('.slds-modal__content input[type="file"]');
-        if (fileInput) fileInput.click();
-    }
-
-    handleEndPhotoCapture(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.endPhotoPreview = reader.result;
-            this.endPhotoData = reader.result.split(',')[1];
-        };
-        reader.readAsDataURL(file);
-    }
+    // ══════════════════════════════════════════════════════════════════
+    //  DAY START
+    // ══════════════════════════════════════════════════════════════════
 
     async handleStartDay() {
-        if (!this.location.latitude || !this.location.longitude) {
-            this.showToast('Warning', 'Please wait for location to be captured', 'warning');
-            this.captureLocation();
+        if (!this.locationLatitude || !this.locationLongitude) {
+            this._showToast('Warning', 'Please wait for location to be captured.', 'warning');
+            this._captureLocation();
+            return;
+        }
+
+        if (this.configSelfieRequired && !this.startSelfieBase64) {
+            this._showToast('Warning', 'A selfie is required to start the day.', 'warning');
             return;
         }
 
         this.isProcessing = true;
         try {
             const dayData = {
-                startLatitude: this.location.latitude,
-                startLongitude: this.location.longitude,
-                startPhoto: this.startPhotoData,
-                batteryLevel: this.batteryLevel,
-                networkStatus: this.networkStatus
+                startLatitude: this.locationLatitude,
+                startLongitude: this.locationLongitude,
+                startAccuracy: this.locationAccuracy,
+                selfieBase64: this.startSelfieBase64,
+                batteryLevel: this.batteryLevelRaw,
+                networkStatus: this.networkStatusText,
+                deviceInfo: this.deviceInfo,
+                odometerStart: this.odometerStart,
+                withCompanion: this.withCompanion,
+                companionId: this.withCompanion ? this.companionId : null
             };
 
             const result = await startDay({ dayJson: JSON.stringify(dayData) });
             this.dayRecord = result;
-            this.isStarted = true;
+            this.isDayActive = true;
             this.dayStartTime = new Date();
             this.dayDuration = 0;
-            this.startDayTimer();
-            this.loadDayStats();
-            this.startStatsPolling();
 
-            this.showToast('Success', 'Day started successfully! Have a productive day!', 'success');
+            this._startActiveIntervals();
+            this._loadDayStats();
+
+            this._showToast('Success', 'Day started successfully! Have a productive day!', 'success');
         } catch (error) {
-            this.showToast('Error', 'Failed to start day: ' + this.reduceErrors(error), 'error');
+            this._showToast('Error', 'Failed to start day: ' + this._reduceErrors(error), 'error');
         } finally {
             this.isProcessing = false;
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    //  DAY END
+    // ══════════════════════════════════════════════════════════════════
+
     handleEndDayClick() {
+        this._loadDayStats(); // Refresh stats for summary review
         this.showEndDayModal = true;
-        this.loadDayStats(); // Refresh stats for the modal
     }
 
     closeEndDayModal() {
         this.showEndDayModal = false;
+        this.endSelfiePreview = null;
+        this.endSelfieBase64 = null;
+        this.endDayRemarks = '';
     }
 
     handleEndRemarksChange(event) {
@@ -256,120 +352,473 @@ export default class DayStartEnd extends LightningElement {
     }
 
     async handleEndDay() {
-        this.captureLocation();
-        this.isProcessing = true;
+        // Refresh location before ending
+        this._captureLocation();
 
+        this.isProcessing = true;
         try {
             const endData = {
-                dayId: this.dayRecord.Id,
-                endLatitude: this.location.latitude,
-                endLongitude: this.location.longitude,
-                endPhoto: this.endPhotoData,
-                duration: this.dayDuration,
+                attendanceId: this.dayRecord.Id,
+                endLatitude: this.locationLatitude,
+                endLongitude: this.locationLongitude,
+                endAccuracy: this.locationAccuracy,
+                selfieBase64: this.endSelfieBase64,
                 remarks: this.endDayRemarks,
-                completedVisits: this.stats.completedVisits,
-                productiveCalls: this.stats.productiveCalls,
-                ordersBooked: this.stats.ordersToday,
-                orderValue: this.stats.orderValue,
-                collectionTotal: this.stats.collectionTotal,
-                distanceCovered: parseFloat(this.stats.distanceCovered) || 0
+                odometerEnd: this.odometerEnd
             };
 
             await endDay({ dayJson: JSON.stringify(endData) });
 
-            this.stopTimers();
-            this.isStarted = false;
-            this.showEndDayModal = false;
-            this.dayRecord = {};
+            // Sync any remaining offline GPS logs before closing out
+            await this._syncOfflineGpsQueue();
 
-            this.showToast('Success', 'Day ended successfully! Great work today!', 'success');
+            this._clearActiveIntervals();
+            this.isDayActive = false;
+            this.showEndDayModal = false;
+            this.dayRecord = null;
+            this._resetStats();
+
+            this._showToast('Success', 'Day ended successfully! Great work today!', 'success');
         } catch (error) {
-            this.showToast('Error', 'Failed to end day: ' + this.reduceErrors(error), 'error');
+            this._showToast('Error', 'Failed to end day: ' + this._reduceErrors(error), 'error');
         } finally {
             this.isProcessing = false;
         }
     }
 
-    async loadDayStats() {
+    // ══════════════════════════════════════════════════════════════════
+    //  STATS
+    // ══════════════════════════════════════════════════════════════════
+
+    async _loadDayStats() {
+        if (!this.dayRecord || !this.dayRecord.Id) return;
         try {
             const result = await getDayStats({ dayId: this.dayRecord.Id });
             if (result) {
-                this.calculateStats(result);
+                this.plannedVisits = result.Planned_Visits__c || 0;
+                this.completedVisits = result.Completed_Visits__c || 0;
+                this.productiveCalls = result.Productive_Calls__c || 0;
+                this.nonProductiveCalls = result.Non_Productive_Calls__c || 0;
+                this.ordersToday = result.Orders_Today__c || 0;
+                this.orderValue = result.Order_Value__c || 0;
+                this.collectionTotal = result.Collection_Total__c || 0;
+                this.distanceCovered = (result.Distance_Covered__c || 0).toFixed(1);
+                this.productivityPercent = result.Productivity_Percent__c != null
+                    ? Math.round(result.Productivity_Percent__c)
+                    : (this.completedVisits > 0
+                        ? Math.round((this.productiveCalls / this.completedVisits) * 100)
+                        : 0);
             }
         } catch (error) {
-            console.error('Error loading day stats:', error);
+            console.error('DayStartEnd: Error loading stats', error);
         }
     }
 
-    calculateStats(data) {
-        const completed = data.Completed_Visits__c || 0;
-        const planned = data.Planned_Visits__c || 0;
-        const productive = data.Productive_Calls__c || 0;
-        const nonProductive = data.Non_Productive_Calls__c || 0;
-        const productivePercent = completed > 0 ? Math.round((productive / completed) * 100) : 0;
+    _resetStats() {
+        this.plannedVisits = 0;
+        this.completedVisits = 0;
+        this.productiveCalls = 0;
+        this.nonProductiveCalls = 0;
+        this.ordersToday = 0;
+        this.orderValue = 0;
+        this.collectionTotal = 0;
+        this.distanceCovered = '0.0';
+        this.productivityPercent = 0;
+    }
 
-        this.stats = {
-            plannedVisits: planned,
-            completedVisits: completed,
-            productivePercent: productivePercent,
-            productiveCalls: productive,
-            nonProductiveCalls: nonProductive,
-            ordersToday: data.Orders_Today__c || 0,
-            orderValue: data.Order_Value__c || 0,
-            orderValueFormatted: this.formatCurrency(data.Order_Value__c || 0),
-            collectionTotal: data.Collection_Total__c || 0,
-            collectionTotalFormatted: this.formatCurrency(data.Collection_Total__c || 0),
-            distanceCovered: (data.Distance_Covered__c || 0).toFixed(1)
+    // ══════════════════════════════════════════════════════════════════
+    //  GPS BREADCRUMB TRACKING
+    // ══════════════════════════════════════════════════════════════════
+
+    /** Start GPS breadcrumb logging at configured interval */
+    _startGpsTracking() {
+        if (!this.configGpsTrackingEnabled) return;
+        if (this._gpsInterval) clearInterval(this._gpsInterval);
+
+        const intervalMs = (this.configGpsTrackingInterval || 300) * 1000;
+
+        this._gpsInterval = setInterval(() => {
+            this._logGpsBreadcrumb();
+        }, intervalMs);
+
+        // Log first breadcrumb immediately
+        this._logGpsBreadcrumb();
+    }
+
+    /** Capture current location and log a GPS breadcrumb */
+    _logGpsBreadcrumb() {
+        if (!navigator.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const gpsLog = {
+                    sobjectType: 'GPS_Log__c',
+                    Day_Attendance__c: this.dayRecord ? this.dayRecord.Id : null,
+                    Latitude__c: position.coords.latitude,
+                    Longitude__c: position.coords.longitude,
+                    Accuracy__c: position.coords.accuracy,
+                    Timestamp__c: new Date().toISOString(),
+                    Battery_Level__c: this.batteryLevelRaw
+                };
+
+                if (this.isOffline) {
+                    this._enqueueOfflineGps(gpsLog);
+                } else {
+                    this._sendGpsLog(gpsLog);
+                }
+            },
+            (error) => {
+                console.warn('DayStartEnd: GPS breadcrumb error', error.message);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    /** Send a single GPS log to Apex */
+    async _sendGpsLog(gpsLog) {
+        try {
+            await logGPS({ gpsLog: gpsLog });
+        } catch (error) {
+            // If send fails, queue it for offline sync
+            console.warn('DayStartEnd: GPS log send failed, queuing offline', error);
+            this._enqueueOfflineGps(gpsLog);
+        }
+    }
+
+    /** Add GPS log to offline queue and persist to localStorage */
+    _enqueueOfflineGps(gpsLog) {
+        this._offlineGpsQueue.push(gpsLog);
+        this.offlineGpsQueueCount = this._offlineGpsQueue.length;
+        this._persistOfflineGpsQueue();
+    }
+
+    /** Sync offline GPS queue when back online */
+    async _syncOfflineGpsQueue() {
+        if (this._offlineGpsQueue.length === 0) return;
+
+        try {
+            const logsToSync = [...this._offlineGpsQueue];
+            await syncOfflineGPSLogs({ gpsLogsJson: JSON.stringify(logsToSync) });
+
+            // Clear queue on success
+            this._offlineGpsQueue = [];
+            this.offlineGpsQueueCount = 0;
+            this._persistOfflineGpsQueue();
+        } catch (error) {
+            console.error('DayStartEnd: Failed to sync offline GPS logs', error);
+        }
+    }
+
+    /** Load offline queue from localStorage */
+    _loadOfflineGpsQueue() {
+        try {
+            const stored = localStorage.getItem(GPS_QUEUE_STORAGE_KEY);
+            if (stored) {
+                this._offlineGpsQueue = JSON.parse(stored);
+                this.offlineGpsQueueCount = this._offlineGpsQueue.length;
+            }
+        } catch (error) {
+            console.warn('DayStartEnd: Error loading offline GPS queue', error);
+            this._offlineGpsQueue = [];
+        }
+    }
+
+    /** Persist offline queue to localStorage */
+    _persistOfflineGpsQueue() {
+        try {
+            localStorage.setItem(GPS_QUEUE_STORAGE_KEY, JSON.stringify(this._offlineGpsQueue));
+        } catch (error) {
+            console.warn('DayStartEnd: Error persisting GPS queue', error);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  SELFIE / PHOTO HANDLING
+    // ══════════════════════════════════════════════════════════════════
+
+    triggerStartSelfieCapture() {
+        const input = this.template.querySelector('input[data-id="startSelfie"]');
+        if (input) input.click();
+    }
+
+    handleStartSelfieCapture(event) {
+        this._processPhoto(event, (dataUrl, base64) => {
+            this.startSelfiePreview = dataUrl;
+            this.startSelfieBase64 = base64;
+        });
+    }
+
+    removeStartSelfie() {
+        this.startSelfiePreview = null;
+        this.startSelfieBase64 = null;
+    }
+
+    triggerEndSelfieCapture() {
+        const input = this.template.querySelector('input[data-id="endSelfie"]');
+        if (input) input.click();
+    }
+
+    handleEndSelfieCapture(event) {
+        this._processPhoto(event, (dataUrl, base64) => {
+            this.endSelfiePreview = dataUrl;
+            this.endSelfieBase64 = base64;
+        });
+    }
+
+    removeEndSelfie() {
+        this.endSelfiePreview = null;
+        this.endSelfieBase64 = null;
+    }
+
+    /** Generic photo processor: reads file, validates size, calls callback */
+    _processPhoto(event, callback) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // 5MB limit
+        if (file.size > 5 * 1024 * 1024) {
+            this._showToast('Error', 'Photo size must be less than 5MB.', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = dataUrl.split(',')[1];
+            callback(dataUrl, base64);
         };
+        reader.onerror = () => {
+            this._showToast('Error', 'Failed to read photo file.', 'error');
+        };
+        reader.readAsDataURL(file);
     }
 
-    startDayTimer() {
-        if (this.timerInterval) clearInterval(this.timerInterval);
-        this.timerInterval = setInterval(() => {
-            this.dayDuration++;
-        }, 1000);
-    }
+    // ══════════════════════════════════════════════════════════════════
+    //  DEVICE INFO & SENSORS
+    // ══════════════════════════════════════════════════════════════════
 
-    startStatsPolling() {
-        if (this.statsInterval) clearInterval(this.statsInterval);
-        this.statsInterval = setInterval(() => {
-            this.loadDayStats();
-        }, 60000); // Refresh stats every minute
-    }
-
-    stopTimers() {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
+    /** Capture current GPS location */
+    _captureLocation() {
+        if (!navigator.geolocation) {
+            this._showToast('Error', 'Geolocation is not supported on this device.', 'error');
+            return;
         }
-        if (this.statsInterval) {
-            clearInterval(this.statsInterval);
-            this.statsInterval = null;
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                this.locationLatitude = position.coords.latitude;
+                this.locationLongitude = position.coords.longitude;
+                this.locationAccuracy = position.coords.accuracy;
+            },
+            (error) => {
+                console.warn('DayStartEnd: Geolocation error', error.message);
+                this._showToast('Warning', 'Unable to get GPS location. Please enable Location Services.', 'warning');
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    }
+
+    /** Read battery level via Battery API */
+    async _captureBattery() {
+        try {
+            if (navigator.getBattery) {
+                const battery = await navigator.getBattery();
+                this._updateBatteryDisplay(battery);
+                battery.addEventListener('levelchange', () => {
+                    this._updateBatteryDisplay(battery);
+                });
+                battery.addEventListener('chargingchange', () => {
+                    this._updateBatteryDisplay(battery);
+                });
+            }
+        } catch (error) {
+            this.batteryLevelDisplay = 'N/A';
         }
     }
 
-    padZero(num) {
+    _updateBatteryDisplay(battery) {
+        const level = Math.round(battery.level * 100);
+        this.batteryLevelRaw = level;
+        this.batteryLevelDisplay = level + '%' + (battery.charging ? ' (Charging)' : '');
+    }
+
+    /** Detect device/browser info string */
+    _detectDeviceInfo() {
+        const ua = navigator.userAgent || '';
+        const platform = navigator.platform || '';
+        this.deviceInfo = platform + ' | ' + ua.substring(0, 120);
+    }
+
+    /** Initialize online/offline listeners */
+    _initNetworkListeners() {
+        this.isOffline = !navigator.onLine;
+        this.networkStatusText = navigator.onLine ? 'Online' : 'Offline';
+
+        this._handleOnline = () => {
+            this.isOffline = false;
+            this.networkStatusText = 'Online';
+            // Attempt to sync offline GPS queue when back online
+            if (this.isDayActive) {
+                this._syncOfflineGpsQueue();
+            }
+        };
+
+        this._handleOffline = () => {
+            this.isOffline = true;
+            this.networkStatusText = 'Offline';
+        };
+
+        window.addEventListener('online', this._handleOnline);
+        window.addEventListener('offline', this._handleOffline);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  ODOMETER & COMPANION HANDLERS
+    // ══════════════════════════════════════════════════════════════════
+
+    handleOdometerStartChange(event) {
+        this.odometerStart = event.target.value ? Number(event.target.value) : null;
+    }
+
+    handleOdometerEndChange(event) {
+        this.odometerEnd = event.target.value ? Number(event.target.value) : null;
+    }
+
+    handleCompanionToggle(event) {
+        this.withCompanion = event.target.checked;
+        if (!this.withCompanion) {
+            this.companionId = null;
+            this.companionName = '';
+            this.companionSearchTerm = '';
+            this.companionSearchResults = [];
+            this.showCompanionDropdown = false;
+        }
+    }
+
+    handleCompanionSearch(event) {
+        const term = event.target.value;
+        this.companionSearchTerm = term;
+
+        if (this._companionSearchTimer) {
+            clearTimeout(this._companionSearchTimer);
+        }
+
+        if (!term || term.length < 2) {
+            this.companionSearchResults = [];
+            this.showCompanionDropdown = false;
+            return;
+        }
+
+        // Debounce 300ms
+        this._companionSearchTimer = setTimeout(() => {
+            this._doCompanionSearch(term);
+        }, 300);
+    }
+
+    async _doCompanionSearch(term) {
+        try {
+            const results = await searchEmployees({ searchTerm: term });
+            this.companionSearchResults = (results || []).map(emp => ({
+                id: emp.Id,
+                name: [emp.First_Name__c, emp.Last_Name__c].filter(Boolean).join(' '),
+                subtitle: [emp.Employee_Code__c, emp.Designation__c].filter(Boolean).join(' - ')
+            }));
+            this.showCompanionDropdown = this.companionSearchResults.length > 0;
+        } catch (error) {
+            console.error('DayStartEnd: Companion search error', error);
+            this.companionSearchResults = [];
+            this.showCompanionDropdown = false;
+        }
+    }
+
+    handleCompanionSelect(event) {
+        const selectedId = event.currentTarget.dataset.id;
+        const selected = this.companionSearchResults.find(e => e.id === selectedId);
+        if (selected) {
+            this.companionId = selected.id;
+            this.companionName = selected.name;
+            this.companionSearchTerm = selected.name;
+            this.showCompanionDropdown = false;
+        }
+    }
+
+    clearCompanion() {
+        this.companionId = null;
+        this.companionName = '';
+        this.companionSearchTerm = '';
+        this.companionSearchResults = [];
+        this.showCompanionDropdown = false;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  INTERVAL MANAGEMENT
+    // ══════════════════════════════════════════════════════════════════
+
+    /** Start all active-day intervals: timer, stats polling, GPS tracking */
+    _startActiveIntervals() {
+        // Duration timer is handled in the clock interval for efficiency.
+        // Stats polling
+        const statsMs = (this.configStatsRefreshInterval || 60) * 1000;
+        if (this._statsInterval) clearInterval(this._statsInterval);
+        this._statsInterval = setInterval(() => {
+            this._loadDayStats();
+        }, statsMs);
+
+        // GPS breadcrumb tracking
+        this._startGpsTracking();
+    }
+
+    /** Clear only active-day intervals (timer/stats/gps), keep clock */
+    _clearActiveIntervals() {
+        if (this._statsInterval) {
+            clearInterval(this._statsInterval);
+            this._statsInterval = null;
+        }
+        if (this._gpsInterval) {
+            clearInterval(this._gpsInterval);
+            this._gpsInterval = null;
+        }
+    }
+
+    /** Clear all intervals (for disconnectedCallback) */
+    _clearAllIntervals() {
+        if (this._clockInterval) {
+            clearInterval(this._clockInterval);
+            this._clockInterval = null;
+        }
+        this._clearActiveIntervals();
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  UTILITIES
+    // ══════════════════════════════════════════════════════════════════
+
+    _padZero(num) {
         return num < 10 ? '0' + num : '' + num;
     }
 
-    formatCurrency(value) {
-        if (!value) return '0';
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(value);
-    }
-
-    showToast(title, message, variant) {
+    _showToast(title, message, variant) {
         this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 
-    reduceErrors(error) {
+    /** Extract user-facing message from Apex/LDS errors */
+    _reduceErrors(error) {
         if (typeof error === 'string') return error;
         if (error.body && error.body.message) return error.body.message;
+        if (error.body && error.body.fieldErrors) {
+            const fieldMsgs = Object.values(error.body.fieldErrors)
+                .flat()
+                .map(e => e.message);
+            if (fieldMsgs.length) return fieldMsgs.join('; ');
+        }
+        if (error.body && error.body.pageErrors) {
+            const pageMsgs = error.body.pageErrors.map(e => e.message);
+            if (pageMsgs.length) return pageMsgs.join('; ');
+        }
         if (error.message) return error.message;
-        return 'Unknown error';
+        if (Array.isArray(error)) {
+            return error.map(e => this._reduceErrors(e)).join('; ');
+        }
+        return 'An unknown error occurred.';
     }
 }

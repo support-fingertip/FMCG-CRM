@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Max_Per_Month__c</fullName>
+    <label>Max Per Month</label>
+    <type>Currency</type>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+    <description>Maximum claimable amount per month. 0 means no monthly cap.</description>
+</CustomField>

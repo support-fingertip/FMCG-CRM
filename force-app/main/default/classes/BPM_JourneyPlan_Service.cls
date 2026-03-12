@@ -243,26 +243,33 @@ public without sharing class BPM_JourneyPlan_Service {
         if (excludeLeaves == null) excludeLeaves = true;
         if (excludeWeekOffs == null) excludeWeekOffs = true;
 
-        // Validate no overlapping plan exists (by date range, not month/year)
+        // Validate no overlapping plan exists — check both date-range and month/year matches
+        String startMonthCheck = normalizeMonthName(fromDate.month());
+        String startYearCheck = String.valueOf(fromDate.year());
+
         List<Journey_Plan__c> overlapping = [
-            SELECT Id, Name, Effective_From__c, Effective_To__c
+            SELECT Id, Name, Effective_From__c, Effective_To__c, Month__c, Year__c
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
               AND Territory__c = :territoryId
               AND Status__c != 'Cancelled'
-              AND Effective_From__c != null
-              AND Effective_To__c != null
-              AND Effective_From__c <= :toDate
-              AND Effective_To__c >= :fromDate
+              AND (
+                  (Effective_From__c != null AND Effective_To__c != null
+                   AND Effective_From__c <= :toDate AND Effective_To__c >= :fromDate)
+                  OR (Month__c = :startMonthCheck AND Year__c = :startYearCheck)
+              )
             LIMIT 1
         ];
 
         if (!overlapping.isEmpty()) {
             Journey_Plan__c existing = overlapping[0];
+            String detail = existing.Effective_From__c != null && existing.Effective_To__c != null
+                ? ' (' + String.valueOf(existing.Effective_From__c)
+                  + ' to ' + String.valueOf(existing.Effective_To__c) + ')'
+                : ' (' + existing.Month__c + ' ' + existing.Year__c + ')';
             throw new BPM_JourneyPlanServiceException(
-                'An overlapping journey plan already exists: ' + existing.Name
-                + ' (' + String.valueOf(existing.Effective_From__c)
-                + ' to ' + String.valueOf(existing.Effective_To__c) + ').'
+                'An overlapping journey plan already exists: ' + existing.Name + detail
+                + '. Use Regenerate to update the existing plan.'
             );
         }
 
@@ -780,8 +787,15 @@ public without sharing class BPM_JourneyPlan_Service {
      * @description Returns the day-of-week name for a given date.
      */
     private static String getDayOfWeek(Date d) {
-        DateTime dt = DateTime.newInstance(d, Time.newInstance(12, 0, 0, 0));
-        return dt.format('EEEE');
+        // Locale-independent calculation — dt.format('EEEE') returns localized
+        // day names (e.g. Hindi) which won't match English picklist values.
+        Date refDate = Date.newInstance(2000, 1, 1); // January 1, 2000 was a Saturday
+        Integer dayIndex = Math.mod(refDate.daysBetween(d), 7);
+        if (dayIndex < 0) dayIndex += 7;
+        List<String> dayNames = new List<String>{
+            'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
+        };
+        return dayNames[dayIndex];
     }
 
     /**

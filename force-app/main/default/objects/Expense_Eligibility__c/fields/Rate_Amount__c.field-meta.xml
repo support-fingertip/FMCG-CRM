@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Rate_Amount__c</fullName>
+    <label>Rate Amount</label>
+    <type>Currency</type>
+    <precision>18</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+    <description>The per-unit rate amount (e.g., per day rate, per km rate). Not applicable for Actual rate type.</description>
+</CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Remarks__c</fullName>
+    <label>Remarks</label>
+    <type>LongTextArea</type>
+    <length>5000</length>
+    <visibleLines>4</visibleLines>
+    <required>false</required>
+    <description>Day-end notes and remarks from the salesperson</description>
+</CustomField>
