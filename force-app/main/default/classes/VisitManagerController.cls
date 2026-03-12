@@ -36,7 +36,7 @@ public without sharing class VisitManagerController {
 
             if (activeVisit != null) {
                 ctx.put('activeVisitSummary', getVisitSummaryData(activeVisit.Id));
-                ctx.put('visitActivities', OVE_Visit_Service.getVisitActivities());
+                ctx.put('visitActivities', OVE_Visit_Service.getVisitActivities(activeVisit.Id));
             }
 
             // Planned + today's visits
@@ -394,9 +394,9 @@ public without sharing class VisitManagerController {
     // ──────────────────────────────────────────────────
     // 12. VISIT ACTIVITIES & CONFIG
     // ──────────────────────────────────────────────────
-    @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getVisitActivities() {
-        return OVE_Visit_Service.getVisitActivities();
+    @AuraEnabled
+    public static List<Map<String, Object>> getVisitActivities(Id visitId) {
+        return OVE_Visit_Service.getVisitActivities(visitId);
     }
 
     @AuraEnabled(cacheable=true)

@@ -57,7 +57,13 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
         };
     }
 
+    _isEmbedded = false;
+
     connectedCallback() {
+        // Detect if used as embedded child component (accountId passed via @api)
+        if (this.accountId && this.visitId) {
+            this._isEmbedded = true;
+        }
         this.loadInvoices();
     }
 
@@ -282,8 +288,13 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
                 'success'
             );
 
-            // Navigate to the return order
-            if (result.Id) {
+            // Dispatch success event for parent components
+            this.dispatchEvent(new CustomEvent('success', {
+                detail: { recordId: result.Id, returnNumber: result.Name, type: 'return' }
+            }));
+
+            // Only navigate if not embedded (check if accountId was passed as @api)
+            if (result.Id && !this._isEmbedded) {
                 this[NavigationMixin.Navigate]({
                     type: 'standard__recordPage',
                     attributes: {

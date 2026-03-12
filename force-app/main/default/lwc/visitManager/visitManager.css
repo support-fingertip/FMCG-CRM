@@ -1491,6 +1491,478 @@
 }
 
 /* ================================================================
+   VISIT ACTIVITY SCREEN – INLINE FORMS
+   ================================================================ */
+.vm-activity-screen {
+    animation: vm-slide-in 0.25s ease;
+}
+
+@keyframes vm-slide-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.vm-activity-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--vm-white);
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-md);
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: var(--vm-transition);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vm-primary);
+}
+
+.vm-activity-back:hover {
+    background: var(--vm-blue-tint);
+    border-color: var(--vm-primary);
+}
+
+.vm-activity-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--vm-text);
+    margin: 0 0 16px;
+}
+
+/* ── Inline Form Card ── */
+.vm-form-card {
+    background: var(--vm-white);
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-lg);
+    padding: 20px;
+    box-shadow: var(--vm-shadow);
+    margin-bottom: 16px;
+}
+
+.vm-form-section {
+    margin-bottom: 20px;
+}
+
+.vm-form-section:last-child {
+    margin-bottom: 0;
+}
+
+.vm-form-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--vm-text-secondary);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--vm-border);
+}
+
+.vm-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.vm-form-row:last-child {
+    margin-bottom: 0;
+}
+
+.vm-form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid var(--vm-border);
+}
+
+.vm-btn-save {
+    background: var(--vm-success);
+    color: var(--vm-white);
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--vm-radius-md);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--vm-transition);
+}
+
+.vm-btn-save:hover:not(:disabled) {
+    background: #257a3e;
+}
+
+.vm-btn-cancel {
+    background: var(--vm-white);
+    color: var(--vm-text-secondary);
+    padding: 10px 24px;
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-md);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--vm-transition);
+}
+
+.vm-btn-cancel:hover {
+    background: var(--vm-bg);
+    border-color: var(--vm-text-secondary);
+}
+
+/* ── Stock Check Table ── */
+.vm-stock-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    overflow-x: auto;
+    display: block;
+}
+
+.vm-stock-table th {
+    background: var(--vm-bg);
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--vm-text-secondary);
+    text-align: left;
+    border-bottom: 2px solid var(--vm-border);
+}
+
+.vm-stock-table td {
+    padding: 8px 10px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--vm-border);
+    vertical-align: middle;
+}
+
+.vm-stock-table tr:hover td {
+    background: var(--vm-blue-tint);
+}
+
+.vm-stock-input {
+    width: 70px;
+    padding: 6px 8px;
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-sm);
+    font-size: 13px;
+    text-align: right;
+}
+
+.vm-stock-input:focus {
+    border-color: var(--vm-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--vm-blue-tint);
+}
+
+/* ── Competitor / Ticket Entry List ── */
+.vm-entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.vm-entry-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--vm-bg);
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-md);
+    gap: 12px;
+}
+
+.vm-entry-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.vm-entry-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vm-text);
+}
+
+.vm-entry-sub {
+    font-size: 12px;
+    color: var(--vm-text-secondary);
+    margin-top: 2px;
+}
+
+.vm-entry-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--vm-active);
+    white-space: nowrap;
+}
+
+.vm-btn-delete {
+    background: transparent;
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-sm);
+    padding: 6px;
+    cursor: pointer;
+    color: var(--vm-error);
+    transition: var(--vm-transition);
+}
+
+.vm-btn-delete:hover {
+    background: var(--vm-red-tint);
+    border-color: var(--vm-error);
+}
+
+.vm-btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--vm-primary);
+    color: var(--vm-white);
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--vm-radius-md);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--vm-transition);
+}
+
+.vm-btn-add:hover {
+    background: var(--vm-primary-dark);
+}
+
+/* ── Survey Question Rendering ── */
+.vm-survey-question {
+    padding: 16px;
+    background: var(--vm-bg);
+    border-radius: var(--vm-radius-md);
+    margin-bottom: 12px;
+}
+
+.vm-survey-q-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vm-text);
+    margin: 0 0 8px;
+}
+
+.vm-survey-q-required {
+    color: var(--vm-error);
+    margin-left: 4px;
+}
+
+.vm-star-rating {
+    display: flex;
+    gap: 4px;
+}
+
+.vm-star {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 2px;
+    transition: transform 0.15s ease;
+    color: var(--vm-border);
+}
+
+.vm-star:hover {
+    transform: scale(1.2);
+}
+
+.vm-star-filled {
+    color: #f59e0b;
+}
+
+/* ── Scheme Cards ── */
+.vm-scheme-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.vm-scheme-card {
+    padding: 16px;
+    background: var(--vm-white);
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-md);
+    box-shadow: var(--vm-shadow);
+}
+
+.vm-scheme-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--vm-text);
+    margin: 0 0 4px;
+}
+
+.vm-scheme-type {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--vm-purple);
+    background: var(--vm-purple-tint);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+
+.vm-scheme-desc {
+    font-size: 13px;
+    color: var(--vm-text-secondary);
+    margin: 0 0 8px;
+}
+
+.vm-scheme-dates {
+    font-size: 11px;
+    color: var(--vm-text-weak);
+}
+
+.vm-scheme-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--vm-border);
+}
+
+.vm-scheme-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.vm-scheme-detail-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--vm-text-weak);
+}
+
+.vm-scheme-detail-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vm-text);
+}
+
+/* ── Ticket Badges ── */
+.vm-ticket-subject {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vm-text);
+}
+
+.vm-ticket-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.vm-ticket-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.vm-badge-open {
+    color: var(--vm-active);
+    background: var(--vm-orange-tint);
+}
+
+.vm-badge-critical {
+    color: var(--vm-error);
+    background: var(--vm-red-tint);
+}
+
+.vm-badge-high {
+    color: var(--vm-active);
+    background: var(--vm-orange-tint);
+}
+
+.vm-badge-medium {
+    color: var(--vm-primary);
+    background: var(--vm-blue-tint);
+}
+
+.vm-badge-low {
+    color: var(--vm-success);
+    background: var(--vm-green-tint);
+}
+
+/* ── Form Photo ── */
+.vm-form-photo-area {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vm-form-photo-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 24px;
+    border: 2px dashed var(--vm-border);
+    border-radius: var(--vm-radius-md);
+    background: var(--vm-bg);
+    color: var(--vm-text-secondary);
+    cursor: pointer;
+    transition: var(--vm-transition);
+    font-size: 12px;
+}
+
+.vm-form-photo-btn:hover {
+    border-color: var(--vm-primary);
+    color: var(--vm-primary);
+    background: var(--vm-blue-tint);
+}
+
+.vm-form-photo-preview {
+    position: relative;
+    display: inline-block;
+}
+
+.vm-form-photo-img {
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: var(--vm-radius-md);
+    object-fit: cover;
+    border: 2px solid var(--vm-border);
+}
+
+/* ── Empty Activity State ── */
+.vm-activity-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--vm-text-secondary);
+    text-align: center;
+    gap: 8px;
+}
+
+.vm-activity-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ================================================================
    RESPONSIVE – TABLET (max-width: 768px)
    ================================================================ */
 @media (max-width: 768px) {
@@ -1760,6 +2232,26 @@
     .vm-photo-img {
         max-width: 150px;
         max-height: 150px;
+    }
+
+    .vm-form-card {
+        padding: 14px;
+    }
+
+    .vm-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .vm-stock-input {
+        width: 60px;
+    }
+
+    .vm-scheme-list {
+        grid-template-columns: 1fr;
+    }
+
+    .vm-activity-title {
+        font-size: 16px;
     }
 
     .vm-btn-start {

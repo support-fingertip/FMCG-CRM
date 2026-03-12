@@ -18,6 +18,8 @@ const ACCOUNT_FIELDS = [
 
 export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @api recordId;
+    @api visitId;
+    @api accountId;
 
     @track lineItems = [];
     @track orderSummary = {
@@ -50,7 +52,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     lineIdCounter = 0;
 
     get effectiveAccountId() {
-        return this.recordId || this.selectedAccountId;
+        return this.accountId || this.recordId || this.selectedAccountId;
     }
 
     get showProductResults() {
@@ -93,8 +95,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     connectedCallback() {
-        if (!this.recordId) {
-            // Component used outside record context
+        // When embedded with accountId (no recordId), load data directly
+        if (!this.recordId && this.accountId) {
+            this.selectedAccountId = this.accountId;
+            this.loadLastOrder();
+            this.loadSchemes();
         }
     }
 
@@ -469,7 +474,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.showToast('Success', 'Order submitted successfully! Order #: ' + (result.Name || result.Id), 'success');
             this.resetForm();
 
-            if (result.Id) {
+            // Dispatch success event for parent components
+            this.dispatchEvent(new CustomEvent('success', {
+                detail: { recordId: result.Id, orderNumber: result.Name, type: 'order' }
+            }));
+
+            // Only navigate if not embedded (no accountId prop)
+            if (result.Id && !this.accountId) {
                 this[NavigationMixin.Navigate]({
                     type: 'standard__recordPage',
                     attributes: {
@@ -511,7 +522,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     buildOrderPayload(status) {
         return {
             accountId: this.effectiveAccountId,
-            visitId: this.recordId,
+            visitId: this.visitId || this.recordId,
             status: status,
             remarks: this.orderRemarks,
             grossAmount: this.orderSummary.grossAmount,

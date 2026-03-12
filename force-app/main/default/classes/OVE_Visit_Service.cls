@@ -676,7 +676,9 @@ public without sharing class OVE_Visit_Service {
         List<Visit__c> visits = [
             SELECT Id, Account__c, Visit_Status__c, Check_In_Time__c, Check_Out_Time__c,
                    Duration_Minutes__c, Is_Productive__c, Order_Value__c, Collection_Amount__c,
-                   Total_Orders_Count__c, Notes__c, Completion_Activities__c
+                   Total_Orders_Count__c, Notes__c, Completion_Activities__c,
+                   Stock_Check_Completed__c, Competitor_Check_Completed__c,
+                   Merchandising_Completed__c, Survey_Completed__c, Ticket_Logged__c
             FROM Visit__c WHERE Id = :visitId LIMIT 1
         ];
 
@@ -710,6 +712,23 @@ public without sharing class OVE_Visit_Service {
         ];
         summary.put('collections', collections);
 
+        // Return orders
+        List<Return_Order__c> returnOrders = [
+            SELECT Id, Name, Total_Amount__c, Status__c
+            FROM Return_Order__c
+            WHERE Visit__c = :visitId
+            ORDER BY CreatedDate DESC
+        ];
+        summary.put('returns', returnOrders);
+        summary.put('returnsCount', returnOrders.size());
+
+        // Activity completion flags
+        summary.put('stockCheckCompleted', visit.Stock_Check_Completed__c);
+        summary.put('competitorCheckCompleted', visit.Competitor_Check_Completed__c);
+        summary.put('merchandisingCompleted', visit.Merchandising_Completed__c);
+        summary.put('surveyCompleted', visit.Survey_Completed__c);
+        summary.put('ticketLogged', visit.Ticket_Logged__c);
+
         return summary;
     }
 
@@ -717,24 +736,64 @@ public without sharing class OVE_Visit_Service {
      * @description Gets configurable visit activities list.
      * @return List of activity definitions.
      */
-    public static List<Map<String, Object>> getVisitActivities() {
+    public static List<Map<String, Object>> getVisitActivities(Id visitId) {
         List<Map<String, Object>> activities = new List<Map<String, Object>>();
 
-        activities.add(createActivity('order', 'Order', 'standard:orders', true));
-        activities.add(createActivity('collection', 'Collection', 'standard:payment_gateway', true));
-        activities.add(createActivity('merchandising', 'Merchandising', 'standard:product_item', BPM_FeatureToggle_Util.isEnabled('OVE-004')));
-        activities.add(createActivity('survey', 'Survey', 'standard:survey', BPM_FeatureToggle_Util.isEnabled('OVE-005')));
-        activities.add(createActivity('returns', 'Returns', 'standard:return_order', true));
-        activities.add(createActivity('scheme', 'Scheme Info', 'standard:reward', BPM_FeatureToggle_Util.isEnabled('SPM-001')));
+        // Query visit for completion flags
+        Boolean stockCompleted = false;
+        Boolean competitorCompleted = false;
+        Boolean merchandisingCompleted = false;
+        Boolean surveyCompleted = false;
+        Boolean ticketLogged = false;
+        Integer ordersCount = 0;
+        Integer collectionsCount = 0;
+        Integer returnsCount = 0;
 
-        // Filter only enabled activities
-        List<Map<String, Object>> enabled = new List<Map<String, Object>>();
-        for (Map<String, Object> act : activities) {
-            if ((Boolean)act.get('enabled')) {
-                enabled.add(act);
+        if (visitId != null) {
+            List<Visit__c> visits = [
+                SELECT Id, Stock_Check_Completed__c, Competitor_Check_Completed__c,
+                       Merchandising_Completed__c, Survey_Completed__c, Ticket_Logged__c
+                FROM Visit__c WHERE Id = :visitId LIMIT 1
+            ];
+            if (!visits.isEmpty()) {
+                Visit__c v = visits[0];
+                stockCompleted = v.Stock_Check_Completed__c == true;
+                competitorCompleted = v.Competitor_Check_Completed__c == true;
+                merchandisingCompleted = v.Merchandising_Completed__c == true;
+                surveyCompleted = v.Survey_Completed__c == true;
+                ticketLogged = v.Ticket_Logged__c == true;
             }
+            ordersCount = [SELECT COUNT() FROM Sales_Order__c WHERE Visit__c = :visitId AND Status__c != 'Cancelled'];
+            collectionsCount = [SELECT COUNT() FROM Collection__c WHERE Visit__c = :visitId AND Status__c NOT IN ('Cancelled', 'Bounced')];
+            returnsCount = [SELECT COUNT() FROM Return_Order__c WHERE Visit__c = :visitId AND Status__c != 'Cancelled'];
         }
-        return enabled;
+
+        // Core activities (always enabled)
+        activities.add(createActivity('order', 'Order', 'standard:orders', true, ordersCount > 0));
+        activities.add(createActivity('collection', 'Collection', 'standard:payment_gateway', true, collectionsCount > 0));
+        activities.add(createActivity('returns', 'Returns', 'standard:return_order', true, returnsCount > 0));
+
+        // Feature-toggled activities
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-010')) {
+            activities.add(createActivity('stock_check', 'Stock Check', 'standard:product_item', true, stockCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-011')) {
+            activities.add(createActivity('competitor', 'Competitor', 'standard:competitor', true, competitorCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-004')) {
+            activities.add(createActivity('merchandising', 'Merchandising', 'standard:scan_card', true, merchandisingCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-005')) {
+            activities.add(createActivity('survey', 'Survey', 'standard:survey', true, surveyCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('SPM-001')) {
+            activities.add(createActivity('scheme', 'Scheme Info', 'standard:reward', true, false));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-012')) {
+            activities.add(createActivity('ticket', 'Ticket', 'standard:case', true, ticketLogged));
+        }
+
+        return activities;
     }
 
     /**
@@ -857,14 +916,14 @@ public without sharing class OVE_Visit_Service {
         }
     }
 
-    private static Map<String, Object> createActivity(String id, String label, String icon, Boolean enabled) {
+    private static Map<String, Object> createActivity(String id, String label, String icon, Boolean enabled, Boolean completed) {
         Map<String, Object> activity = new Map<String, Object>();
         activity.put('id', id);
         activity.put('label', label);
         activity.put('icon', icon);
         activity.put('enabled', enabled);
-        activity.put('completed', false);
-        activity.put('cardClass', 'activity-card');
+        activity.put('completed', completed);
+        activity.put('cardClass', completed ? 'activity-card activity-done' : 'activity-card');
         return activity;
     }
 

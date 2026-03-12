@@ -36,9 +36,11 @@
     <tabs>GPS_Log__c</tabs>
     <tabs>Target__c</tabs>
     <tabs>Scheme__c</tabs>
+    <tabs>Competitor__c</tabs>
     <tabs>Scorecard__c</tabs>
     <tabs>Invoice__c</tabs>
     <tabs>Return_Order__c</tabs>
+    <tabs>Ticket__c</tabs>
     <tabs>Channel_Partner__c</tabs>
     <tabs>Claim__c</tabs>
     <tabs>Indent__c</tabs>
@@ -50,6 +52,7 @@
     <tabs>Stock_Dashboard</tabs>
     <tabs>Batch_Master__c</tabs>
     <tabs>Product_Catalog</tabs>
+    <tabs>Product_Extension__c</tabs>
     <tabs>Product_Category__c</tabs>
     <tabs>Price_List__c</tabs>
     <tabs>Price_Change_Log__c</tabs>
