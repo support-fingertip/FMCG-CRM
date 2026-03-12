@@ -714,7 +714,7 @@ public without sharing class OVE_Visit_Service {
 
         // Return orders
         List<Return_Order__c> returnOrders = [
-            SELECT Id, Name, Total_Amount__c, Status__c
+            SELECT Id, Name, Total_Return_Amount__c, Status__c
             FROM Return_Order__c
             WHERE Visit__c = :visitId
             ORDER BY CreatedDate DESC

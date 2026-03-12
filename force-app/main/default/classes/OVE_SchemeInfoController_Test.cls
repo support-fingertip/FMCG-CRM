@@ -22,7 +22,9 @@ private class OVE_SchemeInfoController_Test {
         List<Scheme__c> schemes = new List<Scheme__c>();
 
         Scheme__c activeScheme = TestDataFactory.createScheme('Buy 2 Get 1 Free', 'SCH-TEST-001', 'Quantity');
-        activeScheme.Is_Active__c = true;
+        activeScheme.Status__c = 'Active';
+        activeScheme.Start_Date__c = Date.today().addDays(-10);
+        activeScheme.End_Date__c = Date.today().addDays(30);
         activeScheme.Description__c = 'Buy 2 cases and get 1 free';
         activeScheme.Discount_Percent__c = 0;
         activeScheme.Free_Quantity__c = 1;
@@ -30,7 +32,9 @@ private class OVE_SchemeInfoController_Test {
         schemes.add(activeScheme);
 
         Scheme__c discountScheme = TestDataFactory.createScheme('10% Off Premium', 'SCH-TEST-002', 'Discount');
-        discountScheme.Is_Active__c = true;
+        discountScheme.Status__c = 'Active';
+        discountScheme.Start_Date__c = Date.today().addDays(-10);
+        discountScheme.End_Date__c = Date.today().addDays(30);
         discountScheme.Description__c = '10% discount on premium products';
         discountScheme.Discount_Percent__c = 10;
         discountScheme.Priority__c = 2;
@@ -38,7 +42,7 @@ private class OVE_SchemeInfoController_Test {
 
         // Expired scheme (should not be returned)
         Scheme__c expiredScheme = TestDataFactory.createScheme('Old Scheme', 'SCH-TEST-003', 'Quantity');
-        expiredScheme.Is_Active__c = true;
+        expiredScheme.Status__c = 'Active';
         expiredScheme.Start_Date__c = Date.today().addDays(-60);
         expiredScheme.End_Date__c = Date.today().addDays(-30);
         schemes.add(expiredScheme);
