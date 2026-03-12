@@ -377,12 +377,8 @@ public without sharing class EXP_Expense_Service {
 
         // If working hours available, apply DA logic
         Decimal hours = item.Working_Hours__c != null ? item.Working_Hours__c : 0;
-        if (hours > 0) {
-            if (hours < DA_MIN_HOURS) {
-                return 0; // Less than 4 hours = no DA
-            } else if (hours <= DA_HALF_DAY_HOURS) {
-                return halfRate; // 4-8 hours = half DA
-            }
+        if (hours > 0 && hours <= DA_HALF_DAY_HOURS) {
+            return halfRate; // Up to 8 hours = half DA
         }
         // > 8 hours or no hours data = full DA
         return fullRate;

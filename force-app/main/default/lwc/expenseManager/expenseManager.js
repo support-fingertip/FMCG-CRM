@@ -927,9 +927,8 @@ export default class ExpenseManager extends LightningElement {
         const halfRate = fullRate / 2;
         const hours = item.workingHours || 0;
 
-        if (hours > 0) {
-            if (hours < DA_MIN_HOURS) return 0;
-            if (hours <= DA_HALF_DAY_HOURS) return halfRate;
+        if (hours > 0 && hours <= DA_HALF_DAY_HOURS) {
+            return halfRate;
         }
         return fullRate;
     }
