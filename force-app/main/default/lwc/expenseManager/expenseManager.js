@@ -487,10 +487,8 @@ export default class ExpenseManager extends LightningElement {
             }
         }
 
-        // Calculate eligible if new
-        if (!existing) {
-            item.eligibleAmount = this.recalcEligible(item);
-        }
+        // Always recalculate eligible amount from current rule + attendance data
+        item.eligibleAmount = this.recalcEligible(item);
 
         return item;
     }

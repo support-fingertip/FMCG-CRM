@@ -536,7 +536,8 @@ public without sharing class EXP_Expense_Service {
         Map<Date, Day_Attendance__c> attByDate = new Map<Date, Day_Attendance__c>();
         if (!attendanceIds.isEmpty() || !expenseDates.isEmpty()) {
             for (Day_Attendance__c att : [
-                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c, Duty_Type__c
+                SELECT Id, Attendance_Date__c, Distance_Traveled_Km__c, Hours_Worked__c,
+                       Start_Time__c, End_Time__c, Duty_Type__c
                 FROM Day_Attendance__c
                 WHERE (Id IN :attendanceIds OR Attendance_Date__c IN :expenseDates)
                   AND User__c = :expense.User__c
@@ -559,8 +560,14 @@ public without sharing class EXP_Expense_Service {
             if (item.GPS_Distance_KM__c == null && att != null && att.Distance_Traveled_Km__c != null) {
                 item.GPS_Distance_KM__c = att.Distance_Traveled_Km__c;
             }
-            if (item.Working_Hours__c == null && att != null && att.Hours_Worked__c != null) {
-                item.Working_Hours__c = att.Hours_Worked__c;
+            if (item.Working_Hours__c == null && att != null) {
+                if (att.Hours_Worked__c != null) {
+                    item.Working_Hours__c = att.Hours_Worked__c;
+                } else if (att.Start_Time__c != null && att.End_Time__c != null) {
+                    // Compute hours from check-in/check-out times
+                    Long diffMs = att.End_Time__c.getTime() - att.Start_Time__c.getTime();
+                    item.Working_Hours__c = (Decimal.valueOf(diffMs) / (1000 * 60 * 60)).setScale(1, RoundingMode.HALF_UP);
+                }
             }
 
             item.Duty_Type__c = dutyType;
