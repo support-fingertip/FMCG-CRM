@@ -5984,10 +5984,6 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>Expense_Rate_Slab__c</tab>
-        <visibility>DefaultOn</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
         <tab>City_Tier__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
