@@ -778,7 +778,7 @@ public without sharing class OVE_Visit_Service {
             activities.add(createActivity('stock_check', 'Stock Check', 'standard:product_item', true, stockCompleted));
         }
         if (BPM_FeatureToggle_Util.isEnabled('OVE-011')) {
-            activities.add(createActivity('competitor', 'Competitor', 'standard:competitor', true, competitorCompleted));
+            activities.add(createActivity('competitor', 'Competitor', 'standard:account', true, competitorCompleted));
         }
         if (BPM_FeatureToggle_Util.isEnabled('OVE-004')) {
             activities.add(createActivity('merchandising', 'Merchandising', 'standard:scan_card', true, merchandisingCompleted));

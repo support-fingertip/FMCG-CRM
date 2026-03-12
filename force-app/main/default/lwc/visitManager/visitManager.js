@@ -915,6 +915,8 @@ export default class VisitManager extends LightningElement {
     // ── Stock Check ──
     async _loadStockCheckData() {
         this.stockIsLoading = true;
+        this.stockProductSearch = '';
+        this.stockProductResults = [];
         try {
             const stock = await getDistributorStock({ accountId: this.activeAccountId });
             this.stockCheckLines = (stock || []).map((s, idx) => ({
