@@ -963,7 +963,8 @@ export default class VisitManager extends LightningElement {
     handleStockQuantityChange(e) {
         const field = e.target.dataset.field;
         const key = e.target.dataset.key;
-        const val = parseFloat(e.target.value) || 0;
+        const numericFields = ['opening', 'received', 'sold', 'damaged'];
+        const val = numericFields.includes(field) ? (parseFloat(e.target.value) || 0) : e.target.value;
         this.stockCheckLines = this.stockCheckLines.map(l => {
             if (l.lineKey === key) {
                 const updated = { ...l, [field]: val };
