@@ -11,6 +11,9 @@ on:
           - changed-only
           - full-deployment
         default: 'changed-only'
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
@@ -96,4 +99,5 @@ jobs:
           echo "Deployment Type: ${{ github.event.inputs.deployment_type }}"
           echo "Triggered By:    ${{ github.actor }}"
           echo "Timestamp:       $(date)"
+
           echo "========================================="
