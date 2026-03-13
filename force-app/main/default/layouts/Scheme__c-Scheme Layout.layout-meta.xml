@@ -207,7 +207,7 @@
                 <field>Budget_Used__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Edit</behavior>
+                <behavior>Readonly</behavior>
                 <field>Budget_Remaining__c</field>
             </layoutItems>
         </layoutColumns>
