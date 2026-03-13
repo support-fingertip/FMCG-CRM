@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
+<FlexiPage xmlns="http://soap.sforce.com/2006/metadata">
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
@@ -28,7 +28,7 @@
             </componentInstance>
         </itemInstances>
         <name>main</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <flexiPageRegions>
         <itemInstances>
@@ -38,12 +38,12 @@
             </componentInstance>
         </itemInstances>
         <name>sidebar</name>
-        <type>Facet</type>
+        <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Product Record Page</masterLabel>
     <sobjectType>Product_Extension__c</sobjectType>
     <template>
-        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
+        <name>flexipage:recordHomeTemplateDesktop</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>
