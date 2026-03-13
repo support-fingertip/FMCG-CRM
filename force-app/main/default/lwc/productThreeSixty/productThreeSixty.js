@@ -153,10 +153,10 @@ export default class ProductThreeSixty extends NavigationMixin(LightningElement)
                 batchNumber: b.Batch_Number__c || b.Name,
                 mfgDate: this.formatDate(b.Manufacturing_Date__c),
                 expiryDate: this.formatDate(b.Expiry_Date__c),
-                quantity: b.Quantity__c || 0,
-                isActive: b.Is_Active__c,
-                statusClass: b.Is_Active__c ? 'status-badge badge-confirmed' : 'status-badge badge-cancelled',
-                statusLabel: b.Is_Active__c ? 'Active' : 'Inactive',
+                quantity: b.Quantity_Manufactured__c || 0,
+                isActive: b.Status__c === 'Active',
+                statusClass: b.Status__c === 'Active' ? 'status-badge badge-confirmed' : 'status-badge badge-cancelled',
+                statusLabel: b.Status__c || 'Unknown',
                 isExpiringSoon: this.isExpiringSoon(b.Expiry_Date__c),
                 expiryClass: this.getExpiryClass(b.Expiry_Date__c)
             }));
@@ -176,7 +176,7 @@ export default class ProductThreeSixty extends NavigationMixin(LightningElement)
                 onHand: ws.Qty_On_Hand__c || 0,
                 available: ws.Qty_Available__c || 0,
                 reserved: ws.Qty_Reserved__c || 0,
-                lastUpdated: this.formatDate(ws.Last_Updated__c),
+                lastUpdated: this.formatDate(ws.Last_Transaction_Date__c),
                 qtyClass: this.getStockQtyClass(ws.Qty_Available__c)
             }));
         } catch (error) {
@@ -213,7 +213,7 @@ export default class ProductThreeSixty extends NavigationMixin(LightningElement)
             this.pricing = (result || []).map(pl => ({
                 id: pl.Id,
                 name: pl.Name,
-                price: this.formatCurrency(pl.Price__c || 0),
+                price: this.formatCurrency(pl.Unit_Price__c || 0),
                 effectiveFrom: this.formatDate(pl.Effective_From__c),
                 effectiveTo: this.formatDate(pl.Effective_To__c),
                 isActive: pl.Is_Active__c,
@@ -274,8 +274,8 @@ export default class ProductThreeSixty extends NavigationMixin(LightningElement)
                 returnOrderName: r.Return_Order__r ? r.Return_Order__r.Name : '',
                 returnDate: this.formatDate(r.Return_Order__r ? r.Return_Order__r.Return_Date__c : null),
                 accountName: r.Return_Order__r && r.Return_Order__r.Account__r ? r.Return_Order__r.Account__r.Name : '',
-                quantity: r.Quantity__c || 0,
-                reason: r.Reason__c || '',
+                quantity: r.Return_Quantity__c || 0,
+                reason: r.Return_Reason__c || '',
                 status: r.Return_Order__r ? r.Return_Order__r.Status__c : '',
                 statusBadge: this.getStatusBadgeClass(r.Return_Order__r ? r.Return_Order__r.Status__c : '')
             }));
@@ -293,7 +293,7 @@ export default class ProductThreeSixty extends NavigationMixin(LightningElement)
                 type: st.Transaction_Type__c || '',
                 quantity: st.Quantity__c || 0,
                 date: this.formatDate(st.Transaction_Date__c),
-                reference: st.Reference_Number__c || '',
+                reference: st.Reference_Id__c || '',
                 warehouseName: st.Warehouse__r ? st.Warehouse__r.Name : '',
                 typeBadge: this.getTransactionTypeBadge(st.Transaction_Type__c)
             }));

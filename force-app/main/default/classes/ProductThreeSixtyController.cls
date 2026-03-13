@@ -85,7 +85,7 @@ public with sharing class ProductThreeSixtyController {
             SELECT COUNT(Id) batchCount
             FROM Batch_Master__c
             WHERE Product_Ext__c = :productId
-            AND Is_Active__c = true
+            AND Status__c = 'Active'
         ];
         kpis.put('activeBatches', batchAgg.isEmpty() ? 0 : (Integer)batchAgg[0].get('batchCount'));
 
@@ -110,7 +110,7 @@ public with sharing class ProductThreeSixtyController {
 
         // Return Count (MTD)
         AggregateResult[] returnAgg = [
-            SELECT SUM(Quantity__c) totalReturnQty
+            SELECT SUM(Return_Quantity__c) totalReturnQty
             FROM Return_Line__c
             WHERE Product_Ext__c = :productId
             AND Return_Order__r.Return_Date__c >= :mtdStart
@@ -130,7 +130,7 @@ public with sharing class ProductThreeSixtyController {
     public static List<Batch_Master__c> getBatches(Id productId) {
         return [
             SELECT Id, Name, Batch_Number__c, Manufacturing_Date__c, Expiry_Date__c,
-                   Quantity__c, Is_Active__c, CreatedDate
+                   Quantity_Manufactured__c, Status__c, CreatedDate
             FROM Batch_Master__c
             WHERE Product_Ext__c = :productId
             ORDER BY Expiry_Date__c ASC NULLS LAST
@@ -143,7 +143,7 @@ public with sharing class ProductThreeSixtyController {
         return [
             SELECT Id, Name, Warehouse__c, Warehouse__r.Name,
                    Qty_On_Hand__c, Qty_Available__c, Qty_Reserved__c,
-                   Last_Updated__c
+                   Last_Transaction_Date__c
             FROM Warehouse_Stock__c
             WHERE Product_Ext__c = :productId
             ORDER BY Warehouse__r.Name ASC
@@ -169,7 +169,7 @@ public with sharing class ProductThreeSixtyController {
     @AuraEnabled(cacheable=true)
     public static List<Price_List__c> getPricing(Id productId) {
         return [
-            SELECT Id, Name, Price__c, Effective_From__c, Effective_To__c,
+            SELECT Id, Name, Unit_Price__c, Effective_From__c, Effective_To__c,
                    Is_Active__c, CreatedDate
             FROM Price_List__c
             WHERE Product_Ext__c = :productId
@@ -217,7 +217,7 @@ public with sharing class ProductThreeSixtyController {
         return [
             SELECT Id, Return_Order__c, Return_Order__r.Name, Return_Order__r.Return_Date__c,
                    Return_Order__r.Account__r.Name, Return_Order__r.Status__c,
-                   Quantity__c, Reason__c
+                   Return_Quantity__c, Return_Reason__c
             FROM Return_Line__c
             WHERE Product_Ext__c = :productId
             ORDER BY Return_Order__r.Return_Date__c DESC
@@ -229,7 +229,7 @@ public with sharing class ProductThreeSixtyController {
     public static List<Stock_Transaction__c> getStockTransactions(Id productId) {
         return [
             SELECT Id, Name, Transaction_Type__c, Quantity__c,
-                   Transaction_Date__c, Reference_Number__c,
+                   Transaction_Date__c, Reference_Id__c,
                    Warehouse__c, Warehouse__r.Name
             FROM Stock_Transaction__c
             WHERE Product_Ext__c = :productId
