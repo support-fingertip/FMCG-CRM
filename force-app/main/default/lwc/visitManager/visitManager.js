@@ -154,8 +154,11 @@ export default class VisitManager extends LightningElement {
     @track competitorCompanies = [];
     @track competitorFilteredCompanies = [];
     @track competitorShowSuggestions = false;
-    @track competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProduct: '', notes: '' };
+    @track competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProductId: null, ownProductName: '', notes: '' };
     @track competitorIsLoading = false;
+    @track competitorProductSearch = '';
+    @track competitorProductResults = [];
+    @track competitorShowProductSearch = false;
     // Merchandising
     @track merchandisingRecord = { ownShelfShare: null, competitorShelfShare: null, planogramCompliant: false, posmPresent: false, posmCondition: '', notes: '' };
     @track merchandisingIsLoading = false;
@@ -1018,7 +1021,10 @@ export default class VisitManager extends LightningElement {
             this.competitorCompanies = (companies || []).map(c => ({ label: c, value: c }));
         } catch (e) { this.competitorEntries = []; this.competitorCompanies = []; }
         this.competitorIsLoading = false;
-        this.competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProduct: '', notes: '' };
+        this.competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProductId: null, ownProductName: '', notes: '' };
+        this.competitorProductSearch = '';
+        this.competitorProductResults = [];
+        this.competitorShowProductSearch = false;
     }
 
     handleCompetitorFormChange(e) {
@@ -1056,6 +1062,38 @@ export default class VisitManager extends LightningElement {
         this.competitorShowSuggestions = false;
     }
 
+    async handleCompetitorProductSearchChange(e) {
+        const term = e.target.value;
+        this.competitorProductSearch = term;
+        if (term && term.length >= 2) {
+            try {
+                const results = await getProductsForStockCheck({ searchTerm: term });
+                this.competitorProductResults = results || [];
+                this.competitorShowProductSearch = this.competitorProductResults.length > 0;
+            } catch (err) {
+                this.competitorProductResults = [];
+                this.competitorShowProductSearch = false;
+            }
+        } else {
+            this.competitorProductResults = [];
+            this.competitorShowProductSearch = false;
+        }
+    }
+
+    handleCompetitorProductSelect(e) {
+        const productId = e.currentTarget.dataset.id;
+        const productName = e.currentTarget.dataset.name;
+        this.competitorForm = { ...this.competitorForm, ownProductId: productId, ownProductName: productName };
+        this.competitorProductSearch = '';
+        this.competitorProductResults = [];
+        this.competitorShowProductSearch = false;
+    }
+
+    handleCompetitorProductClear() {
+        this.competitorForm = { ...this.competitorForm, ownProductId: null, ownProductName: '' };
+        this.competitorProductSearch = '';
+    }
+
     async handleCompetitorSave() {
         if (!this.competitorForm.competitorCompany) {
             this._toast('Warning', 'Please enter competitor company.', 'warning'); return;
@@ -1067,7 +1105,7 @@ export default class VisitManager extends LightningElement {
                 competitorCompany: this.competitorForm.competitorCompany,
                 competitorSKU: this.competitorForm.competitorSKU,
                 competitorPrice: this.competitorForm.competitorPrice ? parseFloat(this.competitorForm.competitorPrice) : null,
-                ownProduct: this.competitorForm.ownProduct,
+                ownProductId: this.competitorForm.ownProductId,
                 notes: this.competitorForm.notes
             };
             await saveCompetitorEntry({ entryJson: JSON.stringify(entryData) });

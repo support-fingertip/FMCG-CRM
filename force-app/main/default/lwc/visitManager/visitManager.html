@@ -1005,8 +1005,29 @@
                             data-field="competitorSKU" onchange={handleCompetitorFormChange}></lightning-input>
                         <lightning-input type="number" label="Competitor Price (₹)" value={competitorForm.competitorPrice}
                             data-field="competitorPrice" onchange={handleCompetitorFormChange} step="0.01"></lightning-input>
-                        <lightning-input label="Own Product (Mapping)" value={competitorForm.ownProduct}
-                            data-field="ownProduct" onchange={handleCompetitorFormChange}></lightning-input>
+                        <div class="vm-autocomplete-wrapper">
+                            <template if:true={competitorForm.ownProductName}>
+                                <div class="vm-selected-product">
+                                    <span class="vm-rec-name">{competitorForm.ownProductName}</span>
+                                    <button class="vm-btn-icon-sm" onclick={handleCompetitorProductClear} title="Clear">✕</button>
+                                </div>
+                            </template>
+                            <template if:false={competitorForm.ownProductName}>
+                                <lightning-input label="Own Product (Mapping)" value={competitorProductSearch}
+                                    onchange={handleCompetitorProductSearchChange}
+                                    placeholder="Search your product..."></lightning-input>
+                                <template if:true={competitorShowProductSearch}>
+                                    <div class="vm-autocomplete-list">
+                                        <template for:each={competitorProductResults} for:item="prod">
+                                            <div key={prod.Id} class="vm-autocomplete-item" data-id={prod.Id}
+                                                data-name={prod.Name} onmousedown={handleCompetitorProductSelect}>
+                                                {prod.Name} <span class="vm-rec-sub">{prod.SKU_Code__c}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
                         <lightning-textarea label="Notes" value={competitorForm.notes}
                             data-field="notes" onchange={handleCompetitorFormChange}></lightning-textarea>
                     </div>

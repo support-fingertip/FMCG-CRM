@@ -80,7 +80,6 @@ private class OVE_CompetitorActivity_Service_Test {
         data.put('competitorCompany', 'Rival Corp');
         data.put('competitorSKU', 'RIVAL-SKU-001');
         data.put('competitorPrice', 120.50);
-        data.put('ownProduct', 'Own Product X');
         data.put('notes', 'Active promotion running');
         String entryJson = JSON.serialize(data);
 

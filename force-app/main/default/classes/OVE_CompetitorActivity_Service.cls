@@ -60,7 +60,9 @@ public without sharing class OVE_CompetitorActivity_Service {
         if (data.containsKey('competitorPrice') && data.get('competitorPrice') != null) {
             entry.Competitor_Price__c = (Decimal) data.get('competitorPrice');
         }
-        entry.Own_Product_Ext__c = (String) data.get('ownProduct');
+        if (data.containsKey('ownProductId') && data.get('ownProductId') != null) {
+            entry.Own_Product_Ext__c = (Id) data.get('ownProductId');
+        }
         if (data.containsKey('productCategory') && data.get('productCategory') != null) {
             entry.Product_Category__c = (Id) data.get('productCategory');
         }

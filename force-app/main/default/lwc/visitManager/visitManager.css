@@ -2407,3 +2407,14 @@
     background: #f0f7ff;
     color: var(--vm-primary);
 }
+
+.vm-selected-product {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f0f7ff;
+    border: 1px solid var(--vm-primary);
+    border-radius: 6px;
+    margin-top: 4px;
+}
