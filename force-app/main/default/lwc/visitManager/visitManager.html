@@ -1114,17 +1114,21 @@
                                             </template>
                                         </div>
                                     </template>
-                                    <template if:true={q.isMultipleChoice}>
+                                    <template if:true={q.isSingleChoice}>
                                         <lightning-radio-group options={q.options} data-question-id={q.Id}
-                                            data-type="Multiple Choice" onchange={handleAnswerChange}></lightning-radio-group>
+                                            data-type="Single Choice" onchange={handleAnswerChange}></lightning-radio-group>
                                     </template>
-                                    <template if:true={q.isCheckbox}>
+                                    <template if:true={q.isMultipleChoice}>
                                         <lightning-checkbox-group options={q.options} data-question-id={q.Id}
-                                            data-type="Checkbox" onchange={handleAnswerChange}></lightning-checkbox-group>
+                                            data-type="Multiple Choice" onchange={handleAnswerChange}></lightning-checkbox-group>
                                     </template>
                                     <template if:true={q.isPhoto}>
                                         <lightning-input type="file" label="Upload Photo" accept="image/*"
                                             data-question-id={q.Id} data-type="Photo" onchange={handleAnswerChange}></lightning-input>
+                                    </template>
+                                    <template if:true={q.isDate}>
+                                        <lightning-input type="date" data-question-id={q.Id} data-type="Date"
+                                            onchange={handleAnswerChange}></lightning-input>
                                     </template>
                                 </div>
                             </template>

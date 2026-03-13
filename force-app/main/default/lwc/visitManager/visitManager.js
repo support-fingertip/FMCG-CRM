@@ -1209,9 +1209,10 @@ export default class VisitManager extends LightningElement {
                 isText: q.Question_Type__c === 'Text',
                 isNumber: q.Question_Type__c === 'Number',
                 isRating: q.Question_Type__c === 'Rating',
+                isSingleChoice: q.Question_Type__c === 'Single Choice',
                 isMultipleChoice: q.Question_Type__c === 'Multiple Choice',
-                isCheckbox: q.Question_Type__c === 'Checkbox',
                 isPhoto: q.Question_Type__c === 'Photo',
+                isDate: q.Question_Type__c === 'Date',
                 options: q.Options__c ? q.Options__c.split(';').map(o => ({ label: o.trim(), value: o.trim() })) : [],
                 ratingOptions: [1, 2, 3, 4, 5].map(n => ({ value: n, label: '' + n, cls: 'vm-rating-btn' }))
             }));
@@ -1225,7 +1226,7 @@ export default class VisitManager extends LightningElement {
         const type = e.target.dataset.type || e.currentTarget.dataset.type;
         let value = e.target.value;
         if (type === 'rating') value = parseInt(e.currentTarget.dataset.value, 10);
-        if (type === 'checkbox') value = e.detail.value;
+        if (type === 'Multiple Choice') value = e.detail.value;
         this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type, value } };
         if (type === 'rating') {
             this.surveyQuestions = this.surveyQuestions.map(q => {
@@ -1244,8 +1245,8 @@ export default class VisitManager extends LightningElement {
         try {
             const answers = Object.entries(this.surveyAnswers).map(([qId, ans]) => ({
                 questionId: qId,
-                answerText: ans.type === 'Text' ? ans.value : null,
-                answerChoice: (ans.type === 'Multiple Choice' || ans.type === 'Checkbox') ? (Array.isArray(ans.value) ? ans.value.join(';') : ans.value) : null,
+                answerText: (ans.type === 'Text' || ans.type === 'Date') ? ans.value : null,
+                answerChoice: (ans.type === 'Single Choice' || ans.type === 'Multiple Choice') ? (Array.isArray(ans.value) ? ans.value.join(';') : ans.value) : null,
                 answerNumber: ans.type === 'Number' ? parseFloat(ans.value) : null,
                 ratingValue: ans.type === 'rating' ? ans.value : null,
                 photoURL: ans.type === 'Photo' ? ans.value : null
