@@ -21,6 +21,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @api visitId;
     @api accountId;
 
+    get isEmbedded() { return !!this.accountId; }
+
     @track lineItems = [];
     @track orderSummary = {
         grossAmount: 0,
@@ -456,6 +458,10 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     handleClearCart() {
         this.lineItems = [];
         this.calculateTotals();
+    }
+
+    handleCancel() {
+        this.dispatchEvent(new CustomEvent('cancel'));
     }
 
     handleRemarksChange(event) {

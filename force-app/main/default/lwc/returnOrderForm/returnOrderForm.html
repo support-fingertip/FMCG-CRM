@@ -175,16 +175,28 @@
                     </lightning-textarea>
                 </div>
 
-                <!-- Submit Button -->
+                <!-- Action Buttons -->
                 <div class="action-section">
-                    <div class="slds-grid slds-grid_align-center">
-                        <lightning-button
-                            variant="brand"
-                            label="Submit Return"
-                            icon-name="utility:check"
-                            onclick={handleSubmit}
-                            disabled={isSubmitting}>
-                        </lightning-button>
+                    <div class="slds-grid slds-grid_align-center slds-gutters">
+                        <template if:true={isEmbedded}>
+                            <div class="slds-col">
+                                <lightning-button
+                                    variant="neutral"
+                                    label="Cancel"
+                                    icon-name="utility:back"
+                                    onclick={handleCancel}>
+                                </lightning-button>
+                            </div>
+                        </template>
+                        <div class="slds-col">
+                            <lightning-button
+                                variant="brand"
+                                label="Submit Return"
+                                icon-name="utility:check"
+                                onclick={handleSubmit}
+                                disabled={isSubmitting}>
+                            </lightning-button>
+                        </div>
                     </div>
                 </div>
             </template>

@@ -10,6 +10,8 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
     @api accountId;
     @api visitId;
 
+    get isEmbedded() { return !!this.accountId; }
+
     @track selectedInvoice = null;
     @track invoiceLines = [];
     @track returnLines = [];
@@ -250,6 +252,10 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
             }
             return l;
         });
+    }
+
+    handleCancel() {
+        this.dispatchEvent(new CustomEvent('cancel'));
     }
 
     async handleSubmit() {

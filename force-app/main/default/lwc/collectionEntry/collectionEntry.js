@@ -10,6 +10,8 @@ export default class CollectionEntry extends LightningElement {
     @api accountId;
     @api visitId;
 
+    get isEmbedded() { return !!this.accountId; }
+
     @track outstandingInvoices = [];
     @track agingSummary = {
         totalOutstanding: 0,
@@ -374,6 +376,10 @@ export default class CollectionEntry extends LightningElement {
             this.isSubmitting = false;
             this.isLoading = false;
         }
+    }
+
+    handleCancel() {
+        this.dispatchEvent(new CustomEvent('cancel'));
     }
 
     handleGenerateReceipt() {
