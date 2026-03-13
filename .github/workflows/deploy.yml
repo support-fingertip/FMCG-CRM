@@ -1,16 +1,6 @@
 name: Auto Deploy to Salesforce
 
 on:
-  workflow_dispatch:
-    inputs:
-      deployment_type:
-        description: 'Deployment Type'
-        required: true
-        type: choice
-        options:
-          - changed-only
-          - full-deployment
-        default: 'changed-only'
   push: 
     branches:
       - claude/plan-visit-activities-Kgzjz
