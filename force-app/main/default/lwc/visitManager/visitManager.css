@@ -1886,6 +1886,57 @@
     color: #f59e0b;
 }
 
+/* ── Survey Response Display ── */
+.vm-survey-resp-card {
+    background: #fff;
+    border: 1px solid var(--vm-border);
+    border-radius: var(--vm-radius-md);
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.vm-survey-resp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--vm-border);
+}
+
+.vm-survey-ans-row {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.vm-survey-ans-row:last-child {
+    border-bottom: none;
+}
+
+.vm-survey-ans-q {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vm-text);
+    margin: 0 0 4px;
+}
+
+.vm-survey-ans-v {
+    font-size: 13px;
+    color: var(--vm-text-secondary);
+    margin: 0;
+}
+
+.vm-star-rating-sm .vm-star {
+    font-size: 18px;
+}
+
+.vm-survey-photo {
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: var(--vm-radius-sm);
+    margin-top: 4px;
+}
+
 /* ── Scheme Cards ── */
 .vm-scheme-list {
     display: grid;

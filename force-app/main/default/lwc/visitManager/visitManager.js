@@ -30,6 +30,7 @@ import saveMerchandising from '@salesforce/apex/OVE_MerchandisingController.save
 import getApplicableSurveys from '@salesforce/apex/OVE_SurveyController.getApplicableSurveys';
 import getSurveyWithQuestions from '@salesforce/apex/OVE_SurveyController.getSurveyWithQuestions';
 import submitSurveyResponse from '@salesforce/apex/OVE_SurveyController.submitSurveyResponse';
+import getSurveyResponsesForVisit from '@salesforce/apex/OVE_SurveyController.getSurveyResponsesForVisit';
 import getActiveSchemes from '@salesforce/apex/OVE_SchemeInfoController.getActiveSchemes';
 import getTicketsForVisit from '@salesforce/apex/OVE_TicketController.getTicketsForVisit';
 import createTicket from '@salesforce/apex/OVE_TicketController.createTicket';
@@ -116,6 +117,7 @@ export default class VisitManager extends LightningElement {
     @track detailVisit = null;
     @track detailVisitSummary = {};
     @track detailVisitTab = 'orders';
+    @track detailSurveyResponses = [];
 
     // ── AD-HOC ──
     @track showAdHocModal = false;
@@ -1216,7 +1218,7 @@ export default class VisitManager extends LightningElement {
                 options: this._parseOptions(q.Options__c),
                 selectedValue: '',
                 selectedValues: [],
-                ratingOptions: [1, 2, 3, 4, 5].map(n => ({ value: n, label: '' + n, cls: 'vm-rating-btn' }))
+                ratingOptions: [1, 2, 3, 4, 5].map(n => ({ value: n, label: '' + n, cls: 'vm-star' }))
             }));
             this.surveyAnswers = {};
         } catch (e) { this.surveyQuestions = []; }
@@ -1236,7 +1238,7 @@ export default class VisitManager extends LightningElement {
                 const updated = { ...q };
                 if (type === 'rating') {
                     updated.ratingOptions = q.ratingOptions.map(r => ({
-                        ...r, cls: r.value <= value ? 'vm-rating-btn vm-rating-active' : 'vm-rating-btn'
+                        ...r, cls: r.value <= value ? 'vm-star vm-star-filled' : 'vm-star'
                     }));
                 } else if (type === 'Single Choice') {
                     updated.selectedValue = value;
@@ -1249,6 +1251,22 @@ export default class VisitManager extends LightningElement {
     }
 
     async handleSurveySubmit() {
+        // Validate required questions
+        const unanswered = this.surveyQuestions
+            .filter(q => q.Is_Required__c)
+            .filter(q => {
+                const ans = this.surveyAnswers[q.Id];
+                if (!ans) return true;
+                const v = ans.value;
+                if (v == null || v === '') return true;
+                if (Array.isArray(v) && v.length === 0) return true;
+                return false;
+            });
+        if (unanswered.length > 0) {
+            this._toast('Required', 'Please answer all mandatory questions marked with *.', 'error');
+            return;
+        }
+
         this.surveyIsLoading = true;
         try {
             const answers = Object.entries(this.surveyAnswers).map(([qId, ans]) => ({
@@ -1401,12 +1419,25 @@ export default class VisitManager extends LightningElement {
 
         this.detailVisit = visit;
         this.detailVisitSummary = {};
+        this.detailSurveyResponses = [];
         this.detailVisitTab = 'orders';
         this.currentScreen = SCREEN.VISIT_DETAIL;
 
         try {
             this.isProcessing = true;
-            this.detailVisitSummary = await refreshVisitSummary({ visitId }) || {};
+            const [summary, surveyResp] = await Promise.all([
+                refreshVisitSummary({ visitId }),
+                getSurveyResponsesForVisit({ visitId }).catch(() => [])
+            ]);
+            this.detailVisitSummary = summary || {};
+            this.detailSurveyResponses = (surveyResp || []).map(r => ({
+                ...r,
+                responseDateFmt: r.responseDate ? new Date(r.responseDate).toLocaleDateString() : '',
+                answers: (r.answers || []).map(a => ({
+                    ...a,
+                    ratingStars: a.isRating ? this._buildRatingStars(a.ratingValue) : []
+                }))
+            }));
         } catch (err) {
             this._toast('Error', 'Failed to load visit details.', 'error');
         } finally {
@@ -1417,6 +1448,7 @@ export default class VisitManager extends LightningElement {
     handleBackToBoardFromDetail() {
         this.detailVisit = null;
         this.detailVisitSummary = {};
+        this.detailSurveyResponses = [];
         this.currentScreen = SCREEN.VISIT_BOARD;
     }
 
@@ -1468,14 +1500,25 @@ export default class VisitManager extends LightningElement {
     get hasDetailOrders() { return this.detailOrders.length > 0; }
     get hasDetailCollections() { return this.detailCollections.length > 0; }
     get hasDetailReturns() { return this.detailReturns.length > 0; }
+    get hasDetailSurveyResponses() { return this.detailSurveyResponses.length > 0; }
 
     // Detail tabs
     get isDetailOrdersTab() { return this.detailVisitTab === 'orders'; }
     get isDetailCollectionsTab() { return this.detailVisitTab === 'collections'; }
     get isDetailReturnsTab() { return this.detailVisitTab === 'returns'; }
+    get isDetailSurveysTab() { return this.detailVisitTab === 'surveys'; }
     get detailOrdersTabCls() { return 'vm-tab' + (this.isDetailOrdersTab ? ' vm-tab-active' : ''); }
     get detailCollectionsTabCls() { return 'vm-tab' + (this.isDetailCollectionsTab ? ' vm-tab-active' : ''); }
     get detailReturnsTabCls() { return 'vm-tab' + (this.isDetailReturnsTab ? ' vm-tab-active' : ''); }
+    get detailSurveysTabCls() { return 'vm-tab' + (this.isDetailSurveysTab ? ' vm-tab-active' : ''); }
+
+    _buildRatingStars(value) {
+        const v = value ? parseInt(value, 10) : 0;
+        return [1, 2, 3, 4, 5].map(n => ({
+            value: n,
+            cls: n <= v ? 'vm-star vm-star-filled' : 'vm-star'
+        }));
+    }
 
     // ═══════════════════════════════════════════════════
     // CHECKOUT

@@ -1093,8 +1093,8 @@
                             <p class="vm-section-title">{selectedSurvey.Name}</p>
                             <template for:each={surveyQuestions} for:item="q">
                                 <div key={q.Id} class="vm-survey-question">
-                                    <p class="vm-question-text">{q.Question_Text__c}
-                                        <template if:true={q.Is_Required__c}><span class="vm-required">*</span></template>
+                                    <p class="vm-survey-q-text">{q.Question_Text__c}
+                                        <template if:true={q.Is_Required__c}><span class="vm-survey-q-required"> *</span></template>
                                     </p>
                                     <template if:true={q.isText}>
                                         <lightning-textarea data-question-id={q.Id} data-type="Text"
@@ -1105,12 +1105,11 @@
                                             onchange={handleAnswerChange}></lightning-input>
                                     </template>
                                     <template if:true={q.isRating}>
-                                        <div class="vm-rating-group">
+                                        <div class="vm-star-rating">
                                             <template for:each={q.ratingOptions} for:item="r">
                                                 <button key={r.value} class={r.cls} data-question-id={q.Id}
-                                                    data-type="rating" data-value={r.value} onclick={handleAnswerChange}>
-                                                    {r.value}
-                                                </button>
+                                                    data-type="rating" data-value={r.value}
+                                                    onclick={handleAnswerChange} type="button">&#9733;</button>
                                             </template>
                                         </div>
                                     </template>
@@ -1335,6 +1334,12 @@
                         <span class="vm-tab-badge">{detailReturns.length}</span>
                     </template>
                 </button>
+                <button class={detailSurveysTabCls} data-tab="surveys" onclick={handleDetailTab}>
+                    Surveys
+                    <template if:true={hasDetailSurveyResponses}>
+                        <span class="vm-tab-badge">{detailSurveyResponses.length}</span>
+                    </template>
+                </button>
             </div>
 
             <!-- Orders Tab -->
@@ -1393,6 +1398,47 @@
                     </template>
                     <template if:false={hasDetailReturns}>
                         <div class="vm-empty"><p>No returns recorded during this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Surveys Tab -->
+            <template if:true={isDetailSurveysTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailSurveyResponses}>
+                        <template for:each={detailSurveyResponses} for:item="resp">
+                            <div key={resp.id} class="vm-survey-resp-card">
+                                <div class="vm-survey-resp-header">
+                                    <span class="vm-rec-name">{resp.surveyName}</span>
+                                    <span class="vm-rec-sub">{resp.responseDateFmt}</span>
+                                </div>
+                                <template for:each={resp.answers} for:item="ans">
+                                    <div key={ans.id} class="vm-survey-ans-row">
+                                        <p class="vm-survey-ans-q">{ans.questionText}</p>
+                                        <template if:true={ans.isRating}>
+                                            <div class="vm-star-rating vm-star-rating-sm">
+                                                <template for:each={ans.ratingStars} for:item="s">
+                                                    <span key={s.value} class={s.cls}>&#9733;</span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template if:true={ans.isPhoto}>
+                                            <template if:true={ans.photoURL}>
+                                                <img src={ans.photoURL} alt="Survey photo" class="vm-survey-photo"/>
+                                            </template>
+                                        </template>
+                                        <template if:false={ans.isRating}>
+                                            <template if:false={ans.isPhoto}>
+                                                <p class="vm-survey-ans-v">{ans.displayValue}</p>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailSurveyResponses}>
+                        <div class="vm-empty"><p>No survey responses recorded for this visit.</p></div>
                     </template>
                 </div>
             </template>

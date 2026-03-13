@@ -72,4 +72,20 @@ public with sharing class OVE_SurveyController {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    /**
+     * @description Gets all survey responses with answers for a visit.
+     * @param visitId The Visit__c Id.
+     * @return List of survey response maps with nested answers.
+     */
+    @AuraEnabled
+    public static List<Map<String, Object>> getSurveyResponsesForVisit(Id visitId) {
+        try {
+            return OVE_Survey_Service.getSurveyResponsesForVisit(visitId);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

@@ -211,4 +211,65 @@ public without sharing class OVE_Survey_Service {
         ];
         return responses.isEmpty() ? null : responses[0];
     }
+
+    // ── Survey Responses for Visit ───────────────────────────────────────
+
+    /**
+     * @description Returns all survey responses for a visit with their answers
+     *              and question text for display in completed visit detail.
+     * @param visitId The Visit__c Id.
+     * @return List of maps with response header and answers.
+     */
+    public static List<Map<String, Object>> getSurveyResponsesForVisit(Id visitId) {
+        List<Survey_Response__c> responses = [
+            SELECT Id, Name, Survey__c, Survey__r.Name, Response_Date__c,
+                   Status__c, Total_Score__c,
+                   (SELECT Id, Survey_Question__c, Survey_Question__r.Question_Text__c,
+                           Survey_Question__r.Question_Type__c, Survey_Question__r.Sort_Order__c,
+                           Answer_Text__c, Answer_Choice__c, Answer_Number__c,
+                           Rating_Value__c, Photo_URL__c
+                    FROM Survey_Answers__r
+                    ORDER BY Survey_Question__r.Sort_Order__c ASC NULLS LAST)
+            FROM Survey_Response__c
+            WHERE Visit__c = :visitId
+            ORDER BY Response_Date__c DESC
+        ];
+
+        List<Map<String, Object>> result = new List<Map<String, Object>>();
+        for (Survey_Response__c resp : responses) {
+            Map<String, Object> item = new Map<String, Object>();
+            item.put('id', resp.Id);
+            item.put('name', resp.Name);
+            item.put('surveyName', resp.Survey__r.Name);
+            item.put('responseDate', resp.Response_Date__c);
+            item.put('status', resp.Status__c);
+            item.put('totalScore', resp.Total_Score__c);
+
+            List<Map<String, Object>> answers = new List<Map<String, Object>>();
+            if (resp.Survey_Answers__r != null) {
+                for (Survey_Answer__c ans : resp.Survey_Answers__r) {
+                    Map<String, Object> a = new Map<String, Object>();
+                    a.put('id', ans.Id);
+                    a.put('questionText', ans.Survey_Question__r.Question_Text__c);
+                    a.put('questionType', ans.Survey_Question__r.Question_Type__c);
+                    // Build display value based on question type
+                    String displayValue = '';
+                    if (ans.Answer_Text__c != null) displayValue = ans.Answer_Text__c;
+                    else if (ans.Answer_Choice__c != null) displayValue = ans.Answer_Choice__c;
+                    else if (ans.Rating_Value__c != null) displayValue = String.valueOf(ans.Rating_Value__c.intValue());
+                    else if (ans.Answer_Number__c != null) displayValue = String.valueOf(ans.Answer_Number__c);
+                    else if (ans.Photo_URL__c != null) displayValue = ans.Photo_URL__c;
+                    a.put('displayValue', displayValue);
+                    a.put('ratingValue', ans.Rating_Value__c);
+                    a.put('isRating', ans.Survey_Question__r.Question_Type__c == 'Rating');
+                    a.put('isPhoto', ans.Survey_Question__r.Question_Type__c == 'Photo');
+                    a.put('photoURL', ans.Photo_URL__c);
+                    answers.add(a);
+                }
+            }
+            item.put('answers', answers);
+            result.add(item);
+        }
+        return result;
+    }
 }
