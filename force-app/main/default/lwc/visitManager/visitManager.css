@@ -2370,3 +2370,40 @@
         font-size: 11px;
     }
 }
+
+/* ── Autocomplete Suggestions ── */
+.vm-autocomplete-wrapper {
+    position: relative;
+}
+
+.vm-autocomplete-list {
+    position: absolute;
+    z-index: 9999;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--vm-border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.vm-autocomplete-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--vm-text);
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.vm-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.vm-autocomplete-item:hover {
+    background: #f0f7ff;
+    color: var(--vm-primary);
+}

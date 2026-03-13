@@ -152,6 +152,8 @@ export default class VisitManager extends LightningElement {
     // Competitor
     @track competitorEntries = [];
     @track competitorCompanies = [];
+    @track competitorFilteredCompanies = [];
+    @track competitorShowSuggestions = false;
     @track competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProduct: '', notes: '' };
     @track competitorIsLoading = false;
     // Merchandising
@@ -1021,7 +1023,37 @@ export default class VisitManager extends LightningElement {
 
     handleCompetitorFormChange(e) {
         const field = e.target.dataset.field;
-        this.competitorForm = { ...this.competitorForm, [field]: e.target.value };
+        const val = e.target.value;
+        this.competitorForm = { ...this.competitorForm, [field]: val };
+        if (field === 'competitorCompany') {
+            if (val && val.length > 0 && this.competitorCompanies.length > 0) {
+                const search = val.toLowerCase();
+                this.competitorFilteredCompanies = this.competitorCompanies.filter(c => c.label.toLowerCase().includes(search));
+                this.competitorShowSuggestions = this.competitorFilteredCompanies.length > 0;
+            } else {
+                this.competitorShowSuggestions = false;
+                this.competitorFilteredCompanies = [];
+            }
+        }
+    }
+
+    handleCompetitorCompanyFocus() {
+        if (this.competitorCompanies.length > 0) {
+            this.competitorFilteredCompanies = this.competitorCompanies;
+            this.competitorShowSuggestions = true;
+        }
+    }
+
+    handleCompetitorCompanyBlur() {
+        // Delay to allow click on suggestion
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        setTimeout(() => { this.competitorShowSuggestions = false; }, 250);
+    }
+
+    handleCompetitorSuggestionClick(e) {
+        const company = e.currentTarget.dataset.value;
+        this.competitorForm = { ...this.competitorForm, competitorCompany: company };
+        this.competitorShowSuggestions = false;
     }
 
     async handleCompetitorSave() {

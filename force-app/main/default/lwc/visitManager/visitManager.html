@@ -987,9 +987,20 @@
                     <!-- Add form -->
                     <div class="vm-card">
                         <p class="vm-section-title">Add Competitor Entry</p>
-                        <lightning-combobox label="Competitor Company" value={competitorForm.competitorCompany}
-                            options={competitorCompanies} data-field="competitorCompany"
-                            onchange={handleCompetitorFormChange} placeholder="Select or type..." allow-custom-value></lightning-combobox>
+                        <div class="vm-autocomplete-wrapper">
+                            <lightning-input label="Competitor Company" value={competitorForm.competitorCompany}
+                                data-field="competitorCompany" onchange={handleCompetitorFormChange}
+                                onfocus={handleCompetitorCompanyFocus} onblur={handleCompetitorCompanyBlur}
+                                placeholder="Type competitor company name..." required></lightning-input>
+                            <template if:true={competitorShowSuggestions}>
+                                <div class="vm-autocomplete-list">
+                                    <template for:each={competitorFilteredCompanies} for:item="comp">
+                                        <div key={comp.value} class="vm-autocomplete-item" data-value={comp.value}
+                                            onmousedown={handleCompetitorSuggestionClick}>{comp.label}</div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
                         <lightning-input label="Competitor SKU / Product" value={competitorForm.competitorSKU}
                             data-field="competitorSKU" onchange={handleCompetitorFormChange}></lightning-input>
                         <lightning-input type="number" label="Competitor Price (₹)" value={competitorForm.competitorPrice}
