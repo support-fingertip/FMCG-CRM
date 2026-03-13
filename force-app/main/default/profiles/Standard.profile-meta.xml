@@ -2637,11 +2637,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Scheme__c.End_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Scheme__c.Invoice_Qty_Threshold__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2672,31 +2667,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Scheme__c.Scheme_Category__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Scheme__c.Scheme_Code__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Scheme__c.Scheme_Type__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Scheme__c.Start_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Scheme__c.Status__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Scheme_Mapping__c.Account__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2722,11 +2692,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Scheme_Mapping__c.Scheme__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Scheme_Mapping__c.Sub_Zone__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2743,11 +2708,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Scheme_Slab__c.Reward_Points__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Scheme_Slab__c.Slab_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
