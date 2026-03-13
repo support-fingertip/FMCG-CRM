@@ -18,7 +18,7 @@ private class INV_WarehouseStock_TriggerHandler_Test {
         );
         insert warehouse;
 
-        Product_Extension__c product = new Product_Extension__c(Name = 'Test Product', Product_Code__c = 'TP001', Is_Active__c = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'Test Product', SKU_Code__c = 'TP001', Is_Active__c = true);
         insert product;
     }
 

@@ -25,7 +25,7 @@ private class INV_StockTransferController_Test {
         );
         insert new List<Warehouse__c>{ sourceWh, destWh };
 
-        Product_Extension__c product = new Product_Extension__c(Name = 'Transfer Product', Product_Code__c = 'TRP01', Is_Active__c = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'Transfer Product', SKU_Code__c = 'TRP01', Is_Active__c = true);
         insert product;
 
         Warehouse_Stock__c stock = new Warehouse_Stock__c(
@@ -42,7 +42,7 @@ private class INV_StockTransferController_Test {
     static void testCreateTransfer() {
         Warehouse__c sourceWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'SRC01'];
         Warehouse__c destWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'DST01'];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TRP01'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TRP01'];
 
         String lineItemsJson = '[{"productId":"' + product.Id + '","batchNumber":null,"requestedQty":50}]';
 
@@ -90,7 +90,7 @@ private class INV_StockTransferController_Test {
     static void testGetTransferDetail() {
         Warehouse__c sourceWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'SRC01'];
         Warehouse__c destWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'DST01'];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TRP01'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TRP01'];
 
         Stock_Transfer__c transfer = new Stock_Transfer__c(
             Source_Warehouse__c = sourceWh.Id,
@@ -188,7 +188,7 @@ private class INV_StockTransferController_Test {
     static void testReceiveTransfer() {
         Warehouse__c sourceWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'SRC01'];
         Warehouse__c destWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'DST01'];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TRP01'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TRP01'];
 
         Stock_Transfer__c transfer = new Stock_Transfer__c(
             Source_Warehouse__c = sourceWh.Id,

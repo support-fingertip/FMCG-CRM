@@ -27,7 +27,7 @@ public with sharing class SchemeViewController {
                        '(SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c, ' +
                        '        Discount_Type__c, Discount_Value__c, Free_Product_Ext__c, Free_Quantity__c ' +
                        ' FROM Scheme_Slabs__r ORDER BY Min_Value__c), ' +
-                       '(SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode, ' +
+                       '(SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        '        Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c ' +
                        ' FROM Scheme_Products__r ORDER BY Product_Ext__r.Name) ' +
                        'FROM Scheme__c ' +
@@ -68,7 +68,7 @@ public with sharing class SchemeViewController {
                            Discount_Type__c, Discount_Value__c,
                            Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
-                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                            Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
                     FROM Scheme_Products__r ORDER BY Product_Ext__r.Name)
             FROM Scheme__c

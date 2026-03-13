@@ -18,7 +18,7 @@ private class INV_StockAdjustment_TriggerHandler_Test {
         );
         insert warehouse;
 
-        Product_Extension__c product = new Product_Extension__c(Name = 'Adjust Product', Product_Code__c = 'AP001', Is_Active__c = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'Adjust Product', SKU_Code__c = 'AP001', Is_Active__c = true);
         insert product;
 
         Warehouse_Stock__c stock = new Warehouse_Stock__c(
@@ -34,7 +34,7 @@ private class INV_StockAdjustment_TriggerHandler_Test {
     @isTest
     static void testSystemQtySnapshot() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'AP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'AP001'];
 
         Test.startTest();
         Stock_Adjustment__c adj = new Stock_Adjustment__c(
@@ -56,7 +56,7 @@ private class INV_StockAdjustment_TriggerHandler_Test {
     @isTest
     static void testPositiveAdjustmentOnApproval() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'AP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'AP001'];
 
         Stock_Adjustment__c adj = new Stock_Adjustment__c(
             Warehouse__c = wh.Id,
@@ -85,7 +85,7 @@ private class INV_StockAdjustment_TriggerHandler_Test {
     @isTest
     static void testNegativeAdjustmentOnApproval() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'AP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'AP001'];
 
         Stock_Adjustment__c adj = new Stock_Adjustment__c(
             Warehouse__c = wh.Id,
@@ -114,7 +114,7 @@ private class INV_StockAdjustment_TriggerHandler_Test {
     @isTest
     static void testRejectedAdjustmentNoStockChange() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'AP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'AP001'];
 
         Stock_Adjustment__c adj = new Stock_Adjustment__c(
             Warehouse__c = wh.Id,

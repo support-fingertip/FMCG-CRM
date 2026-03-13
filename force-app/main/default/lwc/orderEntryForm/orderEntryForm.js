@@ -192,7 +192,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 return {
                     id: product.Id,
                     name: product.Name,
-                    sku: product.SKU__c || product.ProductCode || 'N/A',
+                    sku: product.SKU__c || product.SKU_Code__c || 'N/A',
                     mrp: product.MRP__c || product.Unit_Price__c || 0,
                     mrpFormatted: this.formatCurrency(product.MRP__c || product.Unit_Price__c || 0),
                     unitPrice: product.Unit_Price__c || product.MRP__c || 0,

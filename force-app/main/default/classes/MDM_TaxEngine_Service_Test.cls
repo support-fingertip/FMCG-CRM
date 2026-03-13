@@ -64,7 +64,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testIntraStateTax() {
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE ProductCode = 'TP-0000' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP-0000' LIMIT 1];
 
         Test.startTest();
 
@@ -107,7 +107,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testInterStateTax() {
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE ProductCode = 'TP-0000' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP-0000' LIMIT 1];
 
         Test.startTest();
 
@@ -148,7 +148,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testTaxCalculation() {
-        Product_Extension__c essentialProd = [SELECT Id FROM Product_Extension__c WHERE ProductCode = 'ESS-001' LIMIT 1];
+        Product_Extension__c essentialProd = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'ESS-001' LIMIT 1];
         Decimal amount = 5000;
 
         Test.startTest();
@@ -190,7 +190,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testNoTaxConfig() {
-        Product_Extension__c noTaxProd = [SELECT Id FROM Product_Extension__c WHERE ProductCode = 'NOTAX-001' LIMIT 1];
+        Product_Extension__c noTaxProd = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'NOTAX-001' LIMIT 1];
 
         Test.startTest();
 
@@ -222,7 +222,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testBulkTaxCalculation() {
-        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c WHERE ProductCode LIKE 'TP-%' ORDER BY ProductCode];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c LIKE 'TP-%' ORDER BY SKU_Code__c];
         List<Id> productIds = new List<Id>();
         List<Decimal> amounts = new List<Decimal>();
 
@@ -255,7 +255,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testZeroAndNullAmounts() {
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE ProductCode = 'TP-0000' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP-0000' LIMIT 1];
 
         Test.startTest();
 

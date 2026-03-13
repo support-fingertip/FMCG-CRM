@@ -122,7 +122,7 @@ public with sharing class INV_StockTransferController {
         ];
 
         detail.lineItems = [
-            SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Code__c,
+            SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                    Batch_Number__c, Requested_Qty__c, Approved_Qty__c,
                    Received_Qty__c, Short_Qty__c, Available_Stock__c
             FROM Stock_Transfer_Line__c
@@ -203,14 +203,14 @@ public with sharing class INV_StockTransferController {
      */
     @AuraEnabled(cacheable=true)
     public static List<Warehouse_Stock__c> getAvailableProducts(Id warehouseId, String searchTerm) {
-        String query = 'SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Code__c, ' +
+        String query = 'SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Batch_Number__c, Qty_On_Hand__c, Qty_Available__c ' +
                        'FROM Warehouse_Stock__c ' +
                        'WHERE Warehouse__c = :warehouseId AND Qty_Available__c > 0';
 
         if (String.isNotBlank(searchTerm)) {
             String searchWild = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
-            query += ' AND (Product_Ext__r.Name LIKE :searchWild OR Product_Ext__r.Product_Code__c LIKE :searchWild)';
+            query += ' AND (Product_Ext__r.Name LIKE :searchWild OR Product_Ext__r.SKU_Code__c LIKE :searchWild)';
         }
 
         query += ' ORDER BY Product_Ext__r.Name ASC LIMIT 50';

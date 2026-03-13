@@ -239,7 +239,7 @@ public with sharing class OutletThreeSixtyController {
                    Total_Gross_Amount__c, Total_Discount__c, Total_Tax__c, Total_Net_Amount__c,
                    Total_Items__c, Salesperson__c, Salesperson__r.Name,
                    Delivery_Date__c, Channel__c, Notes__c,
-                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                            Quantity__c, Unit_Price__c, Discount_Amount__c, Tax_Amount__c, Line_Total__c
                     FROM Order_Line_Items__r ORDER BY CreatedDate LIMIT 200)
             FROM Sales_Order__c
@@ -385,7 +385,7 @@ public with sharing class OutletThreeSixtyController {
     @AuraEnabled(cacheable=true)
     public static List<Distributor_Stock__c> getStockLevels(Id accountId) {
         return [
-            SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode,
+            SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                    Opening_Stock__c, Received_Qty__c, Sold_Qty__c, Damaged_Qty__c,
                    Closing_Stock__c, Batch_No__c, Expiry_Date__c,
                    Stock_Date__c, Is_Current__c

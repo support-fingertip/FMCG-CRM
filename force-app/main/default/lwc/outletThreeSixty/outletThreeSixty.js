@@ -359,7 +359,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
             this.stockItems = (result || []).map(item => ({
                 id: item.Id,
                 productName: item.Product_Ext__r ? item.Product_Ext__r.Name : 'N/A',
-                sku: item.Product_Ext__r ? item.Product_Ext__r.ProductCode : '',
+                sku: item.Product_Ext__r ? item.Product_Ext__r.SKU_Code__c : '',
                 closingStock: item.Closing_Stock__c || 0,
                 openingStock: item.Opening_Stock__c || 0,
                 receivedQty: item.Received_Qty__c || 0,

@@ -376,7 +376,7 @@ export default class StockTransferForm extends LightningElement {
             id: line.Id,
             name: line.Name,
             productName: line.Product_Ext__r ? line.Product_Ext__r.Name : '',
-            productCode: line.Product_Ext__r ? line.Product_Ext__r.ProductCode : '',
+            productCode: line.Product_Ext__r ? line.Product_Ext__r.SKU_Code__c : '',
             batchNumber: line.Batch_Number__c || '',
             requestedQty: line.Requested_Qty__c || 0,
             approvedQty: line.Approved_Qty__c || 0,

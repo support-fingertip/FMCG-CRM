@@ -11,7 +11,7 @@ private class INV_StockDashboardController_Test {
 
         List<Product_Extension__c> products = new List<Product_Extension__c>();
         for (Integer i = 1; i <= 5; i++) {
-            products.add(new Product_Extension__c(Name = 'Stock Product ' + i, Product_Code__c = 'SP-' + i, Is_Active__c = true));
+            products.add(new Product_Extension__c(Name = 'Stock Product ' + i, SKU_Code__c = 'SP-' + i, Is_Active__c = true));
         }
         insert products;
 
@@ -135,7 +135,7 @@ private class INV_StockDashboardController_Test {
     @isTest
     static void testGetStockMovementHistory() {
         Account acc = [SELECT Id FROM Account WHERE Name = 'Test Distributor' LIMIT 1];
-        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'SP-1' LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'SP-1' LIMIT 1];
 
         Test.startTest();
         List<Distributor_Stock__c> history =

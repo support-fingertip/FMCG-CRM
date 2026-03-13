@@ -21,8 +21,8 @@ private class INV_WarehouseStock_Service_Test {
         insert warehouse;
 
         // Create products
-        Product_Extension__c product1 = new Product_Extension__c(Name = 'Test Product 1', Product_Code__c = 'TP001', Is_Active__c = true);
-        Product_Extension__c product2 = new Product_Extension__c(Name = 'Test Product 2', Product_Code__c = 'TP002', Is_Active__c = true);
+        Product_Extension__c product1 = new Product_Extension__c(Name = 'Test Product 1', SKU_Code__c = 'TP001', Is_Active__c = true);
+        Product_Extension__c product2 = new Product_Extension__c(Name = 'Test Product 2', SKU_Code__c = 'TP002', Is_Active__c = true);
         insert new List<Product_Extension__c>{ product1, product2 };
 
         // Create initial stock records
@@ -50,7 +50,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testCheckAvailability() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c ORDER BY Product_Code__c];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c ORDER BY SKU_Code__c];
 
         Test.startTest();
         Map<Id, Decimal> availability = INV_WarehouseStock_Service.checkAvailability(
@@ -65,7 +65,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testReserveStock() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 20));
@@ -96,7 +96,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testReleaseReservation() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         // First reserve stock
         Warehouse_Stock__c stock = [
@@ -125,7 +125,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testDeductStock() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         // Set up reservation first
         Warehouse_Stock__c stock = [
@@ -163,7 +163,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAddStock() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP002'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP002'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 30));
@@ -191,7 +191,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAddStockReturnOrder() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 10));
@@ -211,7 +211,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAddStockTransfer() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 15));
@@ -231,7 +231,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAdjustDeduct() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 10));
@@ -260,7 +260,7 @@ private class INV_WarehouseStock_Service_Test {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
 
         // Create a new product not in stock
-        Product_Extension__c newProduct = new Product_Extension__c(Name = 'New Product', Product_Code__c = 'NP001', Is_Active__c = true);
+        Product_Extension__c newProduct = new Product_Extension__c(Name = 'New Product', SKU_Code__c = 'NP001', Is_Active__c = true);
         insert newProduct;
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
@@ -294,7 +294,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testDeductStockTransferType() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 10));

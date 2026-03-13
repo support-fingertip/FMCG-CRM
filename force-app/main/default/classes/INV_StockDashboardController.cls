@@ -87,7 +87,7 @@ public with sharing class INV_StockDashboardController {
         offset = offset != null ? offset : 0;
 
         String baseFields = 'SELECT Id, Name, Account__c, Account__r.Name, Product_Ext__c, Product_Ext__r.Name, ' +
-                           'Product_Ext__r.Product_Code__c, Stock_Date__c, Opening_Stock__c, Received_Qty__c, ' +
+                           'Product_Ext__r.SKU_Code__c, Stock_Date__c, Opening_Stock__c, Received_Qty__c, ' +
                            'Sold_Qty__c, Damaged_Qty__c, Closing_Stock__c, Batch_No__c, Expiry_Date__c, Is_Current__c ';
         String fromClause = 'FROM Distributor_Stock__c ';
         List<String> conditions = new List<String>{'Is_Current__c = true'};
@@ -98,7 +98,7 @@ public with sharing class INV_StockDashboardController {
 
         if (String.isNotBlank(productSearch)) {
             String searchWild = '%' + String.escapeSingleQuotes(productSearch.trim()) + '%';
-            conditions.add('(Product_Ext__r.Name LIKE :searchWild OR Product_Ext__r.Product_Code__c LIKE :searchWild)');
+            conditions.add('(Product_Ext__r.Name LIKE :searchWild OR Product_Ext__r.SKU_Code__c LIKE :searchWild)');
         }
 
         if (stockFilter == 'low') {
@@ -139,7 +139,7 @@ public with sharing class INV_StockDashboardController {
         Date thresholdDate = Date.today().addDays(daysThreshold);
 
         return [
-            SELECT Id, Name, Batch_Number__c, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Code__c,
+            SELECT Id, Name, Batch_Number__c, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                    Manufacturing_Date__c, Expiry_Date__c, Shelf_Life_Remaining_Pct__c,
                    Is_Near_Expiry__c, Status__c, Quantity_Manufactured__c
             FROM Batch_Master__c

@@ -18,7 +18,7 @@ private class INV_DistributorStock_TriggerHandler_Test {
         // Create test Product
         Product_Extension__c testProduct = new Product_Extension__c(
             Name = 'Test FMCG Product',
-            Product_Code__c = 'TST-001',
+            SKU_Code__c = 'TST-001',
             Is_Active__c = true
         );
         insert testProduct;

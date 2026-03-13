@@ -18,8 +18,8 @@ private class INV_WarehouseStockController_Test {
         );
         insert warehouse;
 
-        Product_Extension__c product1 = new Product_Extension__c(Name = 'Product A', Product_Code__c = 'PA001', Is_Active__c = true);
-        Product_Extension__c product2 = new Product_Extension__c(Name = 'Product B', Product_Code__c = 'PB001', Is_Active__c = true);
+        Product_Extension__c product1 = new Product_Extension__c(Name = 'Product A', SKU_Code__c = 'PA001', Is_Active__c = true);
+        Product_Extension__c product2 = new Product_Extension__c(Name = 'Product B', SKU_Code__c = 'PB001', Is_Active__c = true);
         insert new List<Product_Extension__c>{ product1, product2 };
 
         Warehouse_Stock__c stock1 = new Warehouse_Stock__c(
@@ -150,7 +150,7 @@ private class INV_WarehouseStockController_Test {
     @isTest
     static void testGetStockTransactionsWithProduct() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'PA001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'PA001'];
 
         Test.startTest();
         List<Stock_Transaction__c> txns =
@@ -176,7 +176,7 @@ private class INV_WarehouseStockController_Test {
     @isTest
     static void testCheckStockAvailability() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'PA001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'PA001'];
 
         Test.startTest();
         INV_WarehouseStockController.StockAvailability avail =

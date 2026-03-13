@@ -63,7 +63,7 @@ private class OrderEntryController_Test {
 
         // Search for products containing "Maggi"
         List<Product_Extension__c> maggiResults = [
-            SELECT Id, Name, ProductCode, Is_Active__c
+            SELECT Id, Name, SKU_Code__c, Is_Active__c
             FROM Product_Extension__c
             WHERE Name LIKE '%Maggi%'
               AND Is_Active__c = true
@@ -71,7 +71,7 @@ private class OrderEntryController_Test {
 
         // Search for products containing "Surf"
         List<Product_Extension__c> surfResults = [
-            SELECT Id, Name, ProductCode
+            SELECT Id, Name, SKU_Code__c
             FROM Product_Extension__c
             WHERE Name LIKE '%Surf%'
               AND Is_Active__c = true

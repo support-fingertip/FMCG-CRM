@@ -37,7 +37,7 @@ public with sharing class MDM_ProductCatalogController {
 
         if (String.isNotBlank(searchTerm)) {
             String searchWild = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
-            conditions.add('(Name LIKE :searchWild OR ProductCode LIKE :searchWild)');
+            conditions.add('(Name LIKE :searchWild OR SKU_Code__c LIKE :searchWild)');
         }
 
         if (isActiveOnly != null && isActiveOnly) {

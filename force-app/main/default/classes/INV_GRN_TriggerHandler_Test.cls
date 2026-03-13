@@ -24,7 +24,7 @@ private class INV_GRN_TriggerHandler_Test {
         insert warehouse;
 
         // Create product
-        Product_Extension__c product = new Product_Extension__c(Name = 'GRN Product', Product_Code__c = 'GP001', Is_Active__c = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'GRN Product', SKU_Code__c = 'GP001', Is_Active__c = true);
         insert product;
 
         // Create invoice with warehouse
@@ -62,7 +62,7 @@ private class INV_GRN_TriggerHandler_Test {
     static void testGRNReceivedAddsStock() {
         GRN__c grn = [SELECT Id, Status__c FROM GRN__c LIMIT 1];
         Warehouse__c wh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'GRN01'];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'GP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'GP001'];
 
         Test.startTest();
         grn.Status__c = 'Received';
@@ -102,7 +102,7 @@ private class INV_GRN_TriggerHandler_Test {
     static void testGRNPendingNoStockChange() {
         // GRN is already Pending from setup. No stock should exist initially.
         Warehouse__c wh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'GRN01'];
-        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'GP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'GP001'];
 
         List<Warehouse_Stock__c> stocks = [
             SELECT Qty_On_Hand__c

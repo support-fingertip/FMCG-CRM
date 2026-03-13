@@ -23,9 +23,8 @@ public class TestDataFactory {
     public static Product_Extension__c createProduct(String name, String code) {
         Product_Extension__c prod = new Product_Extension__c(
             Name = name,
-            ProductCode = code,
-            Is_Active__c = true,
-            Description = 'Test product ' + name
+            SKU_Code__c = code,
+            Is_Active__c = true
         );
         return prod;
     }

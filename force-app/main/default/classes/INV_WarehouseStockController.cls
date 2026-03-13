@@ -78,7 +78,7 @@ public with sharing class INV_WarehouseStockController {
         offset = offset != null ? offset : 0;
 
         String baseFields = 'SELECT Id, Name, Warehouse__c, Warehouse__r.Name, ' +
-                           'Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Code__c, ' +
+                           'Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                            'Batch_Number__c, Expiry_Date__c, Qty_On_Hand__c, ' +
                            'Qty_Reserved__c, Qty_Available__c, Qty_Damaged__c, ' +
                            'Min_Stock_Level__c, Max_Stock_Level__c, ' +
@@ -92,7 +92,7 @@ public with sharing class INV_WarehouseStockController {
 
         if (String.isNotBlank(productSearch)) {
             String searchWild = '%' + String.escapeSingleQuotes(productSearch.trim()) + '%';
-            conditions.add('(Product_Ext__r.Name LIKE :searchWild OR Product_Ext__r.Product_Code__c LIKE :searchWild)');
+            conditions.add('(Product_Ext__r.Name LIKE :searchWild OR Product_Ext__r.SKU_Code__c LIKE :searchWild)');
         }
 
         if (stockFilter == 'low') {
@@ -148,7 +148,7 @@ public with sharing class INV_WarehouseStockController {
         limitCount = limitCount != null ? Math.min(limitCount, 100) : 50;
 
         String query = 'SELECT Id, Name, Warehouse__c, Warehouse__r.Name, ' +
-                       'Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Code__c, ' +
+                       'Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Transaction_Type__c, Quantity__c, Direction__c, ' +
                        'Reference_Type__c, Reference_Id__c, Batch_Number__c, ' +
                        'Running_Balance__c, Transaction_Date__c, ' +
@@ -180,7 +180,7 @@ public with sharing class INV_WarehouseStockController {
     @AuraEnabled(cacheable=true)
     public static List<Warehouse_Stock__c> getLowStockAlerts(Id warehouseId) {
         String query = 'SELECT Id, Name, Warehouse__c, Warehouse__r.Name, ' +
-                       'Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Code__c, ' +
+                       'Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Qty_On_Hand__c, Qty_Reserved__c, Qty_Available__c, ' +
                        'Min_Stock_Level__c, Max_Stock_Level__c, Is_Zero_Stock__c ' +
                        'FROM Warehouse_Stock__c ' +
