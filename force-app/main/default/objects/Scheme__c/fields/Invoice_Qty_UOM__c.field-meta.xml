@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Invoice_Qty_UOM__c</fullName>
+    <label>Invoice Qty UOM</label>
+    <description>Unit of measure for invoice quantity threshold</description>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>PC</fullName>
+                <default>true</default>
+                <label>PC</label>
+            </value>
+            <value>
+                <fullName>KG</fullName>
+                <default>false</default>
+                <label>KG</label>
+            </value>
+            <value>
+                <fullName>LTR</fullName>
+                <default>false</default>
+                <label>LTR</label>
+            </value>
+            <value>
+                <fullName>CS</fullName>
+                <default>false</default>
+                <label>CS</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

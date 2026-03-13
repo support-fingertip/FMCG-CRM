@@ -1,55 +1,72 @@
 /**
  * @description Service class implementing the promotional scheme evaluation engine.
- *              Evaluates scheme eligibility based on date range, product match,
- *              channel match, outlet type, and slab criteria. Supports scheme
- *              priority and stacking rules.
+ *              Evaluates scheme eligibility based on the 4x6 scheme matrix:
  *
- * Scheme Types:
- *   - Discount: Percentage or flat amount discount
- *   - Free Goods: Buy X get Y free
- *   - Slab: Tiered pricing based on quantity or value
- *   - Combo: Cross-product promotions
+ * Scheme Categories (benefit type):
+ *   - Free Products: Customer receives free goods
+ *   - Discount in %: Percentage discount on qualifying items
+ *   - Discount in Value: Flat amount discount (price discount)
+ *   - Reward Points: Points credited to customer account
+ *
+ * Scheme Types (trigger condition):
+ *   - Same Product (QTY): Meet min quantity on the SAME product
+ *   - Same Product (VAL): Meet min order value (MOV) on the SAME product
+ *   - Assorted Product (QTY): Meet min quantity across MULTIPLE scheme products
+ *   - Assorted Product (VAL): Meet MOV across MULTIPLE scheme products
+ *   - Invoice Qty Based: Meet total invoice quantity threshold
+ *   - Invoice Val Based: Meet total invoice value threshold
+ *
+ * Supports scheme priority, stacking rules, budget checks, slab-based tiers,
+ * and territory-based mapping for order management integration.
  *
  * @author  SFA Development Team
  * @date    2024
  */
 public without sharing class SPM_SchemeEngine_Service {
 
-    // ── Inner class: SchemeResult ─────────────────────────────────────────────
+    // ── Inner classes ────────────────────────────────────────────────────────
 
     /**
      * @description Encapsulates the result of evaluating a single scheme.
      */
     public class SchemeResult {
-        /** The Scheme__c record ID. */
-        public Id schemeId { get; set; }
-        /** The scheme name for display. */
-        public String schemeName { get; set; }
-        /** The type of scheme (Discount, Free Goods, Slab, Combo). */
-        public String schemeType { get; set; }
-        /** The calculated discount amount (for discount-type schemes). */
-        public Decimal discountAmount { get; set; }
-        /** The free product ID (for free-goods-type schemes). */
-        public Id freeProductId { get; set; }
-        /** The free quantity (for free-goods-type schemes). */
-        public Decimal freeQty { get; set; }
+        @AuraEnabled public Id schemeId { get; set; }
+        @AuraEnabled public String schemeName { get; set; }
+        @AuraEnabled public String schemeCategory { get; set; }
+        @AuraEnabled public String schemeType { get; set; }
+        @AuraEnabled public Decimal discountPercent { get; set; }
+        @AuraEnabled public Decimal discountAmount { get; set; }
+        @AuraEnabled public Decimal priceDiscount { get; set; }
+        @AuraEnabled public Id freeProductId { get; set; }
+        @AuraEnabled public String freeProductName { get; set; }
+        @AuraEnabled public Decimal freeQty { get; set; }
+        @AuraEnabled public Decimal rewardPoints { get; set; }
+        @AuraEnabled public Id appliedSlabId { get; set; }
+        @AuraEnabled public Map<Id, Decimal> lineItemDiscounts { get; set; }
 
         public SchemeResult() {
+            this.discountPercent = 0;
             this.discountAmount = 0;
+            this.priceDiscount = 0;
             this.freeQty = 0;
+            this.rewardPoints = 0;
+            this.lineItemDiscounts = new Map<Id, Decimal>();
+        }
+
+        public Boolean hasAnyBenefit() {
+            return discountAmount > 0 || priceDiscount > 0 || freeQty > 0 || rewardPoints > 0;
         }
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // ── Public API ───────────────────────────────────────────────────────────
 
     /**
-     * @description Evaluates all applicable schemes for a given account and set
-     *              of line items on a specific order date.
-     *
-     * @param accountId  The Account (outlet) ID for channel/type matching.
-     * @param lineItems  The list of order line items to evaluate against schemes.
+     * @description Main entry point: evaluates all applicable schemes for a
+     *              sales order and returns the qualifying benefits.
+     * @param accountId  The outlet Account Id for channel/type/territory matching.
+     * @param lineItems  Order line items with Product_Ext__c, Quantity__c, Net_Amount__c, UOM__c.
      * @param orderDate  The order date for date-range validation.
-     * @return A list of SchemeResult objects representing all applicable scheme benefits.
+     * @return List of SchemeResult for all applicable schemes.
      */
     public static List<SchemeResult> getApplicableSchemes(
         Id accountId,
@@ -66,13 +83,11 @@ public without sharing class SPM_SchemeEngine_Service {
             orderDate = Date.today();
         }
 
-        // Fetch account details for channel and outlet type matching
         Account outlet = getAccountDetails(accountId);
         if (outlet == null) {
             return results;
         }
 
-        // Collect product IDs from line items
         Set<Id> productIds = new Set<Id>();
         for (Order_Line_Item__c item : lineItems) {
             if (item.Product_Ext__c != null) {
@@ -80,39 +95,40 @@ public without sharing class SPM_SchemeEngine_Service {
             }
         }
 
-        // Fetch all potentially applicable schemes
         List<Scheme__c> candidateSchemes = fetchCandidateSchemes(
-            productIds, orderDate, outlet.Channel__c, outlet.Outlet_Type__c
+            productIds, orderDate, outlet
         );
 
         if (candidateSchemes.isEmpty()) {
             return results;
         }
 
-        // Schemes already sorted by Priority ASC from SOQL ORDER BY clause
-
         // Track stacking rules
-        Set<String> appliedSchemeTypes = new Set<String>();
         Boolean hasNonStackableScheme = false;
 
-        // Evaluate each scheme
         for (Scheme__c scheme : candidateSchemes) {
-            // Check stacking rules
             if (hasNonStackableScheme && scheme.Is_Stackable__c != true) {
+                continue;
+            }
+
+            // Budget check
+            if (!hasBudgetRemaining(scheme)) {
                 continue;
             }
 
             SchemeResult result = evaluateScheme(scheme, lineItems, outlet);
 
-            if (result != null &&
-                (result.discountAmount > 0 || result.freeQty > 0)) {
+            if (result != null && result.hasAnyBenefit()) {
+                // Apply discount cap
+                if (scheme.Max_Discount_Cap__c != null && result.discountAmount > scheme.Max_Discount_Cap__c) {
+                    result.discountAmount = scheme.Max_Discount_Cap__c;
+                }
+
                 results.add(result);
 
                 if (scheme.Is_Stackable__c != true) {
                     hasNonStackableScheme = true;
                 }
-
-                appliedSchemeTypes.add(scheme.Scheme_Type__c);
             }
         }
 
@@ -120,10 +136,8 @@ public without sharing class SPM_SchemeEngine_Service {
     }
 
     /**
-     * @description Evaluates a specific slab within a scheme against the provided
-     *              quantity and value to determine the applicable benefit.
-     *
-     * @param scheme  The Scheme__c record containing slab definitions.
+     * @description Evaluates a specific slab within a scheme against qty and value.
+     * @param scheme  The Scheme__c record with Scheme_Slabs__r loaded.
      * @param quantity The total quantity for slab evaluation.
      * @param value    The total value for slab evaluation.
      * @return A SchemeResult if a slab matches, null otherwise.
@@ -137,12 +151,6 @@ public without sharing class SPM_SchemeEngine_Service {
             return null;
         }
 
-        SchemeResult result = new SchemeResult();
-        result.schemeId = scheme.Id;
-        result.schemeName = scheme.Name;
-        result.schemeType = scheme.Scheme_Type__c;
-
-        // Get slab definitions for this scheme
         List<Scheme_Slab__c> slabs;
         if (scheme.Scheme_Slabs__r != null) {
             slabs = scheme.Scheme_Slabs__r;
@@ -151,7 +159,9 @@ public without sharing class SPM_SchemeEngine_Service {
                 SELECT Id, Min_Quantity__c, Max_Quantity__c,
                        Min_Value__c, Max_Value__c,
                        Discount_Percent__c, Discount_Amount__c,
-                       Free_Product_Ext__c, Free_Quantity__c
+                       Price_Discount__c, Reward_Points__c,
+                       Free_Product_Ext__c, Free_Product_Ext__r.Name,
+                       Free_Quantity__c, Discount_Type__c
                 FROM Scheme_Slab__c
                 WHERE Scheme__c = :scheme.Id
                   AND Is_Active__c = true
@@ -163,20 +173,16 @@ public without sharing class SPM_SchemeEngine_Service {
             return null;
         }
 
-        // Find the matching slab
-        for (Scheme_Slab__c slab : slabs) {
-            Boolean quantityMatch = isInRange(
-                quantity,
-                slab.Min_Quantity__c,
-                slab.Max_Quantity__c
-            );
-            Boolean valueMatch = isInRange(
-                value,
-                slab.Min_Value__c,
-                slab.Max_Value__c
-            );
+        SchemeResult result = new SchemeResult();
+        result.schemeId = scheme.Id;
+        result.schemeName = scheme.Name;
+        result.schemeCategory = scheme.Scheme_Category__c;
+        result.schemeType = scheme.Scheme_Type__c;
 
-            // Match based on what criteria the slab defines
+        for (Scheme_Slab__c slab : slabs) {
+            Boolean quantityMatch = isInRange(quantity, slab.Min_Quantity__c, slab.Max_Quantity__c);
+            Boolean valueMatch = isInRange(value, slab.Min_Value__c, slab.Max_Value__c);
+
             Boolean slabMatches = false;
             if (slab.Min_Quantity__c != null && slab.Min_Value__c != null) {
                 slabMatches = quantityMatch && valueMatch;
@@ -187,19 +193,8 @@ public without sharing class SPM_SchemeEngine_Service {
             }
 
             if (slabMatches) {
-                if (slab.Discount_Percent__c != null && slab.Discount_Percent__c > 0) {
-                    result.discountAmount = (value * slab.Discount_Percent__c / 100)
-                        .setScale(2, RoundingMode.HALF_UP);
-                } else if (slab.Discount_Amount__c != null && slab.Discount_Amount__c > 0) {
-                    result.discountAmount = slab.Discount_Amount__c;
-                }
-
-                if (slab.Free_Product_Ext__c != null) {
-                    result.freeProductId = slab.Free_Product_Ext__c;
-                    result.freeQty = slab.Free_Quantity__c != null
-                        ? slab.Free_Quantity__c : 0;
-                }
-
+                result.appliedSlabId = slab.Id;
+                applySlabBenefit(result, slab, value);
                 return result;
             }
         }
@@ -207,14 +202,88 @@ public without sharing class SPM_SchemeEngine_Service {
         return null;
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
-
     /**
-     * @description Fetches the account details needed for scheme matching.
+     * @description Applies scheme benefits to sales order line items and returns
+     *              updated totals for order-level integration.
+     * @param orderId    The Sales_Order__c Id.
+     * @param accountId  The outlet Account Id.
+     * @param orderDate  The order date.
+     * @return Map with keys: schemeDiscount, totalFreeQty, totalRewardPoints, lineResults.
      */
+    public static Map<String, Object> applySchemeToOrder(
+        Id orderId,
+        Id accountId,
+        Date orderDate
+    ) {
+        Map<String, Object> orderResult = new Map<String, Object>();
+        orderResult.put('schemeDiscount', 0);
+        orderResult.put('totalFreeQty', 0);
+        orderResult.put('totalRewardPoints', 0);
+        orderResult.put('lineResults', new List<SchemeResult>());
+
+        List<Order_Line_Item__c> lineItems = [
+            SELECT Id, Product_Ext__c, Quantity__c, UOM__c,
+                   Unit_Price__c, Net_Amount__c, Line_Amount__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c = :orderId
+        ];
+
+        if (lineItems.isEmpty()) {
+            return orderResult;
+        }
+
+        List<SchemeResult> schemeResults = getApplicableSchemes(accountId, lineItems, orderDate);
+
+        Decimal totalDiscount = 0;
+        Decimal totalFreeQty = 0;
+        Decimal totalRewardPoints = 0;
+
+        List<Order_Line_Item__c> itemsToUpdate = new List<Order_Line_Item__c>();
+
+        for (SchemeResult sr : schemeResults) {
+            totalDiscount += sr.discountAmount + sr.priceDiscount;
+            totalFreeQty += sr.freeQty;
+            totalRewardPoints += sr.rewardPoints;
+
+            // Apply per-line-item discounts
+            for (Id lineId : sr.lineItemDiscounts.keySet()) {
+                itemsToUpdate.add(new Order_Line_Item__c(
+                    Id = lineId,
+                    Scheme__c = sr.schemeId,
+                    Scheme_Applied__c = true,
+                    Scheme_Discount__c = sr.lineItemDiscounts.get(lineId),
+                    Scheme_Category__c = sr.schemeCategory,
+                    Reward_Points__c = sr.rewardPoints > 0 ? sr.rewardPoints : 0,
+                    Free_Quantity__c = sr.freeQty > 0 ? sr.freeQty : 0
+                ));
+            }
+        }
+
+        if (!itemsToUpdate.isEmpty()) {
+            update itemsToUpdate;
+        }
+
+        // Update order-level totals
+        update new Sales_Order__c(
+            Id = orderId,
+            Scheme_Discount__c = totalDiscount,
+            Total_Free_Quantity__c = totalFreeQty,
+            Total_Reward_Points__c = (Integer) totalRewardPoints
+        );
+
+        orderResult.put('schemeDiscount', totalDiscount);
+        orderResult.put('totalFreeQty', totalFreeQty);
+        orderResult.put('totalRewardPoints', totalRewardPoints);
+        orderResult.put('lineResults', schemeResults);
+
+        return orderResult;
+    }
+
+    // ── Private helpers ──────────────────────────────────────────────────────
+
     private static Account getAccountDetails(Id accountId) {
         List<Account> accounts = [
-            SELECT Id, Name, Channel__c, Outlet_Type__c, Region__c
+            SELECT Id, Name, Channel__c, Outlet_Type__c, Region__c, Type
             FROM Account
             WHERE Id = :accountId
             LIMIT 1
@@ -223,28 +292,42 @@ public without sharing class SPM_SchemeEngine_Service {
     }
 
     /**
-     * @description Fetches all potentially applicable schemes based on date range,
-     *              product match, channel, and outlet type.
+     * @description Fetches candidate schemes considering date range, product match,
+     *              channel, outlet type, and territory mapping.
      */
     private static List<Scheme__c> fetchCandidateSchemes(
         Set<Id> productIds,
         Date orderDate,
-        String channel,
-        String outletType
+        Account outlet
     ) {
+        String channel = outlet.Channel__c;
+        String outletType = outlet.Outlet_Type__c;
+
+        // Get schemes mapped to this outlet (if any mappings exist)
+        Set<Id> mappedSchemeIds = getMappedSchemeIds(outlet.Id);
+
         return [
-            SELECT Id, Name, Scheme_Type__c, Priority__c,
+            SELECT Id, Name, Scheme_Type__c, Scheme_Category__c, Priority__c,
                    Is_Stackable__c, Discount_Percent__c, Discount_Amount__c,
-                   Free_Product_Ext__c, Free_Quantity__c,
+                   Price_Discount__c, Reward_Points__c,
+                   Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c,
                    Min_Quantity__c, Max_Quantity__c,
-                   Min_Value__c, Max_Value__c,
-                   Channel__c, Outlet_Type__c,
+                   Min_Value__c, Max_Value__c, MOV__c,
+                   Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
+                   Channel__c, Outlet_Type__c, Max_Discount_Cap__c,
                    Product_Ext__c, Product_Category__c,
+                   Budget_Amount__c, Budget_Used__c, Budget_Remaining__c,
                    Start_Date__c, End_Date__c,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name,
+                           Is_Buy_Product__c, Is_Get_Product__c,
+                           Min_Quantity__c, Product_Category__c
+                    FROM Scheme_Products__r),
                    (SELECT Id, Min_Quantity__c, Max_Quantity__c,
                            Min_Value__c, Max_Value__c,
                            Discount_Percent__c, Discount_Amount__c,
-                           Free_Product_Ext__c, Free_Quantity__c
+                           Price_Discount__c, Reward_Points__c,
+                           Free_Product_Ext__c, Free_Product_Ext__r.Name,
+                           Free_Quantity__c, Discount_Type__c
                     FROM Scheme_Slabs__r
                     WHERE Is_Active__c = true
                     ORDER BY Min_Quantity__c ASC, Min_Value__c ASC)
@@ -252,83 +335,517 @@ public without sharing class SPM_SchemeEngine_Service {
             WHERE Is_Active__c = true
               AND Start_Date__c <= :orderDate
               AND (End_Date__c >= :orderDate OR End_Date__c = null)
-              AND (Product_Ext__c IN :productIds OR Product_Ext__c = null)
               AND (Channel__c = :channel OR Channel__c = null)
               AND (Outlet_Type__c = :outletType OR Outlet_Type__c = null)
+              AND (
+                  Product_Ext__c IN :productIds
+                  OR Product_Ext__c = null
+                  OR Id IN (SELECT Scheme__c FROM Scheme_Product__c
+                            WHERE Product_Ext__c IN :productIds AND Is_Buy_Product__c = true)
+              )
+              AND (
+                  Id NOT IN (SELECT Scheme__c FROM Scheme_Mapping__c WHERE Is_Active__c = true)
+                  OR Id IN :mappedSchemeIds
+              )
             ORDER BY Priority__c ASC NULLS LAST
         ];
     }
 
     /**
-     * @description Evaluates a single scheme against the provided line items.
+     * @description Gets scheme Ids mapped to a specific outlet via Scheme_Mapping__c.
+     */
+    private static Set<Id> getMappedSchemeIds(Id accountId) {
+        Set<Id> schemeIds = new Set<Id>();
+        for (Scheme_Mapping__c mapping : [
+            SELECT Scheme__c
+            FROM Scheme_Mapping__c
+            WHERE Is_Active__c = true
+              AND (Account__c = :accountId OR Account__c = null)
+        ]) {
+            schemeIds.add(mapping.Scheme__c);
+        }
+        return schemeIds;
+    }
+
+    /**
+     * @description Checks if scheme has remaining budget.
+     */
+    private static Boolean hasBudgetRemaining(Scheme__c scheme) {
+        if (scheme.Budget_Amount__c == null || scheme.Budget_Amount__c == 0) {
+            return true;
+        }
+        Decimal used = scheme.Budget_Used__c != null ? scheme.Budget_Used__c : 0;
+        return used < scheme.Budget_Amount__c;
+    }
+
+    /**
+     * @description Core evaluation logic dispatching to the correct handler based
+     *              on scheme type (trigger condition).
      */
     private static SchemeResult evaluateScheme(
         Scheme__c scheme,
         List<Order_Line_Item__c> lineItems,
         Account outlet
     ) {
-        // Calculate aggregates for matching products
-        Decimal totalQty = 0;
-        Decimal totalValue = 0;
+        String schemeType = scheme.Scheme_Type__c;
+
+        if (schemeType == 'Same Product (QTY)') {
+            return evaluateSameProductQty(scheme, lineItems);
+        } else if (schemeType == 'Same Product (VAL)') {
+            return evaluateSameProductVal(scheme, lineItems);
+        } else if (schemeType == 'Assorted Product (QTY)') {
+            return evaluateAssortedProductQty(scheme, lineItems);
+        } else if (schemeType == 'Assorted Product (VAL)') {
+            return evaluateAssortedProductVal(scheme, lineItems);
+        } else if (schemeType == 'Invoice Qty Based') {
+            return evaluateInvoiceQty(scheme, lineItems);
+        } else if (schemeType == 'Invoice Val Based') {
+            return evaluateInvoiceVal(scheme, lineItems);
+        }
+
+        return null;
+    }
+
+    // ── Scheme Type Evaluators ───────────────────────────────────────────────
+
+    /**
+     * @description Same Product (QTY): Each scheme product must individually
+     *              meet its min quantity to qualify.
+     */
+    private static SchemeResult evaluateSameProductQty(
+        Scheme__c scheme,
+        List<Order_Line_Item__c> lineItems
+    ) {
+        Set<Id> buyProductIds = getBuyProductIds(scheme);
+        Map<Id, Decimal> minQtyMap = getSchemeProductMinQty(scheme);
+        Decimal schemeMinQty = scheme.Min_Quantity__c != null ? scheme.Min_Quantity__c : 0;
+
+        Boolean anyQualifies = false;
+        Decimal totalQualifyingQty = 0;
+        Decimal totalQualifyingVal = 0;
+        Map<Id, Decimal> qualifyingLineAmounts = new Map<Id, Decimal>();
 
         for (Order_Line_Item__c item : lineItems) {
-            // Check product match
-            if (scheme.Product_Ext__c != null && item.Product_Ext__c != scheme.Product_Ext__c) {
+            if (item.Product_Ext__c == null || !buyProductIds.contains(item.Product_Ext__c)) {
+                continue;
+            }
+
+            Decimal itemQty = item.Quantity__c != null ? item.Quantity__c : 0;
+            Decimal requiredQty = minQtyMap.containsKey(item.Product_Ext__c)
+                ? minQtyMap.get(item.Product_Ext__c) : schemeMinQty;
+
+            if (itemQty >= requiredQty && requiredQty > 0) {
+                anyQualifies = true;
+                totalQualifyingQty += itemQty;
+                Decimal lineVal = getLineValue(item);
+                totalQualifyingVal += lineVal;
+                qualifyingLineAmounts.put(item.Id, lineVal);
+            }
+        }
+
+        if (!anyQualifies) {
+            return null;
+        }
+
+        if (scheme.Scheme_Slabs__r != null && !scheme.Scheme_Slabs__r.isEmpty()) {
+            SchemeResult slabResult = evaluateSlab(scheme, totalQualifyingQty, totalQualifyingVal);
+            if (slabResult != null) {
+                slabResult.lineItemDiscounts = distributeDiscountToLines(
+                    slabResult.discountAmount + slabResult.priceDiscount,
+                    qualifyingLineAmounts
+                );
+            }
+            return slabResult;
+        }
+
+        return buildDirectResult(scheme, totalQualifyingQty, totalQualifyingVal, qualifyingLineAmounts);
+    }
+
+    /**
+     * @description Same Product (VAL): Each scheme product must individually
+     *              meet the MOV (minimum order value) to qualify.
+     */
+    private static SchemeResult evaluateSameProductVal(
+        Scheme__c scheme,
+        List<Order_Line_Item__c> lineItems
+    ) {
+        Set<Id> buyProductIds = getBuyProductIds(scheme);
+        Decimal movThreshold = scheme.MOV__c != null ? scheme.MOV__c
+            : (scheme.Min_Value__c != null ? scheme.Min_Value__c : 0);
+
+        Boolean anyQualifies = false;
+        Decimal totalQualifyingQty = 0;
+        Decimal totalQualifyingVal = 0;
+        Map<Id, Decimal> qualifyingLineAmounts = new Map<Id, Decimal>();
+
+        for (Order_Line_Item__c item : lineItems) {
+            if (item.Product_Ext__c == null || !buyProductIds.contains(item.Product_Ext__c)) {
+                continue;
+            }
+
+            Decimal lineVal = getLineValue(item);
+            if (lineVal >= movThreshold && movThreshold > 0) {
+                anyQualifies = true;
+                totalQualifyingQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+                totalQualifyingVal += lineVal;
+                qualifyingLineAmounts.put(item.Id, lineVal);
+            }
+        }
+
+        if (!anyQualifies) {
+            return null;
+        }
+
+        if (scheme.Scheme_Slabs__r != null && !scheme.Scheme_Slabs__r.isEmpty()) {
+            SchemeResult slabResult = evaluateSlab(scheme, totalQualifyingQty, totalQualifyingVal);
+            if (slabResult != null) {
+                slabResult.lineItemDiscounts = distributeDiscountToLines(
+                    slabResult.discountAmount + slabResult.priceDiscount,
+                    qualifyingLineAmounts
+                );
+            }
+            return slabResult;
+        }
+
+        return buildDirectResult(scheme, totalQualifyingQty, totalQualifyingVal, qualifyingLineAmounts);
+    }
+
+    /**
+     * @description Assorted Product (QTY): Aggregate quantity across ALL scheme
+     *              buy-products and check against individual min thresholds.
+     */
+    private static SchemeResult evaluateAssortedProductQty(
+        Scheme__c scheme,
+        List<Order_Line_Item__c> lineItems
+    ) {
+        Set<Id> buyProductIds = getBuyProductIds(scheme);
+
+        Decimal totalQty = 0;
+        Decimal totalVal = 0;
+        Map<Id, Decimal> qualifyingLineAmounts = new Map<Id, Decimal>();
+
+        for (Order_Line_Item__c item : lineItems) {
+            if (item.Product_Ext__c == null || !buyProductIds.contains(item.Product_Ext__c)) {
                 continue;
             }
 
             Decimal qty = item.Quantity__c != null ? item.Quantity__c : 0;
-            Decimal val = item.Net_Amount__c != null ? item.Net_Amount__c
-                : (item.Line_Amount__c != null ? item.Line_Amount__c : 0);
-
+            Decimal val = getLineValue(item);
             totalQty += qty;
-            totalValue += val;
+            totalVal += val;
+            qualifyingLineAmounts.put(item.Id, val);
         }
 
-        if (totalQty == 0 && totalValue == 0) {
+        // Check each product meets its individual min qty
+        Map<Id, Decimal> minQtyMap = getSchemeProductMinQty(scheme);
+        for (Id prodId : minQtyMap.keySet()) {
+            Decimal prodQty = 0;
+            for (Order_Line_Item__c item : lineItems) {
+                if (item.Product_Ext__c == prodId) {
+                    prodQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+                }
+            }
+            if (prodQty < minQtyMap.get(prodId)) {
+                return null;
+            }
+        }
+
+        Decimal requiredQty = scheme.Min_Quantity__c != null ? scheme.Min_Quantity__c : 0;
+        if (totalQty < requiredQty && requiredQty > 0) {
             return null;
         }
 
-        // Handle different scheme types
-        SchemeResult result;
-
-        if (scheme.Scheme_Type__c == 'Slab') {
-            result = evaluateSlab(scheme, totalQty, totalValue);
-        } else {
-            result = new SchemeResult();
-            result.schemeId = scheme.Id;
-            result.schemeName = scheme.Name;
-            result.schemeType = scheme.Scheme_Type__c;
-
-            if (scheme.Scheme_Type__c == 'Discount') {
-                if (scheme.Discount_Percent__c != null && scheme.Discount_Percent__c > 0) {
-                    result.discountAmount = (totalValue * scheme.Discount_Percent__c / 100)
-                        .setScale(2, RoundingMode.HALF_UP);
-                } else if (scheme.Discount_Amount__c != null && scheme.Discount_Amount__c > 0) {
-                    result.discountAmount = scheme.Discount_Amount__c;
-                }
-            } else if (scheme.Scheme_Type__c == 'Free Goods') {
-                // Check minimum quantity/value thresholds
-                Boolean meetsMinQty = scheme.Min_Quantity__c == null ||
-                    totalQty >= scheme.Min_Quantity__c;
-                Boolean meetsMinVal = scheme.Min_Value__c == null ||
-                    totalValue >= scheme.Min_Value__c;
-
-                if (meetsMinQty && meetsMinVal) {
-                    result.freeProductId = scheme.Free_Product_Ext__c;
-                    result.freeQty = scheme.Free_Quantity__c != null
-                        ? scheme.Free_Quantity__c : 0;
-                }
+        if (scheme.Scheme_Slabs__r != null && !scheme.Scheme_Slabs__r.isEmpty()) {
+            SchemeResult slabResult = evaluateSlab(scheme, totalQty, totalVal);
+            if (slabResult != null) {
+                slabResult.lineItemDiscounts = distributeDiscountToLines(
+                    slabResult.discountAmount + slabResult.priceDiscount,
+                    qualifyingLineAmounts
+                );
             }
+            return slabResult;
         }
+
+        return buildDirectResult(scheme, totalQty, totalVal, qualifyingLineAmounts);
+    }
+
+    /**
+     * @description Assorted Product (VAL): Aggregate value across ALL scheme
+     *              buy-products and check against the MOV threshold.
+     */
+    private static SchemeResult evaluateAssortedProductVal(
+        Scheme__c scheme,
+        List<Order_Line_Item__c> lineItems
+    ) {
+        Set<Id> buyProductIds = getBuyProductIds(scheme);
+        Decimal movThreshold = scheme.MOV__c != null ? scheme.MOV__c
+            : (scheme.Min_Value__c != null ? scheme.Min_Value__c : 0);
+
+        Decimal totalQty = 0;
+        Decimal totalVal = 0;
+        Map<Id, Decimal> qualifyingLineAmounts = new Map<Id, Decimal>();
+
+        for (Order_Line_Item__c item : lineItems) {
+            if (item.Product_Ext__c == null || !buyProductIds.contains(item.Product_Ext__c)) {
+                continue;
+            }
+
+            totalQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+            Decimal val = getLineValue(item);
+            totalVal += val;
+            qualifyingLineAmounts.put(item.Id, val);
+        }
+
+        if (totalVal < movThreshold && movThreshold > 0) {
+            return null;
+        }
+
+        if (scheme.Scheme_Slabs__r != null && !scheme.Scheme_Slabs__r.isEmpty()) {
+            SchemeResult slabResult = evaluateSlab(scheme, totalQty, totalVal);
+            if (slabResult != null) {
+                slabResult.lineItemDiscounts = distributeDiscountToLines(
+                    slabResult.discountAmount + slabResult.priceDiscount,
+                    qualifyingLineAmounts
+                );
+            }
+            return slabResult;
+        }
+
+        return buildDirectResult(scheme, totalQty, totalVal, qualifyingLineAmounts);
+    }
+
+    /**
+     * @description Invoice Qty Based: Total invoice quantity (across scheme materials)
+     *              must meet the invoice qty threshold.
+     */
+    private static SchemeResult evaluateInvoiceQty(
+        Scheme__c scheme,
+        List<Order_Line_Item__c> lineItems
+    ) {
+        Set<Id> schemeProductIds = getBuyProductIds(scheme);
+
+        Decimal totalQty = 0;
+        Decimal totalVal = 0;
+        Map<Id, Decimal> allLineAmounts = new Map<Id, Decimal>();
+
+        for (Order_Line_Item__c item : lineItems) {
+            if (!schemeProductIds.isEmpty() && item.Product_Ext__c != null
+                && !schemeProductIds.contains(item.Product_Ext__c)) {
+                continue;
+            }
+
+            totalQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+            Decimal val = getLineValue(item);
+            totalVal += val;
+            allLineAmounts.put(item.Id, val);
+        }
+
+        Decimal threshold = scheme.Invoice_Qty_Threshold__c != null
+            ? scheme.Invoice_Qty_Threshold__c
+            : (scheme.Min_Quantity__c != null ? scheme.Min_Quantity__c : 0);
+
+        if (totalQty < threshold && threshold > 0) {
+            return null;
+        }
+
+        if (scheme.Scheme_Slabs__r != null && !scheme.Scheme_Slabs__r.isEmpty()) {
+            SchemeResult slabResult = evaluateSlab(scheme, totalQty, totalVal);
+            if (slabResult != null) {
+                slabResult.lineItemDiscounts = distributeDiscountToLines(
+                    slabResult.discountAmount + slabResult.priceDiscount,
+                    allLineAmounts
+                );
+            }
+            return slabResult;
+        }
+
+        return buildDirectResult(scheme, totalQty, totalVal, allLineAmounts);
+    }
+
+    /**
+     * @description Invoice Val Based: Total invoice value (across scheme materials)
+     *              must meet the invoice value threshold.
+     */
+    private static SchemeResult evaluateInvoiceVal(
+        Scheme__c scheme,
+        List<Order_Line_Item__c> lineItems
+    ) {
+        Set<Id> schemeProductIds = getBuyProductIds(scheme);
+
+        Decimal totalQty = 0;
+        Decimal totalVal = 0;
+        Map<Id, Decimal> allLineAmounts = new Map<Id, Decimal>();
+
+        for (Order_Line_Item__c item : lineItems) {
+            if (!schemeProductIds.isEmpty() && item.Product_Ext__c != null
+                && !schemeProductIds.contains(item.Product_Ext__c)) {
+                continue;
+            }
+
+            totalQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+            Decimal val = getLineValue(item);
+            totalVal += val;
+            allLineAmounts.put(item.Id, val);
+        }
+
+        Decimal threshold = scheme.Invoice_Val_Threshold__c != null
+            ? scheme.Invoice_Val_Threshold__c
+            : (scheme.Min_Value__c != null ? scheme.Min_Value__c : 0);
+
+        if (totalVal < threshold && threshold > 0) {
+            return null;
+        }
+
+        if (scheme.Scheme_Slabs__r != null && !scheme.Scheme_Slabs__r.isEmpty()) {
+            SchemeResult slabResult = evaluateSlab(scheme, totalQty, totalVal);
+            if (slabResult != null) {
+                slabResult.lineItemDiscounts = distributeDiscountToLines(
+                    slabResult.discountAmount + slabResult.priceDiscount,
+                    allLineAmounts
+                );
+            }
+            return slabResult;
+        }
+
+        return buildDirectResult(scheme, totalQty, totalVal, allLineAmounts);
+    }
+
+    // ── Benefit builders ─────────────────────────────────────────────────────
+
+    /**
+     * @description Builds a SchemeResult directly from scheme-level fields.
+     */
+    private static SchemeResult buildDirectResult(
+        Scheme__c scheme,
+        Decimal totalQty,
+        Decimal totalVal,
+        Map<Id, Decimal> lineAmounts
+    ) {
+        SchemeResult result = new SchemeResult();
+        result.schemeId = scheme.Id;
+        result.schemeName = scheme.Name;
+        result.schemeCategory = scheme.Scheme_Category__c;
+        result.schemeType = scheme.Scheme_Type__c;
+
+        String category = scheme.Scheme_Category__c;
+
+        if (category == 'Free Products') {
+            result.freeProductId = scheme.Free_Product_Ext__c;
+            result.freeProductName = scheme.Free_Product_Ext__r != null
+                ? scheme.Free_Product_Ext__r.Name : null;
+            result.freeQty = scheme.Free_Quantity__c != null ? scheme.Free_Quantity__c : 0;
+        } else if (category == 'Discount in %') {
+            Decimal pct = scheme.Discount_Percent__c != null ? scheme.Discount_Percent__c : 0;
+            result.discountPercent = pct;
+            result.discountAmount = (totalVal * pct / 100).setScale(2, RoundingMode.HALF_UP);
+        } else if (category == 'Discount in Value') {
+            result.priceDiscount = scheme.Price_Discount__c != null ? scheme.Price_Discount__c
+                : (scheme.Discount_Amount__c != null ? scheme.Discount_Amount__c : 0);
+            result.discountAmount = result.priceDiscount;
+        } else if (category == 'Reward Points') {
+            result.rewardPoints = scheme.Reward_Points__c != null ? scheme.Reward_Points__c : 0;
+        }
+
+        result.lineItemDiscounts = distributeDiscountToLines(
+            result.discountAmount + result.priceDiscount,
+            lineAmounts
+        );
 
         return result;
     }
 
     /**
-     * @description Checks whether a value falls within a specified range.
-     *              Handles null bounds (null = unbounded).
+     * @description Applies slab benefit fields to a SchemeResult.
      */
+    private static void applySlabBenefit(SchemeResult result, Scheme_Slab__c slab, Decimal value) {
+        String discountType = slab.Discount_Type__c;
+
+        if (discountType == 'Percent') {
+            Decimal pct = slab.Discount_Percent__c != null ? slab.Discount_Percent__c : 0;
+            result.discountPercent = pct;
+            result.discountAmount = (value * pct / 100).setScale(2, RoundingMode.HALF_UP);
+        } else if (discountType == 'Amount') {
+            result.discountAmount = slab.Discount_Amount__c != null ? slab.Discount_Amount__c : 0;
+        } else if (discountType == 'Free Product') {
+            result.freeProductId = slab.Free_Product_Ext__c;
+            result.freeProductName = slab.Free_Product_Ext__r != null
+                ? slab.Free_Product_Ext__r.Name : null;
+            result.freeQty = slab.Free_Quantity__c != null ? slab.Free_Quantity__c : 0;
+        } else if (discountType == 'Price Discount') {
+            result.priceDiscount = slab.Price_Discount__c != null ? slab.Price_Discount__c : 0;
+            result.discountAmount = result.priceDiscount;
+        } else if (discountType == 'Reward Points') {
+            result.rewardPoints = slab.Reward_Points__c != null ? slab.Reward_Points__c : 0;
+        }
+    }
+
+    // ── Utility helpers ──────────────────────────────────────────────────────
+
+    private static Set<Id> getBuyProductIds(Scheme__c scheme) {
+        Set<Id> productIds = new Set<Id>();
+        if (scheme.Scheme_Products__r != null) {
+            for (Scheme_Product__c sp : scheme.Scheme_Products__r) {
+                if (sp.Is_Buy_Product__c && sp.Product_Ext__c != null) {
+                    productIds.add(sp.Product_Ext__c);
+                }
+            }
+        }
+        if (productIds.isEmpty() && scheme.Product_Ext__c != null) {
+            productIds.add(scheme.Product_Ext__c);
+        }
+        return productIds;
+    }
+
+    private static Map<Id, Decimal> getSchemeProductMinQty(Scheme__c scheme) {
+        Map<Id, Decimal> minQtyMap = new Map<Id, Decimal>();
+        if (scheme.Scheme_Products__r != null) {
+            for (Scheme_Product__c sp : scheme.Scheme_Products__r) {
+                if (sp.Is_Buy_Product__c && sp.Product_Ext__c != null && sp.Min_Quantity__c != null) {
+                    minQtyMap.put(sp.Product_Ext__c, sp.Min_Quantity__c);
+                }
+            }
+        }
+        return minQtyMap;
+    }
+
+    private static Decimal getLineValue(Order_Line_Item__c item) {
+        if (item.Net_Amount__c != null) {
+            return item.Net_Amount__c;
+        }
+        if (item.Line_Amount__c != null) {
+            return item.Line_Amount__c;
+        }
+        return 0;
+    }
+
+    private static Map<Id, Decimal> distributeDiscountToLines(
+        Decimal totalDiscount,
+        Map<Id, Decimal> lineAmounts
+    ) {
+        Map<Id, Decimal> distribution = new Map<Id, Decimal>();
+
+        if (totalDiscount == null || totalDiscount <= 0 || lineAmounts.isEmpty()) {
+            return distribution;
+        }
+
+        Decimal totalLineValue = 0;
+        for (Decimal val : lineAmounts.values()) {
+            totalLineValue += val;
+        }
+
+        if (totalLineValue <= 0) {
+            return distribution;
+        }
+
+        for (Id lineId : lineAmounts.keySet()) {
+            Decimal proportion = lineAmounts.get(lineId) / totalLineValue;
+            Decimal lineDiscount = (totalDiscount * proportion).setScale(2, RoundingMode.HALF_UP);
+            distribution.put(lineId, lineDiscount);
+        }
+
+        return distribution;
+    }
+
     private static Boolean isInRange(Decimal value, Decimal minVal, Decimal maxVal) {
         if (value == null) {
             return false;

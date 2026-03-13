@@ -2,6 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Scheme_Type__c</fullName>
     <label>Scheme Type</label>
+    <description>The trigger condition type for scheme qualification</description>
     <type>Picklist</type>
     <required>true</required>
     <valueSet>
@@ -9,29 +10,34 @@
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>Buy X Get Y</fullName>
+                <fullName>Same Product (QTY)</fullName>
                 <default>false</default>
-                <label>Buy X Get Y</label>
+                <label>Same Product (QTY)</label>
             </value>
             <value>
-                <fullName>Flat Discount Percent</fullName>
+                <fullName>Same Product (VAL)</fullName>
                 <default>false</default>
-                <label>Flat Discount Percent</label>
+                <label>Same Product (VAL)</label>
             </value>
             <value>
-                <fullName>Amount Off</fullName>
+                <fullName>Assorted Product (QTY)</fullName>
                 <default>false</default>
-                <label>Amount Off</label>
+                <label>Assorted Product (QTY)</label>
             </value>
             <value>
-                <fullName>Slab Based</fullName>
+                <fullName>Assorted Product (VAL)</fullName>
                 <default>false</default>
-                <label>Slab Based</label>
+                <label>Assorted Product (VAL)</label>
             </value>
             <value>
-                <fullName>Combo Offer</fullName>
+                <fullName>Invoice Qty Based</fullName>
                 <default>false</default>
-                <label>Combo Offer</label>
+                <label>Invoice Qty Based</label>
+            </value>
+            <value>
+                <fullName>Invoice Val Based</fullName>
+                <default>false</default>
+                <label>Invoice Val Based</label>
             </value>
         </valueSetDefinition>
     </valueSet>

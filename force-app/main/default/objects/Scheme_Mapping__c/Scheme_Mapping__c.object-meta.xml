@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/metadata">
+    <label>Scheme Mapping</label>
+    <pluralLabel>Scheme Mappings</pluralLabel>
+    <nameField>
+        <label>Mapping Name</label>
+        <type>AutoNumber</type>
+        <displayFormat>SM-{0000}</displayFormat>
+    </nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+    <description>Maps schemes to specific territories, zones, districts, areas, outlets, and customer types for targeted scheme applicability.</description>
+</CustomObject>

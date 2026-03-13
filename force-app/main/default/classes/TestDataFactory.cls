@@ -162,14 +162,20 @@ public class TestDataFactory {
         return col;
     }
 
-    public static Scheme__c createScheme(String name, String code, String type) {
+    public static Scheme__c createScheme(String name, String code, String schemeType) {
+        return createScheme(name, code, 'Free Products', schemeType);
+    }
+
+    public static Scheme__c createScheme(String name, String code, String category, String schemeType) {
         Scheme__c scheme = new Scheme__c(
             Name = name,
             Scheme_Code__c = code,
-            Scheme_Type__c = type,
+            Scheme_Category__c = category,
+            Scheme_Type__c = schemeType,
             Start_Date__c = Date.today().addDays(-10),
             End_Date__c = Date.today().addDays(30),
             Status__c = 'Active',
+            Is_Active__c = true,
             Priority__c = 1,
             Is_Stackable__c = false
         );

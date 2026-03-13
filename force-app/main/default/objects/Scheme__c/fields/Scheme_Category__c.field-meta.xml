@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
-    <fullName>Discount_Type__c</fullName>
-    <label>Discount Type</label>
+    <fullName>Scheme_Category__c</fullName>
+    <label>Scheme Category</label>
+    <description>The benefit category: what the customer receives when qualifying</description>
     <type>Picklist</type>
     <required>true</required>
     <valueSet>
@@ -9,24 +10,19 @@
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>Percent</fullName>
+                <fullName>Free Products</fullName>
                 <default>true</default>
-                <label>Percent</label>
+                <label>Free Products</label>
             </value>
             <value>
-                <fullName>Amount</fullName>
+                <fullName>Discount in %</fullName>
                 <default>false</default>
-                <label>Amount</label>
+                <label>Discount in %</label>
             </value>
             <value>
-                <fullName>Free Product</fullName>
+                <fullName>Discount in Value</fullName>
                 <default>false</default>
-                <label>Free Product</label>
-            </value>
-            <value>
-                <fullName>Price Discount</fullName>
-                <default>false</default>
-                <label>Price Discount</label>
+                <label>Discount in Value</label>
             </value>
             <value>
                 <fullName>Reward Points</fullName>
