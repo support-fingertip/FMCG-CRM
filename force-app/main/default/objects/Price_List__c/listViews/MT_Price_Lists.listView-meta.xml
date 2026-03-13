@@ -2,7 +2,7 @@
 <ListView xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>MT_Price_Lists</fullName>
     <columns>NAME</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Unit_Price__c</columns>
     <columns>Price_Type__c</columns>
     <columns>Region__c</columns>

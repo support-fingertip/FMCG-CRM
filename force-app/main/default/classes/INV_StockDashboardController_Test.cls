@@ -9,34 +9,34 @@ private class INV_StockDashboardController_Test {
         Account distributor = new Account(Name = 'Test Distributor', Is_Active__c = true);
         insert distributor;
 
-        List<Product2> products = new List<Product2>();
+        List<Product_Extension__c> products = new List<Product_Extension__c>();
         for (Integer i = 1; i <= 5; i++) {
-            products.add(new Product2(Name = 'Stock Product ' + i, ProductCode = 'SP-' + i, IsActive = true));
+            products.add(new Product_Extension__c(Name = 'Stock Product ' + i, Product_Code__c = 'SP-' + i, Is_Active__c = true));
         }
         insert products;
 
         List<Distributor_Stock__c> stocks = new List<Distributor_Stock__c>();
         // Healthy stock
         stocks.add(new Distributor_Stock__c(
-            Account__c = distributor.Id, Product__c = products[0].Id,
+            Account__c = distributor.Id, Product_Ext__c = products[0].Id,
             Stock_Date__c = Date.today(), Opening_Stock__c = 100, Received_Qty__c = 50,
             Sold_Qty__c = 20, Damaged_Qty__c = 5, Is_Current__c = true
         ));
         // Low stock
         stocks.add(new Distributor_Stock__c(
-            Account__c = distributor.Id, Product__c = products[1].Id,
+            Account__c = distributor.Id, Product_Ext__c = products[1].Id,
             Stock_Date__c = Date.today(), Opening_Stock__c = 10, Received_Qty__c = 0,
             Sold_Qty__c = 5, Damaged_Qty__c = 0, Is_Current__c = true
         ));
         // Zero stock
         stocks.add(new Distributor_Stock__c(
-            Account__c = distributor.Id, Product__c = products[2].Id,
+            Account__c = distributor.Id, Product_Ext__c = products[2].Id,
             Stock_Date__c = Date.today(), Opening_Stock__c = 10, Received_Qty__c = 0,
             Sold_Qty__c = 10, Damaged_Qty__c = 0, Is_Current__c = true
         ));
         // Historical (not current)
         stocks.add(new Distributor_Stock__c(
-            Account__c = distributor.Id, Product__c = products[0].Id,
+            Account__c = distributor.Id, Product_Ext__c = products[0].Id,
             Stock_Date__c = Date.today().addDays(-7), Opening_Stock__c = 80,
             Received_Qty__c = 40, Sold_Qty__c = 20, Damaged_Qty__c = 0, Is_Current__c = false
         ));
@@ -45,7 +45,7 @@ private class INV_StockDashboardController_Test {
         // Near-expiry batch
         Batch_Master__c nearExpiry = new Batch_Master__c(
             Name = 'Near Expiry Batch', Batch_Number__c = 'NEB-001',
-            Product__c = products[0].Id,
+            Product_Ext__c = products[0].Id,
             Manufacturing_Date__c = Date.today().addDays(-350),
             Expiry_Date__c = Date.today().addDays(15),
             Status__c = 'Active', Quantity_Manufactured__c = 5000
@@ -53,7 +53,7 @@ private class INV_StockDashboardController_Test {
         // Active batch with good shelf life
         Batch_Master__c activeBatch = new Batch_Master__c(
             Name = 'Active Batch', Batch_Number__c = 'ACT-001',
-            Product__c = products[1].Id,
+            Product_Ext__c = products[1].Id,
             Manufacturing_Date__c = Date.today().addDays(-30),
             Expiry_Date__c = Date.today().addDays(335),
             Status__c = 'Active', Quantity_Manufactured__c = 10000
@@ -135,7 +135,7 @@ private class INV_StockDashboardController_Test {
     @isTest
     static void testGetStockMovementHistory() {
         Account acc = [SELECT Id FROM Account WHERE Name = 'Test Distributor' LIMIT 1];
-        Product2 prod = [SELECT Id FROM Product2 WHERE ProductCode = 'SP-1' LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'SP-1' LIMIT 1];
 
         Test.startTest();
         List<Distributor_Stock__c> history =

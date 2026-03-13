@@ -24,7 +24,7 @@ private class INV_GRN_TriggerHandler_Test {
         insert warehouse;
 
         // Create product
-        Product2 product = new Product2(Name = 'GRN Product', ProductCode = 'GP001', IsActive = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'GRN Product', Product_Code__c = 'GP001', Is_Active__c = true);
         insert product;
 
         // Create invoice with warehouse
@@ -49,7 +49,7 @@ private class INV_GRN_TriggerHandler_Test {
         // Create GRN Lines
         GRN_Line__c grnLine = new GRN_Line__c(
             GRN__c = grn.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Dispatched_Qty__c = 100,
             Received_Qty__c = 95,
             Short_Qty__c = 3,
@@ -62,7 +62,7 @@ private class INV_GRN_TriggerHandler_Test {
     static void testGRNReceivedAddsStock() {
         GRN__c grn = [SELECT Id, Status__c FROM GRN__c LIMIT 1];
         Warehouse__c wh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'GRN01'];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'GP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'GP001'];
 
         Test.startTest();
         grn.Status__c = 'Received';
@@ -73,7 +73,7 @@ private class INV_GRN_TriggerHandler_Test {
         List<Warehouse_Stock__c> stocks = [
             SELECT Qty_On_Hand__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
 
         System.assert(!stocks.isEmpty(), 'Stock record should exist');
@@ -102,12 +102,12 @@ private class INV_GRN_TriggerHandler_Test {
     static void testGRNPendingNoStockChange() {
         // GRN is already Pending from setup. No stock should exist initially.
         Warehouse__c wh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'GRN01'];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'GP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'GP001'];
 
         List<Warehouse_Stock__c> stocks = [
             SELECT Qty_On_Hand__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
 
         System.assert(stocks.isEmpty(), 'No stock should exist before GRN receipt');

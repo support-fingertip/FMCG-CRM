@@ -34,7 +34,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
             Price_List__c oldRec = oldMap.get(rec.Id);
             if (rec.Effective_From__c != oldRec.Effective_From__c ||
                 rec.Effective_To__c != oldRec.Effective_To__c ||
-                rec.Product__c != oldRec.Product__c ||
+                rec.Product_Ext__c != oldRec.Product_Ext__c ||
                 rec.Region__c != oldRec.Region__c ||
                 rec.Channel__c != oldRec.Channel__c) {
                 changedRecords.add(rec);
@@ -78,8 +78,8 @@ public class MDM_PriceList_Handler extends TriggerHandler {
         Set<String> channelValues = new Set<String>();
 
         for (Price_List__c rec : records) {
-            if (rec.Product__c != null) {
-                productIds.add(rec.Product__c);
+            if (rec.Product_Ext__c != null) {
+                productIds.add(rec.Product_Ext__c);
             }
             if (String.isNotBlank(rec.Region__c)) {
                 regionValues.add(rec.Region__c);
@@ -94,10 +94,10 @@ public class MDM_PriceList_Handler extends TriggerHandler {
         }
 
         // Query existing price lists for the same dimension combinations
-        String query = 'SELECT Id, Product__c, Region__c, Channel__c, ' +
+        String query = 'SELECT Id, Product_Ext__c, Region__c, Channel__c, ' +
                        'Effective_From__c, Effective_To__c ' +
                        'FROM Price_List__c ' +
-                       'WHERE Product__c IN :productIds';
+                       'WHERE Product_Ext__c IN :productIds';
 
         if (!regionValues.isEmpty()) {
             query += ' AND Region__c IN :regionValues';
@@ -113,7 +113,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
         Map<String, List<Price_List__c>> existingByKey = new Map<String, List<Price_List__c>>();
         for (Price_List__c existing : Database.query(query)) {
             String key = buildCompositeKey(
-                existing.Product__c, existing.Region__c, existing.Channel__c
+                existing.Product_Ext__c, existing.Region__c, existing.Channel__c
             );
             if (!existingByKey.containsKey(key)) {
                 existingByKey.put(key, new List<Price_List__c>());
@@ -124,7 +124,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
         // Also check within the incoming batch for intra-batch overlaps
         Map<String, List<Price_List__c>> batchByKey = new Map<String, List<Price_List__c>>();
         for (Price_List__c rec : records) {
-            String key = buildCompositeKey(rec.Product__c, rec.Region__c, rec.Channel__c);
+            String key = buildCompositeKey(rec.Product_Ext__c, rec.Region__c, rec.Channel__c);
             if (!batchByKey.containsKey(key)) {
                 batchByKey.put(key, new List<Price_List__c>());
             }
@@ -138,7 +138,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
                 continue;
             }
 
-            String key = buildCompositeKey(rec.Product__c, rec.Region__c, rec.Channel__c);
+            String key = buildCompositeKey(rec.Product_Ext__c, rec.Region__c, rec.Channel__c);
 
             // Check against existing database records
             if (existingByKey.containsKey(key)) {
@@ -180,7 +180,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
 
     /**
      * @description Builds a composite key from the three dimension fields.
-     * @param productId The Product__c lookup ID.
+     * @param productId The Product_Ext__c lookup ID.
      * @param region    The Region__c value.
      * @param channel   The Channel__c value.
      * @return A pipe-delimited composite key string.
@@ -224,7 +224,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
             if (rec.Unit_Price__c != oldRec.Unit_Price__c) {
                 logs.add(new Price_Change_Log__c(
                     Price_List__c   = rec.Id,
-                    Product__c      = rec.Product__c,
+                    Product_Ext__c      = rec.Product_Ext__c,
                     Old_Price__c    = oldRec.Unit_Price__c,
                     New_Price__c    = rec.Unit_Price__c,
                     Changed_By__c   = UserInfo.getUserId(),

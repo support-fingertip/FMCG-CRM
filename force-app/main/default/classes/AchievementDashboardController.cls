@@ -26,13 +26,13 @@ public with sharing class AchievementDashboardController {
                    Territory__c, Territory__r.Name,
                    Target_Value__c, Achievement_Value__c, Achievement_Percent__c,
                    Status__c,
-                   (SELECT Id, Name, Product__c, Product__r.Name,
+                   (SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name,
                            Product_Category__c, Product_Category__r.Name,
                            Target_Qty__c, Achievement_Qty__c,
                            Target_Value__c, Achievement_Value__c,
                            Achievement_Percent__c
                     FROM Target_Lines__r
-                    ORDER BY Product__r.Name)
+                    ORDER BY Product_Ext__r.Name)
             FROM Target__c
             WHERE Salesperson__c = :userId
             AND Month__c = :month

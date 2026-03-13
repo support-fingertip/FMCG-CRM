@@ -9,13 +9,12 @@
 public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
-    public static List<Product2> searchProducts(String searchTerm, String categoryId) {
+    public static List<Product_Extension__c> searchProducts(String searchTerm, String categoryId) {
         String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
-        String query = 'SELECT Id, Name, ProductCode, Description, IsActive, ' +
-                       '(SELECT Id, UnitPrice, Pricebook2Id FROM PricebookEntries WHERE IsActive = true LIMIT 1) ' +
-                       'FROM Product2 WHERE IsActive = true AND (Name LIKE :searchKey OR ProductCode LIKE :searchKey)';
+        String query = 'SELECT Id, Name, ProductCode, Description, Is_Active__c ' +
+                       'FROM Product_Extension__c WHERE Is_Active__c = true AND (Name LIKE :searchKey OR ProductCode LIKE :searchKey)';
         if (String.isNotBlank(categoryId)) {
-            query += ' AND Id IN (SELECT Product__c FROM Product_Extension__c WHERE Product_Category__c = :categoryId)';
+            query += ' AND Product_Category__c = :categoryId';
         }
         query += ' ORDER BY Name LIMIT 50';
         return Database.query(query);
@@ -43,7 +42,7 @@ public with sharing class OrderEntryController {
     public static Sales_Order__c getLastOrder(Id accountId) {
         List<Sales_Order__c> orders = [
             SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c,
-                   (SELECT Id, Product__c, Product__r.Name, Quantity__c, Unit_Price__c, Line_Total__c
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Quantity__c, Unit_Price__c, Line_Total__c
                     FROM Order_Line_Items__r ORDER BY CreatedDate)
             FROM Sales_Order__c
             WHERE Account__c = :accountId
@@ -61,7 +60,7 @@ public with sharing class OrderEntryController {
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
                            Discount_Type__c, Discount_Value__c, Free_Product__c, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
-                   (SELECT Id, Product__c, Product__r.Name, Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
                     FROM Scheme_Products__r)
             FROM Scheme__c
             WHERE Status__c = 'Active'
@@ -73,9 +72,9 @@ public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
     public static List<Product_Extension__c> getProductExtensions(List<Id> productIds) {
-        return [SELECT Id, Product__c, HSN_SAC_Code__c, Barcode_UPC__c, Barcode_EAN__c,
+        return [SELECT Id, HSN_SAC_Code__c, Barcode_UPC__c, Barcode_EAN__c,
                        Case_Size__c, Min_Order_Qty__c, Weight__c, Weight_Unit__c
-                FROM Product_Extension__c WHERE Product__c IN :productIds];
+                FROM Product_Extension__c WHERE Id IN :productIds];
     }
 
     private static void updateOrderTotals(Id orderId) {

@@ -25,8 +25,8 @@ public without sharing class OMS_OrderPricing_Service {
         Set<Id> orderIds = new Set<Id>();
 
         for (Order_Line_Item__c item : lineItems) {
-            if (item.Product__c != null) {
-                productIds.add(item.Product__c);
+            if (item.Product_Ext__c != null) {
+                productIds.add(item.Product_Ext__c);
             }
             if (item.Sales_Order__c != null) {
                 orderIds.add(item.Sales_Order__c);
@@ -50,17 +50,17 @@ public without sharing class OMS_OrderPricing_Service {
         // Fetch active price list entries for the products
         Map<String, Price_List__c> priceListMap = new Map<String, Price_List__c>();
         for (Price_List__c pl : [
-            SELECT Id, Product__c, Region__c, Channel__c,
+            SELECT Id, Product_Ext__c, Region__c, Channel__c,
                    Unit_Price__c, Effective_From__c, Effective_To__c
             FROM Price_List__c
-            WHERE Product__c IN :productIds
+            WHERE Product_Ext__c IN :productIds
               AND Is_Active__c = true
               AND Effective_From__c <= TODAY
               AND (Effective_To__c >= TODAY OR Effective_To__c = null)
             ORDER BY Effective_From__c DESC
         ]) {
             // Build composite key for lookup
-            String key = String.valueOf(pl.Product__c) + '|' +
+            String key = String.valueOf(pl.Product_Ext__c) + '|' +
                          (String.isNotBlank(pl.Region__c) ? pl.Region__c : '') + '|' +
                          (String.isNotBlank(pl.Channel__c) ? pl.Channel__c : '');
             if (!priceListMap.containsKey(key)) {
@@ -70,7 +70,7 @@ public without sharing class OMS_OrderPricing_Service {
 
         // Calculate pricing for each line item
         for (Order_Line_Item__c item : lineItems) {
-            if (item.Product__c == null) {
+            if (item.Product_Ext__c == null) {
                 continue;
             }
 
@@ -84,7 +84,7 @@ public without sharing class OMS_OrderPricing_Service {
                 String channel = (order != null) ? order.Channel__c : '';
 
                 // Try specific region+channel first, then fall back
-                unitPrice = resolvePrice(item.Product__c, region, channel, priceListMap);
+                unitPrice = resolvePrice(item.Product_Ext__c, region, channel, priceListMap);
                 item.Unit_Price__c = unitPrice;
             }
 
@@ -199,7 +199,7 @@ public without sharing class OMS_OrderPricing_Service {
         String toState = '';
 
         for (Order_Line_Item__c item : lineItems) {
-            if (item.Product__c == null) {
+            if (item.Product_Ext__c == null) {
                 continue;
             }
 
@@ -216,7 +216,7 @@ public without sharing class OMS_OrderPricing_Service {
                     ? order.Shipping_State__c : '';
             }
 
-            productIds.add(item.Product__c);
+            productIds.add(item.Product_Ext__c);
             taxableAmounts.add(taxableAmount);
             taxableItems.add(item);
         }

@@ -87,7 +87,7 @@
     <relatedLists>
         <relatedList>Stock_Transfer_Line__c.Stock_Transfer__c</relatedList>
         <fields>NAME</fields>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Requested_Qty__c</fields>
         <fields>Approved_Qty__c</fields>
         <fields>Received_Qty__c</fields>

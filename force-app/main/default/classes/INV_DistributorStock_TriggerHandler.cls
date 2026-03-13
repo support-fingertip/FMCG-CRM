@@ -103,9 +103,9 @@ public class INV_DistributorStock_TriggerHandler extends TriggerHandler {
         for (Distributor_Stock__c rec : currentRecords) {
             if (rec.Is_Current__c) {
                 accountIds.add(rec.Account__c);
-                productIds.add(rec.Product__c);
+                productIds.add(rec.Product_Ext__c);
                 currentIds.add(rec.Id);
-                String key = String.valueOf(rec.Account__c) + '|' + String.valueOf(rec.Product__c);
+                String key = String.valueOf(rec.Account__c) + '|' + String.valueOf(rec.Product_Ext__c);
                 keyToCurrentId.put(key, rec.Id);
             }
         }
@@ -116,10 +116,10 @@ public class INV_DistributorStock_TriggerHandler extends TriggerHandler {
 
         // Query other current entries for the same combinations
         List<Distributor_Stock__c> toUnmark = [
-            SELECT Id, Account__c, Product__c
+            SELECT Id, Account__c, Product_Ext__c
             FROM Distributor_Stock__c
             WHERE Account__c IN :accountIds
-              AND Product__c IN :productIds
+              AND Product_Ext__c IN :productIds
               AND Is_Current__c = true
               AND Id NOT IN :currentIds
         ];
@@ -127,7 +127,7 @@ public class INV_DistributorStock_TriggerHandler extends TriggerHandler {
         // Filter to only those matching exact Account+Product combinations
         List<Distributor_Stock__c> updates = new List<Distributor_Stock__c>();
         for (Distributor_Stock__c rec : toUnmark) {
-            String key = String.valueOf(rec.Account__c) + '|' + String.valueOf(rec.Product__c);
+            String key = String.valueOf(rec.Account__c) + '|' + String.valueOf(rec.Product_Ext__c);
             if (keyToCurrentId.containsKey(key)) {
                 updates.add(new Distributor_Stock__c(
                     Id = rec.Id,

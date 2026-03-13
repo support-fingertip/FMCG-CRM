@@ -3,7 +3,7 @@
     <fullName>Current_Stock</fullName>
     <columns>NAME</columns>
     <columns>Account__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Closing_Stock__c</columns>
     <columns>Batch_No__c</columns>
     <columns>Expiry_Date__c</columns>

@@ -3,7 +3,7 @@
     <fullName>Free_Product__c</fullName>
     <label>Free Product</label>
     <type>Lookup</type>
-    <referenceTo>Product2</referenceTo>
+    <referenceTo>Product_Extension__c</referenceTo>
     <relationshipLabel>Scheme Slabs (Free Product)</relationshipLabel>
     <relationshipName>Scheme_Slabs_Free</relationshipName>
     <required>false</required>

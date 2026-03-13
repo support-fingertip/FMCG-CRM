@@ -712,11 +712,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Batch_Master__c.Product__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Batch_Master__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -887,6 +882,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Claim_Line__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Claim_Line__c.Batch_No__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -898,11 +898,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Claim_Line__c.Invoice_Reference__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Claim_Line__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1378,11 +1373,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Distributor_Stock__c.Opening_Stock__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Distributor_Stock__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2022,6 +2012,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>GRN_Line__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>GRN_Line__c.Damaged_Qty__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2038,11 +2033,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>GRN_Line__c.Notes__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>GRN_Line__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2182,17 +2172,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Indent_Line__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Indent_Line__c.Current_Stock__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Indent_Line__c.Line_Total__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Indent_Line__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2233,6 +2223,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Invoice_Line__c.Batch_No__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Invoice_Line__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2293,11 +2288,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Invoice_Line__c.Order_Line_Item__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Invoice_Line__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2817,6 +2807,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Order_Line_Item__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Order_Line_Item__c.Discount_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2858,11 +2853,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Order_Line_Item__c.Net_Amount__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Order_Line_Item__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2917,6 +2907,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Price_Change_Log__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Price_Change_Log__c.Change_Reason__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2942,11 +2937,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Price_Change_Log__c.Product__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Price_Change_Log__c.Region__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2968,11 +2958,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Price_List__c.Min_Qty__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Price_List__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3007,6 +2992,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Product_Extension__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Product_Extension__c.Barcode_UPC__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3033,11 +3023,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Product_Extension__c.Product_Category__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Product_Extension__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3167,6 +3152,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Return_Line__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Return_Line__c.Expiry_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3183,11 +3173,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Return_Line__c.Photo_URL__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Return_Line__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3457,6 +3442,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Scheme_Product__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Scheme_Product__c.Is_Get_Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3468,11 +3458,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Scheme_Product__c.Product_Category__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Scheme_Product__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3523,6 +3508,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Scheme__c.Applicable_Channel__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Scheme__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3642,11 +3632,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Scheme__c.Product__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Scheme__c.Region__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3737,6 +3722,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Stock_Adjustment__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Stock_Adjustment__c.Adjusted_By__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3752,11 +3742,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Stock_Adjustment__c.Product__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Stock_Adjustment__c.System_Qty__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3767,12 +3752,12 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Stock_Transaction__c.Notes__c</field>
+        <field>Stock_Transaction__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Stock_Transaction__c.Product__c</field>
+        <field>Stock_Transaction__c.Notes__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3807,17 +3792,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Stock_Transfer_Line__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Stock_Transfer_Line__c.Available_Stock__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Stock_Transfer_Line__c.Batch_Number__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Stock_Transfer_Line__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3962,6 +3947,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Target_Line__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Target_Line__c.Achievement_Qty__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3977,11 +3967,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Target_Line__c.Product__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Target_Line__c.Target_Qty__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3993,6 +3978,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Target__c.Achievement_Percent__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Target__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4047,11 +4037,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Target__c.Product__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Target__c.Salesperson__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4082,6 +4067,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Tax_Configuration__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Tax_Configuration__c.Effective_To__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4103,11 +4093,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Tax_Configuration__c.Is_Active__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Tax_Configuration__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4522,6 +4507,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Warehouse_Stock__c.Product_Ext__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Warehouse_Stock__c.Expiry_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4548,11 +4538,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Warehouse_Stock__c.Min_Stock_Level__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Warehouse_Stock__c.Product__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

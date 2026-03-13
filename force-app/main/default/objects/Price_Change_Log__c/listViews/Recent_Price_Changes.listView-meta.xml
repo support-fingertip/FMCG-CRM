@@ -9,7 +9,7 @@
         <value>LAST_N_DAYS:30</value>
     </filters>
     <columns>NAME</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Old_Price__c</columns>
     <columns>New_Price__c</columns>
     <columns>Channel__c</columns>

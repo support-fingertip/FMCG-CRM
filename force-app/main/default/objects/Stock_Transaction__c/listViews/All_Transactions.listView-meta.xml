@@ -5,7 +5,7 @@
     <filterScope>Everything</filterScope>
     <columns>NAME</columns>
     <columns>Warehouse__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Transaction_Type__c</columns>
     <columns>Quantity__c</columns>
     <columns>Direction__c</columns>

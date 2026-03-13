@@ -16,7 +16,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>Product__c</field>
+                <field>Product_Ext__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -113,7 +113,7 @@
     </layoutSections>
     <miniLayout>
         <fields>Warehouse__c</fields>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Adjustment_Type__c</fields>
         <fields>Adjustment_Qty__c</fields>
         <fields>Status__c</fields>

@@ -21,14 +21,14 @@ private class INV_WarehouseStock_Service_Test {
         insert warehouse;
 
         // Create products
-        Product2 product1 = new Product2(Name = 'Test Product 1', ProductCode = 'TP001', IsActive = true);
-        Product2 product2 = new Product2(Name = 'Test Product 2', ProductCode = 'TP002', IsActive = true);
-        insert new List<Product2>{ product1, product2 };
+        Product_Extension__c product1 = new Product_Extension__c(Name = 'Test Product 1', Product_Code__c = 'TP001', Is_Active__c = true);
+        Product_Extension__c product2 = new Product_Extension__c(Name = 'Test Product 2', Product_Code__c = 'TP002', Is_Active__c = true);
+        insert new List<Product_Extension__c>{ product1, product2 };
 
         // Create initial stock records
         Warehouse_Stock__c stock1 = new Warehouse_Stock__c(
             Warehouse__c = warehouse.Id,
-            Product__c = product1.Id,
+            Product_Ext__c = product1.Id,
             Qty_On_Hand__c = 100,
             Qty_Reserved__c = 0,
             Qty_Damaged__c = 0,
@@ -37,7 +37,7 @@ private class INV_WarehouseStock_Service_Test {
         );
         Warehouse_Stock__c stock2 = new Warehouse_Stock__c(
             Warehouse__c = warehouse.Id,
-            Product__c = product2.Id,
+            Product_Ext__c = product2.Id,
             Qty_On_Hand__c = 50,
             Qty_Reserved__c = 0,
             Qty_Damaged__c = 0,
@@ -50,7 +50,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testCheckAvailability() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        List<Product2> products = [SELECT Id FROM Product2 ORDER BY ProductCode];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c ORDER BY Product_Code__c];
 
         Test.startTest();
         Map<Id, Decimal> availability = INV_WarehouseStock_Service.checkAvailability(
@@ -65,7 +65,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testReserveStock() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 20));
@@ -77,7 +77,7 @@ private class INV_WarehouseStock_Service_Test {
         Warehouse_Stock__c stock = [
             SELECT Qty_On_Hand__c, Qty_Reserved__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(100, stock.Qty_On_Hand__c, 'On hand should remain 100');
         System.assertEquals(20, stock.Qty_Reserved__c, 'Reserved should be 20');
@@ -86,7 +86,7 @@ private class INV_WarehouseStock_Service_Test {
         List<Stock_Transaction__c> txns = [
             SELECT Transaction_Type__c, Quantity__c, Direction__c
             FROM Stock_Transaction__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(1, txns.size(), 'Should have 1 transaction');
         System.assertEquals('Reservation', txns[0].Transaction_Type__c);
@@ -96,12 +96,12 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testReleaseReservation() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         // First reserve stock
         Warehouse_Stock__c stock = [
             SELECT Id FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         stock.Qty_Reserved__c = 30;
         update stock;
@@ -116,7 +116,7 @@ private class INV_WarehouseStock_Service_Test {
         stock = [
             SELECT Qty_On_Hand__c, Qty_Reserved__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(100, stock.Qty_On_Hand__c, 'On hand should remain 100');
         System.assertEquals(0, stock.Qty_Reserved__c, 'Reserved should be 0 after release');
@@ -125,12 +125,12 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testDeductStock() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         // Set up reservation first
         Warehouse_Stock__c stock = [
             SELECT Id FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         stock.Qty_Reserved__c = 25;
         update stock;
@@ -145,7 +145,7 @@ private class INV_WarehouseStock_Service_Test {
         stock = [
             SELECT Qty_On_Hand__c, Qty_Reserved__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(75, stock.Qty_On_Hand__c, 'On hand should be 75 after deduction');
         System.assertEquals(0, stock.Qty_Reserved__c, 'Reserved should be 0 after deduction');
@@ -163,7 +163,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAddStock() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP002'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP002'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 30));
@@ -175,7 +175,7 @@ private class INV_WarehouseStock_Service_Test {
         Warehouse_Stock__c stock = [
             SELECT Qty_On_Hand__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(80, stock.Qty_On_Hand__c, 'On hand should be 80 after addition');
 
@@ -191,7 +191,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAddStockReturnOrder() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 10));
@@ -211,7 +211,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAddStockTransfer() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 15));
@@ -231,7 +231,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testAdjustDeduct() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 10));
@@ -243,7 +243,7 @@ private class INV_WarehouseStock_Service_Test {
         Warehouse_Stock__c stock = [
             SELECT Qty_On_Hand__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(90, stock.Qty_On_Hand__c, 'On hand should be 90 after deduction');
 
@@ -260,7 +260,7 @@ private class INV_WarehouseStock_Service_Test {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
 
         // Create a new product not in stock
-        Product2 newProduct = new Product2(Name = 'New Product', ProductCode = 'NP001', IsActive = true);
+        Product_Extension__c newProduct = new Product_Extension__c(Name = 'New Product', Product_Code__c = 'NP001', Is_Active__c = true);
         insert newProduct;
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
@@ -273,7 +273,7 @@ private class INV_WarehouseStock_Service_Test {
         Warehouse_Stock__c stock = [
             SELECT Qty_On_Hand__c, Batch_Number__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :wh.Id AND Product__c = :newProduct.Id
+            WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :newProduct.Id
         ];
         System.assertEquals(50, stock.Qty_On_Hand__c, 'New stock record should have 50 on hand');
         System.assertEquals('BATCH001', stock.Batch_Number__c, 'Batch should match');
@@ -294,7 +294,7 @@ private class INV_WarehouseStock_Service_Test {
     @isTest
     static void testDeductStockTransferType() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP001'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TP001'];
 
         List<INV_WarehouseStock_Service.StockLineItem> items = new List<INV_WarehouseStock_Service.StockLineItem>();
         items.add(new INV_WarehouseStock_Service.StockLineItem(product.Id, null, 10));

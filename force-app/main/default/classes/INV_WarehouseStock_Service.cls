@@ -21,17 +21,17 @@ public without sharing class INV_WarehouseStock_Service {
         }
 
         for (Warehouse_Stock__c stock : [
-            SELECT Product__c, Qty_On_Hand__c, Qty_Reserved__c
+            SELECT Product_Ext__c, Qty_On_Hand__c, Qty_Reserved__c
             FROM Warehouse_Stock__c
             WHERE Warehouse__c = :warehouseId
-              AND Product__c IN :productIds
+              AND Product_Ext__c IN :productIds
         ]) {
             Decimal onHand = stock.Qty_On_Hand__c != null ? stock.Qty_On_Hand__c : 0;
             Decimal reserved = stock.Qty_Reserved__c != null ? stock.Qty_Reserved__c : 0;
             Decimal available = onHand - reserved;
 
-            Decimal current = availabilityMap.get(stock.Product__c);
-            availabilityMap.put(stock.Product__c, current + available);
+            Decimal current = availabilityMap.get(stock.Product_Ext__c);
+            availabilityMap.put(stock.Product_Ext__c, current + available);
         }
 
         return availabilityMap;
@@ -278,12 +278,12 @@ public without sharing class INV_WarehouseStock_Service {
         }
 
         List<Warehouse_Stock__c> existing = [
-            SELECT Id, Warehouse__c, Product__c, Batch_Number__c,
+            SELECT Id, Warehouse__c, Product_Ext__c, Batch_Number__c,
                    Qty_On_Hand__c, Qty_Reserved__c, Qty_Damaged__c,
                    Last_Transaction_Date__c
             FROM Warehouse_Stock__c
             WHERE Warehouse__c = :warehouseId
-              AND Product__c IN :productIds
+              AND Product_Ext__c IN :productIds
         ];
 
         Map<String, Warehouse_Stock__c> existingMap = buildStockMap(existing);
@@ -294,7 +294,7 @@ public without sharing class INV_WarehouseStock_Service {
             if (!existingMap.containsKey(key)) {
                 Warehouse_Stock__c newStock = new Warehouse_Stock__c(
                     Warehouse__c = warehouseId,
-                    Product__c = item.productId,
+                    Product_Ext__c = item.productId,
                     Batch_Number__c = item.batchNumber,
                     Qty_On_Hand__c = 0,
                     Qty_Reserved__c = 0,
@@ -312,12 +312,12 @@ public without sharing class INV_WarehouseStock_Service {
         // Re-query to get IDs for newly inserted records
         if (!toInsert.isEmpty()) {
             existing = [
-                SELECT Id, Warehouse__c, Product__c, Batch_Number__c,
+                SELECT Id, Warehouse__c, Product_Ext__c, Batch_Number__c,
                        Qty_On_Hand__c, Qty_Reserved__c, Qty_Damaged__c,
                        Last_Transaction_Date__c
                 FROM Warehouse_Stock__c
                 WHERE Warehouse__c = :warehouseId
-                  AND Product__c IN :productIds
+                  AND Product_Ext__c IN :productIds
             ];
         }
 
@@ -336,12 +336,12 @@ public without sharing class INV_WarehouseStock_Service {
         }
 
         return [
-            SELECT Id, Warehouse__c, Product__c, Batch_Number__c,
+            SELECT Id, Warehouse__c, Product_Ext__c, Batch_Number__c,
                    Qty_On_Hand__c, Qty_Reserved__c, Qty_Damaged__c,
                    Last_Transaction_Date__c
             FROM Warehouse_Stock__c
             WHERE Warehouse__c = :warehouseId
-              AND Product__c IN :productIds
+              AND Product_Ext__c IN :productIds
         ];
     }
 
@@ -351,7 +351,7 @@ public without sharing class INV_WarehouseStock_Service {
     private static Map<String, Warehouse_Stock__c> buildStockMap(List<Warehouse_Stock__c> records) {
         Map<String, Warehouse_Stock__c> stockMap = new Map<String, Warehouse_Stock__c>();
         for (Warehouse_Stock__c stock : records) {
-            String key = buildKey(stock.Warehouse__c, stock.Product__c, stock.Batch_Number__c);
+            String key = buildKey(stock.Warehouse__c, stock.Product_Ext__c, stock.Batch_Number__c);
             stockMap.put(key, stock);
         }
         return stockMap;
@@ -382,7 +382,7 @@ public without sharing class INV_WarehouseStock_Service {
         return new Stock_Transaction__c(
             Warehouse_Stock__c = stock.Id,
             Warehouse__c       = stock.Warehouse__c,
-            Product__c         = stock.Product__c,
+            Product_Ext__c         = stock.Product_Ext__c,
             Transaction_Type__c = txnType,
             Quantity__c        = quantity,
             Direction__c       = direction,

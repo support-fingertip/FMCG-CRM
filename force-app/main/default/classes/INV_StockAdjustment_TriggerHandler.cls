@@ -33,17 +33,17 @@ public class INV_StockAdjustment_TriggerHandler extends TriggerHandler {
         Set<Id> productIds = new Set<Id>();
         for (Stock_Adjustment__c rec : records) {
             warehouseIds.add(rec.Warehouse__c);
-            productIds.add(rec.Product__c);
+            productIds.add(rec.Product_Ext__c);
         }
 
         Map<String, Decimal> stockMap = new Map<String, Decimal>();
         for (Warehouse_Stock__c stock : [
-            SELECT Warehouse__c, Product__c, Batch_Number__c, Qty_On_Hand__c
+            SELECT Warehouse__c, Product_Ext__c, Batch_Number__c, Qty_On_Hand__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c IN :warehouseIds AND Product__c IN :productIds
+            WHERE Warehouse__c IN :warehouseIds AND Product_Ext__c IN :productIds
         ]) {
             String key = String.valueOf(stock.Warehouse__c) + '|' +
-                         String.valueOf(stock.Product__c) + '|' +
+                         String.valueOf(stock.Product_Ext__c) + '|' +
                          (String.isNotBlank(stock.Batch_Number__c) ? stock.Batch_Number__c : '');
             Decimal onHand = stock.Qty_On_Hand__c != null ? stock.Qty_On_Hand__c : 0;
             stockMap.put(key, onHand);
@@ -51,7 +51,7 @@ public class INV_StockAdjustment_TriggerHandler extends TriggerHandler {
 
         for (Stock_Adjustment__c rec : records) {
             String key = String.valueOf(rec.Warehouse__c) + '|' +
-                         String.valueOf(rec.Product__c) + '|' +
+                         String.valueOf(rec.Product_Ext__c) + '|' +
                          (String.isNotBlank(rec.Batch_Number__c) ? rec.Batch_Number__c : '');
             rec.System_Qty__c = stockMap.containsKey(key) ? stockMap.get(key) : 0;
         }
@@ -60,12 +60,12 @@ public class INV_StockAdjustment_TriggerHandler extends TriggerHandler {
     private void applyAdjustments(List<Stock_Adjustment__c> approvedAdj) {
         for (Stock_Adjustment__c adj : approvedAdj) {
             Decimal qty = adj.Adjustment_Qty__c != null ? adj.Adjustment_Qty__c : 0;
-            if (qty == 0 || adj.Product__c == null || adj.Warehouse__c == null) continue;
+            if (qty == 0 || adj.Product_Ext__c == null || adj.Warehouse__c == null) continue;
 
             List<INV_WarehouseStock_Service.StockLineItem> items =
                 new List<INV_WarehouseStock_Service.StockLineItem>();
             items.add(new INV_WarehouseStock_Service.StockLineItem(
-                adj.Product__c, adj.Batch_Number__c, Math.abs(qty)
+                adj.Product_Ext__c, adj.Batch_Number__c, Math.abs(qty)
             ));
 
             if (qty > 0) {

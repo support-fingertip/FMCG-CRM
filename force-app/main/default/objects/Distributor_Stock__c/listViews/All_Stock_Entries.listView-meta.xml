@@ -3,7 +3,7 @@
     <fullName>All_Stock_Entries</fullName>
     <columns>NAME</columns>
     <columns>Account__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Stock_Date__c</columns>
     <columns>Opening_Stock__c</columns>
     <columns>Received_Qty__c</columns>

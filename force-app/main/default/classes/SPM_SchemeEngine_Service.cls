@@ -75,8 +75,8 @@ public without sharing class SPM_SchemeEngine_Service {
         // Collect product IDs from line items
         Set<Id> productIds = new Set<Id>();
         for (Order_Line_Item__c item : lineItems) {
-            if (item.Product__c != null) {
-                productIds.add(item.Product__c);
+            if (item.Product_Ext__c != null) {
+                productIds.add(item.Product_Ext__c);
             }
         }
 
@@ -151,7 +151,7 @@ public without sharing class SPM_SchemeEngine_Service {
                 SELECT Id, Min_Quantity__c, Max_Quantity__c,
                        Min_Value__c, Max_Value__c,
                        Discount_Percent__c, Discount_Amount__c,
-                       Free_Product__c, Free_Quantity__c
+                       Free_Product_Ext__c, Free_Quantity__c
                 FROM Scheme_Slab__c
                 WHERE Scheme__c = :scheme.Id
                   AND Is_Active__c = true
@@ -235,16 +235,16 @@ public without sharing class SPM_SchemeEngine_Service {
         return [
             SELECT Id, Name, Scheme_Type__c, Priority__c,
                    Is_Stackable__c, Discount_Percent__c, Discount_Amount__c,
-                   Free_Product__c, Free_Quantity__c,
+                   Free_Product_Ext__c, Free_Quantity__c,
                    Min_Quantity__c, Max_Quantity__c,
                    Min_Value__c, Max_Value__c,
                    Channel__c, Outlet_Type__c,
-                   Product__c, Product_Category__c,
+                   Product_Ext__c, Product_Category__c,
                    Start_Date__c, End_Date__c,
                    (SELECT Id, Min_Quantity__c, Max_Quantity__c,
                            Min_Value__c, Max_Value__c,
                            Discount_Percent__c, Discount_Amount__c,
-                           Free_Product__c, Free_Quantity__c
+                           Free_Product_Ext__c, Free_Quantity__c
                     FROM Scheme_Slabs__r
                     WHERE Is_Active__c = true
                     ORDER BY Min_Quantity__c ASC, Min_Value__c ASC)
@@ -252,7 +252,7 @@ public without sharing class SPM_SchemeEngine_Service {
             WHERE Is_Active__c = true
               AND Start_Date__c <= :orderDate
               AND (End_Date__c >= :orderDate OR End_Date__c = null)
-              AND (Product__c IN :productIds OR Product__c = null)
+              AND (Product_Ext__c IN :productIds OR Product_Ext__c = null)
               AND (Channel__c = :channel OR Channel__c = null)
               AND (Outlet_Type__c = :outletType OR Outlet_Type__c = null)
             ORDER BY Priority__c ASC NULLS LAST
@@ -273,7 +273,7 @@ public without sharing class SPM_SchemeEngine_Service {
 
         for (Order_Line_Item__c item : lineItems) {
             // Check product match
-            if (scheme.Product__c != null && item.Product__c != scheme.Product__c) {
+            if (scheme.Product_Ext__c != null && item.Product_Ext__c != scheme.Product_Ext__c) {
                 continue;
             }
 

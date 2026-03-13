@@ -15,6 +15,10 @@
                 <field>Tax_Rate__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Product_Ext__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Required</behavior>
                 <field>Tax_Type__c</field>
             </layoutItems>

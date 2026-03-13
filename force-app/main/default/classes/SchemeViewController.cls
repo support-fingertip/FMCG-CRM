@@ -27,9 +27,9 @@ public with sharing class SchemeViewController {
                        '(SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c, ' +
                        '        Discount_Type__c, Discount_Value__c, Free_Product__c, Free_Quantity__c ' +
                        ' FROM Scheme_Slabs__r ORDER BY Min_Value__c), ' +
-                       '(SELECT Id, Product__c, Product__r.Name, Product__r.ProductCode, ' +
+                       '(SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode, ' +
                        '        Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c ' +
-                       ' FROM Scheme_Products__r ORDER BY Product__r.Name) ' +
+                       ' FROM Scheme_Products__r ORDER BY Product_Ext__r.Name) ' +
                        'FROM Scheme__c ' +
                        'WHERE Status__c = \'Active\' ' +
                        'AND Start_Date__c <= :today ' +
@@ -43,7 +43,7 @@ public with sharing class SchemeViewController {
         }
         if (String.isNotBlank(categoryId)) {
             query += ' AND Id IN (SELECT Scheme__c FROM Scheme_Product__c ' +
-                     'WHERE Product__c IN (SELECT Product__c FROM Product_Extension__c WHERE Product_Category__c = :categoryId))';
+                     'WHERE Product_Ext__c IN (SELECT Id FROM Product_Extension__c WHERE Product_Category__c = :categoryId))';
         }
 
         query += ' ORDER BY Priority__c, Name LIMIT 100';
@@ -68,9 +68,9 @@ public with sharing class SchemeViewController {
                            Discount_Type__c, Discount_Value__c,
                            Free_Product__c, Free_Product__r.Name, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
-                   (SELECT Id, Product__c, Product__r.Name, Product__r.ProductCode,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode,
                            Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
-                    FROM Scheme_Products__r ORDER BY Product__r.Name)
+                    FROM Scheme_Products__r ORDER BY Product_Ext__r.Name)
             FROM Scheme__c
             WHERE Id = :schemeId
             LIMIT 1

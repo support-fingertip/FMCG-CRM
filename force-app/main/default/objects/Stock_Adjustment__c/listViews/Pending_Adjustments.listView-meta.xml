@@ -10,7 +10,7 @@
     </filters>
     <columns>NAME</columns>
     <columns>Warehouse__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Adjustment_Type__c</columns>
     <columns>Adjustment_Qty__c</columns>
     <columns>Adjusted_By__c</columns>

@@ -101,7 +101,7 @@
     <relatedLists>
         <relatedList>Warehouse_Stock__c.Warehouse__c</relatedList>
         <fields>NAME</fields>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Batch_Number__c</fields>
         <fields>Qty_On_Hand__c</fields>
         <fields>Qty_Reserved__c</fields>
@@ -111,7 +111,7 @@
     <relatedLists>
         <relatedList>Stock_Adjustment__c.Warehouse__c</relatedList>
         <fields>NAME</fields>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Adjustment_Type__c</fields>
         <fields>Adjustment_Qty__c</fields>
         <fields>Status__c</fields>
@@ -135,7 +135,7 @@
         <relatedList>Stock_Transaction__c.Warehouse__c</relatedList>
         <fields>NAME</fields>
         <fields>Transaction_Type__c</fields>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Quantity__c</fields>
         <fields>Direction__c</fields>
         <fields>Transaction_Date__c</fields>

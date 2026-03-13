@@ -379,7 +379,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     findApplicableScheme(product) {
         if (!this.schemes || this.schemes.length === 0) return null;
         return this.schemes.find(scheme => {
-            const productMatch = !scheme.Product__c || scheme.Product__c === product.id;
+            const productMatch = !scheme.Product_Ext__c || scheme.Product_Ext__c === product.id;
             const categoryMatch = !scheme.Category__c || scheme.Category__c === product.category;
             return productMatch || categoryMatch;
         });
@@ -422,8 +422,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 this.lineIdCounter++;
                 const newItem = {
                     id: 'LINE_' + this.lineIdCounter,
-                    productId: lastItem.Product__c,
-                    productName: lastItem.Product_Name__c || lastItem.Product__r?.Name || 'Product',
+                    productId: lastItem.Product_Ext__c,
+                    productName: lastItem.Product_Name__c || lastItem.Product_Ext__r?.Name || 'Product',
                     sku: lastItem.SKU__c || 'N/A',
                     rate: lastItem.Unit_Price__c || 0,
                     rateFormatted: this.formatCurrency(lastItem.Unit_Price__c || 0),

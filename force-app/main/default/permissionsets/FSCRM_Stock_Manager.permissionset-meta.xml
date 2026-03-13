@@ -41,15 +41,6 @@
         <modifyAllRecords>false</modifyAllRecords>
     </objectPermissions>
     <objectPermissions>
-        <object>Product2</object>
-        <allowCreate>false</allowCreate>
-        <allowDelete>false</allowDelete>
-        <allowEdit>false</allowEdit>
-        <allowRead>true</allowRead>
-        <viewAllRecords>true</viewAllRecords>
-        <modifyAllRecords>false</modifyAllRecords>
-    </objectPermissions>
-    <objectPermissions>
         <object>Warehouse__c</object>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
@@ -141,7 +132,7 @@
     </fieldPermissions>
     <!-- Warehouse_Stock__c FLS (read-only, system-managed; required field Warehouse__c excluded) -->
     <fieldPermissions>
-        <field>Warehouse_Stock__c.Product__c</field>
+        <field>Warehouse_Stock__c.Product_Ext__c</field>
         <readable>true</readable>
         <editable>false</editable>
     </fieldPermissions>
@@ -202,7 +193,7 @@
     </fieldPermissions>
     <!-- Stock_Transaction__c FLS (read-only, immutable audit; required field Warehouse__c excluded) -->
     <fieldPermissions>
-        <field>Stock_Transaction__c.Product__c</field>
+        <field>Stock_Transaction__c.Product_Ext__c</field>
         <readable>true</readable>
         <editable>false</editable>
     </fieldPermissions>
@@ -259,7 +250,7 @@
     </fieldPermissions>
     <!-- Stock_Transfer_Line__c FLS (required field Requested_Qty__c excluded) -->
     <fieldPermissions>
-        <field>Stock_Transfer_Line__c.Product__c</field>
+        <field>Stock_Transfer_Line__c.Product_Ext__c</field>
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>
@@ -290,7 +281,7 @@
     </fieldPermissions>
     <!-- Stock_Adjustment__c FLS (required fields Warehouse__c, Adjustment_Type__c, Status__c, Adjustment_Date__c, Adjustment_Qty__c, Reason__c excluded) -->
     <fieldPermissions>
-        <field>Stock_Adjustment__c.Product__c</field>
+        <field>Stock_Adjustment__c.Product_Ext__c</field>
         <readable>true</readable>
         <editable>true</editable>
     </fieldPermissions>

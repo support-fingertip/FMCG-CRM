@@ -18,7 +18,7 @@ private class SPM_SchemeEngine_Service_Test {
         Beat__c beat = TestDataFactory.createAndInsertBeat('Scheme Beat', 'BEAT-S01', territory.Id);
 
         // Create products
-        List<Product2> products = TestDataFactory.createAndInsertProducts(5);
+        List<Product_Extension__c> products = TestDataFactory.createAndInsertProducts(5);
 
         // Create schemes of various types
         Scheme__c flatScheme = TestDataFactory.createScheme('Flat 10% Off', 'SCH-FLAT01', 'Flat Discount');

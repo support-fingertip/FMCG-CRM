@@ -20,18 +20,18 @@ public class TestDataFactory {
         return acc;
     }
 
-    public static Product2 createProduct(String name, String code) {
-        Product2 prod = new Product2(
+    public static Product_Extension__c createProduct(String name, String code) {
+        Product_Extension__c prod = new Product_Extension__c(
             Name = name,
             ProductCode = code,
-            IsActive = true,
+            Is_Active__c = true,
             Description = 'Test product ' + name
         );
         return prod;
     }
 
-    public static List<Product2> createAndInsertProducts(Integer count) {
-        List<Product2> products = new List<Product2>();
+    public static List<Product_Extension__c> createAndInsertProducts(Integer count) {
+        List<Product_Extension__c> products = new List<Product_Extension__c>();
         for (Integer i = 0; i < count; i++) {
             products.add(createProduct('Test Product ' + i, 'TP-' + String.valueOf(i).leftPad(4, '0')));
         }
@@ -127,7 +127,7 @@ public class TestDataFactory {
     public static Order_Line_Item__c createOrderLineItem(Id orderId, Id productId, Decimal qty, Decimal price) {
         Order_Line_Item__c li = new Order_Line_Item__c(
             Sales_Order__c = orderId,
-            Product__c = productId,
+            Product_Ext__c = productId,
             Quantity__c = qty,
             Unit_Price__c = price,
             Line_Total__c = qty * price,

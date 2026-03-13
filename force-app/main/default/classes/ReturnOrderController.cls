@@ -45,7 +45,7 @@ public with sharing class ReturnOrderController {
 
         // Get invoice lines
         List<Invoice_Line__c> lines = [
-            SELECT Id, Product__c, Product__r.Name, Product__r.ProductCode,
+            SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode,
                    Quantity__c, Unit_Price__c, Discount__c, Tax_Amount__c,
                    Line_Total__c, HSN_SAC_Code__c, Batch_No__c,
                    CGST__c, SGST__c, IGST__c
@@ -83,9 +83,9 @@ public with sharing class ReturnOrderController {
         for (Invoice_Line__c line : lines) {
             Map<String, Object> lineMap = new Map<String, Object>();
             lineMap.put('invoiceLineId', line.Id);
-            lineMap.put('productId', line.Product__c);
-            lineMap.put('productName', line.Product__r.Name);
-            lineMap.put('productCode', line.Product__r.ProductCode);
+            lineMap.put('productId', line.Product_Ext__c);
+            lineMap.put('productName', line.Product_Ext__r.Name);
+            lineMap.put('productCode', line.Product_Ext__r.ProductCode);
             lineMap.put('invoicedQty', line.Quantity__c);
             lineMap.put('unitPrice', line.Unit_Price__c);
             lineMap.put('discount', line.Discount__c);

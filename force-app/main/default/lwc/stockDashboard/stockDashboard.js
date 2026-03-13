@@ -178,10 +178,10 @@ export default class StockDashboard extends LightningElement {
             .then(result => {
                 const productMap = new Map();
                 (result.records || []).forEach(rec => {
-                    if (rec.Product__c && !productMap.has(rec.Product__c)) {
-                        productMap.set(rec.Product__c, {
-                            label: rec.Product__r ? rec.Product__r.Name : rec.Product__c,
-                            value: rec.Product__c
+                    if (rec.Product_Ext__c && !productMap.has(rec.Product_Ext__c)) {
+                        productMap.set(rec.Product_Ext__c, {
+                            label: rec.Product_Ext__r ? rec.Product_Ext__r.Name : rec.Product_Ext__c,
+                            value: rec.Product_Ext__c
                         });
                     }
                 });
@@ -397,8 +397,8 @@ export default class StockDashboard extends LightningElement {
                 id: rec.Id,
                 name: rec.Name,
                 accountName: rec.Account__r ? rec.Account__r.Name : '',
-                productName: rec.Product__r ? rec.Product__r.Name : '',
-                productCode: rec.Product__r ? rec.Product__r.ProductCode : '',
+                productName: rec.Product_Ext__r ? rec.Product_Ext__r.Name : '',
+                productCode: rec.Product_Ext__r ? rec.Product_Ext__r.ProductCode : '',
                 opening: this.formatNumber(rec.Opening_Stock__c),
                 received: this.formatNumber(rec.Received_Qty__c),
                 sold: this.formatNumber(rec.Sold_Qty__c),
@@ -482,8 +482,8 @@ export default class StockDashboard extends LightningElement {
             return {
                 id: batch.Id,
                 batchNumber: batch.Batch_Number__c || batch.Name,
-                productName: batch.Product__r ? batch.Product__r.Name : '',
-                productCode: batch.Product__r ? batch.Product__r.ProductCode : '',
+                productName: batch.Product_Ext__r ? batch.Product_Ext__r.Name : '',
+                productCode: batch.Product_Ext__r ? batch.Product_Ext__r.ProductCode : '',
                 mfgDate: this.formatDate(batch.Manufacturing_Date__c),
                 expiryDate: this.formatDate(batch.Expiry_Date__c),
                 daysLeft,

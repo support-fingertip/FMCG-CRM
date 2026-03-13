@@ -26,13 +26,13 @@ private class OMS_OrderPricing_Service_Test {
         insert visit;
 
         // Create products
-        List<Product2> products = TestDataFactory.createAndInsertProducts(10);
+        List<Product_Extension__c> products = TestDataFactory.createAndInsertProducts(10);
 
         // Create tax configurations for products
         List<Tax_Configuration__c> taxConfigs = new List<Tax_Configuration__c>();
-        for (Product2 prod : products) {
+        for (Product_Extension__c prod : products) {
             taxConfigs.add(new Tax_Configuration__c(
-                Product__c = prod.Id,
+                Product_Ext__c = prod.Id,
                 Tax_Rate__c = 18,
                 HSN_SAC_Code__c = '2106',
                 CGST_Rate__c = 9,
@@ -93,7 +93,7 @@ private class OMS_OrderPricing_Service_Test {
      */
     @isTest
     static void testTaxCalculation() {
-        List<Product2> products = [SELECT Id FROM Product2 LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 1];
         System.assert(!products.isEmpty(), 'Test products should exist');
 
         Decimal taxableAmount = 1000;
@@ -131,7 +131,7 @@ private class OMS_OrderPricing_Service_Test {
     @isTest
     static void testSchemeApplication() {
         Sales_Order__c order = [SELECT Id, Account__c FROM Sales_Order__c LIMIT 1];
-        List<Product2> products = [SELECT Id FROM Product2 LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         // Create a scheme for testing
         Scheme__c scheme = TestDataFactory.createScheme('Test Flat Discount', 'SCH-P01', 'Flat Discount');
@@ -170,7 +170,7 @@ private class OMS_OrderPricing_Service_Test {
     @isTest
     static void testBulkPricing() {
         Sales_Order__c order = [SELECT Id FROM Sales_Order__c LIMIT 1];
-        List<Product2> products = [SELECT Id FROM Product2];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c];
 
         // Create 200 line items across available products
         List<Order_Line_Item__c> bulkItems = new List<Order_Line_Item__c>();

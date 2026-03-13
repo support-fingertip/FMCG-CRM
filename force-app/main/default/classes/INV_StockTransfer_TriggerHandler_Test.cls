@@ -25,12 +25,12 @@ private class INV_StockTransfer_TriggerHandler_Test {
         );
         insert new List<Warehouse__c>{ sourceWh, destWh };
 
-        Product2 product = new Product2(Name = 'Transfer Product', ProductCode = 'TRP01', IsActive = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'Transfer Product', Product_Code__c = 'TRP01', Is_Active__c = true);
         insert product;
 
         Warehouse_Stock__c stock = new Warehouse_Stock__c(
             Warehouse__c = sourceWh.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Qty_On_Hand__c = 200,
             Qty_Reserved__c = 0,
             Qty_Damaged__c = 0
@@ -89,7 +89,7 @@ private class INV_StockTransfer_TriggerHandler_Test {
     static void testApprovedDeductsFromSource() {
         Warehouse__c sourceWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'SRC01'];
         Warehouse__c destWh = [SELECT Id FROM Warehouse__c WHERE Warehouse_Code__c = 'DST01'];
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TRP01'];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Product_Code__c = 'TRP01'];
 
         Stock_Transfer__c transfer = new Stock_Transfer__c(
             Source_Warehouse__c = sourceWh.Id,
@@ -101,7 +101,7 @@ private class INV_StockTransfer_TriggerHandler_Test {
 
         Stock_Transfer_Line__c line = new Stock_Transfer_Line__c(
             Stock_Transfer__c = transfer.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Requested_Qty__c = 50,
             Approved_Qty__c = 50
         );
@@ -115,7 +115,7 @@ private class INV_StockTransfer_TriggerHandler_Test {
         Warehouse_Stock__c sourceStock = [
             SELECT Qty_On_Hand__c
             FROM Warehouse_Stock__c
-            WHERE Warehouse__c = :sourceWh.Id AND Product__c = :product.Id
+            WHERE Warehouse__c = :sourceWh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(150, sourceStock.Qty_On_Hand__c, 'Source should have 150 after deduction');
     }

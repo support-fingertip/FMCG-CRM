@@ -10,6 +10,6 @@
     </filters>
     <columns>NAME</columns>
     <columns>Warehouse__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Qty_On_Hand__c</columns>
 </ListView>

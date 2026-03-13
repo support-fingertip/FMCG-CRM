@@ -5,15 +5,6 @@
     <hasActivationRequired>false</hasActivationRequired>
     <license>Salesforce</license>
     <objectPermissions>
-        <object>Product2</object>
-        <allowCreate>true</allowCreate>
-        <allowDelete>false</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <viewAllRecords>true</viewAllRecords>
-        <modifyAllRecords>false</modifyAllRecords>
-    </objectPermissions>
-    <objectPermissions>
         <object>Product_Category__c</object>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
@@ -40,10 +31,6 @@
         <viewAllRecords>true</viewAllRecords>
         <modifyAllRecords>false</modifyAllRecords>
     </objectPermissions>
-    <tabSettings>
-        <tab>standard-Product2</tab>
-        <visibility>Visible</visibility>
-    </tabSettings>
     <tabSettings>
         <tab>Product_Category__c</tab>
         <visibility>Visible</visibility>

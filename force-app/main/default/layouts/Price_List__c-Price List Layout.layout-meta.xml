@@ -11,6 +11,10 @@
                 <field>Effective_From__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Product_Ext__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Required</behavior>
                 <field>Price_Type__c</field>
             </layoutItems>

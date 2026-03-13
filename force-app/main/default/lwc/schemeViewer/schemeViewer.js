@@ -108,14 +108,14 @@ export default class SchemeViewer extends LightningElement {
                     minOrderValue: scheme.Min_Order_Value__c || 0,
                     products: scheme.Scheme_Products__r
                         ? scheme.Scheme_Products__r.map(sp => ({
-                            id: sp.Product__c || sp.Id,
-                            name: sp.Product__r?.Name || sp.Product_Name__c || 'Product',
-                            sku: sp.Product__r?.SKU__c || sp.SKU__c || ''
+                            id: sp.Product_Ext__c || sp.Id,
+                            name: sp.Product_Ext__r?.Name || sp.Product_Name__c || 'Product',
+                            sku: sp.Product_Ext__r?.SKU__c || sp.SKU__c || ''
                         }))
                         : null,
                     productBadges: scheme.Scheme_Products__r
                         ? scheme.Scheme_Products__r.slice(0, 3).map(sp =>
-                            sp.Product__r?.Name || sp.Product_Name__c || 'Product')
+                            sp.Product_Ext__r?.Name || sp.Product_Name__c || 'Product')
                         : [],
                     hasSlabs: scheme.Scheme_Slabs__r && scheme.Scheme_Slabs__r.length > 0,
                     slabs: scheme.Scheme_Slabs__r

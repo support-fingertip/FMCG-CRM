@@ -24,7 +24,7 @@ private class OrderEntryController_Test {
         insert visit;
 
         // Create products with various names for search testing
-        List<Product2> products = new List<Product2>();
+        List<Product_Extension__c> products = new List<Product_Extension__c>();
         products.add(TestDataFactory.createProduct('Maggi Noodles 2min', 'MAGGI-001'));
         products.add(TestDataFactory.createProduct('Maggi Hot Heads', 'MAGGI-002'));
         products.add(TestDataFactory.createProduct('Surf Excel Matic', 'SURF-001'));
@@ -62,37 +62,37 @@ private class OrderEntryController_Test {
         Test.startTest();
 
         // Search for products containing "Maggi"
-        List<Product2> maggiResults = [
-            SELECT Id, Name, ProductCode, IsActive
-            FROM Product2
+        List<Product_Extension__c> maggiResults = [
+            SELECT Id, Name, ProductCode, Is_Active__c
+            FROM Product_Extension__c
             WHERE Name LIKE '%Maggi%'
-              AND IsActive = true
+              AND Is_Active__c = true
         ];
 
         // Search for products containing "Surf"
-        List<Product2> surfResults = [
+        List<Product_Extension__c> surfResults = [
             SELECT Id, Name, ProductCode
-            FROM Product2
+            FROM Product_Extension__c
             WHERE Name LIKE '%Surf%'
-              AND IsActive = true
+              AND Is_Active__c = true
         ];
 
         // Search with no matching keyword
-        List<Product2> noResults = [
+        List<Product_Extension__c> noResults = [
             SELECT Id, Name
-            FROM Product2
+            FROM Product_Extension__c
             WHERE Name LIKE '%ZZZZZ%'
-              AND IsActive = true
+              AND Is_Active__c = true
         ];
 
         Test.stopTest();
 
         System.assertEquals(2, maggiResults.size(),
             'Should find 2 products matching "Maggi"');
-        for (Product2 p : maggiResults) {
+        for (Product_Extension__c p : maggiResults) {
             System.assert(p.Name.containsIgnoreCase('Maggi'),
                 'All results should contain "Maggi" in the name');
-            System.assertEquals(true, p.IsActive,
+            System.assertEquals(true, p.Is_Active__c,
                 'All returned products should be active');
         }
 
@@ -113,7 +113,7 @@ private class OrderEntryController_Test {
     static void testCreateSalesOrder() {
         Account acct = [SELECT Id FROM Account WHERE Name = 'Order Entry Retailer' LIMIT 1];
         Visit__c visit = [SELECT Id FROM Visit__c LIMIT 1];
-        List<Product2> products = [SELECT Id FROM Product2 LIMIT 3];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 3];
 
         Test.startTest();
 
@@ -185,9 +185,9 @@ private class OrderEntryController_Test {
         // Query for the most recent order for this account
         List<Sales_Order__c> lastOrders = [
             SELECT Id, Order_Date__c, Total_Gross_Amount__c, Total_Net_Amount__c,
-                   (SELECT Id, Product__c, Quantity__c, Unit_Price__c, Line_Total__c
+                   (SELECT Id, Product_Ext__c, Quantity__c, Unit_Price__c, Line_Total__c
                     FROM Order_Line_Items__r
-                    ORDER BY Product__r.Name)
+                    ORDER BY Product_Ext__r.Name)
             FROM Sales_Order__c
             WHERE Account__c = :acct.Id
             ORDER BY Order_Date__c DESC, CreatedDate DESC
@@ -212,7 +212,7 @@ private class OrderEntryController_Test {
         Decimal lineItemsTotal = 0;
         for (Order_Line_Item__c item : lastOrder.Order_Line_Items__r) {
             lineItemsTotal += item.Line_Total__c;
-            System.assertNotEquals(null, item.Product__c,
+            System.assertNotEquals(null, item.Product_Ext__c,
                 'Each line item should reference a product');
         }
 

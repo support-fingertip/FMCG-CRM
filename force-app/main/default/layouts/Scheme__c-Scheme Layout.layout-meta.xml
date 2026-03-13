@@ -15,6 +15,10 @@
                 <field>Scheme_Code__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Product_Ext__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Required</behavior>
                 <field>Scheme_Type__c</field>
             </layoutItems>

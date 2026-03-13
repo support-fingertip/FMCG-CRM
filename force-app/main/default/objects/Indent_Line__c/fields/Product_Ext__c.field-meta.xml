@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
-    <fullName>Product__c</fullName>
+    <fullName>Product_Ext__c</fullName>
     <label>Product</label>
     <type>Lookup</type>
-    <referenceTo>Product2</referenceTo>
-    <relationshipLabel>Invoice Lines</relationshipLabel>
-    <relationshipName>Invoice_Lines</relationshipName>
+    <referenceTo>Product_Extension__c</referenceTo>
+    <relationshipLabel>Indent Lines</relationshipLabel>
+    <relationshipName>Indent_Lines_Ext</relationshipName>
     <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

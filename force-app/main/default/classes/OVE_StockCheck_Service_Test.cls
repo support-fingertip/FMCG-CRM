@@ -112,7 +112,7 @@ private class OVE_StockCheck_Service_Test {
             System.assertEquals(true, updatedVisit.Stock_Check_Completed__c,
                 'Stock check completed flag should be true');
         } catch (Exception e) {
-            // Product__c is required on Distributor_Stock__c - DML may fail
+            // Product_Ext__c is required on Distributor_Stock__c - DML may fail
             System.assert(e.getMessage() != null, 'Exception captured: ' + e.getMessage());
         }
         Test.stopTest();

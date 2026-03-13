@@ -114,9 +114,9 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
 
                 return {
                     id: line.Id,
-                    productId: line.Product__c,
-                    productName: line.Product_Name__c || line.Product__r?.Name || 'Product',
-                    sku: line.SKU__c || line.Product__r?.SKU__c || 'N/A',
+                    productId: line.Product_Ext__c,
+                    productName: line.Product_Name__c || line.Product_Ext__r?.Name || 'Product',
+                    sku: line.SKU__c || line.Product_Ext__r?.SKU__c || 'N/A',
                     qtySold: qtySold,
                     qtyAlreadyReturned: qtyReturned,
                     maxReturnQty: maxReturn,
