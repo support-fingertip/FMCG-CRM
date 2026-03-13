@@ -8,6 +8,6 @@
         <displayFormat>SM-{0000}</displayFormat>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>ControlledByParent</sharingModel>
     <description>Maps schemes to specific territories, zones, districts, areas, outlets, and customer types for targeted scheme applicability.</description>
 </CustomObject>
