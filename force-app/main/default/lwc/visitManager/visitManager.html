@@ -1115,12 +1115,14 @@
                                         </div>
                                     </template>
                                     <template if:true={q.isSingleChoice}>
-                                        <lightning-radio-group name={q.Id} options={q.options} data-question-id={q.Id}
-                                            data-type="Single Choice" onchange={handleAnswerChange}></lightning-radio-group>
+                                        <lightning-radio-group name={q.Id} options={q.options} value={q.selectedValue}
+                                            data-question-id={q.Id} data-type="Single Choice"
+                                            onchange={handleAnswerChange}></lightning-radio-group>
                                     </template>
                                     <template if:true={q.isMultipleChoice}>
-                                        <lightning-checkbox-group name={q.Id} options={q.options} data-question-id={q.Id}
-                                            data-type="Multiple Choice" onchange={handleAnswerChange}></lightning-checkbox-group>
+                                        <lightning-checkbox-group name={q.Id} options={q.options} value={q.selectedValues}
+                                            data-question-id={q.Id} data-type="Multiple Choice"
+                                            onchange={handleAnswerChange}></lightning-checkbox-group>
                                     </template>
                                     <template if:true={q.isPhoto}>
                                         <lightning-input type="file" label="Upload Photo" accept="image/*"

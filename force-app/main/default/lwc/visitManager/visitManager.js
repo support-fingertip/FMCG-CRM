@@ -1214,6 +1214,8 @@ export default class VisitManager extends LightningElement {
                 isPhoto: q.Question_Type__c === 'Photo',
                 isDate: q.Question_Type__c === 'Date',
                 options: this._parseOptions(q.Options__c),
+                selectedValue: '',
+                selectedValues: [],
                 ratingOptions: [1, 2, 3, 4, 5].map(n => ({ value: n, label: '' + n, cls: 'vm-rating-btn' }))
             }));
             this.surveyAnswers = {};
@@ -1228,14 +1230,20 @@ export default class VisitManager extends LightningElement {
         if (type === 'rating') value = parseInt(e.currentTarget.dataset.value, 10);
         if (type === 'Multiple Choice') value = e.detail.value;
         this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type, value } };
-        if (type === 'rating') {
+        if (type === 'rating' || type === 'Single Choice' || type === 'Multiple Choice') {
             this.surveyQuestions = this.surveyQuestions.map(q => {
-                if (q.Id === qId) {
-                    return { ...q, ratingOptions: q.ratingOptions.map(r => ({
+                if (q.Id !== qId) return q;
+                const updated = { ...q };
+                if (type === 'rating') {
+                    updated.ratingOptions = q.ratingOptions.map(r => ({
                         ...r, cls: r.value <= value ? 'vm-rating-btn vm-rating-active' : 'vm-rating-btn'
-                    }))};
+                    }));
+                } else if (type === 'Single Choice') {
+                    updated.selectedValue = value;
+                } else if (type === 'Multiple Choice') {
+                    updated.selectedValues = value;
                 }
-                return q;
+                return updated;
             });
         }
     }
