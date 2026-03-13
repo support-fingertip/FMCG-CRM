@@ -325,7 +325,7 @@ private class OVE_Survey_Service_Test {
         answer.answerChoice = 'Option A';
         answer.answerNumber = 42;
         answer.ratingValue = 5;
-        answer.photoURL = 'https://example.com/photo.jpg';
+        answer.photoContentVersionId = null;
 
         System.assertEquals('Test answer', answer.answerText, 'answerText should match');
         System.assertEquals('Option A', answer.answerChoice, 'answerChoice should match');

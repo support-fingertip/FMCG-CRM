@@ -175,7 +175,6 @@ public class TestDataFactory {
             Start_Date__c = Date.today().addDays(-10),
             End_Date__c = Date.today().addDays(30),
             Status__c = 'Active',
-            Is_Active__c = true,
             Priority__c = 1,
             Is_Stackable__c = false
         );

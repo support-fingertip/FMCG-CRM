@@ -250,7 +250,7 @@ public without sharing class SPM_SchemeEngine_Service {
                 itemsToUpdate.add(new Order_Line_Item__c(
                     Id = lineId,
                     Scheme__c = sr.schemeId,
-                    Scheme_Applied__c = true,
+                    Scheme_Applied__c = sr.schemeId,
                     Scheme_Discount__c = sr.lineItemDiscounts.get(lineId),
                     Scheme_Category__c = sr.schemeCategory,
                     Reward_Points__c = sr.rewardPoints > 0 ? sr.rewardPoints : 0,
@@ -306,6 +306,23 @@ public without sharing class SPM_SchemeEngine_Service {
         // Get schemes mapped to this outlet (if any mappings exist)
         Set<Id> mappedSchemeIds = getMappedSchemeIds(outlet.Id);
 
+        // Pre-query scheme Ids linked via Scheme_Product__c for product match
+        Set<Id> schemeIdsFromProducts = new Set<Id>();
+        for (Scheme_Product__c sp : [
+            SELECT Scheme__c FROM Scheme_Product__c
+            WHERE Product_Ext__c IN :productIds AND Is_Buy_Product__c = true
+        ]) {
+            schemeIdsFromProducts.add(sp.Scheme__c);
+        }
+
+        // Pre-query scheme Ids that have active mappings (territory-restricted)
+        Set<Id> territoryRestrictedSchemeIds = new Set<Id>();
+        for (Scheme_Mapping__c sm : [
+            SELECT Scheme__c FROM Scheme_Mapping__c WHERE Is_Active__c = true
+        ]) {
+            territoryRestrictedSchemeIds.add(sm.Scheme__c);
+        }
+
         return [
             SELECT Id, Name, Scheme_Type__c, Scheme_Category__c, Priority__c,
                    Is_Stackable__c, Discount_Percent__c, Discount_Amount__c,
@@ -340,11 +357,10 @@ public without sharing class SPM_SchemeEngine_Service {
               AND (
                   Product_Ext__c IN :productIds
                   OR Product_Ext__c = null
-                  OR Id IN (SELECT Scheme__c FROM Scheme_Product__c
-                            WHERE Product_Ext__c IN :productIds AND Is_Buy_Product__c = true)
+                  OR Id IN :schemeIdsFromProducts
               )
               AND (
-                  Id NOT IN (SELECT Scheme__c FROM Scheme_Mapping__c WHERE Is_Active__c = true)
+                  Id NOT IN :territoryRestrictedSchemeIds
                   OR Id IN :mappedSchemeIds
               )
             ORDER BY Priority__c ASC NULLS LAST

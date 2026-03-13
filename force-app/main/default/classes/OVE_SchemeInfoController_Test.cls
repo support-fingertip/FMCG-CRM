@@ -50,8 +50,7 @@ private class OVE_SchemeInfoController_Test {
         // Expired scheme (should not be returned)
         Scheme__c expiredScheme = TestDataFactory.createScheme(
             'Old Scheme', 'SCH-TEST-003', 'Free Products', 'Same Product (QTY)');
-        expiredScheme.Status__c = 'Active';
-        expiredScheme.Is_Active__c = false;
+        expiredScheme.Status__c = 'Expired';
         expiredScheme.Start_Date__c = Date.today().addDays(-60);
         expiredScheme.End_Date__c = Date.today().addDays(-30);
         schemes.add(expiredScheme);

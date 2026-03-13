@@ -69,7 +69,6 @@ private class SPM_SchemeEngine_Service_Test {
         expiredScheme.Start_Date__c = Date.today().addDays(-60);
         expiredScheme.End_Date__c = Date.today().addDays(-30);
         expiredScheme.Status__c = 'Expired';
-        expiredScheme.Is_Active__c = false;
 
         // ── Budget scheme ───────────────────────────────────────────
         Scheme__c budgetScheme = TestDataFactory.createScheme(
