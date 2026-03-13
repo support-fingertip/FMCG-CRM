@@ -2075,11 +2075,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Product_Extension__c.Product_Ext__c</field>
-        <readable>false</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Product_Extension__c.Weight_Unit__c</field>
         <readable>false</readable>
     </fieldPermissions>

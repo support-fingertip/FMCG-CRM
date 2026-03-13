@@ -2992,11 +2992,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Product_Extension__c.Product_Ext__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Product_Extension__c.Barcode_UPC__c</field>
         <readable>true</readable>
     </fieldPermissions>
