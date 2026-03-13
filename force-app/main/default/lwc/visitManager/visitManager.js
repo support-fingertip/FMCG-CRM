@@ -1260,8 +1260,8 @@ export default class VisitManager extends LightningElement {
             );
             try {
                 const fileName = 'SurveyPhoto_' + qId + '_' + Date.now();
-                const photoURL = await uploadSurveyPhoto({ base64Data: base64, fileName });
-                this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type: 'Photo', value: photoURL } };
+                const contentVersionId = await uploadSurveyPhoto({ base64Data: base64, fileName });
+                this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type: 'Photo', value: contentVersionId } };
                 this.surveyQuestions = this.surveyQuestions.map(q =>
                     q.Id === qId ? { ...q, photoUploading: false } : q
                 );
@@ -1299,7 +1299,7 @@ export default class VisitManager extends LightningElement {
                 answerChoice: (ans.type === 'Single Choice' || ans.type === 'Multiple Choice') ? (Array.isArray(ans.value) ? ans.value.join(';') : ans.value) : null,
                 answerNumber: ans.type === 'Number' ? parseFloat(ans.value) : null,
                 ratingValue: ans.type === 'rating' ? ans.value : null,
-                photoURL: ans.type === 'Photo' ? ans.value : null
+                photoContentVersionId: ans.type === 'Photo' ? ans.value : null
             }));
             const responseData = {
                 visitId: this.activeVisitId, accountId: this.activeAccountId,

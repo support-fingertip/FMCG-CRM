@@ -105,7 +105,7 @@ public without sharing class OVE_Survey_Service {
         public String  answerChoice;
         public Decimal answerNumber;
         public Decimal ratingValue;
-        public String  photoURL;
+        public Id      photoContentVersionId;
     }
 
     /**
@@ -162,6 +162,8 @@ public without sharing class OVE_Survey_Service {
             // Create answer records
             if (input.answers != null && !input.answers.isEmpty()) {
                 List<Survey_Answer__c> answers = new List<Survey_Answer__c>();
+                Map<Integer, Id> photoIndexMap = new Map<Integer, Id>();
+                Integer idx = 0;
                 for (SurveyAnswerInput ans : input.answers) {
                     Survey_Answer__c a = new Survey_Answer__c();
                     a.Survey_Response__c = response.Id;
@@ -170,10 +172,18 @@ public without sharing class OVE_Survey_Service {
                     a.Answer_Choice__c   = ans.answerChoice;
                     a.Answer_Number__c   = ans.answerNumber;
                     a.Rating_Value__c    = ans.ratingValue;
-                    a.Photo_URL__c       = ans.photoURL;
                     answers.add(a);
+                    if (ans.photoContentVersionId != null) {
+                        photoIndexMap.put(idx, ans.photoContentVersionId);
+                    }
+                    idx++;
                 }
                 insert answers;
+
+                // Link photo attachments to answer records
+                for (Integer i : photoIndexMap.keySet()) {
+                    FileAttachment_Util.linkFileToParent(photoIndexMap.get(i), answers[i].Id);
+                }
             }
 
             // Mark visit as survey completed
@@ -227,13 +237,24 @@ public without sharing class OVE_Survey_Service {
                    (SELECT Id, Survey_Question__c, Survey_Question__r.Question_Text__c,
                            Survey_Question__r.Question_Type__c, Survey_Question__r.Sort_Order__c,
                            Answer_Text__c, Answer_Choice__c, Answer_Number__c,
-                           Rating_Value__c, Photo_URL__c
+                           Rating_Value__c
                     FROM Survey_Answers__r
                     ORDER BY Survey_Question__r.Sort_Order__c ASC NULLS LAST)
             FROM Survey_Response__c
             WHERE Visit__c = :visitId
             ORDER BY Response_Date__c DESC
         ];
+
+        // Collect all answer Ids to look up photo attachments
+        Set<Id> answerIds = new Set<Id>();
+        for (Survey_Response__c resp : responses) {
+            if (resp.Survey_Answers__r != null) {
+                for (Survey_Answer__c ans : resp.Survey_Answers__r) {
+                    answerIds.add(ans.Id);
+                }
+            }
+        }
+        Map<Id, String> photoUrlMap = FileAttachment_Util.getAttachmentUrls(answerIds);
 
         List<Map<String, Object>> result = new List<Map<String, Object>>();
         for (Survey_Response__c resp : responses) {
@@ -252,18 +273,19 @@ public without sharing class OVE_Survey_Service {
                     a.put('id', ans.Id);
                     a.put('questionText', ans.Survey_Question__r.Question_Text__c);
                     a.put('questionType', ans.Survey_Question__r.Question_Type__c);
+                    String photoURL = photoUrlMap.get(ans.Id);
                     // Build display value based on question type
                     String displayValue = '';
                     if (ans.Answer_Text__c != null) displayValue = ans.Answer_Text__c;
                     else if (ans.Answer_Choice__c != null) displayValue = ans.Answer_Choice__c;
                     else if (ans.Rating_Value__c != null) displayValue = String.valueOf(ans.Rating_Value__c.intValue());
                     else if (ans.Answer_Number__c != null) displayValue = String.valueOf(ans.Answer_Number__c);
-                    else if (ans.Photo_URL__c != null) displayValue = ans.Photo_URL__c;
+                    else if (photoURL != null) displayValue = 'Photo attached';
                     a.put('displayValue', displayValue);
                     a.put('ratingValue', ans.Rating_Value__c);
                     a.put('isRating', ans.Survey_Question__r.Question_Type__c == 'Rating');
                     a.put('isPhoto', ans.Survey_Question__r.Question_Type__c == 'Photo');
-                    a.put('photoURL', ans.Photo_URL__c);
+                    a.put('photoURL', photoURL);
                     answers.add(a);
                 }
             }
@@ -276,27 +298,19 @@ public without sharing class OVE_Survey_Service {
     // ── Survey Photo Upload ──────────────────────────────────────────────
 
     /**
-     * @description Uploads a survey answer photo as a ContentVersion and
-     *              returns the download URL.
+     * @description Uploads a survey answer photo as a standalone ContentVersion.
+     *              The file will be linked to the Survey_Answer__c record when
+     *              the survey is submitted.
      * @param base64Data Base64-encoded image data.
      * @param fileName   Desired file name (without extension).
-     * @return The Salesforce content download URL.
+     * @return The ContentVersion Id (used to link to the answer record on submit).
      */
-    public static String uploadSurveyPhoto(String base64Data, String fileName) {
+    public static Id uploadSurveyPhoto(String base64Data, String fileName) {
         if (String.isBlank(base64Data)) {
             throw new AuraHandledException('No photo data provided.');
         }
         try {
-            ContentVersion cv = new ContentVersion();
-            cv.Title = fileName;
-            cv.PathOnClient = fileName + '.jpg';
-            cv.VersionData = EncodingUtil.base64Decode(base64Data);
-            cv.IsMajorVersion = true;
-            insert cv;
-            cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
-            return '/sfc/servlet.shepherd/document/download/' + cv.ContentDocumentId;
-        } catch (AuraHandledException e) {
-            throw e;
+            return FileAttachment_Util.saveFileStandalone(base64Data, fileName);
         } catch (Exception e) {
             throw new AuraHandledException('Failed to upload photo: ' + e.getMessage());
         }

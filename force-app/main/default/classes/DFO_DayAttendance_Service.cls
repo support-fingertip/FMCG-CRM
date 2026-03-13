@@ -162,12 +162,12 @@ public without sharing class DFO_DayAttendance_Service {
             dayRecord.Total_Distance__c = 0;
             dayRecord.Distance_Traveled_Km__c = 0;
 
-            // Handle selfie upload
-            if (String.isNotBlank(request.selfieBase64)) {
-                dayRecord.Start_Selfie_URL__c = saveSelfieAsFile(request.selfieBase64, 'DayStart_' + today.format());
-            }
-
             insert dayRecord;
+
+            // Attach start selfie to day attendance record
+            if (String.isNotBlank(request.selfieBase64)) {
+                FileAttachment_Util.saveFileToParent(request.selfieBase64, 'DayStart_' + today.format(), dayRecord.Id);
+            }
 
             // Log GPS for day start
             if (BPM_FeatureToggle_Util.isEnabled(FEATURE_GPS_TRACKING) &&
@@ -248,15 +248,15 @@ public without sharing class DFO_DayAttendance_Service {
             dayRecord.Odometer_End__c = request.odometerEnd;
             dayRecord.Is_Finalized__c = true;
 
-            // Handle end selfie
-            if (String.isNotBlank(request.selfieBase64)) {
-                dayRecord.End_Selfie_URL__c = saveSelfieAsFile(request.selfieBase64, 'DayEnd_' + dayRecord.Attendance_Date__c.format());
-            }
-
             // Recalculate summary from actual visit data
             recalculateDaySummaryFields(dayRecord);
 
             update dayRecord;
+
+            // Attach end selfie to day attendance record
+            if (String.isNotBlank(request.selfieBase64)) {
+                FileAttachment_Util.saveFileToParent(request.selfieBase64, 'DayEnd_' + dayRecord.Attendance_Date__c.format(), dayRecord.Id);
+            }
 
             // Log GPS for day end
             if (BPM_FeatureToggle_Util.isEnabled(FEATURE_GPS_TRACKING) &&
@@ -458,7 +458,6 @@ public without sharing class DFO_DayAttendance_Service {
                    Day_Start_Time__c, Day_End_Time__c, Start_Time__c, End_Time__c,
                    Start_Location_Lat__c, Start_Location_Long__c,
                    End_Location_Lat__c, End_Location_Long__c,
-                   Start_Selfie_URL__c, End_Selfie_URL__c,
                    Battery_Level__c, Network_Status__c, Device_Info__c,
                    Hours_Worked__c, Distance_Traveled_Km__c, Total_Distance__c,
                    Total_Visits__c, Productive_Calls__c, Non_Productive_Visits__c,
@@ -768,29 +767,6 @@ public without sharing class DFO_DayAttendance_Service {
         return dt.format('EEEE');
     }
 
-    /**
-     * @description Saves selfie base64 data as a ContentVersion file.
-     * @return The ContentDistribution URL or ContentDocument Id.
-     */
-    private static String saveSelfieAsFile(String base64Data, String fileName) {
-        if (String.isBlank(base64Data)) {
-            return null;
-        }
-        try {
-            ContentVersion cv = new ContentVersion();
-            cv.Title = fileName;
-            cv.PathOnClient = fileName + '.jpg';
-            cv.VersionData = EncodingUtil.base64Decode(base64Data);
-            cv.IsMajorVersion = true;
-            insert cv;
-
-            cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
-            return '/sfc/servlet.shepherd/document/download/' + cv.ContentDocumentId;
-        } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'Failed to save selfie: ' + e.getMessage());
-            return null;
-        }
-    }
 
     /**
      * @description Safely converts an Object to Integer (handles Decimal from aggregates).

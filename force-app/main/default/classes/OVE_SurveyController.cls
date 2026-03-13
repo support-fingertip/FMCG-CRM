@@ -90,13 +90,14 @@ public with sharing class OVE_SurveyController {
     }
 
     /**
-     * @description Uploads a survey photo and returns the download URL.
+     * @description Uploads a survey photo as a standalone file and returns the
+     *              ContentVersion Id for later linking to the answer record.
      * @param base64Data Base64-encoded image data.
      * @param fileName   Desired file name.
-     * @return The Salesforce content download URL.
+     * @return The ContentVersion Id.
      */
     @AuraEnabled
-    public static String uploadSurveyPhoto(String base64Data, String fileName) {
+    public static Id uploadSurveyPhoto(String base64Data, String fileName) {
         try {
             return OVE_Survey_Service.uploadSurveyPhoto(base64Data, fileName);
         } catch (AuraHandledException e) {

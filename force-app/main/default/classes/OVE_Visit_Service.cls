@@ -210,11 +210,6 @@ public without sharing class OVE_Visit_Service {
                 }
             }
 
-            // Handle check-in photo
-            if (String.isNotBlank(request.photoBase64)) {
-                visit.Check_In_Photo_URL__c = saveVisitPhoto(request.photoBase64, 'CheckIn_' + request.accountId);
-            }
-
             // Initialize counters
             visit.Order_Value__c = 0;
             visit.Collection_Amount__c = 0;
@@ -224,6 +219,11 @@ public without sharing class OVE_Visit_Service {
                 update visit;
             } else {
                 insert visit;
+            }
+
+            // Attach check-in photo to visit record
+            if (String.isNotBlank(request.photoBase64)) {
+                FileAttachment_Util.saveFileToParent(request.photoBase64, 'CheckIn_' + request.accountId, visit.Id);
             }
 
             // Log GPS for visit check-in
@@ -315,15 +315,15 @@ public without sharing class OVE_Visit_Service {
                 visit.Completion_Activities__c = request.completedActivities;
             }
 
-            // Handle check-out photo
-            if (String.isNotBlank(request.photoBase64)) {
-                visit.Check_Out_Photo_URL__c = saveVisitPhoto(request.photoBase64, 'CheckOut_' + visit.Account__c);
-            }
-
             // Aggregate order and collection totals from this visit
             aggregateVisitTotals(visit);
 
             update visit;
+
+            // Attach check-out photo to visit record
+            if (String.isNotBlank(request.photoBase64)) {
+                FileAttachment_Util.saveFileToParent(request.photoBase64, 'CheckOut_' + visit.Account__c, visit.Id);
+            }
 
             // Log GPS for visit check-out
             if (BPM_FeatureToggle_Util.isEnabled(DFO_DayAttendance_Service.FEATURE_GPS_TRACKING) &&
@@ -479,7 +479,6 @@ public without sharing class OVE_Visit_Service {
                    Is_Productive__c, Non_Productive_Reason__c,
                    Order_Value__c, Collection_Amount__c, Total_Orders_Count__c,
                    Notes__c, Completion_Activities__c,
-                   Check_In_Photo_URL__c, Check_Out_Photo_URL__c,
                    Distance_To_Outlet__c, Is_Geo_Fenced__c,
                    Day_Attendance__c
             FROM Visit__c
@@ -896,23 +895,6 @@ public without sharing class OVE_Visit_Service {
         ]) {
             Decimal collVal = (Decimal)ar.get('totalAmount');
             visit.Collection_Amount__c = collVal != null ? collVal : 0;
-        }
-    }
-
-    private static String saveVisitPhoto(String base64Data, String fileName) {
-        if (String.isBlank(base64Data)) return null;
-        try {
-            ContentVersion cv = new ContentVersion();
-            cv.Title = fileName;
-            cv.PathOnClient = fileName + '.jpg';
-            cv.VersionData = EncodingUtil.base64Decode(base64Data);
-            cv.IsMajorVersion = true;
-            insert cv;
-            cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
-            return '/sfc/servlet.shepherd/document/download/' + cv.ContentDocumentId;
-        } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'Failed to save visit photo: ' + e.getMessage());
-            return null;
         }
     }
 
