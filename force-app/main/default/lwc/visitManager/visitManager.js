@@ -31,6 +31,7 @@ import getApplicableSurveys from '@salesforce/apex/OVE_SurveyController.getAppli
 import getSurveyWithQuestions from '@salesforce/apex/OVE_SurveyController.getSurveyWithQuestions';
 import submitSurveyResponse from '@salesforce/apex/OVE_SurveyController.submitSurveyResponse';
 import getSurveyResponsesForVisit from '@salesforce/apex/OVE_SurveyController.getSurveyResponsesForVisit';
+import uploadSurveyPhoto from '@salesforce/apex/OVE_SurveyController.uploadSurveyPhoto';
 import getActiveSchemes from '@salesforce/apex/OVE_SchemeInfoController.getActiveSchemes';
 import getTicketsForVisit from '@salesforce/apex/OVE_TicketController.getTicketsForVisit';
 import createTicket from '@salesforce/apex/OVE_TicketController.createTicket';
@@ -1248,6 +1249,29 @@ export default class VisitManager extends LightningElement {
                 return updated;
             });
         }
+    }
+
+    handleSurveyPhotoUpload(e) {
+        const qId = e.target.dataset.questionId;
+        this._processPhoto(e, async (base64, preview) => {
+            // Show uploading state and preview
+            this.surveyQuestions = this.surveyQuestions.map(q =>
+                q.Id === qId ? { ...q, photoUploading: true, photoPreview: preview } : q
+            );
+            try {
+                const fileName = 'SurveyPhoto_' + qId + '_' + Date.now();
+                const photoURL = await uploadSurveyPhoto({ base64Data: base64, fileName });
+                this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type: 'Photo', value: photoURL } };
+                this.surveyQuestions = this.surveyQuestions.map(q =>
+                    q.Id === qId ? { ...q, photoUploading: false } : q
+                );
+            } catch (err) {
+                this._toast('Error', 'Failed to upload photo.', 'error');
+                this.surveyQuestions = this.surveyQuestions.map(q =>
+                    q.Id === qId ? { ...q, photoUploading: false, photoPreview: null } : q
+                );
+            }
+        });
     }
 
     async handleSurveySubmit() {

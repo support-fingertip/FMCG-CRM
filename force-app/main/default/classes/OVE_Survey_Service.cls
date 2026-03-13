@@ -272,4 +272,33 @@ public without sharing class OVE_Survey_Service {
         }
         return result;
     }
+
+    // ── Survey Photo Upload ──────────────────────────────────────────────
+
+    /**
+     * @description Uploads a survey answer photo as a ContentVersion and
+     *              returns the download URL.
+     * @param base64Data Base64-encoded image data.
+     * @param fileName   Desired file name (without extension).
+     * @return The Salesforce content download URL.
+     */
+    public static String uploadSurveyPhoto(String base64Data, String fileName) {
+        if (String.isBlank(base64Data)) {
+            throw new AuraHandledException('No photo data provided.');
+        }
+        try {
+            ContentVersion cv = new ContentVersion();
+            cv.Title = fileName;
+            cv.PathOnClient = fileName + '.jpg';
+            cv.VersionData = EncodingUtil.base64Decode(base64Data);
+            cv.IsMajorVersion = true;
+            insert cv;
+            cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
+            return '/sfc/servlet.shepherd/document/download/' + cv.ContentDocumentId;
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to upload photo: ' + e.getMessage());
+        }
+    }
 }

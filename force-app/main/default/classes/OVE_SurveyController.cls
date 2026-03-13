@@ -88,4 +88,21 @@ public with sharing class OVE_SurveyController {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    /**
+     * @description Uploads a survey photo and returns the download URL.
+     * @param base64Data Base64-encoded image data.
+     * @param fileName   Desired file name.
+     * @return The Salesforce content download URL.
+     */
+    @AuraEnabled
+    public static String uploadSurveyPhoto(String base64Data, String fileName) {
+        try {
+            return OVE_Survey_Service.uploadSurveyPhoto(base64Data, fileName);
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

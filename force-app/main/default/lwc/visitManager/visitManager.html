@@ -1125,7 +1125,15 @@
                                     </template>
                                     <template if:true={q.isPhoto}>
                                         <lightning-input type="file" label="Upload Photo" accept="image/*"
-                                            data-question-id={q.Id} data-type="Photo" onchange={handleAnswerChange}></lightning-input>
+                                            data-question-id={q.Id} onchange={handleSurveyPhotoUpload}></lightning-input>
+                                        <template if:true={q.photoUploading}>
+                                            <div class="slds-m-top_x-small">
+                                                <lightning-spinner alternative-text="Uploading" size="small"></lightning-spinner>
+                                            </div>
+                                        </template>
+                                        <template if:true={q.photoPreview}>
+                                            <img src={q.photoPreview} alt="Uploaded photo" class="vm-survey-photo slds-m-top_x-small"/>
+                                        </template>
                                     </template>
                                     <template if:true={q.isDate}>
                                         <lightning-input type="date" data-question-id={q.Id} data-type="Date"
