@@ -372,6 +372,7 @@
                                     <th>Product</th>
                                     <th>SKU</th>
                                     <th>Min Qty</th>
+                                    <th>Classification</th>
                                     <th class="action-col"></th>
                                 </tr>
                             </thead>
@@ -388,6 +389,15 @@
                                                 min="0"
                                                 onchange={handleProductMinQtyChange}>
                                             </lightning-input>
+                                        </td>
+                                        <td>
+                                            <lightning-combobox
+                                                variant="label-hidden"
+                                                value={prod.Product_Classification__c}
+                                                options={productClassificationOptions}
+                                                data-key={prod._key}
+                                                onchange={handleProductClassificationChange}>
+                                            </lightning-combobox>
                                         </td>
                                         <td class="action-col">
                                             <lightning-button-icon

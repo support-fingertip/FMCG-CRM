@@ -79,6 +79,12 @@ const CUSTOMER_TYPE_OPTIONS = [
     { label: 'Institutional', value: 'Institutional' }
 ];
 
+const PRODUCT_CLASSIFICATION_OPTIONS = [
+    { label: '--None--', value: '' },
+    { label: 'Must Sell', value: 'Must Sell' },
+    { label: 'Focused Sell', value: 'Focused Sell' }
+];
+
 let _tempIdCounter = 0;
 function tempId() { return 'tmp_' + (++_tempIdCounter); }
 
@@ -96,6 +102,7 @@ export default class SchemeDefinition extends NavigationMixin(LightningElement) 
     slabTypeOptions = SLAB_TYPE_OPTIONS;
     discountTypeOptions = DISCOUNT_TYPE_OPTIONS;
     customerTypeOptions = CUSTOMER_TYPE_OPTIONS;
+    productClassificationOptions = PRODUCT_CLASSIFICATION_OPTIONS;
 
     // Scheme fields
     @track scheme = {
@@ -247,7 +254,8 @@ export default class SchemeDefinition extends NavigationMixin(LightningElement) 
                 ...p,
                 _key: p.Id,
                 productName: p.Product_Ext__r ? p.Product_Ext__r.Name : '',
-                productSku: p.Product_Ext__r ? (p.Product_Ext__r.SKU_Code__c || '') : ''
+                productSku: p.Product_Ext__r ? (p.Product_Ext__r.SKU_Code__c || '') : '',
+                Product_Classification__c: p.Product_Classification__c || ''
             }));
 
             this.schemeSlabs = (data.Scheme_Slabs__r || []).map(s => ({
@@ -342,7 +350,8 @@ export default class SchemeDefinition extends NavigationMixin(LightningElement) 
             productSku: prod.sku,
             Is_Buy_Product__c: true,
             Is_Get_Product__c: false,
-            Min_Quantity__c: 1
+            Min_Quantity__c: 1,
+            Product_Classification__c: ''
         }];
         this.productSearchResults = [];
         this.productSearchTerm = '';
@@ -383,6 +392,14 @@ export default class SchemeDefinition extends NavigationMixin(LightningElement) 
         const val = parseInt(event.detail.value, 10) || 0;
         this.schemeProducts = this.schemeProducts.map(p =>
             p._key === key ? { ...p, Min_Quantity__c: val } : p
+        );
+    }
+
+    handleProductClassificationChange(event) {
+        const key = event.target.dataset.key;
+        const val = event.detail.value;
+        this.schemeProducts = this.schemeProducts.map(p =>
+            p._key === key ? { ...p, Product_Classification__c: val } : p
         );
     }
 
@@ -484,7 +501,7 @@ export default class SchemeDefinition extends NavigationMixin(LightningElement) 
 
             // Build child records (strip temp keys and relationship fields)
             const productsToSave = this.schemeProducts.map(p => {
-                const rec = { Product_Ext__c: p.Product_Ext__c, Is_Buy_Product__c: p.Is_Buy_Product__c, Is_Get_Product__c: p.Is_Get_Product__c, Min_Quantity__c: p.Min_Quantity__c };
+                const rec = { Product_Ext__c: p.Product_Ext__c, Is_Buy_Product__c: p.Is_Buy_Product__c, Is_Get_Product__c: p.Is_Get_Product__c, Min_Quantity__c: p.Min_Quantity__c, Product_Classification__c: p.Product_Classification__c || null };
                 if (p.Id) rec.Id = p.Id;
                 return rec;
             });

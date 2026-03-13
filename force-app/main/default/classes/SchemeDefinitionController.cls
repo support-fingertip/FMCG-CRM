@@ -21,7 +21,8 @@ public with sharing class SchemeDefinitionController {
                    Max_Discount_Cap__c, Priority__c, Is_Stackable__c, Tier__c,
                    Budget_Amount__c, Product_Ext__c, Product_Category__c,
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
-                           Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c, Product_Category__c
+                           Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c, Product_Category__c,
+                           Product_Classification__c
                     FROM Scheme_Products__r ORDER BY Product_Ext__r.Name),
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
                            Min_Quantity__c, Max_Quantity__c,

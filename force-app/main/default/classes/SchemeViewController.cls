@@ -37,7 +37,7 @@ public with sharing class SchemeViewController {
                        '        Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c ' +
                        ' FROM Scheme_Slabs__r WHERE Is_Active__c = true ORDER BY Min_Value__c), ' +
                        '(SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
-                       '        Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c ' +
+                       '        Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c, Product_Classification__c ' +
                        ' FROM Scheme_Products__r ORDER BY Product_Ext__r.Name) ' +
                        'FROM Scheme__c ' +
                        'WHERE Status__c = \'Active\' ' +
@@ -87,7 +87,7 @@ public with sharing class SchemeViewController {
                            Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c
                     FROM Scheme_Slabs__r WHERE Is_Active__c = true ORDER BY Min_Value__c),
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
-                           Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
+                           Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r ORDER BY Product_Ext__r.Name),
                    (SELECT Id, Zone__c, Sub_Zone__c, District__c, Area__c,
                            Account__c, Account__r.Name, Customer_Type__c
