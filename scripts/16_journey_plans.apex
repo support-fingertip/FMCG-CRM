@@ -15,6 +15,9 @@ for (Beat__c b : [SELECT Id, Beat_Code__c, Day_of_Week__c, Name, Territory__c
     beatMap.put(b.Beat_Code__c, b);
 }
 
+// Use running user as salesperson
+Id currentUserId = UserInfo.getUserId();
+
 // Determine current month info
 Integer currentMonth = Date.today().month();
 Integer currentYear = Date.today().year();
@@ -34,6 +37,7 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Month__c = monthName,
         Year__c = String.valueOf(currentYear),
         Territory__c = terMap.get('TER-DEL-001'),
+        Salesperson__c = currentUserId,
         Status__c = 'Active',
         Plan_Date__c = firstDay,
         Effective_From__c = firstDay,
@@ -47,6 +51,7 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Month__c = monthName,
         Year__c = String.valueOf(currentYear),
         Territory__c = terMap.get('TER-MUM-001'),
+        Salesperson__c = currentUserId,
         Status__c = 'Approved',
         Plan_Date__c = firstDay,
         Effective_From__c = firstDay,
@@ -60,6 +65,7 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Month__c = monthName,
         Year__c = String.valueOf(currentYear),
         Territory__c = terMap.get('TER-BLR-001'),
+        Salesperson__c = currentUserId,
         Status__c = 'Draft',
         Plan_Date__c = firstDay,
         Effective_From__c = firstDay,
