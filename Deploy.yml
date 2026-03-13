@@ -1,0 +1,99 @@
+name: Auto Deploy to Salesforce
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: 'Deployment Type'
+        required: true
+        type: choice
+        options:
+          - changed-only
+          - full-deployment
+        default: 'changed-only'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # This is the KEY LINE - automatically uses branch name as environment
+    environment: ${{ github.ref_name }}
+    
+    steps:
+      - name: Display Deployment Info
+        run: |
+          echo "========================================="
+          echo "DEPLOYMENT INFORMATION"
+          echo "========================================="
+          echo "Branch:          ${{ github.ref_name }}"
+          echo "Environment:     ${{ github.ref_name }}"
+          echo "Deployment Type: ${{ github.event.inputs.deployment_type }}"
+          echo "Triggered By:    ${{ github.actor }}"
+          echo "========================================="
+      
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli
+          sf --version
+      
+      - name: Authenticate to Salesforce
+        run: |
+          # This automatically uses SALESFORCE_AUTH_URL from the environment
+          # that matches the branch name (develop, qa, uat, staging, main)
+          echo "${{ secrets.SALESFORCE_AUTH_URL }}" > authfile.txt
+          sf org login sfdx-url --sfdx-url-file authfile.txt --alias deployment-org --set-default
+          rm authfile.txt
+      
+      - name: Deploy - Changed Files Only
+        if: ${{ github.event.inputs.deployment_type == 'changed-only' }}
+        run: |
+          echo "Deploying changed files only..."
+          
+          PREV="HEAD~1"
+          CURR="HEAD"
+      
+          echo "Comparing commits: $PREV to $CURR"
+          
+          git fetch --all --prune
+          
+          CHANGED_FILES=$(git diff --name-only "$PREV" "$CURR" | grep '^force-app/' || true)
+      
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No Salesforce metadata changes found. Skipping deploy."
+            exit 0
+          else
+            sf project deploy start \
+              --source-dir $CHANGED_FILES \
+              --target-org deployment-org \
+              --wait 30
+          fi
+      
+      - name: Deploy - Full Deployment
+        if: ${{ github.event.inputs.deployment_type == 'full-deployment' }}
+        run: |
+          echo "Deploying all metadata from force-app..."
+          
+          sf project deploy start \
+            --source-dir force-app \
+            --target-org deployment-org \
+            --wait 30
+      
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "========================================="
+          echo "DEPLOYMENT SUMMARY"
+          echo "========================================="
+          echo "Branch:          ${{ github.ref_name }}"
+          echo "Environment:     ${{ github.ref_name }}"
+          echo "Deployment Type: ${{ github.event.inputs.deployment_type }}"
+          echo "Triggered By:    ${{ github.actor }}"
+          echo "Timestamp:       $(date)"
+          echo "========================================="

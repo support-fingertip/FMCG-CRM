@@ -1,0 +1,116 @@
+name: Retrieve from Salesforce
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: 'Retrieve Type'
+        required: true
+        type: choice
+        options:
+          - specific-metadata
+          - full-retrieve
+        default: 'specific-metadata'
+
+jobs:
+  retrieve:
+    runs-on: ubuntu-latest
+    # KEY ADDITION: Auto-detect environment based on branch
+    environment: ${{ github.ref_name }}
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Display Retrieval Info
+        run: |
+          echo "========================================="
+          echo "RETRIEVAL INFORMATION"
+          echo "========================================="
+          echo "Branch:        ${{ github.ref_name }}"
+          echo "Environment:   ${{ github.ref_name }}"
+          echo "Retrieve Type: ${{ github.event.inputs.deployment_type }}"
+          echo "Triggered By:  ${{ github.actor }}"
+          echo "========================================="
+      
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli
+          sf --version
+      
+      - name: Authenticate to Salesforce
+        run: |
+          # Automatically uses SALESFORCE_AUTH_URL from the environment
+          # matching the branch name (develop, qa, uat, staging, main)
+          echo "${{ secrets.SALESFORCE_AUTH_URL }}" > authfile.txt
+          sf org login sfdx-url --sfdx-url-file authfile.txt --alias retrieval-org --set-default
+          rm authfile.txt
+      
+      - name: Retrieve - Specific Metadata (using package.xml)
+        if: ${{ github.event.inputs.deployment_type == 'specific-metadata' }}
+        run: |
+          echo "Retrieving metadata specified in manifest/package.xml..."
+          
+          if [ ! -f manifest/package.xml ]; then
+            echo "Error: manifest/package.xml not found!"
+            exit 1
+          fi
+          
+          sf project retrieve start \
+            --manifest manifest/package.xml \
+            --target-org retrieval-org \
+            --wait 30
+      
+      - name: Retrieve - Full Retrieve (all metadata)
+        if: ${{ github.event.inputs.deployment_type == 'full-retrieve' }}
+        run: |
+          echo "Retrieving all metadata from org..."
+          
+          sf project retrieve start \
+            --target-org retrieval-org \
+            --wait 30
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+            echo "Changes detected from Salesforce"
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "No changes detected from Salesforce"
+          fi
+      
+      - name: Commit and Push changes to GitHub
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add force-app/
+          git commit -m "Retrieved changes from Salesforce (${{ github.ref_name }} environment) [skip ci]"
+          git push
+      
+      - name: No Changes Summary
+        if: steps.check_changes.outputs.changes_detected == 'false'
+        run: |
+          echo "========================================="
+          echo "No changes to commit - Salesforce org is in sync with repository"
+          echo "========================================="
+      
+      - name: Retrieval Summary
+        if: always()
+        run: |
+          echo "========================================="
+          echo "RETRIEVAL SUMMARY"
+          echo "========================================="
+          echo "Branch:        ${{ github.ref_name }}"
+          echo "Environment:   ${{ github.ref_name }}"
+          echo "Retrieve Type: ${{ github.event.inputs.deployment_type }}"
+          echo "Changes:       ${{ steps.check_changes.outputs.changes_detected }}"
+          echo "Triggered By:  ${{ github.actor }}"
+          echo "Timestamp:     $(date)"
+          echo "========================================="
