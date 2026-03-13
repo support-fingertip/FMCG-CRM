@@ -11,7 +11,6 @@ on:
           - changed-only
           - full-deployment
         default: 'changed-only'
-  push:
     branches:
       - claude/plan-visit-activities-Kgzjz
 
