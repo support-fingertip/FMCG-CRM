@@ -2,8 +2,7 @@
 // Run: sf apex run -f scripts/06_tax_configuration.apex
 // Prerequisite: 04_products.apex
 
-// Map HSN prefix to GST rates
-// Foods (HSN 04,09,10,19,20) = 5-18%, Beverages (21,22) = 12%, Personal Care (33) = 28%, Home Care (34) = 18%
+// Map HSN prefix to GST rates [Total, CGST, SGST, IGST]
 Map<String, Decimal[]> hsnRates = new Map<String, Decimal[]>{
     '04' => new Decimal[]{5.0, 2.5, 2.5, 5.0},   // Dairy
     '09' => new Decimal[]{5.0, 2.5, 2.5, 5.0},   // Tea/Coffee
@@ -16,9 +15,9 @@ Map<String, Decimal[]> hsnRates = new Map<String, Decimal[]>{
 };
 
 List<Product_Extension__c> exts = [
-    SELECT Id, Product__c, HSN_SAC_Code__c
+    SELECT Id, HSN_SAC_Code__c
     FROM Product_Extension__c
-    WHERE Is_Active__c = true AND Product__r.ProductCode LIKE 'FF-%'
+    WHERE Is_Active__c = true AND SKU_Code__c LIKE 'FF-%'
 ];
 
 List<Tax_Configuration__c> taxConfigs = new List<Tax_Configuration__c>();
@@ -28,6 +27,7 @@ for (Product_Extension__c ext : exts) {
     Decimal[] rates = hsnRates.containsKey(hsn2) ? hsnRates.get(hsn2) : new Decimal[]{18.0, 9.0, 9.0, 18.0};
 
     taxConfigs.add(new Tax_Configuration__c(
+        Product_Ext__c = ext.Id,
         Tax_Type__c = 'GST',
         Tax_Rate__c = rates[0],
         HSN_SAC_Code__c = ext.HSN_SAC_Code__c,

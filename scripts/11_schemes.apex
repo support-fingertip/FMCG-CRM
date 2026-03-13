@@ -2,16 +2,10 @@
 // Run: sf apex run -f scripts/11_schemes.apex
 // Prerequisite: 04_products.apex
 
-// Fetch products
-Map<String, Id> prodMap = new Map<String, Id>();
-for (Product2 p : [SELECT Id, ProductCode FROM Product2 WHERE ProductCode LIKE 'FF-%' AND IsActive = true]) {
-    prodMap.put(p.ProductCode, p.Id);
-}
-
-// Fetch product extensions
-Map<String, Id> prodExtMap = new Map<String, Id>();
-for (Product_Extension__c pe : [SELECT Id, Name FROM Product_Extension__c LIMIT 200]) {
-    prodExtMap.put(pe.Name, pe.Id);
+// Fetch product extensions by SKU Code
+Map<String, Id> peMap = new Map<String, Id>();
+for (Product_Extension__c pe : [SELECT Id, SKU_Code__c FROM Product_Extension__c WHERE Is_Active__c = true AND SKU_Code__c LIKE 'FF-%']) {
+    peMap.put(pe.SKU_Code__c, pe.Id);
 }
 
 // Fetch categories
@@ -20,32 +14,33 @@ for (Product_Category__c pc : [SELECT Id, Category_Code__c FROM Product_Category
     catMap.put(pc.Category_Code__c, pc.Id);
 }
 
-// Get first 6 product extension Ids for scheme materials
-List<Id> peIds = new List<Id>(prodExtMap.values());
-Id peMaida1kg = peIds.size() > 0 ? peIds[0] : null;
-Id peMaida500g = peIds.size() > 1 ? peIds[1] : null;
-Id peAtta200g = peIds.size() > 2 ? peIds[2] : null;
-Id peAtta1kg = peIds.size() > 3 ? peIds[3] : null;
-Id peSooji500g = peIds.size() > 4 ? peIds[4] : null;
-Id peSnack1 = peIds.size() > 5 ? peIds[5] : null;
+// Product references for scheme materials
+Id peChips150 = peMap.get('FF-SNK-001');    // Crispy Masala Chips 150g
+Id peBiscuit200 = peMap.get('FF-BIS-001');  // Classic Cream Biscuits 200g
+Id peNoodles70 = peMap.get('FF-NDL-001');   // Instant Noodles Masala 70g
+Id peJuice1L = peMap.get('FF-JUC-001');     // Fresh Mango Juice 1L
+Id peDetergent1kg = peMap.get('FF-DET-001');// Power Wash Detergent 1kg
+Id peShampoo200 = peMap.get('FF-HAR-002');  // Anti-Dandruff Shampoo 200ml
+Id peChips75 = peMap.get('FF-SNK-003');     // Classic Salted Chips 75g (free product)
+Id peToffee200 = peMap.get('FF-CNF-001');   // Mango Toffees 200g (free product)
 
 // ── Create Schemes (covering all 4 categories x representative types) ────
 
 List<Scheme__c> schemes = new List<Scheme__c>{
     // ── Scenario 1: Free Products, Same Product (QTY) ────────────────
     new Scheme__c(
-        Name = 'Naga Maida Buy 3 Get 1 Free',
+        Name = 'Chips Buy 3 Get 1 Free',
         Scheme_Code__c = 'SCH-2026-001',
         Scheme_Category__c = 'Free Products',
         Scheme_Type__c = 'Same Product (QTY)',
-        Description__c = 'Buy 3 packs of Naga Maida 1KG, get 1 Naga Maida 200g free',
+        Description__c = 'Buy 3 packs of Crispy Masala Chips 150g, get 1 Classic Salted Chips 75g free',
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(3),
         Status__c = 'Active',
         Min_Quantity__c = 3,
-        Free_Product_Ext__c = peAtta200g,
+        Free_Product_Ext__c = peChips75,
         Free_Quantity__c = 1,
-        Product_Ext__c = peMaida1kg,
+        Product_Ext__c = peChips150,
         Budget_Amount__c = 100000,
         Applicable_Channel__c = 'GT',
         Priority__c = 1
@@ -53,18 +48,18 @@ List<Scheme__c> schemes = new List<Scheme__c>{
 
     // ── Scenario 2: Free Products, Same Product (VAL) ────────────────
     new Scheme__c(
-        Name = 'Naga Maida MOV Free Product',
+        Name = 'Biscuits MOV Free Product',
         Scheme_Code__c = 'SCH-2026-002',
         Scheme_Category__c = 'Free Products',
         Scheme_Type__c = 'Same Product (VAL)',
-        Description__c = 'Meet Rs.1500 MOV on Naga Maida 1KG, get 1 Maida 200g free',
+        Description__c = 'Meet Rs.500 MOV on Classic Cream Biscuits, get 1 Mango Toffees free',
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(3),
         Status__c = 'Active',
-        MOV__c = 1500,
-        Free_Product_Ext__c = peAtta200g,
+        MOV__c = 500,
+        Free_Product_Ext__c = peToffee200,
         Free_Quantity__c = 1,
-        Product_Ext__c = peMaida1kg,
+        Product_Ext__c = peBiscuit200,
         Budget_Amount__c = 80000,
         Applicable_Channel__c = 'GT',
         Priority__c = 2
@@ -72,11 +67,11 @@ List<Scheme__c> schemes = new List<Scheme__c>{
 
     // ── Scenario 3: Discount in %, Assorted Product (QTY) ────────────
     new Scheme__c(
-        Name = 'Assorted Products 3% Off',
+        Name = 'Snacks & Noodles 3% Off',
         Scheme_Code__c = 'SCH-2026-003',
         Scheme_Category__c = 'Discount in %',
         Scheme_Type__c = 'Assorted Product (QTY)',
-        Description__c = '3% discount when buying assorted Maida + Sooji products',
+        Description__c = '3% discount when buying assorted Chips + Noodles products',
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(6),
         Status__c = 'Active',
@@ -88,11 +83,11 @@ List<Scheme__c> schemes = new List<Scheme__c>{
 
     // ── Scenario 4: Discount in Value, Invoice Qty Based ─────────────
     new Scheme__c(
-        Name = 'Invoice Qty Price Discount',
+        Name = 'Detergent Invoice Qty Discount',
         Scheme_Code__c = 'SCH-2026-004',
         Scheme_Category__c = 'Discount in Value',
         Scheme_Type__c = 'Invoice Qty Based',
-        Description__c = 'Rs.200 price discount when invoice qty exceeds 10 KG',
+        Description__c = 'Rs.200 price discount when invoice qty exceeds 10 KG of detergent',
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(3),
         Status__c = 'Active',
@@ -110,11 +105,11 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Scheme_Code__c = 'SCH-2026-005',
         Scheme_Category__c = 'Reward Points',
         Scheme_Type__c = 'Invoice Val Based',
-        Description__c = 'Earn 300 reward points on invoice value Rs.11,000+',
+        Description__c = 'Earn 300 reward points on invoice value Rs.5,000+',
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(6),
         Status__c = 'Active',
-        Invoice_Val_Threshold__c = 11000,
+        Invoice_Val_Threshold__c = 5000,
         Reward_Points__c = 300,
         Budget_Amount__c = 150000,
         Applicable_Channel__c = 'GT',
@@ -124,17 +119,17 @@ List<Scheme__c> schemes = new List<Scheme__c>{
 
     // ── Scenario 6: Reward Points, Same Product (QTY) ────────────────
     new Scheme__c(
-        Name = 'Maida Qty Reward Points',
+        Name = 'Juice Qty Reward Points',
         Scheme_Code__c = 'SCH-2026-006',
         Scheme_Category__c = 'Reward Points',
         Scheme_Type__c = 'Same Product (QTY)',
-        Description__c = 'Earn 300 points buying 3+ packs of Naga Maida 1KG',
+        Description__c = 'Earn 300 points buying 6+ packs of Fresh Mango Juice 1L',
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(3),
         Status__c = 'Active',
-        Min_Quantity__c = 3,
+        Min_Quantity__c = 6,
         Reward_Points__c = 300,
-        Product_Ext__c = peMaida1kg,
+        Product_Ext__c = peJuice1L,
         Budget_Amount__c = 50000,
         Applicable_Channel__c = 'GT',
         Priority__c = 6,
@@ -184,66 +179,71 @@ for (Scheme__c s : schemes) {
 
 List<Scheme_Product__c> schProducts = new List<Scheme_Product__c>();
 
-// Scenario 1: Same Product QTY - buy Maida 1KG
-if (peMaida1kg != null) {
+// Scenario 1: Buy Chips 150g, get Chips 75g free
+if (peChips150 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Product_Ext__c = peMaida1kg,
+        Product_Ext__c = peChips150,
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 3));
 }
-if (peMaida500g != null) {
+if (peChips75 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Product_Ext__c = peMaida500g,
-        Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 4));
-}
-// Free product
-if (peAtta200g != null) {
-    schProducts.add(new Scheme_Product__c(
-        Scheme__c = schMap.get('SCH-2026-001'),
-        Product_Ext__c = peAtta200g,
+        Product_Ext__c = peChips75,
         Is_Buy_Product__c = false, Is_Get_Product__c = true, Min_Quantity__c = 0));
 }
 
-// Scenario 3: Assorted Product QTY - Maida + Sooji
-if (peMaida1kg != null) {
+// Scenario 2: Buy Biscuits, get Toffees free
+if (peBiscuit200 != null) {
+    schProducts.add(new Scheme_Product__c(
+        Scheme__c = schMap.get('SCH-2026-002'),
+        Product_Ext__c = peBiscuit200,
+        Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 20));
+}
+if (peToffee200 != null) {
+    schProducts.add(new Scheme_Product__c(
+        Scheme__c = schMap.get('SCH-2026-002'),
+        Product_Ext__c = peToffee200,
+        Is_Buy_Product__c = false, Is_Get_Product__c = true, Min_Quantity__c = 0));
+}
+
+// Scenario 3: Assorted Chips + Noodles
+if (peChips150 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-003'),
-        Product_Ext__c = peMaida1kg,
+        Product_Ext__c = peChips150,
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 3));
 }
-if (peSooji500g != null) {
+if (peNoodles70 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-003'),
-        Product_Ext__c = peSooji500g,
+        Product_Ext__c = peNoodles70,
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 4));
 }
 
-// Scenario 4: Invoice Qty - scheme materials
-if (peMaida1kg != null) {
+// Scenario 4: Invoice Qty - detergent
+if (peDetergent1kg != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-004'),
-        Product_Ext__c = peMaida1kg,
-        Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 1));
-}
-if (peSooji500g != null) {
-    schProducts.add(new Scheme_Product__c(
-        Scheme__c = schMap.get('SCH-2026-004'),
-        Product_Ext__c = peSooji500g,
+        Product_Ext__c = peDetergent1kg,
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 1));
 }
 
-// Scenario 5: Invoice Val - scheme materials
-if (peMaida1kg != null) {
+// Scenario 5: Invoice Val - all products qualify (no specific product mapping needed)
+
+// Scenario 6: Juice reward points
+if (peJuice1L != null) {
     schProducts.add(new Scheme_Product__c(
-        Scheme__c = schMap.get('SCH-2026-005'),
-        Product_Ext__c = peMaida1kg,
-        Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 1));
+        Scheme__c = schMap.get('SCH-2026-006'),
+        Product_Ext__c = peJuice1L,
+        Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 6));
 }
-if (peSooji500g != null) {
+
+// Scenario 7: Personal care products for slab discount
+if (peShampoo200 != null) {
     schProducts.add(new Scheme_Product__c(
-        Scheme__c = schMap.get('SCH-2026-005'),
-        Product_Ext__c = peSooji500g,
+        Scheme__c = schMap.get('SCH-2026-007'),
+        Product_Ext__c = peShampoo200,
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 1));
 }
 
@@ -252,9 +252,10 @@ if (!schProducts.isEmpty()) {
     System.debug('Inserted scheme products: ' + schProducts.size());
 }
 
-// ── Scheme Slabs (for slab-based scheme SCH-2026-007) ────────────────────
+// ── Scheme Slabs (for slab-based schemes) ────────────────────────────────
 
 List<Scheme_Slab__c> slabs = new List<Scheme_Slab__c>{
+    // Value-based slabs for Personal Care Volume Discount (SCH-2026-007)
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-007'),
         Slab_Type__c = 'Value', Min_Value__c = 1000, Max_Value__c = 4999,
         Discount_Type__c = 'Percent', Discount_Value__c = 5, Is_Active__c = true),
@@ -265,7 +266,7 @@ List<Scheme_Slab__c> slabs = new List<Scheme_Slab__c>{
         Slab_Type__c = 'Value', Min_Value__c = 15000, Max_Value__c = 999999,
         Discount_Type__c = 'Percent', Discount_Value__c = 12, Is_Active__c = true),
 
-    // Slab for free product scheme (buy 10-49 get 2 free, buy 50+ get 12 free)
+    // Quantity-based slabs for Chips Buy 3 Get 1 Free (SCH-2026-001)
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-001'),
         Slab_Type__c = 'Quantity', Min_Quantity__c = 10, Max_Quantity__c = 49,
         Discount_Type__c = 'Free Product', Free_Quantity__c = 2, Is_Active__c = true),
@@ -281,16 +282,27 @@ System.debug('Inserted scheme slabs: ' + slabs.size());
 List<Scheme_Mapping__c> mappings = new List<Scheme_Mapping__c>{
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Zone__c = 'TN North',
-        Sub_Zone__c = 'Madurai',
-        District__c = 'Madurai',
-        Area__c = 'Chennai North',
+        Zone__c = 'North',
+        Area__c = 'Delhi NCR',
+        Customer_Type__c = 'D2R',
+        Is_Active__c = true
+    ),
+    new Scheme_Mapping__c(
+        Scheme__c = schMap.get('SCH-2026-001'),
+        Zone__c = 'West',
+        Area__c = 'Mumbai Metro',
         Customer_Type__c = 'D2R',
         Is_Active__c = true
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-005'),
-        Zone__c = 'TN North',
+        Zone__c = 'North',
+        Customer_Type__c = 'D2R',
+        Is_Active__c = true
+    ),
+    new Scheme_Mapping__c(
+        Scheme__c = schMap.get('SCH-2026-005'),
+        Zone__c = 'South',
         Customer_Type__c = 'D2R',
         Is_Active__c = true
     )

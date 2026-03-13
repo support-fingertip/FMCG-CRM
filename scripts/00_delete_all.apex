@@ -65,9 +65,6 @@ System.debug('Deleted Batch_Master__c');
 delete [SELECT Id FROM Product_Extension__c LIMIT 10000];
 System.debug('Deleted Product_Extension__c');
 
-delete [SELECT Id FROM Product2 WHERE ProductCode LIKE 'FF-%' LIMIT 10000];
-System.debug('Deleted Product2');
-
 delete [SELECT Id FROM Product_Category__c WHERE Parent_Category__c != null LIMIT 10000];
 System.debug('Deleted Sub-Categories');
 
