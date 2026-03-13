@@ -222,10 +222,6 @@
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
-        <tab>Scheme_Definition</tab>
-        <visibility>Visible</visibility>
-    </tabSettings>
-    <tabSettings>
         <tab>Scheme_Mapping__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
