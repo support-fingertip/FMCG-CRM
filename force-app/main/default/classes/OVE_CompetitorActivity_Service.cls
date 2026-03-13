@@ -17,7 +17,7 @@ public without sharing class OVE_CompetitorActivity_Service {
         }
         return [
             SELECT Id, Name, Competitor_Company__c, Competitor_SKU__c, Competitor_Price__c,
-                   Own_Product__c, Product_Category__c, Product_Category__r.Name,
+                   Own_Product_Ext__c, Product_Category__c, Product_Category__r.Name,
                    Notes__c, Photo_URL__c, Activity_Date__c, Is_Active__c
             FROM Competitor__c
             WHERE Visit__c = :visitId
@@ -60,7 +60,7 @@ public without sharing class OVE_CompetitorActivity_Service {
         if (data.containsKey('competitorPrice') && data.get('competitorPrice') != null) {
             entry.Competitor_Price__c = (Decimal) data.get('competitorPrice');
         }
-        entry.Own_Product__c = (String) data.get('ownProduct');
+        entry.Own_Product_Ext__c = (String) data.get('ownProduct');
         if (data.containsKey('productCategory') && data.get('productCategory') != null) {
             entry.Product_Category__c = (Id) data.get('productCategory');
         }

@@ -5,7 +5,7 @@
     <columns>Competitor_Company__c</columns>
     <columns>Competitor_SKU__c</columns>
     <columns>Competitor_Price__c</columns>
-    <columns>Own_Product__c</columns>
+    <columns>Own_Product_Ext__c</columns>
     <columns>Product_Category__c</columns>
     <columns>Account__c</columns>
     <filterScope>Everything</filterScope>

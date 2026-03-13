@@ -775,7 +775,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Competitor__c.Own_Product__c</field>
+        <field>Competitor__c.Own_Product_Ext__c</field>
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2465,7 +2465,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Scheme_Slab__c.Free_Product__c</field>
+        <field>Scheme_Slab__c.Free_Product_Ext__c</field>
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2555,7 +2555,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Scheme__c.Free_Product__c</field>
+        <field>Scheme__c.Free_Product_Ext__c</field>
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>

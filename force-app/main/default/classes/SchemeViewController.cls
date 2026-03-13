@@ -25,7 +25,7 @@ public with sharing class SchemeViewController {
                        'Start_Date__c, End_Date__c, Status__c, Channel__c, ' +
                        'Max_Discount_Cap__c, Priority__c, ' +
                        '(SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c, ' +
-                       '        Discount_Type__c, Discount_Value__c, Free_Product__c, Free_Quantity__c ' +
+                       '        Discount_Type__c, Discount_Value__c, Free_Product_Ext__c, Free_Quantity__c ' +
                        ' FROM Scheme_Slabs__r ORDER BY Min_Value__c), ' +
                        '(SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode, ' +
                        '        Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c ' +
@@ -66,7 +66,7 @@ public with sharing class SchemeViewController {
                    Max_Discount_Cap__c, Priority__c,
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
                            Discount_Type__c, Discount_Value__c,
-                           Free_Product__c, Free_Product__r.Name, Free_Quantity__c
+                           Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.ProductCode,
                            Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
@@ -108,7 +108,7 @@ public with sharing class SchemeViewController {
                 SELECT Id, Name, Scheme_Type__c, Max_Discount_Cap__c,
                        (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
                                Discount_Type__c, Discount_Value__c,
-                               Free_Product__c, Free_Product__r.Name, Free_Quantity__c
+                               Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c
                         FROM Scheme_Slabs__r ORDER BY Min_Value__c DESC)
                 FROM Scheme__c
                 WHERE Id = :schemeId
@@ -165,9 +165,9 @@ public with sharing class SchemeViewController {
                     discountPercent = (discountAmount / value * 100).setScale(2, RoundingMode.HALF_UP);
                 }
             } else if (appliedSlab.Discount_Type__c == 'Free Product') {
-                result.put('freeProduct', appliedSlab.Free_Product__c);
-                result.put('freeProductName', appliedSlab.Free_Product__r != null
-                    ? appliedSlab.Free_Product__r.Name : '');
+                result.put('freeProduct', appliedSlab.Free_Product_Ext__c);
+                result.put('freeProductName', appliedSlab.Free_Product_Ext__r != null
+                    ? appliedSlab.Free_Product_Ext__r.Name : '');
                 result.put('freeQuantity', appliedSlab.Free_Quantity__c != null
                     ? appliedSlab.Free_Quantity__c : 0);
             }

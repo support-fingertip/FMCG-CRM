@@ -35,7 +35,7 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Own_Product__c</field>
+                <field>Own_Product_Ext__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>

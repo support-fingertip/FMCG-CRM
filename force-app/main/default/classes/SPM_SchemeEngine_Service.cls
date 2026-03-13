@@ -194,8 +194,8 @@ public without sharing class SPM_SchemeEngine_Service {
                     result.discountAmount = slab.Discount_Amount__c;
                 }
 
-                if (slab.Free_Product__c != null) {
-                    result.freeProductId = slab.Free_Product__c;
+                if (slab.Free_Product_Ext__c != null) {
+                    result.freeProductId = slab.Free_Product_Ext__c;
                     result.freeQty = slab.Free_Quantity__c != null
                         ? slab.Free_Quantity__c : 0;
                 }
@@ -315,7 +315,7 @@ public without sharing class SPM_SchemeEngine_Service {
                     totalValue >= scheme.Min_Value__c;
 
                 if (meetsMinQty && meetsMinVal) {
-                    result.freeProductId = scheme.Free_Product__c;
+                    result.freeProductId = scheme.Free_Product_Ext__c;
                     result.freeQty = scheme.Free_Quantity__c != null
                         ? scheme.Free_Quantity__c : 0;
                 }

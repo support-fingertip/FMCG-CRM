@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
-    <fullName>Own_Product__c</fullName>
+    <fullName>Own_Product_Ext__c</fullName>
     <label>Own Product</label>
     <type>Lookup</type>
     <required>false</required>
     <referenceTo>Product_Extension__c</referenceTo>
     <relationshipLabel>Competitor Mappings</relationshipLabel>
-    <relationshipName>Competitor_Mappings</relationshipName>
+    <relationshipName>Competitor_Mappings_Ext</relationshipName>
     <deleteConstraint>SetNull</deleteConstraint>
 </CustomField>

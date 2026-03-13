@@ -58,7 +58,7 @@ public with sharing class OrderEntryController {
             SELECT Id, Name, Scheme_Code__c, Scheme_Type__c, Description__c,
                    Start_Date__c, End_Date__c, Max_Discount_Cap__c,
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
-                           Discount_Type__c, Discount_Value__c, Free_Product__c, Free_Quantity__c
+                           Discount_Type__c, Discount_Value__c, Free_Product_Ext__c, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
                     FROM Scheme_Products__r)
