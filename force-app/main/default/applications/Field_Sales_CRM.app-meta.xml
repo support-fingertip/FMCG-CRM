@@ -36,7 +36,6 @@
     <tabs>Target__c</tabs>
     <tabs>Scheme__c</tabs>
     <tabs>Scheme_Manager</tabs>
-    <tabs>Scheme_Definition</tabs>
     <tabs>Competitor__c</tabs>
     <tabs>Invoice__c</tabs>
     <tabs>Return_Order__c</tabs>

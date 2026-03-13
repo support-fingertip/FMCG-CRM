@@ -586,6 +586,749 @@
             </template>
         </template>
 
+        <!-- ═══════════ WIZARD VIEW ═══════════ -->
+        <template if:true={isWizardView}>
+            <!-- Wizard Header -->
+            <div class="wizard-header-bar">
+                <div class="wizard-header-left">
+                    <lightning-button-icon
+                        icon-name="utility:back"
+                        alternative-text="Back"
+                        variant="bare"
+                        class="back-btn"
+                        onclick={handleWizCancel}>
+                    </lightning-button-icon>
+                    <h2 class="wizard-title">{wizPageTitle}</h2>
+                </div>
+                <div class="wizard-header-right">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={handleWizCancel}>
+                    </lightning-button>
+                    <lightning-button
+                        label="Save Scheme"
+                        variant="brand"
+                        icon-name="utility:save"
+                        onclick={handleWizSave}>
+                    </lightning-button>
+                </div>
+            </div>
+
+            <div class="wizard-body">
+                <!-- Step Indicator -->
+                <div class="wiz-step-indicator slds-m-bottom_medium">
+                    <template for:each={wizSteps} for:item="step">
+                        <div key={step.value} class="wiz-step-item" data-step={step.value} onclick={handleWizStepClick}>
+                            <div class={step.circleClass}>{step.value}</div>
+                            <span class={step.labelClass}>{step.label}</span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- ═══════════ STEP 1: Basic Info ═══════════ -->
+                <template if:true={wizIsStep1}>
+                    <div class="wiz-step-content">
+                        <h3 class="wiz-section-title">Scheme Information</h3>
+                        <div class="slds-grid slds-gutters slds-wrap">
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    label="Scheme Name" required
+                                    value={wizScheme.Name}
+                                    data-field="Name"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    label="Scheme Code" required
+                                    value={wizScheme.Scheme_Code__c}
+                                    data-field="Scheme_Code__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-combobox
+                                    label="Scheme Category" required
+                                    value={wizScheme.Scheme_Category__c}
+                                    options={wizCategoryOptions}
+                                    data-field="Scheme_Category__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-combobox
+                                    label="Scheme Type" required
+                                    value={wizScheme.Scheme_Type__c}
+                                    options={wizTypeOptions}
+                                    data-field="Scheme_Type__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    type="date" label="Start Date" required
+                                    value={wizScheme.Start_Date__c}
+                                    data-field="Start_Date__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    type="date" label="End Date" required
+                                    value={wizScheme.End_Date__c}
+                                    data-field="End_Date__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-combobox
+                                    label="Status" required
+                                    value={wizScheme.Status__c}
+                                    options={wizStatusOptions}
+                                    data-field="Status__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-combobox
+                                    label="Tier"
+                                    value={wizScheme.Tier__c}
+                                    options={wizTierOptions}
+                                    data-field="Tier__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    type="number" label="Priority"
+                                    value={wizScheme.Priority__c}
+                                    data-field="Priority__c"
+                                    min="1"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    type="number" label="Budget Amount"
+                                    value={wizScheme.Budget_Amount__c}
+                                    data-field="Budget_Amount__c"
+                                    formatter="currency" step="0.01"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                                <lightning-textarea
+                                    label="Description"
+                                    value={wizScheme.Description__c}
+                                    data-field="Description__c"
+                                    max-length="32768"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-textarea>
+                            </div>
+                        </div>
+
+                        <h3 class="wiz-section-title slds-m-top_medium">Applicability</h3>
+                        <div class="slds-grid slds-gutters slds-wrap">
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-dual-listbox
+                                    label="Applicable Channels"
+                                    source-label="Available"
+                                    selected-label="Selected"
+                                    options={wizChannelOptions}
+                                    value={wizScheme.Applicable_Channel__c}
+                                    data-field="Applicable_Channel__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-dual-listbox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-dual-listbox
+                                    label="Applicable Outlet Types"
+                                    source-label="Available"
+                                    selected-label="Selected"
+                                    options={wizOutletTypeOptions}
+                                    value={wizScheme.Applicable_Outlet_Type__c}
+                                    data-field="Applicable_Outlet_Type__c"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-dual-listbox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    type="checkbox" label="Is Stackable"
+                                    checked={wizScheme.Is_Stackable__c}
+                                    data-field="Is_Stackable__c"
+                                    onchange={handleWizCheckboxChange}>
+                                </lightning-input>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ═══════════ STEP 2: Benefit Config ═══════════ -->
+                <template if:true={wizIsStep2}>
+                    <div class="wiz-step-content">
+                        <h3 class="wiz-section-title">Benefit Configuration</h3>
+                        <div class="category-badge-display slds-m-bottom_medium">
+                            <span class="slds-badge">{wizScheme.Scheme_Category__c}</span>
+                            <span class="slds-badge slds-badge_inverse">{wizScheme.Scheme_Type__c}</span>
+                        </div>
+
+                        <!-- Free Products fields -->
+                        <template if:true={wizIsFreeProducts}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <div class="wiz-product-search-wrapper">
+                                        <lightning-input
+                                            label="Free Product"
+                                            value={wizFreeProductSearchTerm}
+                                            placeholder="Search products..."
+                                            onchange={handleWizFreeProductSearch}>
+                                        </lightning-input>
+                                        <template if:true={wizFreeProductSearchResults.length}>
+                                            <div class="wiz-search-results-dropdown">
+                                                <template for:each={wizFreeProductSearchResults} for:item="prod">
+                                                    <div key={prod.id} class="wiz-search-result-item"
+                                                        data-id={prod.id} onclick={handleWizSelectFreeProduct}>
+                                                        <span class="wiz-result-name">{prod.name}</span>
+                                                        <span class="wiz-result-sku">{prod.sku}</span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Free Quantity"
+                                        value={wizScheme.Free_Quantity__c}
+                                        data-field="Free_Quantity__c"
+                                        min="0"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Discount in % fields -->
+                        <template if:true={wizIsDiscountPercent}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Discount Percent"
+                                        value={wizScheme.Discount_Percent__c}
+                                        data-field="Discount_Percent__c"
+                                        min="0" max="100" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Max Discount Cap"
+                                        value={wizScheme.Max_Discount_Cap__c}
+                                        data-field="Max_Discount_Cap__c"
+                                        formatter="currency" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Discount in Value fields -->
+                        <template if:true={wizIsDiscountValue}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Price Discount (Flat Amount)"
+                                        value={wizScheme.Price_Discount__c}
+                                        data-field="Price_Discount__c"
+                                        formatter="currency" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Max Discount Cap"
+                                        value={wizScheme.Max_Discount_Cap__c}
+                                        data-field="Max_Discount_Cap__c"
+                                        formatter="currency" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Reward Points fields -->
+                        <template if:true={wizIsRewardPoints}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Reward Points"
+                                        value={wizScheme.Reward_Points__c}
+                                        data-field="Reward_Points__c"
+                                        min="0"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <h3 class="wiz-section-title slds-m-top_large">Trigger Conditions</h3>
+
+                        <!-- QTY-based trigger -->
+                        <template if:true={wizShowMinMaxQty}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Min Quantity"
+                                        value={wizScheme.Min_Quantity__c}
+                                        data-field="Min_Quantity__c"
+                                        min="0"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Max Quantity"
+                                        value={wizScheme.Max_Quantity__c}
+                                        data-field="Max_Quantity__c"
+                                        min="0"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- VAL-based trigger -->
+                        <template if:true={wizShowMOV}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Minimum Order Value (MOV)"
+                                        value={wizScheme.MOV__c}
+                                        data-field="MOV__c"
+                                        formatter="currency" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Invoice Qty trigger -->
+                        <template if:true={wizShowInvoiceQtyFields}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Invoice Qty Threshold"
+                                        value={wizScheme.Invoice_Qty_Threshold__c}
+                                        data-field="Invoice_Qty_Threshold__c"
+                                        min="0" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-combobox
+                                        label="Invoice Qty UOM"
+                                        value={wizScheme.Invoice_Qty_UOM__c}
+                                        options={wizInvoiceUomOptions}
+                                        data-field="Invoice_Qty_UOM__c"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Invoice Val trigger -->
+                        <template if:true={wizShowInvoiceValFields}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-input
+                                        type="number" label="Invoice Value Threshold"
+                                        value={wizScheme.Invoice_Val_Threshold__c}
+                                        data-field="Invoice_Val_Threshold__c"
+                                        formatter="currency" step="0.01"
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- ═══════════ STEP 3: Products ═══════════ -->
+                <template if:true={wizIsStep3}>
+                    <div class="wiz-step-content">
+                        <h3 class="wiz-section-title">Scheme Products (Buy)</h3>
+                        <div class="wiz-product-search-wrapper slds-m-bottom_medium">
+                            <lightning-input
+                                label="Search Products to Add"
+                                value={wizProductSearchTerm}
+                                placeholder="Type product name or SKU..."
+                                onchange={handleWizProductSearch}
+                                class="search-input">
+                            </lightning-input>
+                            <template if:true={wizProductSearchResults.length}>
+                                <div class="wiz-search-results-dropdown">
+                                    <template for:each={wizProductSearchResults} for:item="prod">
+                                        <div key={prod.id} class="wiz-search-result-item"
+                                            data-id={prod.id} onclick={handleWizSelectProduct}>
+                                            <span class="wiz-result-name">{prod.name}</span>
+                                            <span class="wiz-result-sku">{prod.sku} &bull; MRP: {prod.mrp}</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <template if:true={wizHasBuyProducts}>
+                            <table class="slds-table slds-table_cell-buffer slds-table_bordered wiz-child-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>SKU</th>
+                                        <th>Min Qty</th>
+                                        <th>Classification</th>
+                                        <th class="wiz-action-col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template for:each={wizBuyProducts} for:item="prod">
+                                        <tr key={prod._key}>
+                                            <td>{prod.productName}</td>
+                                            <td>{prod.productSku}</td>
+                                            <td>
+                                                <lightning-input
+                                                    type="number" variant="label-hidden"
+                                                    value={prod.Min_Quantity__c}
+                                                    data-key={prod._key}
+                                                    min="0"
+                                                    onchange={handleWizProductMinQtyChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td>
+                                                <lightning-combobox
+                                                    variant="label-hidden"
+                                                    value={prod.Product_Classification__c}
+                                                    options={wizProductClassificationOptions}
+                                                    data-key={prod._key}
+                                                    onchange={handleWizProductClassificationChange}>
+                                                </lightning-combobox>
+                                            </td>
+                                            <td class="wiz-action-col">
+                                                <lightning-button-icon
+                                                    icon-name="utility:delete"
+                                                    variant="bare" size="small"
+                                                    alternative-text="Remove"
+                                                    data-key={prod._key}
+                                                    onclick={handleWizRemoveProduct}>
+                                                </lightning-button-icon>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </template>
+                        <template if:false={wizHasBuyProducts}>
+                            <div class="wiz-empty-child-state">No buy products added yet</div>
+                        </template>
+
+                        <!-- Get Products (for Free Products category) -->
+                        <template if:true={wizIsFreeProducts}>
+                            <h3 class="wiz-section-title slds-m-top_large">Free/Get Products</h3>
+                            <div class="wiz-product-search-wrapper slds-m-bottom_medium">
+                                <lightning-input
+                                    label="Search Free Products to Add"
+                                    value={wizProductSearchTerm}
+                                    placeholder="Type product name or SKU..."
+                                    onchange={handleWizProductSearch}>
+                                </lightning-input>
+                                <template if:true={wizProductSearchResults.length}>
+                                    <div class="wiz-search-results-dropdown">
+                                        <template for:each={wizProductSearchResults} for:item="prod">
+                                            <div key={prod.id} class="wiz-search-result-item"
+                                                data-id={prod.id} onclick={handleWizSelectGetProduct}>
+                                                <span class="wiz-result-name">{prod.name}</span>
+                                                <span class="wiz-result-sku">{prod.sku}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                            <template if:true={wizHasGetProducts}>
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered wiz-child-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>SKU</th>
+                                            <th class="wiz-action-col"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={wizGetProducts} for:item="prod">
+                                            <tr key={prod._key}>
+                                                <td>{prod.productName}</td>
+                                                <td>{prod.productSku}</td>
+                                                <td class="wiz-action-col">
+                                                    <lightning-button-icon
+                                                        icon-name="utility:delete"
+                                                        variant="bare" size="small"
+                                                        alternative-text="Remove"
+                                                        data-key={prod._key}
+                                                        onclick={handleWizRemoveProduct}>
+                                                    </lightning-button-icon>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- ═══════════ STEP 4: Slabs ═══════════ -->
+                <template if:true={wizIsStep4}>
+                    <div class="wiz-step-content">
+                        <div class="wiz-section-header">
+                            <h3 class="wiz-section-title">Scheme Slabs</h3>
+                            <lightning-button
+                                label="Add Slab"
+                                icon-name="utility:add"
+                                variant="brand"
+                                onclick={handleWizAddSlab}>
+                            </lightning-button>
+                        </div>
+
+                        <template if:true={wizHasSlabs}>
+                            <template for:each={wizSlabs} for:item="slab">
+                                <div key={slab._key} class="wiz-slab-card slds-m-bottom_small">
+                                    <div class="wiz-slab-card-header">
+                                        <span class="wiz-slab-title">Slab</span>
+                                        <lightning-button-icon
+                                            icon-name="utility:delete"
+                                            variant="bare" size="small"
+                                            alternative-text="Remove Slab"
+                                            data-key={slab._key}
+                                            onclick={handleWizRemoveSlab}>
+                                        </lightning-button-icon>
+                                    </div>
+                                    <div class="slds-grid slds-gutters slds-wrap">
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-combobox
+                                                label="Slab Type"
+                                                value={slab.Slab_Type__c}
+                                                options={wizSlabTypeOptions}
+                                                data-key={slab._key}
+                                                data-field="Slab_Type__c"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-combobox>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                type="number" label="Min Value/Qty"
+                                                value={slab.Min_Value__c}
+                                                data-key={slab._key}
+                                                data-field="Min_Value__c"
+                                                min="0" step="0.01"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                type="number" label="Max Value/Qty"
+                                                value={slab.Max_Value__c}
+                                                data-key={slab._key}
+                                                data-field="Max_Value__c"
+                                                min="0" step="0.01"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-combobox
+                                                label="Discount Type"
+                                                value={slab.Discount_Type__c}
+                                                options={wizDiscountTypeOptions}
+                                                data-key={slab._key}
+                                                data-field="Discount_Type__c"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-combobox>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                type="number" label="Discount Value"
+                                                value={slab.Discount_Value__c}
+                                                data-key={slab._key}
+                                                data-field="Discount_Value__c"
+                                                min="0" step="0.01"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                type="number" label="Free Qty"
+                                                value={slab.Free_Quantity__c}
+                                                data-key={slab._key}
+                                                data-field="Free_Quantity__c"
+                                                min="0"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                type="number" label="Reward Points"
+                                                value={slab.Reward_Points__c}
+                                                data-key={slab._key}
+                                                data-field="Reward_Points__c"
+                                                min="0"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                type="number" label="Price Discount"
+                                                value={slab.Price_Discount__c}
+                                                data-key={slab._key}
+                                                data-field="Price_Discount__c"
+                                                formatter="currency" step="0.01"
+                                                onchange={handleWizSlabFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={wizHasSlabs}>
+                            <div class="wiz-empty-child-state">
+                                No slabs added. Slabs are optional — scheme-level benefit fields will be used when no slabs exist.
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- ═══════════ STEP 5: Geo Mapping ═══════════ -->
+                <template if:true={wizIsStep5}>
+                    <div class="wiz-step-content">
+                        <div class="wiz-section-header">
+                            <h3 class="wiz-section-title">Geographic & Customer Mapping</h3>
+                            <lightning-button
+                                label="Add Mapping"
+                                icon-name="utility:add"
+                                variant="brand"
+                                onclick={handleWizAddMapping}>
+                            </lightning-button>
+                        </div>
+
+                        <template if:true={wizHasMappings}>
+                            <template for:each={wizMappings} for:item="mapping">
+                                <div key={mapping._key} class="wiz-mapping-card slds-m-bottom_small">
+                                    <div class="wiz-slab-card-header">
+                                        <span class="wiz-slab-title">Mapping</span>
+                                        <lightning-button-icon
+                                            icon-name="utility:delete"
+                                            variant="bare" size="small"
+                                            alternative-text="Remove"
+                                            data-key={mapping._key}
+                                            onclick={handleWizRemoveMapping}>
+                                        </lightning-button-icon>
+                                    </div>
+                                    <div class="slds-grid slds-gutters slds-wrap">
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                label="Zone"
+                                                value={mapping.Zone__c}
+                                                data-key={mapping._key}
+                                                data-field="Zone__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                label="Area"
+                                                value={mapping.Area__c}
+                                                data-key={mapping._key}
+                                                data-field="Area__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-combobox
+                                                label="Customer Type"
+                                                value={mapping.Customer_Type__c}
+                                                options={wizCustomerTypeOptions}
+                                                data-key={mapping._key}
+                                                data-field="Customer_Type__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-combobox>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                label="District"
+                                                value={mapping.District__c}
+                                                data-key={mapping._key}
+                                                data-field="District__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                label="Sub Zone"
+                                                value={mapping.Sub_Zone__c}
+                                                data-key={mapping._key}
+                                                data-field="Sub_Zone__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={wizHasMappings}>
+                            <div class="wiz-empty-child-state">
+                                No mappings added. Without mappings, the scheme applies globally.
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- ═══════════ Wizard Footer Buttons ═══════════ -->
+                <div class="wiz-footer-actions slds-m-top_medium">
+                    <div class="slds-grid slds-grid_align-spread">
+                        <div>
+                            <lightning-button
+                                label="Cancel"
+                                onclick={handleWizCancel}>
+                            </lightning-button>
+                        </div>
+                        <div>
+                            <template if:false={wizIsFirstStep}>
+                                <lightning-button
+                                    label="Previous"
+                                    icon-name="utility:chevronleft"
+                                    class="slds-m-right_small"
+                                    onclick={handleWizPrevious}>
+                                </lightning-button>
+                            </template>
+                            <template if:false={wizIsLastStep}>
+                                <lightning-button
+                                    label="Next"
+                                    variant="brand"
+                                    icon-name="utility:chevronright"
+                                    icon-position="right"
+                                    onclick={handleWizNext}>
+                                </lightning-button>
+                            </template>
+                            <template if:true={wizIsLastStep}>
+                                <lightning-button
+                                    label="Save Scheme"
+                                    variant="brand"
+                                    icon-name="utility:save"
+                                    onclick={handleWizSave}>
+                                </lightning-button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
         <!-- ═══════════ DELETE CONFIRM MODAL ═══════════ -->
         <template if:true={showDeleteConfirm}>
             <section class="slds-modal slds-fade-in-open">
