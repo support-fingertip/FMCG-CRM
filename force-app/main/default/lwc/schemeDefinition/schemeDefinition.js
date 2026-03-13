@@ -156,13 +156,17 @@ export default class SchemeDefinition extends NavigationMixin(LightningElement) 
     // ── Step Navigation ──────────────────────────────────────────────────
 
     get steps() {
-        return [
-            { label: 'Basic Info', value: '1', active: this.activeStep === '1' },
-            { label: 'Benefit Config', value: '2', active: this.activeStep === '2' },
-            { label: 'Products', value: '3', active: this.activeStep === '3' },
-            { label: 'Slabs', value: '4', active: this.activeStep === '4' },
-            { label: 'Geo Mapping', value: '5', active: this.activeStep === '5' }
-        ];
+        return ['Basic Info', 'Benefit Config', 'Products', 'Slabs', 'Geo Mapping'].map((label, i) => {
+            const value = String(i + 1);
+            const active = this.activeStep === value;
+            return {
+                label,
+                value,
+                active,
+                circleClass: active ? 'step-circle step-active' : 'step-circle',
+                labelClass: active ? 'step-label step-label-active' : 'step-label'
+            };
+        });
     }
 
     get isStep1() { return this.activeStep === '1'; }

@@ -6,8 +6,8 @@
             <div class="step-indicator slds-m-bottom_medium">
                 <template for:each={steps} for:item="step">
                     <div key={step.value} class="step-item" data-step={step.value} onclick={handleStepClick}>
-                        <div class={step.active ? 'step-circle step-active' : 'step-circle'}>{step.value}</div>
-                        <span class={step.active ? 'step-label step-label-active' : 'step-label'}>{step.label}</span>
+                        <div class={step.circleClass}>{step.value}</div>
+                        <span class={step.labelClass}>{step.label}</span>
                     </div>
                 </template>
             </div>
