@@ -21,20 +21,16 @@
                 <identifier>c_productThreeSixty</identifier>
             </componentInstance>
         </itemInstances>
-        <name>main</name>
-        <type>Region</type>
-    </flexiPageRegions>
-    <flexiPageRegions>
         <itemInstances>
             <componentInstance>
-                <componentInstanceProperties>
-                    <name>collapsed</name>
-                    <value>false</value>
-                </componentInstanceProperties>
                 <componentName>force:detailPanel</componentName>
                 <identifier>force_detailPanel</identifier>
             </componentInstance>
         </itemInstances>
+        <name>main</name>
+        <type>Facet</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
         <itemInstances>
             <componentInstance>
                 <componentName>force:relatedListContainer</componentName>
@@ -42,24 +38,12 @@
             </componentInstance>
         </itemInstances>
         <name>sidebar</name>
-        <type>Region</type>
+        <type>Facet</type>
     </flexiPageRegions>
     <masterLabel>Product Record Page</masterLabel>
     <sobjectType>Product_Extension__c</sobjectType>
     <template>
-        <name>flexipage:defaultPageLayoutTemplate</name>
-        <properties>
-            <name>pB</name>
-            <value>header</value>
-        </properties>
-        <properties>
-            <name>pS</name>
-            <value>sidebar</value>
-        </properties>
-        <properties>
-            <name>pE</name>
-            <value>main</value>
-        </properties>
+        <name>flexipage:recordHomeHeaderAndRightSidebar</name>
     </template>
     <type>RecordPage</type>
 </FlexiPage>
