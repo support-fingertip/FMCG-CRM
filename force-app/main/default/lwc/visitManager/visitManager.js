@@ -1213,7 +1213,7 @@ export default class VisitManager extends LightningElement {
                 isMultipleChoice: q.Question_Type__c === 'Multiple Choice',
                 isPhoto: q.Question_Type__c === 'Photo',
                 isDate: q.Question_Type__c === 'Date',
-                options: q.Options__c ? q.Options__c.split(';').map(o => ({ label: o.trim(), value: o.trim() })) : [],
+                options: this._parseOptions(q.Options__c),
                 ratingOptions: [1, 2, 3, 4, 5].map(n => ({ value: n, label: '' + n, cls: 'vm-rating-btn' }))
             }));
             this.surveyAnswers = {};
@@ -1270,6 +1270,24 @@ export default class VisitManager extends LightningElement {
 
     get hasSurveyQuestions() { return this.surveyQuestions.length > 0; }
     get hasMultipleSurveys() { return this.applicableSurveys.length > 1; }
+
+    _parseOptions(optionsRaw) {
+        if (!optionsRaw) return [];
+        const trimmed = optionsRaw.trim();
+        // Support JSON array format: ["A","B"] or [{"label":"A","value":"a"}]
+        if (trimmed.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                return parsed.map(item =>
+                    typeof item === 'string'
+                        ? { label: item, value: item }
+                        : { label: item.label || item.value, value: item.value || item.label }
+                ).filter(o => o.value);
+            } catch (e) { /* fall through to semicolon split */ }
+        }
+        // Semicolon-separated format: "Yes;No;Partially"
+        return trimmed.split(';').map(o => o.trim()).filter(o => o).map(o => ({ label: o, value: o }));
+    }
 
     // ── Scheme Info ──
     async _loadSchemeData() {
