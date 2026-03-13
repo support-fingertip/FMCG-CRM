@@ -3400,10 +3400,6 @@
         <visibility>Hidden</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>Claim__c</tab>
-        <visibility>Hidden</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
         <tab>Collection__c</tab>
         <visibility>Hidden</visibility>
     </tabVisibilities>
