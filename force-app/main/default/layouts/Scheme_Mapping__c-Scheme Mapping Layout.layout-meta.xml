@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/metadata">
-    <fullName>Scheme Mapping Layout</fullName>
+    <fullName>Scheme_Mapping__c-Scheme Mapping Layout</fullName>
     <layoutSections>
         <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
