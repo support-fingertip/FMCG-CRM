@@ -1,4 +1,4 @@
-/* Visit Activity Component Styles */
+/* Visit Activity Component Styles — Read-only Summary View */
 :host {
     --va-primary: #0176d3;
     --va-active: #dd7a01;
@@ -6,11 +6,6 @@
     --va-border: #e5e5e5;
     --va-bg: #f8f9fa;
     --va-radius: 8px;
-}
-
-/* Back Navigation */
-.va-back-nav {
-    padding: 8px 0;
 }
 
 /* Header Section */
@@ -34,7 +29,7 @@
     font-size: 16px;
     font-weight: 700;
     color: #fff;
-    background: var(--va-active);
+    background: var(--va-primary);
     flex-shrink: 0;
 }
 
@@ -119,7 +114,7 @@
     background: var(--va-bg);
     border-radius: var(--va-radius);
     border: 1px solid var(--va-border);
-    min-width: 70px;
+    min-width: 60px;
     flex: 1;
 }
 
@@ -137,13 +132,35 @@
     margin-top: 2px;
 }
 
-/* Action Buttons */
-.va-actions {
+/* Productivity Badge */
+.va-productivity {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
     padding-top: 12px;
     border-top: 1px solid var(--va-border);
+}
+
+.va-productive-badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+}
+
+.va-productive-yes {
+    background: #e6f7e9;
+    color: #2e844a;
+}
+
+.va-productive-no {
+    background: #fef2f2;
+    color: #ea001e;
+}
+
+.va-productive-reason {
+    font-size: 12px;
+    color: #706e6b;
 }
 
 /* Tabs */
@@ -209,42 +226,6 @@
 /* Tab Content */
 .va-tab-content {
     padding: 16px;
-}
-
-/* Activity Grid */
-.va-activity-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
-}
-
-.va-activity-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 12px;
-    background: var(--va-bg);
-    border: 1px solid var(--va-border);
-    border-radius: var(--va-radius);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: center;
-}
-
-.va-activity-card:hover {
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
-    border-color: var(--va-primary);
-}
-
-.va-act-icon {
-    margin-bottom: 8px;
-}
-
-.va-act-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #3e3e3c;
 }
 
 /* Record Rows */
@@ -313,39 +294,6 @@
     margin: 0;
 }
 
-/* Checkout Summary */
-.checkout-summary {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.checkout-stat {
-    flex: 1;
-    min-width: 80px;
-    padding: 10px;
-    background: var(--va-bg);
-    border-radius: var(--va-radius);
-    border: 1px solid var(--va-border);
-    text-align: center;
-}
-
-.checkout-stat-label {
-    display: block;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #706e6b;
-}
-
-.checkout-stat-value {
-    display: block;
-    font-size: 16px;
-    font-weight: 700;
-    color: #181818;
-    margin-top: 2px;
-}
-
 /* Must Sell Compliance */
 .must-sell-compliance {
     background: var(--va-bg);
@@ -408,11 +356,6 @@
     transition: width 0.3s ease;
 }
 
-/* Modal */
-.slds-modal__header {
-    background: #f8f9fa;
-}
-
 /* Responsive */
 @media (max-width: 767px) {
     .va-header {
@@ -431,24 +374,11 @@
 
     .va-kpi {
         padding: 6px 8px;
-        min-width: 60px;
+        min-width: 50px;
     }
 
     .va-kpi-value {
         font-size: 13px;
-    }
-
-    .va-actions {
-        flex-direction: column;
-    }
-
-    .va-activity-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-
-    .va-activity-card {
-        padding: 14px 8px;
     }
 
     .va-tab {
@@ -458,17 +388,5 @@
 
     .va-tab-content {
         padding: 12px;
-    }
-
-    .checkout-summary {
-        gap: 8px;
-    }
-
-    .checkout-stat {
-        padding: 8px;
-    }
-
-    .checkout-stat-value {
-        font-size: 14px;
     }
 }

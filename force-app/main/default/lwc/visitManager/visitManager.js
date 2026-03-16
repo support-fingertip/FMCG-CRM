@@ -840,6 +840,27 @@ export default class VisitManager extends LightningElement {
     get activeOrderValue() { return INR.format(this.activeVisitSummary.totalOrderValue || 0); }
     get activeCollectionAmount() { return INR.format(this.activeVisitSummary.totalCollection || 0); }
     get activeReturnsCount() { return this.activeVisitSummary.returnsCount || 0; }
+    get activeMustSellCompliance() { return this.activeVisitSummary.mustSellCompliance; }
+    get activeMustSellOrdered() { return this.activeVisitSummary.mustSellOrdered || 0; }
+    get activeMustSellRequired() { return this.activeVisitSummary.mustSellRequired || 0; }
+    get hasActiveMustSellData() { return this.activeMustSellRequired > 0; }
+    get activeMustSellComplianceFormatted() {
+        if (this.activeMustSellCompliance == null) return '0%';
+        return Math.round(this.activeMustSellCompliance) + '%';
+    }
+    get activeMustSellSummaryText() {
+        return this.activeMustSellOrdered + '/' + this.activeMustSellRequired + ' must-sell products ordered';
+    }
+    get activeMustSellBarStyle() {
+        const pct = Math.min(this.activeMustSellCompliance || 0, 100);
+        const color = pct >= 100 ? '#2e844a' : (pct >= 50 ? '#dd7a01' : '#ea001e');
+        return 'width:' + pct + '%;background:' + color;
+    }
+    get activeMustSellBadgeClass() {
+        if (this.activeMustSellCompliance >= 100) return 'vm-compliance-badge vm-compliance-green';
+        if (this.activeMustSellCompliance >= 50) return 'vm-compliance-badge vm-compliance-yellow';
+        return 'vm-compliance-badge vm-compliance-red';
+    }
     get activeOrders() {
         return (this.activeVisitSummary.orders || []).map(o => ({
             ...o,

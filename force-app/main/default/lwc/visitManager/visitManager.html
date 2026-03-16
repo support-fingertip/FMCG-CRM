@@ -672,6 +672,20 @@
                     </div>
                 </div>
 
+                <!-- Must Sell Compliance -->
+                <template if:true={hasActiveMustSellData}>
+                    <div class="vm-must-sell-compliance slds-m-top_small">
+                        <div class="vm-compliance-header">
+                            <span class="vm-compliance-title">Must Sell Compliance</span>
+                            <span class={activeMustSellBadgeClass}>{activeMustSellComplianceFormatted}</span>
+                        </div>
+                        <div class="vm-compliance-detail">{activeMustSellSummaryText}</div>
+                        <div class="vm-compliance-bar">
+                            <div class="vm-compliance-bar-fill" style={activeMustSellBarStyle}></div>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- Checkout Button -->
                 <div class="vm-visit-actions-bar">
                     <button class="vm-btn vm-btn-checkout" onclick={handleCheckoutClick}>
@@ -830,6 +844,20 @@
                                 <span class="vm-co-stat-lbl">Collection</span>
                             </div>
                         </div>
+
+                        <!-- Must Sell Compliance in Checkout -->
+                        <template if:true={hasActiveMustSellData}>
+                            <div class="vm-must-sell-compliance slds-m-bottom_medium">
+                                <div class="vm-compliance-header">
+                                    <span class="vm-compliance-title">Must Sell Compliance</span>
+                                    <span class={activeMustSellBadgeClass}>{activeMustSellComplianceFormatted}</span>
+                                </div>
+                                <div class="vm-compliance-detail">{activeMustSellSummaryText}</div>
+                                <div class="vm-compliance-bar">
+                                    <div class="vm-compliance-bar-fill" style={activeMustSellBarStyle}></div>
+                                </div>
+                            </div>
+                        </template>
 
                         <!-- Mandatory Checklist -->
                         <div class="vm-checklist">
