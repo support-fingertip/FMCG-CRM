@@ -1365,7 +1365,10 @@ export default class VisitManager extends LightningElement {
         this.schemeIsLoading = true;
         try {
             this.activeSchemesList = await getActiveSchemes({ accountId: this.activeAccountId }) || [];
-        } catch (e) { this.activeSchemesList = []; }
+        } catch (e) {
+            this.activeSchemesList = [];
+            this._toast('Error', 'Failed to load schemes: ' + this._err(e), 'error');
+        }
         this.schemeIsLoading = false;
     }
 
