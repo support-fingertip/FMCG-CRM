@@ -1262,7 +1262,7 @@
 
             <!-- ORDER ENTRY (embedded child LWC) -->
             <template if:true={isOrderActivity}>
-                <c-order-entry-form record-id={activeAccountId}
+                <c-order-entry-form account-id={activeAccountId} visit-id={activeVisitId}
                     onsuccess={handleActivityFormSuccess} oncancel={handleActivityBack}>
                 </c-order-entry-form>
             </template>

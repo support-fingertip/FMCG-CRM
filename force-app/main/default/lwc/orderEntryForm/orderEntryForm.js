@@ -13,8 +13,7 @@ const ACCOUNT_FIELDS = [
     'Account.Name',
     'Account.Channel__c',
     'Account.Outlet_Class__c',
-    'Account.BillingCity',
-    'Account.Price_List__c'
+    'Account.BillingCity'
 ];
 
 export default class OrderEntryForm extends NavigationMixin(LightningElement) {
