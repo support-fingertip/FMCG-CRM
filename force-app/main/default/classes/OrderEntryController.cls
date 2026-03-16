@@ -54,19 +54,26 @@ public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
     public static List<Scheme__c> getApplicableSchemes(Id accountId, Date orderDate) {
+        Date effectiveDate = orderDate != null ? orderDate : Date.today();
         return [
-            SELECT Id, Name, Scheme_Code__c, Scheme_Type__c, Description__c,
+            SELECT Id, Name, Scheme_Code__c, Scheme_Category__c, Scheme_Type__c, Description__c,
                    Start_Date__c, End_Date__c, Max_Discount_Cap__c,
+                   Discount_Percent__c, Discount_Amount__c, Price_Discount__c,
+                   Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c,
+                   Reward_Points__c, MOV__c, Min_Quantity__c, Max_Quantity__c,
+                   Min_Value__c, Max_Value__c, Product_Ext__c, Product_Category__c,
+                   Is_Stackable__c, Priority__c,
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
-                           Discount_Type__c, Discount_Value__c, Free_Product_Ext__c, Free_Quantity__c
+                           Discount_Type__c, Discount_Value__c, Discount_Percent__c,
+                           Discount_Amount__c, Free_Product_Ext__c, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c,
                            Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r)
             FROM Scheme__c
             WHERE Status__c = 'Active'
-            AND Start_Date__c <= :orderDate
-            AND End_Date__c >= :orderDate
+            AND Start_Date__c <= :effectiveDate
+            AND End_Date__c >= :effectiveDate
             ORDER BY Priority__c
         ];
     }

@@ -617,10 +617,40 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     findApplicableScheme(product) {
         if (!this.schemes || this.schemes.length === 0) return null;
+        const productId = product.id || product.Id;
+        const productCategory = product.category || product.Category__c || product.Product_Category__c || '';
+
         return this.schemes.find(scheme => {
-            const productMatch = !scheme.Product_Ext__c || scheme.Product_Ext__c === product.id;
-            const categoryMatch = !scheme.Category__c || scheme.Category__c === product.category;
-            return productMatch || categoryMatch;
+            // 1. Direct product match on scheme header
+            if (scheme.Product_Ext__c && scheme.Product_Ext__c === productId) {
+                return true;
+            }
+
+            // 2. Check Scheme_Products__r child records for product-level mapping
+            const schemeProducts = scheme.Scheme_Products__r;
+            if (schemeProducts && schemeProducts.length > 0) {
+                const hasProductInScheme = schemeProducts.some(
+                    sp => sp.Product_Ext__c === productId && sp.Is_Buy_Product__c
+                );
+                if (hasProductInScheme) return true;
+                // Scheme has specific products mapped but this product isn't one of them
+                return false;
+            }
+
+            // 3. Category-level scheme (no specific products mapped)
+            if (scheme.Product_Category__c && productCategory &&
+                scheme.Product_Category__c === productCategory) {
+                return true;
+            }
+
+            // 4. Invoice-level schemes (no product or category restriction)
+            const invoiceTypes = ['Invoice Qty Based', 'Invoice Val Based'];
+            if (!scheme.Product_Ext__c && !scheme.Product_Category__c &&
+                invoiceTypes.includes(scheme.Scheme_Type__c)) {
+                return true;
+            }
+
+            return false;
         });
     }
 
