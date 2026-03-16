@@ -1,82 +1,155 @@
 <template>
-    <lightning-card title="Order Entry" icon-name="standard:orders">
-        <!-- Account/Outlet Selector -->
-        <div class="slds-p-around_medium">
-            <template if:false={recordId}>
-                <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                    <div class="slds-col slds-size_1-of-2">
-                        <lightning-record-picker
-                            label="Select Outlet"
-                            placeholder="Search outlet..."
-                            object-api-name="Account"
-                            value={selectedAccountId}
-                            onchange={handleAccountChange}>
-                        </lightning-record-picker>
-                    </div>
+    <!-- Custom Header -->
+    <div class="oef-container">
+        <div class="oef-header">
+            <div class="oef-header-icon">
+                <lightning-icon icon-name="standard:orders" size="medium"></lightning-icon>
+            </div>
+            <div class="oef-header-text">
+                <h1 class="oef-title">New Order</h1>
+                <p class="oef-subtitle">Create sales order for outlet</p>
+            </div>
+            <template if:true={hasLineItems}>
+                <div class="oef-header-badge">
+                    <span class="oef-cart-count">{lineItemCount}</span>
+                    <span class="oef-cart-label">items</span>
                 </div>
             </template>
+        </div>
 
-            <template if:true={accountName}>
-                <div class="outlet-header slds-m-bottom_medium">
-                    <div class="slds-grid slds-grid_align-spread">
-                        <div class="slds-col">
-                            <h2 class="slds-text-heading_medium">{accountName}</h2>
-                            <p class="slds-text-body_small slds-text-color_weak">{accountChannel} &bull; {accountClass}</p>
+        <div class="oef-body">
+            <!-- Account/Outlet Selector -->
+            <template if:false={isEmbedded}>
+                <template if:false={accountName}>
+                    <div class="oef-section oef-outlet-picker">
+                        <div class="oef-section-icon">
+                            <lightning-icon icon-name="utility:location" size="small"></lightning-icon>
                         </div>
-                        <div class="slds-col slds-text-align_right">
-                            <template if:true={lastOrderInfo}>
-                                <lightning-button
-                                    variant="brand-outline"
-                                    label="Reorder from Last Order"
-                                    icon-name="utility:refresh"
-                                    onclick={handleReorderLastOrder}
-                                    class="slds-m-right_x-small">
-                                </lightning-button>
+                        <div class="oef-section-content">
+                            <h2 class="oef-section-title">Select Outlet</h2>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-record-picker
+                                        label=""
+                                        placeholder="Search outlet by name or code..."
+                                        object-api-name="Account"
+                                        value={selectedAccountId}
+                                        onchange={handleAccountChange}>
+                                    </lightning-record-picker>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+            <!-- Outlet Header Card -->
+            <template if:true={accountName}>
+                <div class="oef-outlet-card">
+                    <div class="oef-outlet-info">
+                        <div class="oef-outlet-avatar">
+                            <lightning-icon icon-name="standard:account" size="medium"></lightning-icon>
+                        </div>
+                        <div class="oef-outlet-details">
+                            <h2 class="oef-outlet-name">{accountName}</h2>
+                            <div class="oef-outlet-meta">
+                                <span class="oef-outlet-tag">{accountChannel}</span>
+                                <span class="oef-outlet-tag oef-outlet-tag-class">{accountClass}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="oef-outlet-actions">
+                        <template if:true={lastOrderInfo}>
+                            <lightning-button
+                                variant="brand-outline"
+                                label="Reorder Last"
+                                icon-name="utility:refresh"
+                                onclick={handleReorderLastOrder}
+                                class="slds-m-right_x-small">
+                            </lightning-button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Last Order Banner -->
+                <template if:true={lastOrderInfo}>
+                    <div class="oef-last-order">
+                        <lightning-icon icon-name="utility:clock" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        <span>Last Order: <strong>#{lastOrderInfo.orderNumber}</strong> on {lastOrderInfo.orderDate} &mdash;
+                            {lastOrderInfo.itemCount} items, {lastOrderInfo.totalFormatted}</span>
+                    </div>
+                </template>
+            </template>
+
+            <!-- Active Schemes Panel -->
+            <template if:true={hasSchemes}>
+                <div class="oef-schemes-panel">
+                    <div class="oef-schemes-header" onclick={toggleSchemesPanel}>
+                        <div class="oef-schemes-title-row">
+                            <lightning-icon icon-name="utility:discount" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            <h3 class="oef-schemes-title">Active Schemes &amp; Offers</h3>
+                            <span class="oef-schemes-count">{schemesCount}</span>
+                        </div>
+                        <lightning-icon icon-name={schemesPanelIcon} size="x-small"></lightning-icon>
+                    </div>
+                    <template if:true={showSchemesPanel}>
+                        <div class="oef-schemes-body">
+                            <template for:each={schemesForDisplay} for:item="scheme">
+                                <div key={scheme.Id} class={scheme.cardClass}>
+                                    <div class="oef-scheme-icon-wrap">
+                                        <lightning-icon icon-name={scheme.iconName} size="x-small"></lightning-icon>
+                                    </div>
+                                    <div class="oef-scheme-info">
+                                        <div class="oef-scheme-name">{scheme.Name}</div>
+                                        <div class="oef-scheme-desc">{scheme.benefitText}</div>
+                                    </div>
+                                    <div class="oef-scheme-badge-wrap">
+                                        <span class={scheme.categoryBadgeClass}>{scheme.Scheme_Category__c}</span>
+                                    </div>
+                                </div>
                             </template>
                         </div>
-                    </div>
-                </div>
-            </template>
-
-            <!-- Last Order Info -->
-            <template if:true={lastOrderInfo}>
-                <div class="last-order-banner slds-m-bottom_medium">
-                    <lightning-icon icon-name="utility:info_alt" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                    <span class="slds-text-body_small">
-                        Last Order: #{lastOrderInfo.orderNumber} on {lastOrderInfo.orderDate} -
-                        {lastOrderInfo.itemCount} items worth {lastOrderInfo.totalFormatted}
-                    </span>
+                    </template>
                 </div>
             </template>
 
             <!-- Must Sell Products Section -->
             <template if:true={hasMustSellProducts}>
-                <div class="must-sell-section slds-m-bottom_medium">
-                    <div class="must-sell-header">
-                        <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                        <h3 class="slds-text-heading_small">Must Sell Products</h3>
+                <div class="oef-must-sell-section">
+                    <div class="oef-must-sell-header">
+                        <div class="oef-must-sell-title-row">
+                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            <h3>Must Sell Products</h3>
+                        </div>
+                        <div class="oef-must-sell-progress">
+                            <div class="oef-must-sell-bar-track">
+                                <div class="oef-must-sell-bar-fill" style={mustSellBarStyle}></div>
+                            </div>
+                            <span class="oef-must-sell-counter">{mustSellOrderedCount}/{mustSellTotalCount}</span>
+                        </div>
                     </div>
-                    <div class="must-sell-grid">
+                    <div class="oef-must-sell-grid">
                         <template for:each={mustSellProducts} for:item="msp">
-                            <div key={msp.productId} class="must-sell-card">
-                                <div class="must-sell-card-info">
-                                    <span class="must-sell-product-name">{msp.productName}</span>
-                                    <span class="must-sell-product-sku">{msp.sku}</span>
-                                    <span class="must-sell-scheme-name">{msp.schemeName}</span>
+                            <div key={msp.productId} class={msp.cardClass}>
+                                <div class="oef-ms-card-body">
+                                    <span class="oef-ms-name">{msp.productName}</span>
+                                    <span class="oef-ms-sku">{msp.sku}</span>
+                                    <template if:true={msp.schemeName}>
+                                        <span class="oef-ms-scheme">{msp.schemeName}</span>
+                                    </template>
                                 </div>
-                                <div class="must-sell-card-action">
+                                <div class="oef-ms-card-action">
                                     <template if:true={msp.isInOrder}>
-                                        <lightning-icon icon-name="utility:check" size="small" class="must-sell-check"></lightning-icon>
+                                        <span class="oef-ms-done-badge">
+                                            <lightning-icon icon-name="utility:check" size="xx-small"></lightning-icon>
+                                            Added
+                                        </span>
                                     </template>
                                     <template if:false={msp.isInOrder}>
-                                        <lightning-button
-                                            variant="brand"
-                                            label="Add"
-                                            icon-name="utility:add"
-                                            data-product-id={msp.productId}
-                                            data-classification="Must Sell"
-                                            onclick={handleAddMustSell}>
-                                        </lightning-button>
+                                        <button class="oef-ms-add-btn" data-product-id={msp.productId}
+                                            data-classification="Must Sell" onclick={handleAddMustSell}>
+                                            + Add
+                                        </button>
                                     </template>
                                 </div>
                             </div>
@@ -87,39 +160,38 @@
 
             <!-- Focused Sell Products Section -->
             <template if:true={hasFocusedSellProducts}>
-                <div class="focused-sell-section slds-m-bottom_medium">
-                    <div class="focused-sell-header" onclick={toggleFocusedSell}>
-                        <lightning-icon icon-name="utility:trending" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                        <h3 class="slds-text-heading_small">Focused Sell Products</h3>
-                        <template if:true={showFocusedSell}>
-                            <lightning-icon icon-name="utility:chevronup" size="x-small" class="slds-m-left_x-small"></lightning-icon>
-                        </template>
-                        <template if:false={showFocusedSell}>
-                            <lightning-icon icon-name="utility:chevrondown" size="x-small" class="slds-m-left_x-small"></lightning-icon>
-                        </template>
+                <div class="oef-focused-sell-section">
+                    <div class="oef-focused-sell-header" onclick={toggleFocusedSell}>
+                        <div class="oef-must-sell-title-row">
+                            <lightning-icon icon-name="utility:trending" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            <h3>Focused Sell Products</h3>
+                            <span class="oef-fs-count">{focusedSellProducts.length}</span>
+                        </div>
+                        <lightning-icon icon-name={focusedSellIcon} size="x-small"></lightning-icon>
                     </div>
                     <template if:true={showFocusedSell}>
-                        <div class="must-sell-grid">
+                        <div class="oef-must-sell-grid">
                             <template for:each={focusedSellProducts} for:item="fsp">
-                                <div key={fsp.productId} class="focused-sell-card">
-                                    <div class="must-sell-card-info">
-                                        <span class="must-sell-product-name">{fsp.productName}</span>
-                                        <span class="must-sell-product-sku">{fsp.sku}</span>
-                                        <span class="must-sell-scheme-name">{fsp.schemeName}</span>
+                                <div key={fsp.productId} class={fsp.cardClass}>
+                                    <div class="oef-ms-card-body">
+                                        <span class="oef-ms-name">{fsp.productName}</span>
+                                        <span class="oef-ms-sku">{fsp.sku}</span>
+                                        <template if:true={fsp.schemeName}>
+                                            <span class="oef-ms-scheme oef-ms-scheme-focus">{fsp.schemeName}</span>
+                                        </template>
                                     </div>
-                                    <div class="must-sell-card-action">
+                                    <div class="oef-ms-card-action">
                                         <template if:true={fsp.isInOrder}>
-                                            <lightning-icon icon-name="utility:check" size="small" class="focused-sell-check"></lightning-icon>
+                                            <span class="oef-fs-done-badge">
+                                                <lightning-icon icon-name="utility:check" size="xx-small"></lightning-icon>
+                                                Added
+                                            </span>
                                         </template>
                                         <template if:false={fsp.isInOrder}>
-                                            <lightning-button
-                                                variant="neutral"
-                                                label="Add"
-                                                icon-name="utility:add"
-                                                data-product-id={fsp.productId}
-                                                data-classification="Focused Sell"
-                                                onclick={handleAddMustSell}>
-                                            </lightning-button>
+                                            <button class="oef-fs-add-btn" data-product-id={fsp.productId}
+                                                data-classification="Focused Sell" onclick={handleAddMustSell}>
+                                                + Add
+                                            </button>
                                         </template>
                                     </div>
                                 </div>
@@ -130,28 +202,28 @@
             </template>
 
             <!-- Product Search Section -->
-            <div class="product-search-section slds-m-bottom_medium">
-                <h3 class="slds-text-heading_small slds-m-bottom_small">Search Products</h3>
-                <div class="slds-grid slds-gutters">
-                    <div class="slds-col slds-size_1-of-2">
+            <div class="oef-search-section">
+                <div class="oef-search-bar">
+                    <div class="oef-search-input-wrap">
                         <lightning-input
                             type="search"
-                            label="Search by Product Name or SKU"
-                            placeholder="Type product name, SKU, or category..."
+                            label=""
+                            placeholder="Search by product name, SKU, or category..."
                             value={searchTerm}
-                            onchange={handleSearchTermChange}>
+                            onchange={handleSearchTermChange}
+                            class="oef-search-input">
                         </lightning-input>
                     </div>
-                    <div class="slds-col slds-size_1-of-4">
+                    <div class="oef-search-filter-wrap">
                         <lightning-combobox
-                            label="Category"
+                            label=""
                             value={selectedCategory}
                             options={categoryOptions}
                             placeholder="All Categories"
                             onchange={handleCategoryChange}>
                         </lightning-combobox>
                     </div>
-                    <div class="slds-col slds-size_1-of-4 search-btn-wrapper">
+                    <div class="oef-search-btn-wrap">
                         <lightning-button
                             variant="brand"
                             label="Search"
@@ -162,83 +234,79 @@
                 </div>
             </div>
 
-            <!-- Product Results Table -->
+            <!-- Product Results -->
             <template if:true={showProductResults}>
-                <div class="product-results slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">
-                        Search Results ({productResults.length} products found)
-                    </h3>
-                    <div class="slds-scrollable_y product-table-container">
-                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
-                            <thead>
-                                <tr class="slds-line-height_reset">
-                                    <th scope="col"><div class="slds-truncate">Product Name</div></th>
-                                    <th scope="col"><div class="slds-truncate">SKU</div></th>
-                                    <th scope="col"><div class="slds-truncate">MRP</div></th>
-                                    <th scope="col" class="qty-col"><div class="slds-truncate">Qty</div></th>
-                                    <th scope="col" class="qty-col"><div class="slds-truncate">Free Qty</div></th>
-                                    <th scope="col"><div class="slds-truncate">Scheme</div></th>
-                                    <th scope="col"><div class="slds-truncate">Line Total</div></th>
-                                    <th scope="col"><div class="slds-truncate">Action</div></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template for:each={productResults} for:item="product">
-                                    <tr key={product.id}>
-                                        <td>
-                                            <div class="slds-truncate" title={product.name}>{product.name}</div>
-                                            <span class="slds-text-body_small slds-text-color_weak">{product.category}</span>
-                                        </td>
-                                        <td><div class="slds-truncate">{product.sku}</div></td>
-                                        <td><div class="slds-truncate">{product.mrpFormatted}</div></td>
-                                        <td class="qty-col">
-                                            <lightning-input
-                                                type="number"
-                                                min="0"
-                                                value={product.quantity}
-                                                data-product-id={product.id}
-                                                data-field="quantity"
-                                                variant="label-hidden"
-                                                onchange={handleProductQtyChange}>
-                                            </lightning-input>
-                                        </td>
-                                        <td class="qty-col">
-                                            <span class="free-qty-badge">{product.freeQty}</span>
-                                        </td>
-                                        <td>
-                                            <template if:true={product.schemeName}>
-                                                <lightning-badge label={product.schemeName} class="scheme-badge"></lightning-badge>
-                                            </template>
-                                            <template if:false={product.schemeName}>
-                                                <span class="slds-text-color_weak">None</span>
-                                            </template>
-                                        </td>
-                                        <td><div class="slds-truncate line-total">{product.lineTotalFormatted}</div></td>
-                                        <td>
-                                            <lightning-button-icon
-                                                icon-name="utility:add"
-                                                alternative-text="Add to cart"
-                                                variant="brand"
-                                                data-product-id={product.id}
-                                                onclick={addToOrder}>
-                                            </lightning-button-icon>
-                                        </td>
-                                    </tr>
+                <div class="oef-results-section">
+                    <div class="oef-results-header">
+                        <h3>{productResults.length} products found</h3>
+                    </div>
+                    <div class="oef-results-grid">
+                        <template for:each={productResults} for:item="product">
+                            <div key={product.id} class={product.cardClass}>
+                                <div class="oef-product-main">
+                                    <div class="oef-product-info">
+                                        <span class="oef-product-name">{product.name}</span>
+                                        <span class="oef-product-sku">SKU: {product.sku}</span>
+                                        <template if:true={product.category}>
+                                            <span class="oef-product-category">{product.category}</span>
+                                        </template>
+                                    </div>
+                                    <div class="oef-product-price">
+                                        <span class="oef-product-mrp">{product.mrpFormatted}</span>
+                                        <span class="oef-product-mrp-label">MRP</span>
+                                    </div>
+                                </div>
+                                <template if:true={product.schemeName}>
+                                    <div class="oef-product-scheme-strip">
+                                        <lightning-icon icon-name="utility:discount" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                        <span>{product.schemeName}</span>
+                                        <template if:true={product.schemeDescription}>
+                                            <span class="oef-product-scheme-detail"> &mdash; {product.schemeDescription}</span>
+                                        </template>
+                                    </div>
                                 </template>
-                            </tbody>
-                        </table>
+                                <div class="oef-product-action-row">
+                                    <div class="oef-product-qty-group">
+                                        <label class="oef-qty-label">Qty</label>
+                                        <lightning-input
+                                            type="number"
+                                            min="0"
+                                            value={product.quantity}
+                                            data-product-id={product.id}
+                                            data-field="quantity"
+                                            variant="label-hidden"
+                                            onchange={handleProductQtyChange}
+                                            class="oef-qty-input">
+                                        </lightning-input>
+                                    </div>
+                                    <template if:true={product.freeQty}>
+                                        <div class="oef-product-free-badge">
+                                            +{product.freeQty} FREE
+                                        </div>
+                                    </template>
+                                    <div class="oef-product-line-total">
+                                        {product.lineTotalFormatted}
+                                    </div>
+                                    <button class="oef-add-to-cart-btn" data-product-id={product.id} onclick={addToOrder}>
+                                        <lightning-icon icon-name="utility:add" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </template>
 
-            <!-- Order Line Items (Cart) -->
+            <!-- Order Cart -->
             <template if:true={hasLineItems}>
-                <div class="order-cart slds-m-bottom_medium">
-                    <div class="cart-header slds-grid slds-grid_align-spread slds-m-bottom_small">
-                        <h3 class="slds-text-heading_small">
+                <div class="oef-cart-section">
+                    <div class="oef-cart-header">
+                        <div class="oef-cart-title">
                             <lightning-icon icon-name="utility:cart" size="small" class="slds-m-right_x-small"></lightning-icon>
-                            Order Items ({lineItemCount})
-                        </h3>
+                            <h3>Order Cart</h3>
+                            <span class="oef-cart-item-count">{lineItemCount} items</span>
+                        </div>
                         <lightning-button
                             variant="text-destructive"
                             label="Clear All"
@@ -246,40 +314,39 @@
                             onclick={handleClearCart}>
                         </lightning-button>
                     </div>
-                    <div class="slds-scrollable_y cart-table-container">
-                        <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <div class="oef-cart-table-wrap">
+                        <table class="oef-cart-table">
                             <thead>
-                                <tr class="slds-line-height_reset">
-                                    <th scope="col"><div class="slds-truncate">#</div></th>
-                                    <th scope="col"><div class="slds-truncate">Product</div></th>
-                                    <th scope="col"><div class="slds-truncate">SKU</div></th>
-                                    <th scope="col"><div class="slds-truncate">Rate</div></th>
-                                    <th scope="col" class="qty-col"><div class="slds-truncate">Qty</div></th>
-                                    <th scope="col" class="qty-col"><div class="slds-truncate">Free</div></th>
-                                    <th scope="col"><div class="slds-truncate">Scheme</div></th>
-                                    <th scope="col"><div class="slds-truncate">Discount</div></th>
-                                    <th scope="col"><div class="slds-truncate">Tax</div></th>
-                                    <th scope="col"><div class="slds-truncate">Total</div></th>
-                                    <th scope="col"><div class="slds-truncate">Action</div></th>
+                                <tr>
+                                    <th class="oef-th-serial">#</th>
+                                    <th class="oef-th-product">Product</th>
+                                    <th class="oef-th-rate">Rate</th>
+                                    <th class="oef-th-qty">Qty</th>
+                                    <th class="oef-th-free">Free</th>
+                                    <th class="oef-th-scheme">Scheme</th>
+                                    <th class="oef-th-discount">Disc.</th>
+                                    <th class="oef-th-tax">Tax</th>
+                                    <th class="oef-th-total">Total</th>
+                                    <th class="oef-th-action"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <template for:each={lineItems} for:item="item" for:index="index">
+                                <template for:each={lineItems} for:item="item">
                                     <tr key={item.id} class={item.rowClass}>
-                                        <td>{item.serialNumber}</td>
-                                        <td>
-                                            <div class="slds-truncate" title={item.productName}>
-                                                {item.productName}
-                                                <template if:true={item.classification}>
-                                                    <span class={item.classificationBadgeClass}>
-                                                        {item.classification}
-                                                    </span>
-                                                </template>
+                                        <td class="oef-td-serial">{item.serialNumber}</td>
+                                        <td class="oef-td-product">
+                                            <div class="oef-cart-product-info">
+                                                <span class="oef-cart-product-name">{item.productName}</span>
+                                                <span class="oef-cart-product-sku">{item.sku}</span>
                                             </div>
+                                            <template if:true={item.classification}>
+                                                <span class={item.classificationBadgeClass}>
+                                                    {item.classification}
+                                                </span>
+                                            </template>
                                         </td>
-                                        <td><div class="slds-truncate">{item.sku}</div></td>
-                                        <td>{item.rateFormatted}</td>
-                                        <td class="qty-col">
+                                        <td class="oef-td-rate">{item.rateFormatted}</td>
+                                        <td class="oef-td-qty">
                                             <lightning-input
                                                 type="number"
                                                 min="1"
@@ -287,28 +354,44 @@
                                                 data-line-id={item.id}
                                                 data-field="quantity"
                                                 variant="label-hidden"
-                                                onchange={handleLineQtyChange}>
+                                                onchange={handleLineQtyChange}
+                                                class="oef-cart-qty-input">
                                             </lightning-input>
                                         </td>
-                                        <td class="qty-col">
-                                            <span class="free-qty-badge">{item.freeQty}</span>
-                                        </td>
-                                        <td>
-                                            <template if:true={item.schemeName}>
-                                                <lightning-badge label={item.schemeName}></lightning-badge>
+                                        <td class="oef-td-free">
+                                            <template if:true={item.freeQty}>
+                                                <span class="oef-free-qty-pill">+{item.freeQty}</span>
+                                            </template>
+                                            <template if:false={item.freeQty}>
+                                                <span class="oef-no-free">-</span>
                                             </template>
                                         </td>
-                                        <td>{item.discountFormatted}</td>
-                                        <td>{item.taxFormatted}</td>
-                                        <td class="line-total-cell">{item.totalFormatted}</td>
-                                        <td>
+                                        <td class="oef-td-scheme">
+                                            <template if:true={item.schemeName}>
+                                                <span class="oef-scheme-pill">{item.schemeName}</span>
+                                            </template>
+                                            <template if:false={item.schemeName}>
+                                                <span class="oef-no-scheme">-</span>
+                                            </template>
+                                        </td>
+                                        <td class="oef-td-discount">
+                                            <template if:true={item.discountAmount}>
+                                                <span class="oef-discount-value">-{item.discountFormatted}</span>
+                                            </template>
+                                            <template if:false={item.discountAmount}>
+                                                <span class="oef-no-discount">-</span>
+                                            </template>
+                                        </td>
+                                        <td class="oef-td-tax">{item.taxFormatted}</td>
+                                        <td class="oef-td-total">{item.totalFormatted}</td>
+                                        <td class="oef-td-action">
                                             <lightning-button-icon
                                                 icon-name="utility:delete"
                                                 alternative-text="Remove"
                                                 variant="bare"
                                                 data-line-id={item.id}
                                                 onclick={removeLineItem}
-                                                class="delete-btn">
+                                                class="oef-delete-btn">
                                             </lightning-button-icon>
                                         </td>
                                     </tr>
@@ -321,39 +404,65 @@
 
             <!-- Order Summary -->
             <template if:true={hasLineItems}>
-                <div class="order-summary">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">Order Summary</h3>
-                    <div class="summary-card">
-                        <div class="slds-grid slds-grid_align-end">
-                            <div class="slds-col slds-size_1-of-3">
-                                <div class="summary-row">
-                                    <span class="summary-label">Gross Amount:</span>
-                                    <span class="summary-value">{orderSummary.grossAmountFormatted}</span>
+                <div class="oef-summary-section">
+                    <div class="oef-summary-grid">
+                        <!-- Left: Savings & Schemes Applied -->
+                        <div class="oef-summary-left">
+                            <template if:true={hasSchemeSavings}>
+                                <div class="oef-savings-card">
+                                    <div class="oef-savings-icon">
+                                        <lightning-icon icon-name="utility:discount" size="small"></lightning-icon>
+                                    </div>
+                                    <div class="oef-savings-info">
+                                        <span class="oef-savings-amount">{orderSummary.totalDiscountFormatted}</span>
+                                        <span class="oef-savings-label">Total Savings</span>
+                                    </div>
                                 </div>
-                                <div class="summary-row discount-row">
-                                    <span class="summary-label">Discount (-):</span>
-                                    <span class="summary-value discount-value">{orderSummary.totalDiscountFormatted}</span>
+                            </template>
+                            <template if:true={totalFreeQuantity}>
+                                <div class="oef-free-items-card">
+                                    <div class="oef-free-icon">
+                                        <lightning-icon icon-name="utility:package" size="small"></lightning-icon>
+                                    </div>
+                                    <div class="oef-free-info">
+                                        <span class="oef-free-count">{totalFreeQuantity}</span>
+                                        <span class="oef-free-label">Free Items</span>
+                                    </div>
                                 </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Taxable Amount:</span>
-                                    <span class="summary-value">{orderSummary.taxableAmountFormatted}</span>
+                            </template>
+                            <div class="oef-items-card">
+                                <div class="oef-items-stat">
+                                    <span class="oef-stat-number">{orderSummary.totalItems}</span>
+                                    <span class="oef-stat-label">Items</span>
                                 </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Tax (GST):</span>
-                                    <span class="summary-value">{orderSummary.totalTaxFormatted}</span>
+                                <div class="oef-items-stat">
+                                    <span class="oef-stat-number">{orderSummary.totalQuantity}</span>
+                                    <span class="oef-stat-label">Total Qty</span>
                                 </div>
-                                <div class="summary-row total-row">
-                                    <span class="summary-label">Net Amount:</span>
-                                    <span class="summary-value net-amount">{orderSummary.netAmountFormatted}</span>
-                                </div>
-                                <div class="summary-row items-row">
-                                    <span class="summary-label">Total Items:</span>
-                                    <span class="summary-value">{orderSummary.totalItems}</span>
-                                </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Total Quantity:</span>
-                                    <span class="summary-value">{orderSummary.totalQuantity}</span>
-                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Financial Summary -->
+                        <div class="oef-summary-right">
+                            <div class="oef-summary-line">
+                                <span class="oef-summary-label">Gross Amount</span>
+                                <span class="oef-summary-value">{orderSummary.grossAmountFormatted}</span>
+                            </div>
+                            <div class="oef-summary-line oef-summary-discount">
+                                <span class="oef-summary-label">Discount</span>
+                                <span class="oef-summary-value">-{orderSummary.totalDiscountFormatted}</span>
+                            </div>
+                            <div class="oef-summary-line">
+                                <span class="oef-summary-label">Taxable Amount</span>
+                                <span class="oef-summary-value">{orderSummary.taxableAmountFormatted}</span>
+                            </div>
+                            <div class="oef-summary-line">
+                                <span class="oef-summary-label">GST</span>
+                                <span class="oef-summary-value">{orderSummary.totalTaxFormatted}</span>
+                            </div>
+                            <div class="oef-summary-line oef-summary-total">
+                                <span class="oef-summary-label">Net Amount</span>
+                                <span class="oef-summary-value oef-net-amount">{orderSummary.netAmountFormatted}</span>
                             </div>
                         </div>
                     </div>
@@ -362,7 +471,7 @@
 
             <!-- Remarks -->
             <template if:true={hasLineItems}>
-                <div class="slds-m-top_medium slds-m-bottom_medium">
+                <div class="oef-remarks-section">
                     <lightning-textarea
                         label="Order Remarks"
                         value={orderRemarks}
@@ -375,52 +484,48 @@
 
             <!-- Action Buttons -->
             <template if:true={hasLineItems}>
-                <div class="action-buttons slds-m-top_medium">
-                    <div class="slds-grid slds-grid_align-center slds-gutters">
-                        <template if:true={isEmbedded}>
-                            <div class="slds-col">
-                                <lightning-button
-                                    variant="neutral"
-                                    label="Cancel"
-                                    icon-name="utility:back"
-                                    onclick={handleCancel}>
-                                </lightning-button>
-                            </div>
-                        </template>
-                        <div class="slds-col">
-                            <lightning-button
-                                variant="neutral"
-                                label="Save Draft"
-                                icon-name="utility:save"
-                                onclick={handleSaveDraft}
-                                disabled={isSubmitting}>
-                            </lightning-button>
-                        </div>
-                        <div class="slds-col">
-                            <lightning-button
-                                variant="brand"
-                                label="Submit Order"
-                                icon-name="utility:check"
-                                onclick={handleSubmitOrder}
-                                disabled={isSubmitting}>
-                            </lightning-button>
-                        </div>
-                    </div>
+                <div class="oef-action-bar">
+                    <template if:true={isEmbedded}>
+                        <lightning-button
+                            variant="neutral"
+                            label="Cancel"
+                            icon-name="utility:close"
+                            onclick={handleCancel}>
+                        </lightning-button>
+                    </template>
+                    <div class="oef-action-spacer"></div>
+                    <lightning-button
+                        variant="neutral"
+                        label="Save Draft"
+                        icon-name="utility:save"
+                        onclick={handleSaveDraft}
+                        disabled={isSubmitting}
+                        class="slds-m-right_small">
+                    </lightning-button>
+                    <lightning-button
+                        variant="brand"
+                        label="Submit Order"
+                        icon-name="utility:check"
+                        onclick={handleSubmitOrder}
+                        disabled={isSubmitting}>
+                    </lightning-button>
                 </div>
             </template>
 
             <!-- Spinner -->
             <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                <div class="oef-spinner-overlay">
+                    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                </div>
             </template>
         </div>
-    </lightning-card>
+    </div>
 
     <!-- Must Sell Warning Modal -->
     <template if:true={showMustSellWarning}>
         <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="must-sell-warning-heading" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
-                <header class="slds-modal__header must-sell-warning-header">
+                <header class="slds-modal__header oef-warning-header">
                     <lightning-button-icon icon-name="utility:close" alternative-text="Close" variant="bare-inverse" class="slds-modal__close" onclick={handleMustSellWarningClose}></lightning-button-icon>
                     <h2 id="must-sell-warning-heading" class="slds-text-heading_medium">
                         <lightning-icon icon-name="utility:warning" size="small" class="slds-m-right_x-small"></lightning-icon>
@@ -429,12 +534,12 @@
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
                     <p class="slds-m-bottom_small">The following must-sell products are not in this order:</p>
-                    <ul class="must-sell-missing-list">
+                    <ul class="oef-missing-list">
                         <template for:each={missingMustSellProducts} for:item="mp">
-                            <li key={mp.productId} class="must-sell-missing-item">
+                            <li key={mp.productId} class="oef-missing-item">
                                 <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                <span class="must-sell-missing-name">{mp.productName}</span>
-                                <span class="must-sell-missing-sku">({mp.sku})</span>
+                                <span class="oef-missing-name">{mp.productName}</span>
+                                <span class="oef-missing-sku">({mp.sku})</span>
                             </li>
                         </template>
                     </ul>

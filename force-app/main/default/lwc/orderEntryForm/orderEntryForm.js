@@ -32,11 +32,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         netAmount: 0,
         totalItems: 0,
         totalQuantity: 0,
-        grossAmountFormatted: '0.00',
-        totalDiscountFormatted: '0.00',
-        taxableAmountFormatted: '0.00',
-        totalTaxFormatted: '0.00',
-        netAmountFormatted: '0.00'
+        grossAmountFormatted: '₹0.00',
+        totalDiscountFormatted: '₹0.00',
+        taxableAmountFormatted: '₹0.00',
+        totalTaxFormatted: '₹0.00',
+        netAmountFormatted: '₹0.00'
     };
     @track productResults = [];
     @track lastOrderInfo;
@@ -46,6 +46,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @track showMustSellWarning = false;
     @track missingMustSellProducts = [];
     showFocusedSell = false;
+    showSchemesPanel = false;
 
     searchTerm = '';
     selectedCategory = '';
@@ -86,6 +87,113 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         return this.missingMustSellProducts && this.missingMustSellProducts.length > 0;
     }
 
+    // --- Schemes panel getters ---
+    get hasSchemes() {
+        return this.schemes && this.schemes.length > 0;
+    }
+
+    get schemesCount() {
+        return this.schemes ? this.schemes.length : 0;
+    }
+
+    get schemesPanelIcon() {
+        return this.showSchemesPanel ? 'utility:chevronup' : 'utility:chevrondown';
+    }
+
+    get focusedSellIcon() {
+        return this.showFocusedSell ? 'utility:chevronup' : 'utility:chevrondown';
+    }
+
+    get schemesForDisplay() {
+        if (!this.schemes) return [];
+        return this.schemes.map(scheme => {
+            const cat = scheme.Scheme_Category__c || '';
+            let iconName = 'utility:discount';
+            let cardClass = 'oef-scheme-card';
+            let categoryBadgeClass = 'oef-scheme-cat-badge';
+
+            if (cat === 'Free Products') {
+                iconName = 'utility:package';
+                cardClass += ' oef-scheme-card-free';
+                categoryBadgeClass += ' oef-cat-free';
+            } else if (cat === 'Discount in %' || cat === 'Discount in Value') {
+                iconName = 'utility:percent';
+                cardClass += ' oef-scheme-card-discount';
+                categoryBadgeClass += ' oef-cat-discount';
+            } else if (cat === 'Reward Points') {
+                iconName = 'utility:ribbon';
+                cardClass += ' oef-scheme-card-reward';
+                categoryBadgeClass += ' oef-cat-reward';
+            } else {
+                cardClass += ' oef-scheme-card-default';
+                categoryBadgeClass += ' oef-cat-default';
+            }
+
+            const benefitText = this.buildSchemeBenefitText(scheme);
+
+            return {
+                ...scheme,
+                iconName,
+                cardClass,
+                categoryBadgeClass,
+                benefitText
+            };
+        });
+    }
+
+    buildSchemeBenefitText(scheme) {
+        const parts = [];
+        if (scheme.Discount_Percent__c) {
+            parts.push(scheme.Discount_Percent__c + '% off');
+        }
+        if (scheme.Discount_Amount__c) {
+            parts.push(this.formatCurrency(scheme.Discount_Amount__c) + ' off');
+        }
+        if (scheme.Free_Quantity__c && scheme.Free_Product_Ext__r) {
+            parts.push('Get ' + scheme.Free_Quantity__c + ' ' + scheme.Free_Product_Ext__r.Name + ' free');
+        } else if (scheme.Free_Quantity__c) {
+            parts.push('Get ' + scheme.Free_Quantity__c + ' free');
+        }
+        if (scheme.Reward_Points__c) {
+            parts.push(scheme.Reward_Points__c + ' reward points');
+        }
+        if (scheme.MOV__c) {
+            parts.push('Min order: ' + this.formatCurrency(scheme.MOV__c));
+        }
+        if (scheme.Min_Quantity__c) {
+            parts.push('Min qty: ' + scheme.Min_Quantity__c);
+        }
+        if (parts.length === 0 && scheme.Description__c) {
+            return scheme.Description__c;
+        }
+        return parts.join(' | ') || scheme.Description__c || scheme.Scheme_Type__c || '';
+    }
+
+    // --- Must Sell progress getters ---
+    get mustSellOrderedCount() {
+        return this.mustSellProducts ? this.mustSellProducts.filter(p => p.isInOrder).length : 0;
+    }
+
+    get mustSellTotalCount() {
+        return this.mustSellProducts ? this.mustSellProducts.length : 0;
+    }
+
+    get mustSellBarStyle() {
+        if (!this.mustSellTotalCount) return 'width: 0%';
+        const pct = Math.round((this.mustSellOrderedCount / this.mustSellTotalCount) * 100);
+        return 'width: ' + pct + '%';
+    }
+
+    // --- Summary getters ---
+    get hasSchemeSavings() {
+        return this.orderSummary.totalDiscount > 0;
+    }
+
+    get totalFreeQuantity() {
+        if (!this.lineItems) return 0;
+        return this.lineItems.reduce((sum, item) => sum + (item.freeQty || 0), 0);
+    }
+
     get categoryOptions() {
         return [
             { label: 'All Categories', value: '' },
@@ -115,7 +223,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     connectedCallback() {
-        // When embedded with accountId (no recordId), load data directly
         if (!this.recordId && this.accountId) {
             this.selectedAccountId = this.accountId;
             this.loadLastOrder();
@@ -135,8 +242,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     loadAccountDetails() {
-        // Account details loaded via wire when recordId is present
-        // For manual selection, we set basic info
         if (this.selectedAccountId && !this.recordId) {
             this.accountName = 'Selected Outlet';
             this.accountChannel = 'General Trade';
@@ -188,7 +293,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 .map(p => ({
                     ...p,
                     isInOrder: orderedProductIds.has(p.productId),
-                    badgeClass: 'badge-must-sell'
+                    cardClass: orderedProductIds.has(p.productId)
+                        ? 'oef-ms-card oef-ms-card-done' : 'oef-ms-card'
                 }));
 
             this.focusedSellProducts = items
@@ -196,7 +302,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 .map(p => ({
                     ...p,
                     isInOrder: orderedProductIds.has(p.productId),
-                    badgeClass: 'badge-focused-sell'
+                    cardClass: orderedProductIds.has(p.productId)
+                        ? 'oef-ms-card oef-fs-card oef-ms-card-done' : 'oef-ms-card oef-fs-card'
                 }));
         } catch (error) {
             console.error('Error loading must-sell products:', error);
@@ -207,12 +314,24 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
         this.mustSellProducts = this.mustSellProducts.map(p => ({
             ...p,
-            isInOrder: orderedProductIds.has(p.productId)
+            isInOrder: orderedProductIds.has(p.productId),
+            cardClass: orderedProductIds.has(p.productId)
+                ? 'oef-ms-card oef-ms-card-done' : 'oef-ms-card'
         }));
         this.focusedSellProducts = this.focusedSellProducts.map(p => ({
             ...p,
-            isInOrder: orderedProductIds.has(p.productId)
+            isInOrder: orderedProductIds.has(p.productId),
+            cardClass: orderedProductIds.has(p.productId)
+                ? 'oef-ms-card oef-fs-card oef-ms-card-done' : 'oef-ms-card oef-fs-card'
         }));
+    }
+
+    toggleSchemesPanel() {
+        this.showSchemesPanel = !this.showSchemesPanel;
+    }
+
+    toggleFocusedSell() {
+        this.showFocusedSell = !this.showFocusedSell;
     }
 
     handleAddMustSell(event) {
@@ -222,7 +341,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const product = source.find(p => p.productId === productId);
         if (!product) return;
 
-        // Check if already in cart
         const existingIndex = this.lineItems.findIndex(item => item.productId === productId);
         if (existingIndex >= 0) {
             this.showToast('Info', product.productName + ' is already in the order', 'info');
@@ -231,7 +349,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         this.lineIdCounter++;
         const qty = product.minQuantity || 1;
-        const rate = 0; // Price will be resolved from product search or scheme
+        const rate = 0;
         const newItem = {
             id: 'LINE_' + this.lineIdCounter,
             productId: product.productId,
@@ -260,10 +378,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.calculateTotals();
         this.refreshMustSellStatus();
         this.showToast('Success', product.productName + ' added to order', 'success');
-    }
-
-    toggleFocusedSell() {
-        this.showFocusedSell = !this.showFocusedSell;
     }
 
     handleSearchTermChange(event) {
@@ -303,6 +417,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 const qty = 0;
                 const freeQty = scheme ? this.calculateFreeQty(qty, scheme) : 0;
                 const lineTotal = qty * (product.Unit_Price__c || product.MRP__c || 0);
+                const schemeDescription = scheme ? this.buildSchemeBenefitText(scheme) : '';
 
                 return {
                     id: product.Id,
@@ -317,8 +432,10 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     freeQty: freeQty,
                     schemeName: scheme ? scheme.Name : '',
                     schemeId: scheme ? scheme.Id : null,
+                    schemeDescription: schemeDescription,
                     lineTotal: lineTotal,
-                    lineTotalFormatted: this.formatCurrency(lineTotal)
+                    lineTotalFormatted: this.formatCurrency(lineTotal),
+                    cardClass: scheme ? 'oef-product-card oef-product-card-scheme' : 'oef-product-card'
                 };
             });
         } catch (error) {
@@ -361,7 +478,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             return;
         }
 
-        // Check if product already in cart
         const existingIndex = this.lineItems.findIndex(item => item.productId === productId);
         if (existingIndex >= 0) {
             this.lineItems = this.lineItems.map((item, idx) => {
@@ -381,7 +497,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const taxAmount = taxableAmount * (product.taxRate / 100);
             const totalAmount = taxableAmount + taxAmount;
 
-            // Detect Must Sell / Focused Sell classification for this product
             const msMatch = this.mustSellProducts.find(p => p.productId === product.id);
             const fsMatch = this.focusedSellProducts.find(p => p.productId === product.id);
             const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
@@ -564,11 +679,12 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     totalAmount: lastItem.Total_Amount__c || 0,
                     totalFormatted: this.formatCurrency(lastItem.Total_Amount__c || 0),
                     serialNumber: this.lineItems.length + 1,
-                    rowClass: 'reorder-row'
+                    rowClass: 'oef-reorder-row'
                 };
                 this.lineItems = [...this.lineItems, newItem];
             }
             this.calculateTotals();
+            this.refreshMustSellStatus();
             this.showToast('Success', 'Last order items loaded for reorder', 'success');
         } catch (error) {
             this.showToast('Error', 'Failed to load last order', 'error');
@@ -580,6 +696,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     handleClearCart() {
         this.lineItems = [];
         this.calculateTotals();
+        this.refreshMustSellStatus();
     }
 
     handleCancel() {
@@ -593,7 +710,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     async handleSubmitOrder() {
         if (!this.validateOrder()) return;
 
-        // Check for missing must-sell products
         if (this.mustSellProducts && this.mustSellProducts.length > 0) {
             const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
             this.missingMustSellProducts = this.mustSellProducts
@@ -614,7 +730,6 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     handleMustSellAddProducts() {
         this.showMustSellWarning = false;
-        // Scroll to the must-sell section
     }
 
     handleMustSellSubmitAnyway() {
@@ -641,12 +756,10 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.showToast('Success', 'Order submitted successfully! Order #: ' + (result.Name || result.Id), 'success');
             this.resetForm();
 
-            // Dispatch success event for parent components
             this.dispatchEvent(new CustomEvent('success', {
                 detail: { recordId: result.Id, orderNumber: result.Name, type: 'order' }
             }));
 
-            // Only navigate if not embedded (no accountId prop)
             if (result.Id && !this.accountId) {
                 this[NavigationMixin.Navigate]({
                     type: 'standard__recordPage',
@@ -738,13 +851,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     getClassificationBadgeClass(classification) {
-        if (classification === 'Must Sell') return 'badge-must-sell';
-        if (classification === 'Focused Sell') return 'badge-focused-sell';
+        if (classification === 'Must Sell') return 'oef-badge-must-sell';
+        if (classification === 'Focused Sell') return 'oef-badge-focused-sell';
         return '';
     }
 
     formatCurrency(value) {
-        if (value === null || value === undefined) return '0.00';
+        if (value === null || value === undefined) return '₹0.00';
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
