@@ -619,7 +619,7 @@
                 <div class="wiz-step-indicator slds-m-bottom_medium">
                     <template for:each={wizSteps} for:item="step">
                         <div key={step.value} class="wiz-step-item" data-step={step.value} onclick={handleWizStepClick}>
-                            <div class={step.circleClass}>{step.value}</div>
+                            <div class={step.circleClass}>{step.displayValue}</div>
                             <span class={step.labelClass}>{step.label}</span>
                         </div>
                     </template>
@@ -1036,13 +1036,13 @@
                             <div class="wiz-product-search-wrapper slds-m-bottom_medium">
                                 <lightning-input
                                     label="Search Free Products to Add"
-                                    value={wizProductSearchTerm}
+                                    value={wizGetProductSearchTerm}
                                     placeholder="Type product name or SKU..."
-                                    onchange={handleWizProductSearch}>
+                                    onchange={handleWizGetProductSearch}>
                                 </lightning-input>
-                                <template if:true={wizProductSearchResults.length}>
+                                <template if:true={wizGetProductSearchResults.length}>
                                     <div class="wiz-search-results-dropdown">
-                                        <template for:each={wizProductSearchResults} for:item="prod">
+                                        <template for:each={wizGetProductSearchResults} for:item="prod">
                                             <div key={prod.id} class="wiz-search-result-item"
                                                 data-id={prod.id} onclick={handleWizSelectGetProduct}>
                                                 <span class="wiz-result-name">{prod.name}</span>

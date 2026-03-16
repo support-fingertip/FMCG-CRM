@@ -145,7 +145,7 @@ public with sharing class SchemeManagerController {
                    Applicable_Channel__c, Applicable_Outlet_Type__c, Applicable_Region__c,
                    Discount_Percent__c, Discount_Amount__c, Price_Discount__c,
                    Reward_Points__c, MOV__c,
-                   Free_Product_Ext__c, Free_Quantity__c,
+                   Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c,
                    Min_Quantity__c, Max_Quantity__c, Min_Value__c, Max_Value__c,
                    Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
                    Max_Discount_Cap__c, Priority__c, Is_Stackable__c, Tier__c,

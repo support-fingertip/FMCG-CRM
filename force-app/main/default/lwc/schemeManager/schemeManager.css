@@ -756,6 +756,11 @@
     color: #fff;
 }
 
+.step-completed {
+    background: #2e844a;
+    color: #fff;
+}
+
 .step-label {
     font-size: 0.75rem;
     color: #706e6b;
@@ -763,6 +768,11 @@
 
 .step-label-active {
     color: #0176d3;
+    font-weight: 600;
+}
+
+.step-label-completed {
+    color: #2e844a;
     font-weight: 600;
 }
 

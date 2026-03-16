@@ -94,8 +94,7 @@ const WIZARD_STATUS_OPTIONS = [
 const CHANNEL_FORM_OPTIONS = [
     { label: 'GT', value: 'GT' },
     { label: 'MT', value: 'MT' },
-    { label: 'E-Commerce', value: 'E-Commerce' },
-    { label: 'All', value: 'All' }
+    { label: 'E-Commerce', value: 'E-Commerce' }
 ];
 
 const OUTLET_TYPE_OPTIONS = [
@@ -204,8 +203,10 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     wizActiveStep = '1';
     @track wizProductSearchResults = [];
     @track wizFreeProductSearchResults = [];
+    @track wizGetProductSearchResults = [];
     wizProductSearchTerm = '';
     wizFreeProductSearchTerm = '';
+    wizGetProductSearchTerm = '';
     wizEditId = null;
 
     // ── Wizard Option Getters ────────────────────────────────────────────
@@ -851,8 +852,8 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Start_Date__c: null,
             End_Date__c: null,
             Status__c: 'Draft',
-            Applicable_Channel__c: '',
-            Applicable_Outlet_Type__c: '',
+            Applicable_Channel__c: [],
+            Applicable_Outlet_Type__c: [],
             Discount_Percent__c: null,
             Discount_Amount__c: null,
             Price_Discount__c: null,
@@ -884,8 +885,10 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
         this.wizActiveStep = '1';
         this.wizProductSearchResults = [];
         this.wizFreeProductSearchResults = [];
+        this.wizGetProductSearchResults = [];
         this.wizProductSearchTerm = '';
         this.wizFreeProductSearchTerm = '';
+        this.wizGetProductSearchTerm = '';
         this.wizEditId = null;
     }
 
@@ -902,7 +905,17 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
         this.isLoading = true;
         try {
             const data = await getScheme({ schemeId });
-            this.wizScheme = { ...data };
+            this.wizScheme = {
+                ...data,
+                Applicable_Channel__c: data.Applicable_Channel__c
+                    ? data.Applicable_Channel__c.split(';') : [],
+                Applicable_Outlet_Type__c: data.Applicable_Outlet_Type__c
+                    ? data.Applicable_Outlet_Type__c.split(';') : []
+            };
+
+            if (data.Free_Product_Ext__c && data.Free_Product_Ext__r) {
+                this.wizFreeProductSearchTerm = data.Free_Product_Ext__r.Name || '';
+            }
 
             this.wizProducts = (data.Scheme_Products__r || []).map(p => ({
                 ...p,
@@ -935,17 +948,36 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     get wizPageTitle() { return this.wizIsEditMode ? 'Edit Scheme' : 'New Scheme'; }
 
     get wizSteps() {
-        return ['Basic Info', 'Benefit Config', 'Products', 'Slabs', 'Geo Mapping'].map((label, i) => {
+        const stepLabels = ['Basic Info', 'Benefit Config', 'Products', 'Slabs', 'Geo Mapping'];
+        const completed = this._wizStepCompleted();
+        return stepLabels.map((label, i) => {
             const value = String(i + 1);
             const active = this.wizActiveStep === value;
+            const done = completed[i];
+            let circleClass = 'step-circle';
+            if (active) circleClass += ' step-active';
+            else if (done) circleClass += ' step-completed';
             return {
                 label,
                 value,
                 active,
-                circleClass: active ? 'step-circle step-active' : 'step-circle',
-                labelClass: active ? 'step-label step-label-active' : 'step-label'
+                done,
+                circleClass,
+                labelClass: active ? 'step-label step-label-active' : (done ? 'step-label step-label-completed' : 'step-label'),
+                displayValue: done && !active ? '\u2713' : value
             };
         });
+    }
+
+    _wizStepCompleted() {
+        const s = this.wizScheme;
+        return [
+            !!(s.Name && s.Scheme_Code__c && s.Start_Date__c && s.End_Date__c),
+            !!(s.Scheme_Category__c && s.Scheme_Type__c),
+            this.wizProducts.length > 0,
+            this.wizSlabs.length > 0,
+            this.wizMappings.length > 0
+        ];
     }
 
     get wizIsStep1() { return this.wizActiveStep === '1'; }
@@ -1007,10 +1039,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
 
     handleWizFieldChange(event) {
         const field = event.target.dataset.field;
-        let value = event.detail.value;
-        if (Array.isArray(value)) {
-            value = value.join(';');
-        }
+        const value = event.detail.value;
         this.wizScheme = { ...this.wizScheme, [field]: value };
     }
 
@@ -1024,7 +1053,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     handleWizProductSearch(event) {
         this.wizProductSearchTerm = event.detail.value;
         if (this.wizProductSearchTerm.length >= 2) {
-            this.doWizProductSearch(this.wizProductSearchTerm, false);
+            this.doWizProductSearch(this.wizProductSearchTerm, 'buy');
         } else {
             this.wizProductSearchResults = [];
         }
@@ -1033,13 +1062,13 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     handleWizFreeProductSearch(event) {
         this.wizFreeProductSearchTerm = event.detail.value;
         if (this.wizFreeProductSearchTerm.length >= 2) {
-            this.doWizProductSearch(this.wizFreeProductSearchTerm, true);
+            this.doWizProductSearch(this.wizFreeProductSearchTerm, 'free');
         } else {
             this.wizFreeProductSearchResults = [];
         }
     }
 
-    async doWizProductSearch(term, isFree) {
+    async doWizProductSearch(term, context) {
         try {
             const results = await searchProducts({ searchTerm: term });
             const mapped = results.map(p => ({
@@ -1050,8 +1079,10 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
                 mrp: p.MRP__c || 0,
                 label: p.Name + (p.SKU_Code__c ? ' (' + p.SKU_Code__c + ')' : '')
             }));
-            if (isFree) {
+            if (context === 'free') {
                 this.wizFreeProductSearchResults = mapped;
+            } else if (context === 'get') {
+                this.wizGetProductSearchResults = mapped;
             } else {
                 this.wizProductSearchResults = mapped;
             }
@@ -1091,9 +1122,18 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
         this.wizFreeProductSearchTerm = prod.name;
     }
 
+    handleWizGetProductSearch(event) {
+        this.wizGetProductSearchTerm = event.detail.value;
+        if (this.wizGetProductSearchTerm.length >= 2) {
+            this.doWizProductSearch(this.wizGetProductSearchTerm, 'get');
+        } else {
+            this.wizGetProductSearchResults = [];
+        }
+    }
+
     handleWizSelectGetProduct(event) {
         const prodId = event.currentTarget.dataset.id;
-        const prod = this.wizProductSearchResults.find(p => p.id === prodId);
+        const prod = this.wizGetProductSearchResults.find(p => p.id === prodId);
         if (!prod) return;
 
         if (this.wizProducts.some(p => p.Product_Ext__c === prodId && p.Is_Get_Product__c)) return;
@@ -1107,8 +1147,8 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Is_Get_Product__c: true,
             Min_Quantity__c: 0
         }];
-        this.wizProductSearchResults = [];
-        this.wizProductSearchTerm = '';
+        this.wizGetProductSearchResults = [];
+        this.wizGetProductSearchTerm = '';
     }
 
     handleWizProductMinQtyChange(event) {
@@ -1294,8 +1334,12 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Start_Date__c: s.Start_Date__c,
             End_Date__c: s.End_Date__c,
             Status__c: s.Status__c,
-            Applicable_Channel__c: s.Applicable_Channel__c || null,
-            Applicable_Outlet_Type__c: s.Applicable_Outlet_Type__c || null,
+            Applicable_Channel__c: Array.isArray(s.Applicable_Channel__c)
+                ? (s.Applicable_Channel__c.length > 0 ? s.Applicable_Channel__c.join(';') : null)
+                : (s.Applicable_Channel__c || null),
+            Applicable_Outlet_Type__c: Array.isArray(s.Applicable_Outlet_Type__c)
+                ? (s.Applicable_Outlet_Type__c.length > 0 ? s.Applicable_Outlet_Type__c.join(';') : null)
+                : (s.Applicable_Outlet_Type__c || null),
             Discount_Percent__c: s.Discount_Percent__c,
             Discount_Amount__c: s.Discount_Amount__c,
             Price_Discount__c: s.Price_Discount__c,
@@ -1348,8 +1392,12 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     }
 
     handleWizCancel() {
-        this.currentView = 'list';
-        this.loadSchemes();
+        if (this.wizEditId) {
+            this.openSchemeDetail(this.wizEditId);
+        } else {
+            this.currentView = 'list';
+            this.loadSchemes();
+        }
         this.loadStats();
     }
 
