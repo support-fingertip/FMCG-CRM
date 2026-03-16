@@ -52,6 +52,23 @@ public with sharing class OVE_SchemeInfoController {
                 }
             }
 
+            // Pre-query schemes that have active mappings but are NOT mapped to this outlet.
+            // These should be excluded. Schemes with no mappings at all are open to everyone.
+            Set<Id> allMappedSchemeIds = new Set<Id>();
+            for (Scheme_Mapping__c m : [
+                SELECT Scheme__c FROM Scheme_Mapping__c
+                WHERE Is_Active__c = true
+            ]) {
+                allMappedSchemeIds.add(m.Scheme__c);
+            }
+            // Exclude schemes that have mappings but none matching this outlet
+            Set<Id> excludedSchemeIds = new Set<Id>();
+            for (Id schemeId : allMappedSchemeIds) {
+                if (!mappedSchemeIds.contains(schemeId)) {
+                    excludedSchemeIds.add(schemeId);
+                }
+            }
+
             String query = 'SELECT Id, Name, Scheme_Code__c, Scheme_Category__c, Scheme_Type__c, ' +
                            'Description__c, Start_Date__c, End_Date__c, Status__c, Channel__c, ' +
                            'Discount_Percent__c, Discount_Amount__c, Price_Discount__c, ' +
@@ -76,10 +93,9 @@ public with sharing class OVE_SchemeInfoController {
                          'OR Channel__c = null OR Channel__c = :channel)';
             }
 
-            // Territory mapping filter
-            if (!mappedSchemeIds.isEmpty()) {
-                query += ' AND (Id NOT IN (SELECT Scheme__c FROM Scheme_Mapping__c WHERE Is_Active__c = true) ' +
-                         'OR Id IN :mappedSchemeIds)';
+            // Territory mapping filter — exclude schemes mapped to other outlets only
+            if (!excludedSchemeIds.isEmpty()) {
+                query += ' AND Id NOT IN :excludedSchemeIds';
             }
 
             query += ' ORDER BY Priority__c ASC NULLS LAST, Name ASC LIMIT 100';
