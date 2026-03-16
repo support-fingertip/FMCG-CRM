@@ -11,7 +11,7 @@ public with sharing class OrderEntryController {
     @AuraEnabled(cacheable=true)
     public static List<Product_Extension__c> searchProducts(String searchTerm, String categoryId) {
         String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
-        String query = 'SELECT Id, Name, SKU_Code__c, Description, Is_Active__c ' +
+        String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true AND (Name LIKE :searchKey OR SKU_Code__c LIKE :searchKey)';
         if (String.isNotBlank(categoryId)) {
             query += ' AND Product_Category__c = :categoryId';
