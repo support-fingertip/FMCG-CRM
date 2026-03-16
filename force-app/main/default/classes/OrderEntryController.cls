@@ -60,7 +60,8 @@ public with sharing class OrderEntryController {
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
                            Discount_Type__c, Discount_Value__c, Free_Product_Ext__c, Free_Quantity__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
-                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c,
+                           Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r)
             FROM Scheme__c
             WHERE Status__c = 'Active'
@@ -68,6 +69,53 @@ public with sharing class OrderEntryController {
             AND End_Date__c >= :orderDate
             ORDER BY Priority__c
         ];
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getMustSellProducts(Id accountId, Date orderDate) {
+        List<Map<String, Object>> result = new List<Map<String, Object>>();
+
+        if (!BPM_FeatureToggle_Util.isEnabled('SPM-002')) {
+            return result;
+        }
+
+        Date effectiveDate = orderDate != null ? orderDate : Date.today();
+
+        List<Scheme__c> schemes = [
+            SELECT Id, Name,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                           Min_Quantity__c, Product_Classification__c
+                    FROM Scheme_Products__r
+                    WHERE Product_Classification__c IN ('Must Sell', 'Focused Sell')
+                      AND Product_Ext__c != null)
+            FROM Scheme__c
+            WHERE Status__c = 'Active'
+            AND Start_Date__c <= :effectiveDate
+            AND End_Date__c >= :effectiveDate
+            ORDER BY Priority__c
+        ];
+
+        // Deduplicate by product Id — first scheme wins (highest priority)
+        Set<Id> seenProductIds = new Set<Id>();
+        for (Scheme__c scheme : schemes) {
+            if (scheme.Scheme_Products__r == null) continue;
+            for (Scheme_Product__c sp : scheme.Scheme_Products__r) {
+                if (seenProductIds.contains(sp.Product_Ext__c)) continue;
+                seenProductIds.add(sp.Product_Ext__c);
+
+                Map<String, Object> item = new Map<String, Object>();
+                item.put('productId', sp.Product_Ext__c);
+                item.put('productName', sp.Product_Ext__r.Name);
+                item.put('sku', sp.Product_Ext__r.SKU_Code__c);
+                item.put('minQuantity', sp.Min_Quantity__c != null ? sp.Min_Quantity__c : 1);
+                item.put('schemeName', scheme.Name);
+                item.put('schemeId', scheme.Id);
+                item.put('classification', sp.Product_Classification__c);
+                result.add(item);
+            }
+        }
+
+        return result;
     }
 
     @AuraEnabled(cacheable=true)

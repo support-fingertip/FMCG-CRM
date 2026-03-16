@@ -13,6 +13,7 @@ public without sharing class OVE_Visit_Service {
     public static final String FEATURE_VISIT_EXECUTION  = 'OVE-001';
     public static final String FEATURE_GEOFENCE         = 'OVE-002';
     public static final String FEATURE_AD_HOC_VISITS    = 'OVE-003';
+    public static final String FEATURE_MUST_SELL        = 'SPM-002';
 
     // ── Config Keys ─────────────────────────────────────────────────────────
     private static final String CFG_MIN_VISIT_DURATION  = 'MIN_VISIT_DURATION_SEC';
@@ -317,6 +318,11 @@ public without sharing class OVE_Visit_Service {
 
             // Aggregate order and collection totals from this visit
             aggregateVisitTotals(visit);
+
+            // Calculate Must Sell compliance if feature is enabled
+            if (BPM_FeatureToggle_Util.isEnabled(FEATURE_MUST_SELL)) {
+                calculateMustSellCompliance(visit);
+            }
 
             update visit;
 
@@ -677,7 +683,8 @@ public without sharing class OVE_Visit_Service {
                    Duration_Minutes__c, Is_Productive__c, Order_Value__c, Collection_Amount__c,
                    Total_Orders_Count__c, Notes__c, Completion_Activities__c,
                    Stock_Check_Completed__c, Competitor_Check_Completed__c,
-                   Merchandising_Completed__c, Survey_Completed__c, Ticket_Logged__c
+                   Merchandising_Completed__c, Survey_Completed__c, Ticket_Logged__c,
+                   Must_Sell_Compliance__c, Must_Sell_Products_Ordered__c, Must_Sell_Products_Required__c
             FROM Visit__c WHERE Id = :visitId LIMIT 1
         ];
 
@@ -727,6 +734,11 @@ public without sharing class OVE_Visit_Service {
         summary.put('merchandisingCompleted', visit.Merchandising_Completed__c);
         summary.put('surveyCompleted', visit.Survey_Completed__c);
         summary.put('ticketLogged', visit.Ticket_Logged__c);
+
+        // Must Sell compliance
+        summary.put('mustSellCompliance', visit.Must_Sell_Compliance__c);
+        summary.put('mustSellOrdered', visit.Must_Sell_Products_Ordered__c);
+        summary.put('mustSellRequired', visit.Must_Sell_Products_Required__c);
 
         return summary;
     }
@@ -896,6 +908,54 @@ public without sharing class OVE_Visit_Service {
             Decimal collVal = (Decimal)ar.get('totalAmount');
             visit.Collection_Amount__c = collVal != null ? collVal : 0;
         }
+    }
+
+    private static void calculateMustSellCompliance(Visit__c visit) {
+        Date today = Date.today();
+
+        // Get all must-sell products from active schemes
+        List<Scheme_Product__c> mustSellProducts = [
+            SELECT Id, Product_Ext__c
+            FROM Scheme_Product__c
+            WHERE Product_Classification__c = 'Must Sell'
+              AND Product_Ext__c != null
+              AND Scheme__r.Status__c = 'Active'
+              AND Scheme__r.Start_Date__c <= :today
+              AND Scheme__r.End_Date__c >= :today
+        ];
+
+        if (mustSellProducts.isEmpty()) {
+            visit.Must_Sell_Products_Required__c = 0;
+            visit.Must_Sell_Products_Ordered__c = 0;
+            visit.Must_Sell_Compliance__c = null;
+            return;
+        }
+
+        Set<Id> mustSellProductIds = new Set<Id>();
+        for (Scheme_Product__c sp : mustSellProducts) {
+            mustSellProductIds.add(sp.Product_Ext__c);
+        }
+
+        // Get products ordered during this visit
+        Set<Id> orderedProductIds = new Set<Id>();
+        for (Order_Line_Item__c oli : [
+            SELECT Product_Ext__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__r.Visit__c = :visit.Id
+              AND Sales_Order__r.Status__c != 'Cancelled'
+              AND Product_Ext__c IN :mustSellProductIds
+        ]) {
+            orderedProductIds.add(oli.Product_Ext__c);
+        }
+
+        Integer required = mustSellProductIds.size();
+        Integer ordered = orderedProductIds.size();
+
+        visit.Must_Sell_Products_Required__c = required;
+        visit.Must_Sell_Products_Ordered__c = ordered;
+        visit.Must_Sell_Compliance__c = required > 0
+            ? (Decimal.valueOf(ordered) / Decimal.valueOf(required) * 100).setScale(2, RoundingMode.HALF_UP)
+            : null;
     }
 
     private static Map<String, Object> createActivity(String id, String label, String icon, Boolean enabled, Boolean completed) {

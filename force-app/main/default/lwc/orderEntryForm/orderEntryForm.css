@@ -184,6 +184,155 @@ table.slds-table tbody td {
     vertical-align: middle;
 }
 
+/* Must Sell & Focused Sell Sections */
+.must-sell-section {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-left: 4px solid var(--error-color);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.must-sell-header,
+.focused-sell-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.focused-sell-header {
+    cursor: pointer;
+}
+
+.focused-sell-section {
+    background: #f0f7ff;
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid var(--brand-primary);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.must-sell-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+.must-sell-card,
+.focused-sell-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    gap: 12px;
+}
+
+.must-sell-card {
+    border-left: 3px solid var(--error-color);
+}
+
+.focused-sell-card {
+    border-left: 3px solid var(--brand-primary);
+}
+
+.must-sell-card-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.must-sell-product-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.must-sell-product-sku {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.must-sell-scheme-name {
+    font-size: 11px;
+    color: var(--brand-primary);
+    font-weight: 500;
+}
+
+.must-sell-card-action {
+    flex-shrink: 0;
+}
+
+.must-sell-check {
+    color: var(--success-color);
+}
+
+.focused-sell-check {
+    color: var(--brand-primary);
+}
+
+/* Classification Badges on line items */
+.badge-must-sell {
+    font-size: 10px;
+    background: var(--error-color);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.badge-focused-sell {
+    font-size: 10px;
+    background: var(--brand-primary);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Must Sell Warning Modal */
+.must-sell-warning-header {
+    background: #fef2f2 !important;
+}
+
+.must-sell-missing-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.must-sell-missing-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    background: #fef2f2;
+    border-radius: 6px;
+}
+
+.must-sell-missing-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.must-sell-missing-sku {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: 6px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .slds-grid.slds-gutters {

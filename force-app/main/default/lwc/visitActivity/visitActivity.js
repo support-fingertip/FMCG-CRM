@@ -45,6 +45,9 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
     @track isProductive = true;
     @track nonProductiveReason = '';
     @track isProcessing = false;
+    @track mustSellCompliance = null;
+    @track mustSellOrdered = 0;
+    @track mustSellRequired = 0;
 
     visitRecord = null;
 
@@ -74,6 +77,10 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
                     ...c,
                     amountFormatted: INR_FORMATTER.format(c.Amount__c || 0)
                 }));
+                // Must Sell compliance data
+                this.mustSellCompliance = summary.mustSellCompliance;
+                this.mustSellOrdered = summary.mustSellOrdered || 0;
+                this.mustSellRequired = summary.mustSellRequired || 0;
             }
 
             if (activityList) {
@@ -158,6 +165,31 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
             { label: 'Stock Available', value: 'Stock Available' },
             { label: 'Other', value: 'Other' }
         ];
+    }
+
+    get hasMustSellData() {
+        return this.mustSellRequired > 0;
+    }
+
+    get mustSellComplianceFormatted() {
+        if (this.mustSellCompliance == null) return '0%';
+        return Math.round(this.mustSellCompliance) + '%';
+    }
+
+    get mustSellSummaryText() {
+        return this.mustSellOrdered + '/' + this.mustSellRequired + ' must-sell products ordered';
+    }
+
+    get complianceBarStyle() {
+        const pct = Math.min(this.mustSellCompliance || 0, 100);
+        const color = pct >= 100 ? '#2e844a' : (pct >= 50 ? '#dd7a01' : '#ea001e');
+        return 'width:' + pct + '%;background:' + color;
+    }
+
+    get mustSellComplianceClass() {
+        if (this.mustSellCompliance >= 100) return 'compliance-badge compliance-green';
+        if (this.mustSellCompliance >= 50) return 'compliance-badge compliance-yellow';
+        return 'compliance-badge compliance-red';
     }
 
     get isCheckoutDisabled() {

@@ -7,6 +7,7 @@ import searchProducts from '@salesforce/apex/OrderEntryController.searchProducts
 import createSalesOrder from '@salesforce/apex/OrderEntryController.createSalesOrder';
 import getLastOrder from '@salesforce/apex/OrderEntryController.getLastOrder';
 import getApplicableSchemes from '@salesforce/apex/OrderEntryController.getApplicableSchemes';
+import getMustSellProducts from '@salesforce/apex/OrderEntryController.getMustSellProducts';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -41,6 +42,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @track productResults = [];
     @track lastOrderInfo;
     @track schemes = [];
+    @track mustSellProducts = [];
+    @track focusedSellProducts = [];
+    @track showMustSellWarning = false;
+    @track missingMustSellProducts = [];
+    showFocusedSell = false;
 
     searchTerm = '';
     selectedCategory = '';
@@ -69,6 +75,18 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         return this.lineItems.length;
     }
 
+    get hasMustSellProducts() {
+        return this.mustSellProducts && this.mustSellProducts.length > 0;
+    }
+
+    get hasFocusedSellProducts() {
+        return this.focusedSellProducts && this.focusedSellProducts.length > 0;
+    }
+
+    get hasMissingMustSell() {
+        return this.missingMustSellProducts && this.missingMustSellProducts.length > 0;
+    }
+
     get categoryOptions() {
         return [
             { label: 'All Categories', value: '' },
@@ -91,6 +109,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.selectedAccountId = this.recordId;
             this.loadLastOrder();
             this.loadSchemes();
+            this.loadMustSellProducts();
         } else if (error) {
             this.showToast('Error', 'Failed to load account details', 'error');
         }
@@ -102,6 +121,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.selectedAccountId = this.accountId;
             this.loadLastOrder();
             this.loadSchemes();
+            this.loadMustSellProducts();
         }
     }
 
@@ -111,6 +131,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.loadAccountDetails();
             this.loadLastOrder();
             this.loadSchemes();
+            this.loadMustSellProducts();
         }
     }
 
@@ -151,6 +172,99 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         } catch (error) {
             console.error('Error loading schemes:', error);
         }
+    }
+
+    async loadMustSellProducts() {
+        if (!this.effectiveAccountId) return;
+        try {
+            const result = await getMustSellProducts({
+                accountId: this.effectiveAccountId,
+                orderDate: null
+            });
+            const items = result || [];
+            const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+
+            this.mustSellProducts = items
+                .filter(p => p.classification === 'Must Sell')
+                .map(p => ({
+                    ...p,
+                    isInOrder: orderedProductIds.has(p.productId),
+                    badgeClass: 'badge-must-sell'
+                }));
+
+            this.focusedSellProducts = items
+                .filter(p => p.classification === 'Focused Sell')
+                .map(p => ({
+                    ...p,
+                    isInOrder: orderedProductIds.has(p.productId),
+                    badgeClass: 'badge-focused-sell'
+                }));
+        } catch (error) {
+            console.error('Error loading must-sell products:', error);
+        }
+    }
+
+    refreshMustSellStatus() {
+        const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+        this.mustSellProducts = this.mustSellProducts.map(p => ({
+            ...p,
+            isInOrder: orderedProductIds.has(p.productId)
+        }));
+        this.focusedSellProducts = this.focusedSellProducts.map(p => ({
+            ...p,
+            isInOrder: orderedProductIds.has(p.productId)
+        }));
+    }
+
+    handleAddMustSell(event) {
+        const productId = event.currentTarget.dataset.productId;
+        const classification = event.currentTarget.dataset.classification;
+        const source = classification === 'Must Sell' ? this.mustSellProducts : this.focusedSellProducts;
+        const product = source.find(p => p.productId === productId);
+        if (!product) return;
+
+        // Check if already in cart
+        const existingIndex = this.lineItems.findIndex(item => item.productId === productId);
+        if (existingIndex >= 0) {
+            this.showToast('Info', product.productName + ' is already in the order', 'info');
+            return;
+        }
+
+        this.lineIdCounter++;
+        const qty = product.minQuantity || 1;
+        const rate = 0; // Price will be resolved from product search or scheme
+        const newItem = {
+            id: 'LINE_' + this.lineIdCounter,
+            productId: product.productId,
+            productName: product.productName,
+            sku: product.sku || 'N/A',
+            rate: rate,
+            rateFormatted: this.formatCurrency(rate),
+            quantity: qty,
+            freeQty: 0,
+            schemeName: product.schemeName || '',
+            schemeId: product.schemeId || null,
+            classification: classification,
+            classificationBadgeClass: this.getClassificationBadgeClass(classification),
+            taxRate: 18,
+            grossAmount: qty * rate,
+            discountAmount: 0,
+            discountFormatted: this.formatCurrency(0),
+            taxAmount: 0,
+            taxFormatted: this.formatCurrency(0),
+            totalAmount: 0,
+            totalFormatted: this.formatCurrency(0),
+            serialNumber: this.lineItems.length + 1,
+            rowClass: ''
+        };
+        this.lineItems = [...this.lineItems, newItem];
+        this.calculateTotals();
+        this.refreshMustSellStatus();
+        this.showToast('Success', product.productName + ' added to order', 'success');
+    }
+
+    toggleFocusedSell() {
+        this.showFocusedSell = !this.showFocusedSell;
     }
 
     handleSearchTermChange(event) {
@@ -268,6 +382,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const taxAmount = taxableAmount * (product.taxRate / 100);
             const totalAmount = taxableAmount + taxAmount;
 
+            // Detect Must Sell / Focused Sell classification for this product
+            const msMatch = this.mustSellProducts.find(p => p.productId === product.id);
+            const fsMatch = this.focusedSellProducts.find(p => p.productId === product.id);
+            const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
+
             const newItem = {
                 id: 'LINE_' + this.lineIdCounter,
                 productId: product.id,
@@ -279,6 +398,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 freeQty: freeQty,
                 schemeName: scheme ? scheme.Name : '',
                 schemeId: scheme ? scheme.Id : null,
+                classification: classification,
+                classificationBadgeClass: this.getClassificationBadgeClass(classification),
                 taxRate: product.taxRate,
                 grossAmount: grossAmount,
                 discountAmount: discountAmount,
@@ -294,6 +415,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         }
 
         this.calculateTotals();
+        this.refreshMustSellStatus();
         this.showToast('Success', product.name + ' added to order', 'success');
     }
 
@@ -303,6 +425,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             .filter(item => item.id !== lineId)
             .map((item, idx) => ({ ...item, serialNumber: idx + 1 }));
         this.calculateTotals();
+        this.refreshMustSellStatus();
     }
 
     handleLineQtyChange(event) {
@@ -470,11 +593,50 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     async handleSubmitOrder() {
         if (!this.validateOrder()) return;
+
+        // Check for missing must-sell products
+        if (this.mustSellProducts && this.mustSellProducts.length > 0) {
+            const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+            this.missingMustSellProducts = this.mustSellProducts
+                .filter(p => !orderedProductIds.has(p.productId));
+
+            if (this.missingMustSellProducts.length > 0) {
+                this.showMustSellWarning = true;
+                return;
+            }
+        }
+
+        this._submitOrder(false);
+    }
+
+    handleMustSellWarningClose() {
+        this.showMustSellWarning = false;
+    }
+
+    handleMustSellAddProducts() {
+        this.showMustSellWarning = false;
+        // Scroll to the must-sell section
+    }
+
+    handleMustSellSubmitAnyway() {
+        this.showMustSellWarning = false;
+        this._submitOrder(true);
+    }
+
+    async _submitOrder(mustSellOverride) {
         this.isSubmitting = true;
         this.isLoading = true;
 
         try {
             const orderData = this.buildOrderPayload('Confirmed');
+            orderData.mustSellOverride = mustSellOverride;
+            if (mustSellOverride && this.mustSellProducts.length > 0) {
+                const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+                const ordered = this.mustSellProducts.filter(p => orderedProductIds.has(p.productId)).length;
+                orderData.mustSellCompliance = (ordered / this.mustSellProducts.length) * 100;
+            } else if (this.mustSellProducts.length > 0) {
+                orderData.mustSellCompliance = 100;
+            }
             const result = await createSalesOrder({ orderJson: JSON.stringify(orderData) });
 
             this.showToast('Success', 'Order submitted successfully! Order #: ' + (result.Name || result.Id), 'success');
@@ -574,6 +736,12 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.selectedCategory = '';
         this.orderRemarks = '';
         this.calculateTotals();
+    }
+
+    getClassificationBadgeClass(classification) {
+        if (classification === 'Must Sell') return 'badge-must-sell';
+        if (classification === 'Focused Sell') return 'badge-focused-sell';
+        return '';
     }
 
     formatCurrency(value) {

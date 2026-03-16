@@ -201,6 +201,20 @@
                         </div>
                     </div>
 
+                    <!-- Must Sell Compliance -->
+                    <template if:true={hasMustSellData}>
+                        <div class="must-sell-compliance slds-m-bottom_medium">
+                            <div class="compliance-header">
+                                <span class="compliance-title">Must Sell Compliance</span>
+                                <span class={mustSellComplianceClass}>{mustSellComplianceFormatted}</span>
+                            </div>
+                            <div class="compliance-detail">{mustSellSummaryText}</div>
+                            <div class="compliance-bar">
+                                <div class="compliance-bar-fill" style={complianceBarStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
                     <!-- Productive Toggle -->
                     <lightning-input
                         type="toggle"

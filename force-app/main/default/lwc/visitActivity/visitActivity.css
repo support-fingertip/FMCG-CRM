@@ -346,6 +346,68 @@
     margin-top: 2px;
 }
 
+/* Must Sell Compliance */
+.must-sell-compliance {
+    background: var(--va-bg);
+    border: 1px solid var(--va-border);
+    border-radius: var(--va-radius);
+    padding: 12px;
+}
+
+.compliance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.compliance-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #181818;
+}
+
+.compliance-badge {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
+.compliance-green {
+    background: #e6f7e9;
+    color: #2e844a;
+}
+
+.compliance-yellow {
+    background: #fef4e8;
+    color: #dd7a01;
+}
+
+.compliance-red {
+    background: #fef2f2;
+    color: #ea001e;
+}
+
+.compliance-detail {
+    font-size: 12px;
+    color: #706e6b;
+    margin-bottom: 8px;
+}
+
+.compliance-bar {
+    height: 6px;
+    background: #e5e5e5;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.compliance-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
 /* Modal */
 .slds-modal__header {
     background: #f8f9fa;
