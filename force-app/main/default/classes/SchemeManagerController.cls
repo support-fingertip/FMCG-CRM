@@ -89,8 +89,8 @@ public with sharing class SchemeManagerController {
             conditions.add('Scheme_Type__c = :schemeType');
         }
         if (String.isNotBlank(channel)) {
-            conditions.add('(Applicable_Channel__c LIKE :channel OR Applicable_Channel__c = null)');
-            channel = '%' + String.escapeSingleQuotes(channel) + '%';
+            String safeChannel = String.escapeSingleQuotes(channel);
+            conditions.add('(Applicable_Channel__c INCLUDES (\'' + safeChannel + '\') OR Applicable_Channel__c = null)');
         }
         if (String.isNotBlank(searchTerm)) {
             String term = '%' + String.escapeSingleQuotes(searchTerm) + '%';
