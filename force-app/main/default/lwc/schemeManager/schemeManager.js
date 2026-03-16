@@ -227,6 +227,31 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     connectedCallback() {
         this.loadStats();
         this.loadSchemes();
+        this._handleDocClick = this.handleDocumentClick.bind(this);
+        document.addEventListener('click', this._handleDocClick);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('click', this._handleDocClick);
+    }
+
+    handleDocumentClick(event) {
+        const wrapper = this.template.querySelector('.wiz-product-search-wrapper');
+        if (!wrapper) return;
+        const wrappers = this.template.querySelectorAll('.wiz-product-search-wrapper');
+        let insideAny = false;
+        wrappers.forEach(w => {
+            if (w.contains(event.target)) insideAny = true;
+        });
+        if (!insideAny) {
+            this.clearAllSearchDropdowns();
+        }
+    }
+
+    clearAllSearchDropdowns() {
+        this.wizProductSearchResults = [];
+        this.wizFreeProductSearchResults = [];
+        this.wizGetProductSearchResults = [];
     }
 
     // ── Stats ────────────────────────────────────────────────────────────
@@ -1026,11 +1051,13 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     }
 
     handleWizNext() {
+        this.clearAllSearchDropdowns();
         const num = parseInt(this.wizActiveStep, 10);
         if (num < 5) this.wizActiveStep = String(num + 1);
     }
 
     handleWizPrevious() {
+        this.clearAllSearchDropdowns();
         const num = parseInt(this.wizActiveStep, 10);
         if (num > 1) this.wizActiveStep = String(num - 1);
     }
