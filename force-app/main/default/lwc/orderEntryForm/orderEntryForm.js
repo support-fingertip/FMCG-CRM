@@ -427,7 +427,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     mrpFormatted: this.formatCurrency(product.MRP__c || product.Unit_Price__c || 0),
                     unitPrice: product.Unit_Price__c || product.MRP__c || 0,
                     category: product.Category__c || product.Family || '',
-                    taxRate: product.Tax_Rate__c || 18,
+                    taxRate: product.GST_Rate__c || 18,
                     quantity: qty,
                     freeQty: freeQty,
                     schemeName: scheme ? scheme.Name : '',
