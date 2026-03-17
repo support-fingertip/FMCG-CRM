@@ -417,13 +417,20 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             });
 
             this.productResults = (results || []).map(product => {
-                const scheme = this.findApplicableScheme(product);
+                const allSchemes = this.findAllApplicableSchemes(product);
+                const scheme = allSchemes.length > 0 ? allSchemes[0] : null;
                 const qty = 0;
                 const unitPrice = product.Unit_Price || 0;
                 const mrp = product.MRP || unitPrice;
                 const freeQty = scheme ? this.calculateFreeQty(qty, scheme) : 0;
                 const lineTotal = qty * unitPrice;
                 const schemeDescription = scheme ? this.buildSchemeBenefitText(scheme) : '';
+
+                const schemeStrips = allSchemes.map(s => ({
+                    id: s.Id,
+                    name: s.Name,
+                    description: this.buildSchemeBenefitText(s)
+                }));
 
                 return {
                     id: product.Id,
@@ -439,9 +446,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     schemeName: scheme ? scheme.Name : '',
                     schemeId: scheme ? scheme.Id : null,
                     schemeDescription: schemeDescription,
+                    schemeStrips: schemeStrips,
+                    hasSchemes: schemeStrips.length > 0,
                     lineTotal: lineTotal,
                     lineTotalFormatted: this.formatCurrency(lineTotal),
-                    cardClass: scheme ? 'oef-product-card oef-product-card-scheme' : 'oef-product-card'
+                    cardClass: allSchemes.length > 0 ? 'oef-product-card oef-product-card-scheme' : 'oef-product-card'
                 };
             });
         } catch (error) {
@@ -621,15 +630,20 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         };
     }
 
-    findApplicableScheme(product) {
-        if (!this.schemes || this.schemes.length === 0) return null;
+    findAllApplicableSchemes(product) {
+        if (!this.schemes || this.schemes.length === 0) return [];
         const productId = product.id || product.Id;
         const productCategory = product.category || product.Category__c || product.Product_Category__c || '';
 
-        return this.schemes.find(scheme => {
+        const productSchemes = [];
+        const categorySchemes = [];
+        const invoiceSchemes = [];
+
+        this.schemes.forEach(scheme => {
             // 1. Direct product match on scheme header
             if (scheme.Product_Ext__c && scheme.Product_Ext__c === productId) {
-                return true;
+                productSchemes.push(scheme);
+                return;
             }
 
             // 2. Check Scheme_Products__r child records for product-level mapping
@@ -638,26 +652,33 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 const hasProductInScheme = schemeProducts.some(
                     sp => sp.Product_Ext__c === productId && sp.Is_Buy_Product__c
                 );
-                if (hasProductInScheme) return true;
-                // Scheme has specific products mapped but this product isn't one of them
-                return false;
+                if (hasProductInScheme) {
+                    productSchemes.push(scheme);
+                }
+                return;
             }
 
             // 3. Category-level scheme (no specific products mapped)
             if (scheme.Product_Category__c && productCategory &&
                 scheme.Product_Category__c === productCategory) {
-                return true;
+                categorySchemes.push(scheme);
+                return;
             }
 
             // 4. Invoice-level schemes (no product or category restriction)
             const invoiceTypes = ['Invoice Qty Based', 'Invoice Val Based'];
             if (!scheme.Product_Ext__c && !scheme.Product_Category__c &&
                 invoiceTypes.includes(scheme.Scheme_Type__c)) {
-                return true;
+                invoiceSchemes.push(scheme);
             }
-
-            return false;
         });
+
+        return [...productSchemes, ...categorySchemes, ...invoiceSchemes];
+    }
+
+    findApplicableScheme(product) {
+        const all = this.findAllApplicableSchemes(product);
+        return all.length > 0 ? all[0] : null;
     }
 
     calculateFreeQty(qty, scheme) {

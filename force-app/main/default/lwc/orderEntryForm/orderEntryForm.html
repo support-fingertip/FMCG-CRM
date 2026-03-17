@@ -256,14 +256,16 @@
                                         <span class="oef-product-mrp-label">MRP</span>
                                     </div>
                                 </div>
-                                <template if:true={product.schemeName}>
-                                    <div class="oef-product-scheme-strip">
-                                        <lightning-icon icon-name="utility:discount" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                        <span>{product.schemeName}</span>
-                                        <template if:true={product.schemeDescription}>
-                                            <span class="oef-product-scheme-detail"> &mdash; {product.schemeDescription}</span>
-                                        </template>
-                                    </div>
+                                <template if:true={product.hasSchemes}>
+                                    <template for:each={product.schemeStrips} for:item="schemeStrip">
+                                        <div class="oef-product-scheme-strip" key={schemeStrip.id}>
+                                            <lightning-icon icon-name="utility:discount" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                            <span>{schemeStrip.name}</span>
+                                            <template if:true={schemeStrip.description}>
+                                                <span class="oef-product-scheme-detail"> &mdash; {schemeStrip.description}</span>
+                                            </template>
+                                        </div>
+                                    </template>
                                 </template>
                                 <div class="oef-product-action-row">
                                     <div class="oef-product-qty-group">
