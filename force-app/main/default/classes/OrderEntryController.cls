@@ -26,10 +26,14 @@ public with sharing class OrderEntryController {
         // Look up account channel for price resolution
         String channel = '';
         if (String.isNotBlank(accountId)) {
-            Id acctId = Id.valueOf(accountId);
-            List<Account> accts = [SELECT Channel__c FROM Account WHERE Id = :acctId LIMIT 1];
-            if (!accts.isEmpty() && String.isNotBlank(accts[0].Channel__c)) {
-                channel = accts[0].Channel__c;
+            try {
+                Id acctId = Id.valueOf(accountId);
+                List<Account> accts = [SELECT Channel__c FROM Account WHERE Id = :acctId LIMIT 1];
+                if (!accts.isEmpty() && String.isNotBlank(accts[0].Channel__c)) {
+                    channel = accts[0].Channel__c;
+                }
+            } catch (StringException e) {
+                // accountId is not a valid Salesforce Id — skip channel resolution
             }
         }
 
@@ -49,9 +53,9 @@ public with sharing class OrderEntryController {
               AND (Effective_To__c >= TODAY OR Effective_To__c = null)
             ORDER BY Effective_From__c DESC
         ]) {
-            String key = String.valueOf(pl.Product_Ext__c) + '|' +
-                         (String.isNotBlank(pl.Region__c) ? pl.Region__c : '') + '|' +
-                         (String.isNotBlank(pl.Channel__c) ? pl.Channel__c : '');
+            String regionVal = pl.Region__c != null ? String.valueOf(pl.Region__c) : '';
+            String channelVal = pl.Channel__c != null ? pl.Channel__c : '';
+            String key = String.valueOf(pl.Product_Ext__c) + '|' + regionVal + '|' + channelVal;
             if (!priceListMap.containsKey(key)) {
                 priceListMap.put(key, pl);
             }
