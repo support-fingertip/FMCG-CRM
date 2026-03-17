@@ -2,6 +2,13 @@
 // Run: sf apex run -f scripts/11_schemes.apex
 // Prerequisite: 04_products.apex
 
+// Clean up existing scheme data (child objects first, then parent)
+delete [SELECT Id FROM Scheme_Mapping__c LIMIT 10000];
+delete [SELECT Id FROM Scheme_Slab__c LIMIT 10000];
+delete [SELECT Id FROM Scheme_Product__c LIMIT 10000];
+delete [SELECT Id FROM Scheme__c LIMIT 10000];
+System.debug('Cleaned up existing scheme data');
+
 // Fetch product extensions by SKU Code
 Map<String, Id> peMap = new Map<String, Id>();
 for (Product_Extension__c pe : [SELECT Id, SKU_Code__c FROM Product_Extension__c WHERE Is_Active__c = true AND SKU_Code__c LIKE 'FF-%']) {
