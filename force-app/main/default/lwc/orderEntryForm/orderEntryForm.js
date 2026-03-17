@@ -657,24 +657,24 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     calculateFreeQty(qty, scheme) {
-        if (!scheme || !scheme.Type__c) return 0;
-        if (scheme.Type__c === 'Buy X Get Y Free' && scheme.Buy_Qty__c && scheme.Free_Qty__c) {
-            return Math.floor(qty / scheme.Buy_Qty__c) * scheme.Free_Qty__c;
+        if (!scheme) return 0;
+        if (scheme.Scheme_Category__c === 'Free Products' && scheme.Min_Quantity__c && scheme.Free_Quantity__c) {
+            return Math.floor(qty / scheme.Min_Quantity__c) * scheme.Free_Quantity__c;
         }
         return 0;
     }
 
     calculateSchemeDiscount(amount, qty, scheme) {
-        if (!scheme || !scheme.Type__c) return 0;
-        if (scheme.Type__c === 'Percentage Discount' && scheme.Discount_Percent__c) {
+        if (!scheme || !scheme.Scheme_Category__c) return 0;
+        if (scheme.Scheme_Category__c === 'Discount in %' && scheme.Discount_Percent__c) {
             return amount * (scheme.Discount_Percent__c / 100);
         }
-        if (scheme.Type__c === 'Flat Discount' && scheme.Discount_Amount__c) {
+        if (scheme.Scheme_Category__c === 'Discount in Value' && scheme.Discount_Amount__c) {
             return Math.min(scheme.Discount_Amount__c, amount);
         }
-        if (scheme.Type__c === 'Slab Discount' && scheme.Slabs__r) {
-            const applicableSlab = scheme.Slabs__r.find(slab =>
-                qty >= slab.Min_Qty__c && (!slab.Max_Qty__c || qty <= slab.Max_Qty__c)
+        if (scheme.Scheme_Slabs__r) {
+            const applicableSlab = scheme.Scheme_Slabs__r.find(slab =>
+                qty >= slab.Min_Value__c && (!slab.Max_Value__c || qty <= slab.Max_Value__c)
             );
             if (applicableSlab && applicableSlab.Discount_Percent__c) {
                 return amount * (applicableSlab.Discount_Percent__c / 100);
