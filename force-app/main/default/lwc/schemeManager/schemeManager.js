@@ -15,6 +15,7 @@ import getScheme from '@salesforce/apex/SchemeManagerController.getScheme';
 import saveScheme from '@salesforce/apex/SchemeManagerController.saveScheme';
 import searchProducts from '@salesforce/apex/SchemeManagerController.searchProducts';
 import generateSchemeCode from '@salesforce/apex/SchemeManagerController.generateSchemeCode';
+import searchTerritories from '@salesforce/apex/SchemeManagerController.searchTerritories';
 
 const STATUS_CONFIG = {
     'Draft':            { icon: 'utility:edit', class: 'status-draft', color: '#706e6b' },
@@ -132,10 +133,11 @@ const DISCOUNT_TYPE_OPTIONS = [
 ];
 
 const CUSTOMER_TYPE_OPTIONS = [
-    { label: 'D2R', value: 'D2R' },
-    { label: 'Wholesale', value: 'Wholesale' },
-    { label: 'Modern Trade', value: 'Modern Trade' },
-    { label: 'Institutional', value: 'Institutional' }
+    { label: '--None--', value: '' },
+    { label: 'Retailer', value: 'Retailer' },
+    { label: 'Distributor', value: 'Distributor' },
+    { label: 'Super Stockist', value: 'Super Stockist' },
+    { label: 'Modern Trade', value: 'Modern Trade' }
 ];
 
 const PRODUCT_CLASSIFICATION_OPTIONS = [
@@ -208,6 +210,8 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     wizFreeProductSearchTerm = '';
     wizGetProductSearchTerm = '';
     wizEditId = null;
+    @track wizTerritorySearchResults = [];
+    wizTerritorySearchTerms = {};
 
     // ── Wizard Option Getters ────────────────────────────────────────────
     get wizCategoryOptions() { return WIZARD_CATEGORY_OPTIONS; }
@@ -252,6 +256,8 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
         this.wizProductSearchResults = [];
         this.wizFreeProductSearchResults = [];
         this.wizGetProductSearchResults = [];
+        this.wizTerritorySearchResults = [];
+        this._activeTerritoryKey = null;
     }
 
     // ── Stats ────────────────────────────────────────────────────────────
@@ -614,6 +620,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
 
         const mappings = (scheme.Scheme_Mappings__r || []).map(m => ({
             id: m.Id,
+            territory: m.Territory__r ? m.Territory__r.Name : '-',
             zone: m.Zone__c || '-',
             subZone: m.Sub_Zone__c || '-',
             district: m.District__c || '-',
@@ -958,7 +965,9 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             this.wizMappings = (data.Scheme_Mappings__r || []).map(m => ({
                 ...m,
                 _key: m.Id,
-                accountName: m.Account__r ? m.Account__r.Name : ''
+                accountName: m.Account__r ? m.Account__r.Name : '',
+                territoryName: m.Territory__r ? m.Territory__r.Name : '',
+                territoryCode: m.Territory__r ? (m.Territory__r.Territory_Code__c || '') : ''
             }));
         } catch (error) {
             this.showToast('Error', 'Failed to load scheme: ' + this.reduceErrors(error), 'error');
@@ -1104,6 +1113,8 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
                 sku: p.SKU_Code__c || '',
                 brand: p.Brand__c || '',
                 mrp: p.MRP__c || 0,
+                imageUrl: p.Product_Image_URL__c || '',
+                hasImage: !!p.Product_Image_URL__c,
                 label: p.Name + (p.SKU_Code__c ? ' (' + p.SKU_Code__c + ')' : '')
             }));
             if (context === 'free') {
@@ -1248,6 +1259,9 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     handleWizAddMapping() {
         this.wizMappings = [...this.wizMappings, {
             _key: wizTempId(),
+            Territory__c: null,
+            territoryName: '',
+            territoryCode: '',
             Zone__c: '',
             Sub_Zone__c: '',
             District__c: '',
@@ -1255,6 +1269,65 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Customer_Type__c: '',
             Is_Active__c: true
         }];
+    }
+
+    handleWizTerritorySearch(event) {
+        const key = event.target.dataset.key;
+        const term = event.detail.value;
+        this.wizTerritorySearchTerms = { ...this.wizTerritorySearchTerms, [key]: term };
+        if (term.length >= 2) {
+            this.doWizTerritorySearch(term, key);
+        } else {
+            this.wizTerritorySearchResults = [];
+            this._activeTerritoryKey = null;
+        }
+    }
+
+    async doWizTerritorySearch(term, mappingKey) {
+        try {
+            const results = await searchTerritories({ searchTerm: term });
+            this.wizTerritorySearchResults = results.map(t => ({
+                id: t.Id,
+                name: t.Name,
+                code: t.Territory_Code__c || '',
+                region: t.Region__r ? t.Region__r.Name : '',
+                state: t.State__c || '',
+                city: t.City__c || '',
+                label: t.Name + (t.Territory_Code__c ? ' (' + t.Territory_Code__c + ')' : '')
+            }));
+            this._activeTerritoryKey = mappingKey;
+        } catch (e) {
+            // silent
+        }
+    }
+
+    handleWizSelectTerritory(event) {
+        const territoryId = event.currentTarget.dataset.id;
+        const territory = this.wizTerritorySearchResults.find(t => t.id === territoryId);
+        if (!territory || !this._activeTerritoryKey) return;
+
+        const key = this._activeTerritoryKey;
+        this.wizMappings = this.wizMappings.map(m => {
+            if (m._key === key) {
+                return {
+                    ...m,
+                    Territory__c: territoryId,
+                    territoryName: territory.name,
+                    territoryCode: territory.code,
+                    Zone__c: territory.region || m.Zone__c,
+                    Area__c: territory.state || m.Area__c,
+                    District__c: territory.city || m.District__c
+                };
+            }
+            return m;
+        });
+        this.wizTerritorySearchResults = [];
+        this._activeTerritoryKey = null;
+        this.wizTerritorySearchTerms = { ...this.wizTerritorySearchTerms, [key]: territory.name };
+    }
+
+    getTerritorySearchTerm(key) {
+        return this.wizTerritorySearchTerms[key] || '';
     }
 
     handleWizMappingFieldChange(event) {
@@ -1319,6 +1392,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
 
             const mappingsToSave = this.wizMappings.map(m => {
                 const rec = {
+                    Territory__c: m.Territory__c || null,
                     Zone__c: m.Zone__c,
                     Sub_Zone__c: m.Sub_Zone__c,
                     District__c: m.District__c,

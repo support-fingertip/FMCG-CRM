@@ -89,7 +89,8 @@ public with sharing class SchemeViewController {
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                            Is_Buy_Product__c, Is_Get_Product__c, Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r ORDER BY Product_Ext__r.Name),
-                   (SELECT Id, Zone__c, Sub_Zone__c, District__c, Area__c,
+                   (SELECT Id, Territory__c, Territory__r.Name,
+                           Zone__c, Sub_Zone__c, District__c, Area__c,
                            Account__c, Account__r.Name, Customer_Type__c
                     FROM Scheme_Mappings__r WHERE Is_Active__c = true)
             FROM Scheme__c

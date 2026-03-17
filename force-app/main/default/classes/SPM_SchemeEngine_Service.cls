@@ -283,7 +283,8 @@ public without sharing class SPM_SchemeEngine_Service {
 
     private static Account getAccountDetails(Id accountId) {
         List<Account> accounts = [
-            SELECT Id, Name, Channel__c, Outlet_Type__c, Region__c, Type
+            SELECT Id, Name, Channel__c, Outlet_Type__c, Region__c, Type,
+                   RecordType.DeveloperName
             FROM Account
             WHERE Id = :accountId
             LIMIT 1
@@ -304,7 +305,9 @@ public without sharing class SPM_SchemeEngine_Service {
         String outletType = outlet.Outlet_Type__c;
 
         // Get schemes mapped to this outlet (if any mappings exist)
-        Set<Id> mappedSchemeIds = getMappedSchemeIds(outlet.Id);
+        // Derives customer type from Account RecordType for mapping match
+        String customerType = getCustomerTypeFromRecordType(outlet);
+        Set<Id> mappedSchemeIds = getMappedSchemeIds(outlet.Id, customerType);
 
         // Pre-query scheme Ids linked via Scheme_Product__c for product match
         Set<Id> schemeIdsFromProducts = new Set<Id>();
@@ -368,15 +371,33 @@ public without sharing class SPM_SchemeEngine_Service {
     }
 
     /**
-     * @description Gets scheme Ids mapped to a specific outlet via Scheme_Mapping__c.
+     * @description Maps Account RecordType DeveloperName to Scheme_Mapping Customer_Type__c value.
      */
-    private static Set<Id> getMappedSchemeIds(Id accountId) {
+    private static String getCustomerTypeFromRecordType(Account outlet) {
+        if (outlet.RecordType == null || String.isBlank(outlet.RecordType.DeveloperName)) {
+            return null;
+        }
+        Map<String, String> recordTypeToCustomerType = new Map<String, String>{
+            'Retailer' => 'Retailer',
+            'Distributor' => 'Distributor',
+            'Super_Stockist' => 'Super Stockist',
+            'Modern_Trade' => 'Modern Trade'
+        };
+        return recordTypeToCustomerType.get(outlet.RecordType.DeveloperName);
+    }
+
+    /**
+     * @description Gets scheme Ids mapped to a specific outlet via Scheme_Mapping__c.
+     *              Filters by Account match and Customer_Type__c match.
+     */
+    private static Set<Id> getMappedSchemeIds(Id accountId, String customerType) {
         Set<Id> schemeIds = new Set<Id>();
         for (Scheme_Mapping__c mapping : [
-            SELECT Scheme__c
+            SELECT Scheme__c, Customer_Type__c
             FROM Scheme_Mapping__c
             WHERE Is_Active__c = true
               AND (Account__c = :accountId OR Account__c = null)
+              AND (Customer_Type__c = :customerType OR Customer_Type__c = null)
         ]) {
             schemeIds.add(mapping.Scheme__c);
         }

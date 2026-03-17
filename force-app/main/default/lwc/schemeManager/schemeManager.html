@@ -493,6 +493,7 @@
                                 <table class="detail-table">
                                     <thead>
                                         <tr>
+                                            <th>Territory</th>
                                             <th>Zone</th>
                                             <th>Area</th>
                                             <th>District</th>
@@ -502,6 +503,7 @@
                                     <tbody>
                                         <template for:each={selectedScheme.mappings} for:item="mapping">
                                             <tr key={mapping.id}>
+                                                <td>{mapping.territory}</td>
                                                 <td>{mapping.zone}</td>
                                                 <td>{mapping.area}</td>
                                                 <td>{mapping.district}</td>
@@ -788,8 +790,20 @@
                                                 <template for:each={wizFreeProductSearchResults} for:item="prod">
                                                     <div key={prod.id} class="wiz-search-result-item"
                                                         data-id={prod.id} onclick={handleWizSelectFreeProduct}>
-                                                        <span class="wiz-result-name">{prod.name}</span>
-                                                        <span class="wiz-result-sku">{prod.sku}</span>
+                                                        <div class="wiz-result-row">
+                                                            <template if:true={prod.hasImage}>
+                                                                <img src={prod.imageUrl} alt={prod.name} class="wiz-result-img" />
+                                                            </template>
+                                                            <template if:false={prod.hasImage}>
+                                                                <div class="wiz-result-img-placeholder">
+                                                                    <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                                                </div>
+                                                            </template>
+                                                            <div class="wiz-result-text">
+                                                                <span class="wiz-result-name">{prod.name}</span>
+                                                                <span class="wiz-result-sku">{prod.sku}</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </template>
                                             </div>
@@ -970,8 +984,20 @@
                                     <template for:each={wizProductSearchResults} for:item="prod">
                                         <div key={prod.id} class="wiz-search-result-item"
                                             data-id={prod.id} onclick={handleWizSelectProduct}>
-                                            <span class="wiz-result-name">{prod.name}</span>
-                                            <span class="wiz-result-sku">{prod.sku} &bull; MRP: {prod.mrp}</span>
+                                            <div class="wiz-result-row">
+                                                <template if:true={prod.hasImage}>
+                                                    <img src={prod.imageUrl} alt={prod.name} class="wiz-result-img" />
+                                                </template>
+                                                <template if:false={prod.hasImage}>
+                                                    <div class="wiz-result-img-placeholder">
+                                                        <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                                    </div>
+                                                </template>
+                                                <div class="wiz-result-text">
+                                                    <span class="wiz-result-name">{prod.name}</span>
+                                                    <span class="wiz-result-sku">{prod.sku} &bull; MRP: {prod.mrp}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
@@ -1045,8 +1071,20 @@
                                         <template for:each={wizGetProductSearchResults} for:item="prod">
                                             <div key={prod.id} class="wiz-search-result-item"
                                                 data-id={prod.id} onclick={handleWizSelectGetProduct}>
-                                                <span class="wiz-result-name">{prod.name}</span>
-                                                <span class="wiz-result-sku">{prod.sku}</span>
+                                                <div class="wiz-result-row">
+                                                    <template if:true={prod.hasImage}>
+                                                        <img src={prod.imageUrl} alt={prod.name} class="wiz-result-img" />
+                                                    </template>
+                                                    <template if:false={prod.hasImage}>
+                                                        <div class="wiz-result-img-placeholder">
+                                                            <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                                        </div>
+                                                    </template>
+                                                    <div class="wiz-result-text">
+                                                        <span class="wiz-result-name">{prod.name}</span>
+                                                        <span class="wiz-result-sku">{prod.sku}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </template>
                                     </div>
@@ -1230,25 +1268,31 @@
                                         </lightning-button-icon>
                                     </div>
                                     <div class="slds-grid slds-gutters slds-wrap">
-                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
-                                            <lightning-input
-                                                label="Zone"
-                                                value={mapping.Zone__c}
-                                                data-key={mapping._key}
-                                                data-field="Zone__c"
-                                                onchange={handleWizMappingFieldChange}>
-                                            </lightning-input>
+                                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                            <div class="wiz-product-search-wrapper">
+                                                <lightning-input
+                                                    label="Territory"
+                                                    value={mapping.territoryName}
+                                                    placeholder="Search territory by name or code..."
+                                                    data-key={mapping._key}
+                                                    onchange={handleWizTerritorySearch}>
+                                                </lightning-input>
+                                                <template if:true={wizTerritorySearchResults.length}>
+                                                    <div class="wiz-search-results-dropdown">
+                                                        <template for:each={wizTerritorySearchResults} for:item="terr">
+                                                            <div key={terr.id} class="wiz-search-result-item"
+                                                                data-id={terr.id} onclick={handleWizSelectTerritory}>
+                                                                <div class="wiz-result-text">
+                                                                    <span class="wiz-result-name">{terr.name}</span>
+                                                                    <span class="wiz-result-sku">{terr.code} &bull; {terr.region} &bull; {terr.state}</span>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
-                                            <lightning-input
-                                                label="Area"
-                                                value={mapping.Area__c}
-                                                data-key={mapping._key}
-                                                data-field="Area__c"
-                                                onchange={handleWizMappingFieldChange}>
-                                            </lightning-input>
-                                        </div>
-                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                                             <lightning-combobox
                                                 label="Customer Type"
                                                 value={mapping.Customer_Type__c}
@@ -1260,7 +1304,25 @@
                                         </div>
                                         <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                                             <lightning-input
-                                                label="District"
+                                                label="Zone / Region"
+                                                value={mapping.Zone__c}
+                                                data-key={mapping._key}
+                                                data-field="Zone__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                label="Area / State"
+                                                value={mapping.Area__c}
+                                                data-key={mapping._key}
+                                                data-field="Area__c"
+                                                onchange={handleWizMappingFieldChange}>
+                                            </lightning-input>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                                            <lightning-input
+                                                label="District / City"
                                                 value={mapping.District__c}
                                                 data-key={mapping._key}
                                                 data-field="District__c"

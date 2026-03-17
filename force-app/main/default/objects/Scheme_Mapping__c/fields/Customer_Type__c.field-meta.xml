@@ -9,24 +9,24 @@
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>D2R</fullName>
+                <fullName>Retailer</fullName>
                 <default>false</default>
-                <label>D2R</label>
+                <label>Retailer</label>
             </value>
             <value>
-                <fullName>Wholesale</fullName>
+                <fullName>Distributor</fullName>
                 <default>false</default>
-                <label>Wholesale</label>
+                <label>Distributor</label>
+            </value>
+            <value>
+                <fullName>Super Stockist</fullName>
+                <default>false</default>
+                <label>Super Stockist</label>
             </value>
             <value>
                 <fullName>Modern Trade</fullName>
                 <default>false</default>
                 <label>Modern Trade</label>
-            </value>
-            <value>
-                <fullName>Institutional</fullName>
-                <default>false</default>
-                <label>Institutional</label>
             </value>
         </valueSetDefinition>
     </valueSet>

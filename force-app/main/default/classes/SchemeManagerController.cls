@@ -160,7 +160,9 @@ public with sharing class SchemeManagerController {
                            Discount_Amount__c, Price_Discount__c, Reward_Points__c,
                            Free_Product_Ext__c, Free_Quantity__c, Is_Active__c
                     FROM Scheme_Slabs__r ORDER BY Min_Value__c),
-                   (SELECT Id, Zone__c, Sub_Zone__c, District__c, Area__c,
+                   (SELECT Id, Territory__c, Territory__r.Name, Territory__r.Territory_Code__c,
+                           Territory__r.Region__r.Name, Territory__r.State__c, Territory__r.City__c,
+                           Zone__c, Sub_Zone__c, District__c, Area__c,
                            Account__c, Account__r.Name, Customer_Type__c, Is_Active__c
                     FROM Scheme_Mappings__r ORDER BY Zone__c)
             FROM Scheme__c
@@ -234,10 +236,26 @@ public with sharing class SchemeManagerController {
     public static List<Product_Extension__c> searchProducts(String searchTerm) {
         String term = '%' + String.escapeSingleQuotes(searchTerm) + '%';
         return [
-            SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c
+            SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Product_Image_URL__c
             FROM Product_Extension__c
             WHERE Is_Active__c = true
             AND (Name LIKE :term OR SKU_Code__c LIKE :term)
+            ORDER BY Name
+            LIMIT 20
+        ];
+    }
+
+    // ── Search Territories ──────────────────────────────────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<Territory_Master__c> searchTerritories(String searchTerm) {
+        String term = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        return [
+            SELECT Id, Name, Territory_Code__c, Region__c, Region__r.Name,
+                   State__c, City__c
+            FROM Territory_Master__c
+            WHERE Is_Active__c = true
+            AND (Name LIKE :term OR Territory_Code__c LIKE :term OR City__c LIKE :term)
             ORDER BY Name
             LIMIT 20
         ];
@@ -293,7 +311,7 @@ public with sharing class SchemeManagerController {
                                Discount_Amount__c, Price_Discount__c, Reward_Points__c,
                                Free_Product_Ext__c, Free_Quantity__c, Is_Active__c
                         FROM Scheme_Slabs__r),
-                       (SELECT Zone__c, Sub_Zone__c, District__c, Area__c,
+                       (SELECT Territory__c, Zone__c, Sub_Zone__c, District__c, Area__c,
                                Customer_Type__c, Is_Active__c
                         FROM Scheme_Mappings__r)
                 FROM Scheme__c WHERE Id = :schemeId LIMIT 1
