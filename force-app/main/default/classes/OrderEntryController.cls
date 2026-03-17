@@ -9,7 +9,7 @@
 public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
-    public static List<ProductSearchResult> searchProducts(String searchTerm, String categoryId, Id accountId) {
+    public static List<ProductSearchResult> searchProducts(String searchTerm, String categoryId, String accountId) {
         String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
         String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true AND (Name LIKE :searchKey OR SKU_Code__c LIKE :searchKey)';
@@ -25,8 +25,9 @@ public with sharing class OrderEntryController {
 
         // Look up account channel for price resolution
         String channel = '';
-        if (accountId != null) {
-            List<Account> accts = [SELECT Channel__c FROM Account WHERE Id = :accountId LIMIT 1];
+        if (String.isNotBlank(accountId)) {
+            Id acctId = Id.valueOf(accountId);
+            List<Account> accts = [SELECT Channel__c FROM Account WHERE Id = :acctId LIMIT 1];
             if (!accts.isEmpty() && String.isNotBlank(accts[0].Channel__c)) {
                 channel = accts[0].Channel__c;
             }
