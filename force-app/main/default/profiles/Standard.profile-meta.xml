@@ -2716,6 +2716,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Scheme_Mapping__c.Territory__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>Scheme_Slab__c.Price_Discount__c</field>
         <readable>true</readable>

@@ -3736,6 +3736,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Scheme_Mapping__c.Territory__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Scorecard__c.Claim_Ratio_Score__c</field>
         <readable>true</readable>
     </fieldPermissions>
