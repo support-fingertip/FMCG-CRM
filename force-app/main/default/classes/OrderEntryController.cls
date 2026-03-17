@@ -9,7 +9,7 @@
 public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
-    public static List<Product_Extension__c> searchProducts(String searchTerm, String categoryId) {
+    public static List<ProductSearchResult> searchProducts(String searchTerm, String categoryId, Id accountId) {
         String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
         String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true AND (Name LIKE :searchKey OR SKU_Code__c LIKE :searchKey)';
@@ -17,7 +17,87 @@ public with sharing class OrderEntryController {
             query += ' AND Product_Category__c = :categoryId';
         }
         query += ' ORDER BY Name LIMIT 50';
-        return Database.query(query);
+        List<Product_Extension__c> products = Database.query(query);
+
+        if (products.isEmpty()) {
+            return new List<ProductSearchResult>();
+        }
+
+        // Look up account channel for price resolution
+        String channel = '';
+        if (accountId != null) {
+            List<Account> accts = [SELECT Channel__c FROM Account WHERE Id = :accountId LIMIT 1];
+            if (!accts.isEmpty() && String.isNotBlank(accts[0].Channel__c)) {
+                channel = accts[0].Channel__c;
+            }
+        }
+
+        // Fetch active price list entries for found products
+        Set<Id> productIds = new Set<Id>();
+        for (Product_Extension__c p : products) {
+            productIds.add(p.Id);
+        }
+
+        Map<String, Price_List__c> priceListMap = new Map<String, Price_List__c>();
+        for (Price_List__c pl : [
+            SELECT Id, Product_Ext__c, Region__c, Channel__c, Unit_Price__c
+            FROM Price_List__c
+            WHERE Product_Ext__c IN :productIds
+              AND Is_Active__c = true
+              AND Effective_From__c <= TODAY
+              AND (Effective_To__c >= TODAY OR Effective_To__c = null)
+            ORDER BY Effective_From__c DESC
+        ]) {
+            String key = String.valueOf(pl.Product_Ext__c) + '|' +
+                         (String.isNotBlank(pl.Region__c) ? pl.Region__c : '') + '|' +
+                         (String.isNotBlank(pl.Channel__c) ? pl.Channel__c : '');
+            if (!priceListMap.containsKey(key)) {
+                priceListMap.put(key, pl);
+            }
+        }
+
+        // Build results with resolved prices
+        List<ProductSearchResult> results = new List<ProductSearchResult>();
+        for (Product_Extension__c p : products) {
+            ProductSearchResult r = new ProductSearchResult();
+            r.Id = p.Id;
+            r.Name = p.Name;
+            r.SKU_Code = p.SKU_Code__c;
+            r.MRP = p.MRP__c;
+            r.GST_Rate = p.GST_Rate__c;
+
+            // Resolve price from price list: channel-specific > product-only > fallback to MRP
+            Decimal resolvedPrice = resolvePrice(p.Id, '', channel, priceListMap);
+            r.Unit_Price = resolvedPrice != null && resolvedPrice > 0
+                ? resolvedPrice
+                : (p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c);
+
+            results.add(r);
+        }
+
+        return results;
+    }
+
+    private static Decimal resolvePrice(Id productId, String region, String channel, Map<String, Price_List__c> priceListMap) {
+        // Try product + region + channel
+        String key = String.valueOf(productId) + '|' +
+                     (String.isNotBlank(region) ? region : '') + '|' +
+                     (String.isNotBlank(channel) ? channel : '');
+        if (priceListMap.containsKey(key)) {
+            return priceListMap.get(key).Unit_Price__c;
+        }
+        // Try product + region only
+        key = String.valueOf(productId) + '|' +
+              (String.isNotBlank(region) ? region : '') + '|';
+        if (priceListMap.containsKey(key)) {
+            return priceListMap.get(key).Unit_Price__c;
+        }
+        // Try product only (national/default)
+        key = String.valueOf(productId) + '||';
+        if (priceListMap.containsKey(key)) {
+            return priceListMap.get(key).Unit_Price__c;
+        }
+        return 0;
     }
 
     @AuraEnabled
@@ -130,6 +210,15 @@ public with sharing class OrderEntryController {
         return [SELECT Id, HSN_SAC_Code__c, Barcode_UPC__c, Barcode_EAN__c,
                        Case_Size__c, Min_Order_Qty__c, Weight__c, Weight_Unit__c
                 FROM Product_Extension__c WHERE Id IN :productIds];
+    }
+
+    public class ProductSearchResult {
+        @AuraEnabled public Id Id;
+        @AuraEnabled public String Name;
+        @AuraEnabled public String SKU_Code;
+        @AuraEnabled public Decimal MRP;
+        @AuraEnabled public Decimal Unit_Price;
+        @AuraEnabled public Decimal GST_Rate;
     }
 
     private static void updateOrderTotals(Id orderId) {

@@ -408,26 +408,28 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         try {
             const results = await searchProducts({
                 searchTerm: this.searchTerm,
-                category: this.selectedCategory,
+                categoryId: this.selectedCategory,
                 accountId: this.effectiveAccountId
             });
 
             this.productResults = (results || []).map(product => {
                 const scheme = this.findApplicableScheme(product);
                 const qty = 0;
+                const unitPrice = product.Unit_Price || 0;
+                const mrp = product.MRP || unitPrice;
                 const freeQty = scheme ? this.calculateFreeQty(qty, scheme) : 0;
-                const lineTotal = qty * (product.Unit_Price__c || product.MRP__c || 0);
+                const lineTotal = qty * unitPrice;
                 const schemeDescription = scheme ? this.buildSchemeBenefitText(scheme) : '';
 
                 return {
                     id: product.Id,
                     name: product.Name,
-                    sku: product.SKU__c || product.SKU_Code__c || 'N/A',
-                    mrp: product.MRP__c || product.Unit_Price__c || 0,
-                    mrpFormatted: this.formatCurrency(product.MRP__c || product.Unit_Price__c || 0),
-                    unitPrice: product.Unit_Price__c || product.MRP__c || 0,
-                    category: product.Category__c || product.Family || '',
-                    taxRate: product.GST_Rate__c || 18,
+                    sku: product.SKU_Code || 'N/A',
+                    mrp: mrp,
+                    mrpFormatted: this.formatCurrency(mrp),
+                    unitPrice: unitPrice,
+                    category: '',
+                    taxRate: product.GST_Rate || 18,
                     quantity: qty,
                     freeQty: freeQty,
                     schemeName: scheme ? scheme.Name : '',
