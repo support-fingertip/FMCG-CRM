@@ -8,6 +8,7 @@ import createSalesOrder from '@salesforce/apex/OrderEntryController.createSalesO
 import getLastOrder from '@salesforce/apex/OrderEntryController.getLastOrder';
 import getApplicableSchemes from '@salesforce/apex/OrderEntryController.getApplicableSchemes';
 import getMustSellProducts from '@salesforce/apex/OrderEntryController.getMustSellProducts';
+import getProductCategories from '@salesforce/apex/OrderEntryController.getProductCategories';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -50,6 +51,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     searchTerm = '';
     selectedCategory = '';
+    categoryOptionsData = [];
     selectedAccountId;
     accountName = '';
     accountChannel = '';
@@ -195,16 +197,17 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     get categoryOptions() {
-        return [
-            { label: 'All Categories', value: '' },
-            { label: 'Beverages', value: 'Beverages' },
-            { label: 'Snacks', value: 'Snacks' },
-            { label: 'Personal Care', value: 'Personal Care' },
-            { label: 'Home Care', value: 'Home Care' },
-            { label: 'Dairy', value: 'Dairy' },
-            { label: 'Confectionery', value: 'Confectionery' },
-            { label: 'Staples', value: 'Staples' }
-        ];
+        if (this.categoryOptionsData && this.categoryOptionsData.length > 0) {
+            return this.categoryOptionsData;
+        }
+        return [{ label: 'All Categories', value: '' }];
+    }
+
+    @wire(getProductCategories)
+    wiredCategories({ error, data }) {
+        if (data) {
+            this.categoryOptionsData = data;
+        }
     }
 
     @wire(getRecord, { recordId: '$recordId', fields: ACCOUNT_FIELDS })
@@ -389,6 +392,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     handleCategoryChange(event) {
         this.selectedCategory = event.detail.value;
+        this.handleProductSearch();
     }
 
     debounceSearch() {

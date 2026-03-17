@@ -10,9 +10,13 @@ public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
     public static List<ProductSearchResult> searchProducts(String searchTerm, String categoryId, String accountId) {
-        String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
         String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c ' +
-                       'FROM Product_Extension__c WHERE Is_Active__c = true AND (Name LIKE :searchKey OR SKU_Code__c LIKE :searchKey)';
+                       'FROM Product_Extension__c WHERE Is_Active__c = true';
+        String searchKey;
+        if (String.isNotBlank(searchTerm)) {
+            searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+            query += ' AND (Name LIKE :searchKey OR SKU_Code__c LIKE :searchKey)';
+        }
         if (String.isNotBlank(categoryId)) {
             query += ' AND Product_Category__r.Name = :categoryId';
         }
@@ -244,5 +248,25 @@ public with sharing class OrderEntryController {
             order.Total_Net_Amount__c = gross + tax - disc;
             update order;
         }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getProductCategories() {
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        Map<String, String> allOption = new Map<String, String>();
+        allOption.put('label', 'All Categories');
+        allOption.put('value', '');
+        options.add(allOption);
+        for (Product_Category__c cat : [
+            SELECT Id, Name FROM Product_Category__c
+            WHERE Is_Active__c = true
+            ORDER BY Sort_Order__c NULLS LAST, Name
+        ]) {
+            Map<String, String> opt = new Map<String, String>();
+            opt.put('label', cat.Name);
+            opt.put('value', cat.Name);
+            options.add(opt);
+        }
+        return options;
     }
 }
