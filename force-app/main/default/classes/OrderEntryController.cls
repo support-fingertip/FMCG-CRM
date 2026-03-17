@@ -14,7 +14,7 @@ public with sharing class OrderEntryController {
         String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true AND (Name LIKE :searchKey OR SKU_Code__c LIKE :searchKey)';
         if (String.isNotBlank(categoryId)) {
-            query += ' AND Product_Category__c = :categoryId';
+            query += ' AND Product_Category__r.Name = :categoryId';
         }
         query += ' ORDER BY Name LIMIT 50';
         List<Product_Extension__c> products = Database.query(query);
