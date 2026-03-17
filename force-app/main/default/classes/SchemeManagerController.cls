@@ -203,24 +203,48 @@ public with sharing class SchemeManagerController {
             }
 
             if (products != null && !products.isEmpty()) {
+                List<Scheme_Product__c> newProducts = new List<Scheme_Product__c>();
+                List<Scheme_Product__c> existingProducts = new List<Scheme_Product__c>();
                 for (Scheme_Product__c p : products) {
-                    p.Scheme__c = schemeId;
+                    if (p.Id == null) {
+                        p.Scheme__c = schemeId;
+                        newProducts.add(p);
+                    } else {
+                        existingProducts.add(p);
+                    }
                 }
-                upsert products;
+                if (!newProducts.isEmpty()) insert newProducts;
+                if (!existingProducts.isEmpty()) update existingProducts;
             }
 
             if (slabs != null && !slabs.isEmpty()) {
+                List<Scheme_Slab__c> newSlabs = new List<Scheme_Slab__c>();
+                List<Scheme_Slab__c> existingSlabs = new List<Scheme_Slab__c>();
                 for (Scheme_Slab__c s : slabs) {
-                    s.Scheme__c = schemeId;
+                    if (s.Id == null) {
+                        s.Scheme__c = schemeId;
+                        newSlabs.add(s);
+                    } else {
+                        existingSlabs.add(s);
+                    }
                 }
-                upsert slabs;
+                if (!newSlabs.isEmpty()) insert newSlabs;
+                if (!existingSlabs.isEmpty()) update existingSlabs;
             }
 
             if (mappings != null && !mappings.isEmpty()) {
+                List<Scheme_Mapping__c> newMappings = new List<Scheme_Mapping__c>();
+                List<Scheme_Mapping__c> existingMappings = new List<Scheme_Mapping__c>();
                 for (Scheme_Mapping__c m : mappings) {
-                    m.Scheme__c = schemeId;
+                    if (m.Id == null) {
+                        m.Scheme__c = schemeId;
+                        newMappings.add(m);
+                    } else {
+                        existingMappings.add(m);
+                    }
                 }
-                upsert mappings;
+                if (!newMappings.isEmpty()) insert newMappings;
+                if (!existingMappings.isEmpty()) update existingMappings;
             }
 
             return schemeId;
