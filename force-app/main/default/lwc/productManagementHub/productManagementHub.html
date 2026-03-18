@@ -778,6 +778,13 @@
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
                     <div class="slds-grid slds-wrap slds-gutters">
+                        <!-- Pricebook Name (first field) -->
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                            <lightning-input label="Pricebook Name" value={editPriceList.Name}
+                                data-field="Name"
+                                onchange={handlePriceListFieldChange}
+                                placeholder="Enter pricebook/price list name"></lightning-input>
+                        </div>
                         <!-- Product Lookup -->
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <div class="slds-form-element slds-is-required">
@@ -936,20 +943,15 @@
                                 onchange={handlePriceListFieldChange}></lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                            <lightning-input label="Pricebook Name" value={editPriceList.Name}
-                                data-field="Name"
-                                onchange={handlePriceListFieldChange}></lightning-input>
-                        </div>
-                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <lightning-input type="number" label="Unit Price" value={editPriceList.Unit_Price__c}
                                 data-field="Unit_Price__c" onchange={handlePriceListFieldChange}
                                 step="0.01" required></lightning-input>
                         </div>
-                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="number" label="Min Qty" value={editPriceList.Min_Qty__c}
                                 data-field="Min_Qty__c" onchange={handlePriceListFieldChange}></lightning-input>
                         </div>
-                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="checkbox" label="Active" checked={editPriceList.Is_Active__c}
                                 data-field="Is_Active__c" onchange={handlePriceListFieldChange}></lightning-input>
                         </div>
