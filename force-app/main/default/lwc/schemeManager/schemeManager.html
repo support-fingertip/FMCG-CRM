@@ -635,12 +635,17 @@
                 <template if:true={wizIsStep1}>
                     <div class="wiz-step-content">
                         <h3 class="wiz-section-title">Scheme Information</h3>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Fill in the basic details of your scheme. Fields marked with * are required. The Scheme Code must be unique across all schemes.</span>
+                        </div>
                         <div class="slds-grid slds-gutters slds-wrap">
                             <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                                 <lightning-input
                                     label="Scheme Name" required
                                     value={wizScheme.Name}
                                     data-field="Name"
+                                    field-level-help="A descriptive name for your scheme, e.g. 'Summer Buy 2 Get 1 Free' or 'Festive 10% Discount'."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>
@@ -649,6 +654,7 @@
                                     label="Scheme Code" required
                                     value={wizScheme.Scheme_Code__c}
                                     data-field="Scheme_Code__c"
+                                    field-level-help="A unique identifier code for the scheme. Auto-generated if left blank, or enter a custom code like 'SCH-2024-001'."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>
@@ -658,6 +664,7 @@
                                     value={wizScheme.Scheme_Category__c}
                                     options={wizCategoryOptions}
                                     data-field="Scheme_Category__c"
+                                    field-level-help="Defines the type of benefit: Free Products (BOGO), Discount in % (percentage off), Discount in Value (flat amount off), or Reward Points."
                                     onchange={handleWizFieldChange}>
                                 </lightning-combobox>
                             </div>
@@ -667,6 +674,7 @@
                                     value={wizScheme.Scheme_Type__c}
                                     options={wizTypeOptions}
                                     data-field="Scheme_Type__c"
+                                    field-level-help="Same Product: scheme applies per product. Assorted: scheme triggers across a mix of products. Invoice Based: scheme triggers on total invoice quantity or value."
                                     onchange={handleWizFieldChange}>
                                 </lightning-combobox>
                             </div>
@@ -675,6 +683,7 @@
                                     type="date" label="Start Date" required
                                     value={wizScheme.Start_Date__c}
                                     data-field="Start_Date__c"
+                                    field-level-help="The date from which this scheme becomes active. Orders placed on or after this date will be eligible."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>
@@ -683,6 +692,7 @@
                                     type="date" label="End Date" required
                                     value={wizScheme.End_Date__c}
                                     data-field="End_Date__c"
+                                    field-level-help="The last date the scheme remains active. The scheme will automatically expire after this date."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>
@@ -692,6 +702,7 @@
                                     value={wizScheme.Status__c}
                                     options={wizStatusOptions}
                                     data-field="Status__c"
+                                    field-level-help="Draft: work in progress. Pending Approval: awaiting review. Active: live and applicable. Use Draft while setting up, then change status when ready."
                                     onchange={handleWizFieldChange}>
                                 </lightning-combobox>
                             </div>
@@ -701,6 +712,7 @@
                                     value={wizScheme.Tier__c}
                                     options={wizTierOptions}
                                     data-field="Tier__c"
+                                    field-level-help="Optional tier level for multi-tier schemes. Use this to group schemes into tiers like Silver, Gold, Platinum."
                                     onchange={handleWizFieldChange}>
                                 </lightning-combobox>
                             </div>
@@ -710,6 +722,7 @@
                                     value={wizScheme.Priority__c}
                                     data-field="Priority__c"
                                     min="1"
+                                    field-level-help="Determines which scheme takes precedence when multiple schemes apply. Lower number = higher priority (1 is highest)."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>
@@ -719,6 +732,7 @@
                                     value={wizScheme.Budget_Amount__c}
                                     data-field="Budget_Amount__c"
                                     formatter="currency" step="0.01"
+                                    field-level-help="Total budget allocated for this scheme. The scheme will track utilization against this amount. Leave blank for unlimited budget."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>
@@ -738,12 +752,17 @@
                                     value={wizScheme.Description__c}
                                     data-field="Description__c"
                                     max-length="32768"
+                                    field-level-help="Provide a detailed description of the scheme including terms and conditions, target audience, and any special rules."
                                     onchange={handleWizFieldChange}>
                                 </lightning-textarea>
                             </div>
                         </div>
 
                         <h3 class="wiz-section-title slds-m-top_medium">Applicability</h3>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Define where this scheme applies. Leave channels and outlet types empty to apply the scheme to all.</span>
+                        </div>
                         <div class="slds-grid slds-gutters slds-wrap">
                             <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                                 <lightning-dual-listbox
@@ -753,6 +772,7 @@
                                     options={wizChannelOptions}
                                     value={wizScheme.Applicable_Channel__c}
                                     data-field="Applicable_Channel__c"
+                                    field-level-help="Select the sales channels (GT, MT, E-Commerce) where this scheme is valid. Move items from Available to Selected."
                                     onchange={handleWizFieldChange}>
                                 </lightning-dual-listbox>
                             </div>
@@ -764,6 +784,7 @@
                                     options={wizOutletTypeOptions}
                                     value={wizScheme.Applicable_Outlet_Type__c}
                                     data-field="Applicable_Outlet_Type__c"
+                                    field-level-help="Select the outlet types this scheme targets, e.g. Kirana, Supermarket, Wholesale. Leave empty for all outlet types."
                                     onchange={handleWizFieldChange}>
                                 </lightning-dual-listbox>
                             </div>
@@ -772,6 +793,7 @@
                                     type="checkbox" label="Is Stackable"
                                     checked={wizScheme.Is_Stackable__c}
                                     data-field="Is_Stackable__c"
+                                    field-level-help="When enabled, this scheme can be combined with other active schemes on the same order. If disabled, only the highest priority scheme applies."
                                     onchange={handleWizCheckboxChange}>
                                 </lightning-input>
                             </div>
@@ -783,6 +805,10 @@
                 <template if:true={wizIsStep2}>
                     <div class="wiz-step-content">
                         <h3 class="wiz-section-title">Benefit Configuration</h3>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Configure the benefit and trigger conditions based on your chosen scheme category. The fields shown below change dynamically based on the Category and Type selected in Step 1.</span>
+                        </div>
                         <div class="category-badge-display slds-m-bottom_medium">
                             <span class="slds-badge">{wizScheme.Scheme_Category__c}</span>
                             <span class="slds-badge slds-badge_inverse">{wizScheme.Scheme_Type__c}</span>
@@ -797,6 +823,7 @@
                                             label="Free Product"
                                             value={wizFreeProductSearchTerm}
                                             placeholder="Search products..."
+                                            field-level-help="Search and select the product that will be given free as part of this scheme."
                                             onchange={handleWizFreeProductSearch}>
                                         </lightning-input>
                                         <template if:true={wizFreeProductSearchResults.length}>
@@ -830,6 +857,7 @@
                                         value={wizScheme.Free_Quantity__c}
                                         data-field="Free_Quantity__c"
                                         min="0"
+                                        field-level-help="Number of free units the customer receives when the scheme triggers."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -845,6 +873,7 @@
                                         value={wizScheme.Discount_Percent__c}
                                         data-field="Discount_Percent__c"
                                         min="0" max="100" step="0.01"
+                                        field-level-help="Percentage discount applied on the product price or order value. Enter a value between 0 and 100."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -854,6 +883,7 @@
                                         value={wizScheme.Max_Discount_Cap__c}
                                         data-field="Max_Discount_Cap__c"
                                         formatter="currency" step="0.01"
+                                        field-level-help="Maximum discount amount in currency. Caps the discount even if the percentage yields a higher amount. Leave blank for no cap."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -869,6 +899,7 @@
                                         value={wizScheme.Price_Discount__c}
                                         data-field="Price_Discount__c"
                                         formatter="currency" step="0.01"
+                                        field-level-help="Fixed currency amount to deduct from the product price or order total."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -878,6 +909,7 @@
                                         value={wizScheme.Max_Discount_Cap__c}
                                         data-field="Max_Discount_Cap__c"
                                         formatter="currency" step="0.01"
+                                        field-level-help="Maximum discount amount allowed per transaction. Leave blank for no cap."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -893,6 +925,7 @@
                                         value={wizScheme.Reward_Points__c}
                                         data-field="Reward_Points__c"
                                         min="0"
+                                        field-level-help="Number of reward/loyalty points the customer earns when the scheme triggers."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -900,6 +933,10 @@
                         </template>
 
                         <h3 class="wiz-section-title slds-m-top_large">Trigger Conditions</h3>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Set the conditions that must be met for the scheme to activate. These fields depend on the Scheme Type selected in Step 1.</span>
+                        </div>
 
                         <!-- QTY-based trigger -->
                         <template if:true={wizShowMinMaxQty}>
@@ -910,6 +947,7 @@
                                         value={wizScheme.Min_Quantity__c}
                                         data-field="Min_Quantity__c"
                                         min="0"
+                                        field-level-help="Minimum quantity the customer must purchase for the scheme to trigger."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -919,6 +957,7 @@
                                         value={wizScheme.Max_Quantity__c}
                                         data-field="Max_Quantity__c"
                                         min="0"
+                                        field-level-help="Maximum quantity up to which the scheme applies. Leave blank for no upper limit."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -934,6 +973,7 @@
                                         value={wizScheme.MOV__c}
                                         data-field="MOV__c"
                                         formatter="currency" step="0.01"
+                                        field-level-help="Minimum order value in currency that must be reached for the scheme to trigger."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -949,6 +989,7 @@
                                         value={wizScheme.Invoice_Qty_Threshold__c}
                                         data-field="Invoice_Qty_Threshold__c"
                                         min="0" step="0.01"
+                                        field-level-help="Total invoice quantity threshold that triggers the scheme across all line items."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -958,6 +999,7 @@
                                         value={wizScheme.Invoice_Qty_UOM__c}
                                         options={wizInvoiceUomOptions}
                                         data-field="Invoice_Qty_UOM__c"
+                                        field-level-help="Unit of measurement for the invoice quantity threshold, e.g. Cases, Pieces, Kg."
                                         onchange={handleWizFieldChange}>
                                     </lightning-combobox>
                                 </div>
@@ -973,6 +1015,7 @@
                                         value={wizScheme.Invoice_Val_Threshold__c}
                                         data-field="Invoice_Val_Threshold__c"
                                         formatter="currency" step="0.01"
+                                        field-level-help="Minimum total invoice value in currency that triggers the scheme."
                                         onchange={handleWizFieldChange}>
                                     </lightning-input>
                                 </div>
@@ -985,6 +1028,10 @@
                 <template if:true={wizIsStep3}>
                     <div class="wiz-step-content">
                         <h3 class="wiz-section-title">Scheme Products (Buy)</h3>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Add the products that the customer must buy to qualify for this scheme. Search by product name or SKU, then set the minimum quantity and classification for each product.</span>
+                        </div>
                         <div class="wiz-product-search-wrapper slds-m-bottom_medium">
                             <lightning-input
                                 label="Search Products to Add"
@@ -1148,6 +1195,10 @@
                                 onclick={handleWizAddSlab}>
                             </lightning-button>
                         </div>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Slabs let you define tiered benefits (e.g. buy 10-20 units get 5% off, buy 21-50 get 10% off). Slabs are optional — if none are added, the scheme-level benefit from Step 2 will apply.</span>
+                        </div>
 
                         <template if:true={wizHasSlabs}>
                             <template for:each={wizSlabs} for:item="slab">
@@ -1170,6 +1221,7 @@
                                                 options={wizSlabTypeOptions}
                                                 data-key={slab._key}
                                                 data-field="Slab_Type__c"
+                                                field-level-help="Whether this slab is based on quantity or order value."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-combobox>
                                         </div>
@@ -1180,6 +1232,7 @@
                                                 data-key={slab._key}
                                                 data-field="Min_Value__c"
                                                 min="0" step="0.01"
+                                                field-level-help="Lower bound of this slab tier. Must not overlap with other slabs."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1190,6 +1243,7 @@
                                                 data-key={slab._key}
                                                 data-field="Max_Value__c"
                                                 min="0" step="0.01"
+                                                field-level-help="Upper bound of this slab tier. Leave blank for the highest open-ended tier."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1200,6 +1254,7 @@
                                                 options={wizDiscountTypeOptions}
                                                 data-key={slab._key}
                                                 data-field="Discount_Type__c"
+                                                field-level-help="Type of benefit for this slab: Percentage, Flat Amount, Free Quantity, or Reward Points."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-combobox>
                                         </div>
@@ -1210,6 +1265,7 @@
                                                 data-key={slab._key}
                                                 data-field="Discount_Value__c"
                                                 min="0" step="0.01"
+                                                field-level-help="The discount amount or percentage for this slab, based on the Discount Type selected."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1220,6 +1276,7 @@
                                                 data-key={slab._key}
                                                 data-field="Free_Quantity__c"
                                                 min="0"
+                                                field-level-help="Number of free product units for this slab (applicable when Discount Type is Free Quantity)."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1230,6 +1287,7 @@
                                                 data-key={slab._key}
                                                 data-field="Reward_Points__c"
                                                 min="0"
+                                                field-level-help="Loyalty points awarded for this slab (applicable when Discount Type is Reward Points)."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1240,6 +1298,7 @@
                                                 data-key={slab._key}
                                                 data-field="Price_Discount__c"
                                                 formatter="currency" step="0.01"
+                                                field-level-help="Flat currency discount for this slab (applicable when Discount Type is Flat Amount)."
                                                 onchange={handleWizSlabFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1267,6 +1326,10 @@
                                 onclick={handleWizAddMapping}>
                             </lightning-button>
                         </div>
+                        <div class="wiz-step-guidance">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="guidance-icon"></lightning-icon>
+                            <span>Restrict this scheme to specific territories, regions, or customer types. If no mappings are added, the scheme will apply globally to all territories and customers.</span>
+                        </div>
 
                         <template if:true={wizHasMappings}>
                             <template for:each={wizMappings} for:item="mapping">
@@ -1289,6 +1352,7 @@
                                                     value={mapping.territoryName}
                                                     placeholder="Search territory by name or code..."
                                                     data-key={mapping._key}
+                                                    field-level-help="Search and select a territory. Zone, Area, and District will auto-populate from the territory data."
                                                     onchange={handleWizTerritorySearch}>
                                                 </lightning-input>
                                                 <template if:true={wizTerritorySearchResults.length}>
@@ -1313,6 +1377,7 @@
                                                 options={wizCustomerTypeOptions}
                                                 data-key={mapping._key}
                                                 data-field="Customer_Type__c"
+                                                field-level-help="Filter this mapping to a specific customer type, or leave as 'All' to include every customer in the territory."
                                                 onchange={handleWizMappingFieldChange}>
                                             </lightning-combobox>
                                         </div>
@@ -1322,6 +1387,7 @@
                                                 value={mapping.Zone__c}
                                                 data-key={mapping._key}
                                                 data-field="Zone__c"
+                                                field-level-help="Auto-filled from territory. You can override to target a broader region."
                                                 onchange={handleWizMappingFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1331,6 +1397,7 @@
                                                 value={mapping.Area__c}
                                                 data-key={mapping._key}
                                                 data-field="Area__c"
+                                                field-level-help="Auto-filled from territory. You can override to target a specific state or area."
                                                 onchange={handleWizMappingFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1340,6 +1407,7 @@
                                                 value={mapping.District__c}
                                                 data-key={mapping._key}
                                                 data-field="District__c"
+                                                field-level-help="Auto-filled from territory. You can override to target a specific district or city."
                                                 onchange={handleWizMappingFieldChange}>
                                             </lightning-input>
                                         </div>
@@ -1349,6 +1417,7 @@
                                                 value={mapping.Sub_Zone__c}
                                                 data-key={mapping._key}
                                                 data-field="Sub_Zone__c"
+                                                field-level-help="Optional sub-zone for more granular geographic targeting within a territory."
                                                 onchange={handleWizMappingFieldChange}>
                                             </lightning-input>
                                         </div>

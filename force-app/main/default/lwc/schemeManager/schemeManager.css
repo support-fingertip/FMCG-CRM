@@ -798,6 +798,27 @@
     margin-bottom: 0;
 }
 
+/* ── Wizard Step Guidance Hints ────────────────────────────────── */
+.wiz-step-guidance {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background: #eef6ff;
+    border: 1px solid #b8d4f0;
+    border-radius: 6px;
+    padding: 0.6rem 0.85rem;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+    color: #16325c;
+    line-height: 1.45;
+}
+
+.wiz-step-guidance .guidance-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    --sds-c-icon-color-foreground-default: #0176d3;
+}
+
 /* ── Wizard Step Content ───────────────────────────────────────── */
 .wiz-step-content {
     min-height: 300px;
