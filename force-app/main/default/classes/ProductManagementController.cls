@@ -133,7 +133,7 @@ public with sharing class ProductManagementController {
 
         Integer offset = (pageNumber - 1) * pageSize;
         String dataQuery = 'SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
-                           'Channel__c, Region__c, Unit_Price__c, Price_Type__c, ' +
+                           'Channel__c, Region__c, Unit_Price__c, Price_Type__c, Pricebook_Name__c, ' +
                            'Customer__c, Customer__r.Name, Category__c, Category__r.Name, ' +
                            'Territory__c, Territory__r.Name, Priority__c, ' +
                            'Effective_From__c, Effective_To__c, Is_Active__c, Min_Qty__c ' +
@@ -154,7 +154,7 @@ public with sharing class ProductManagementController {
     public static Price_List__c savePriceList(Price_List__c priceList) {
         upsert priceList;
         return [SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
-                       Channel__c, Region__c, Unit_Price__c, Price_Type__c,
+                       Channel__c, Region__c, Unit_Price__c, Price_Type__c, Pricebook_Name__c,
                        Customer__c, Customer__r.Name, Category__c, Category__r.Name,
                        Territory__c, Territory__r.Name, Priority__c,
                        Effective_From__c, Effective_To__c, Is_Active__c, Min_Qty__c

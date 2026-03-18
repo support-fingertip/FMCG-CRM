@@ -15,7 +15,11 @@
                 <field>Product_Ext__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Required</behavior>
+                <behavior>Edit</behavior>
+                <field>Pricebook_Name__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>Price_Type__c</field>
             </layoutItems>
             <layoutItems>
@@ -65,7 +69,7 @@
     </layoutSections>
     <miniLayout>
         <fields>Effective_From__c</fields>
-        <fields>Price_Type__c</fields>
+        <fields>Pricebook_Name__c</fields>
         <fields>Unit_Price__c</fields>
     </miniLayout>
     <showEmailCheckbox>false</showEmailCheckbox>

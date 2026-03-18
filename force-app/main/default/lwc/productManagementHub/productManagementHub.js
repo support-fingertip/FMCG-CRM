@@ -593,7 +593,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         this.isNewPriceList = true;
         this.editPriceList = {
             Is_Active__c: true,
-            Price_Type__c: 'MRP',
+            Pricebook_Name__c: '',
             Min_Qty__c: 1
         };
         this.resetProductLookup();

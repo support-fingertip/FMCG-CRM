@@ -263,7 +263,7 @@
                                     <th>Category</th>
                                     <th>Territory</th>
                                     <th>Channel</th>
-                                    <th>Price Type</th>
+                                    <th>Pricebook Name</th>
                                     <th>Unit Price</th>
                                     <th>Min Qty</th>
                                     <th>Effective From</th>
@@ -282,7 +282,7 @@
                                         <td>{pl.categoryName}</td>
                                         <td>{pl.territoryName}</td>
                                         <td>{pl.Channel__c}</td>
-                                        <td>{pl.Price_Type__c}</td>
+                                        <td>{pl.Pricebook_Name__c}</td>
                                         <td class="cell-number">{pl.Unit_Price__c}</td>
                                         <td class="cell-number">{pl.Min_Qty__c}</td>
                                         <td>{pl.Effective_From__c}</td>
@@ -936,9 +936,9 @@
                                 onchange={handlePriceListFieldChange}></lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                            <lightning-combobox label="Price Type" value={editPriceList.Price_Type__c}
-                                options={priceTypeOptions} data-field="Price_Type__c"
-                                onchange={handlePriceListFieldChange} required></lightning-combobox>
+                            <lightning-input label="Pricebook Name" value={editPriceList.Pricebook_Name__c}
+                                data-field="Pricebook_Name__c"
+                                onchange={handlePriceListFieldChange}></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <lightning-input type="number" label="Unit Price" value={editPriceList.Unit_Price__c}
