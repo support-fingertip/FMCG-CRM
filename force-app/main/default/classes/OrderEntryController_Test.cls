@@ -436,6 +436,53 @@ private class OrderEntryController_Test {
     }
 
     /**
+     * @description Tests getTopSellingProducts returns products from order history
+     *              and falls back to active products when no order history exists.
+     */
+    @isTest
+    static void testGetTopSellingProducts() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Order Entry Retailer' LIMIT 1];
+
+        Test.startTest();
+        // Account has order history, so should return top sellers from order data
+        List<OrderEntryController.ProductSearchResult> results =
+            OrderEntryController.getTopSellingProducts(acct.Id);
+        Test.stopTest();
+
+        System.assert(!results.isEmpty(),
+            'Should return top selling products for account with order history');
+        for (OrderEntryController.ProductSearchResult r : results) {
+            System.assertNotEquals(null, r.Id, 'Product Id should not be null');
+            System.assertNotEquals(null, r.Name, 'Product Name should not be null');
+        }
+    }
+
+    /**
+     * @description Tests getTopSellingProducts falls back to active products
+     *              when an account has no order history.
+     */
+    @isTest
+    static void testGetTopSellingProductsFallback() {
+        // Create a new territory and account with no order history at all
+        Territory_Master__c emptyTerritory = TestDataFactory.createAndInsertTerritory('Empty Territory', 'TER-EMPTY01');
+        Account newAcct = TestDataFactory.createAccount('New Retailer No History', 'Retailer');
+        newAcct.Channel__c = 'GT';
+        newAcct.Territory__c = emptyTerritory.Id;
+        insert newAcct;
+
+        Test.startTest();
+        List<OrderEntryController.ProductSearchResult> results =
+            OrderEntryController.getTopSellingProducts(newAcct.Id);
+        Test.stopTest();
+
+        // Should still return products (fallback to active products)
+        System.assert(!results.isEmpty(),
+            'Should return fallback products even when account has no order history');
+        System.assert(results.size() <= 10,
+            'Should return at most 10 fallback products');
+    }
+
+    /**
      * @description Tests retrieval of currently applicable schemes for order entry,
      *              verifying only active schemes within valid date ranges are returned.
      */

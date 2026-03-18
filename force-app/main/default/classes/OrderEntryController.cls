@@ -374,8 +374,27 @@ public with sharing class OrderEntryController {
             }
         }
 
+        // Fallback: if no top sellers found, show recently added active products
         if (topProductIds.isEmpty()) {
-            return new List<ProductSearchResult>();
+            List<Product_Extension__c> fallbackProducts = [
+                SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c
+                FROM Product_Extension__c
+                WHERE Is_Active__c = true
+                ORDER BY CreatedDate DESC
+                LIMIT 10
+            ];
+            List<ProductSearchResult> fallbackResults = new List<ProductSearchResult>();
+            for (Product_Extension__c p : fallbackProducts) {
+                ProductSearchResult r = new ProductSearchResult();
+                r.Id = p.Id;
+                r.Name = p.Name;
+                r.SKU_Code = p.SKU_Code__c;
+                r.MRP = p.MRP__c;
+                r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
+                r.GST_Rate = p.GST_Rate__c;
+                fallbackResults.add(r);
+            }
+            return fallbackResults;
         }
 
         List<Product_Extension__c> products = [
