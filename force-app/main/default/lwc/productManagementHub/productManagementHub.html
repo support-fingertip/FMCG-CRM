@@ -241,10 +241,8 @@
                         <lightning-combobox label="Priority" value={priceListPriorityFilter}
                             options={priorityFilterOptions} onchange={handlePriceListPriorityFilter}
                             variant="label-hidden" placeholder="All Priorities"></lightning-combobox>
-                        <label class="checkbox-label">
-                            <lightning-input type="checkbox" label="Active Only" checked={priceListActiveOnly}
-                                onchange={handlePriceListActiveFilter} variant="label-hidden"></lightning-input>
-                        </label>
+                        <lightning-input type="checkbox" label="Active Only" checked={priceListActiveOnly}
+                            onchange={handlePriceListActiveFilter}></lightning-input>
                     </div>
                     <div class="toolbar-right">
                         <lightning-button label="New Price Entry" variant="brand" icon-name="utility:add"

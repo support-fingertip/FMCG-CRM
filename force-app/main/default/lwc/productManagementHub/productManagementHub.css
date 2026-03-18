@@ -221,6 +221,21 @@
 .cell-actions {
     white-space: nowrap;
     text-align: center;
+    position: sticky;
+    right: 0;
+    background: #fff;
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+.data-table tbody tr:hover .cell-actions {
+    background: #f7fafc;
+}
+
+.data-table thead th:last-child {
+    position: sticky;
+    right: 0;
+    background: #f8f9fb;
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
 }
 
 /* ── Badges ─────────────────────────────────────────────────────────── */
