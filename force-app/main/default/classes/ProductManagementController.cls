@@ -263,6 +263,19 @@ public with sharing class ProductManagementController {
                 LIMIT 20];
     }
 
+    // ─── Territory Lookup for Must-Sell config ──────────────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<Territory_Master__c> searchTerritoriesForLookup(String searchTerm) {
+        String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        return [SELECT Id, Name, Territory_Code__c
+                FROM Territory_Master__c
+                WHERE Is_Active__c = true
+                  AND (Name LIKE :searchKey OR Territory_Code__c LIKE :searchKey)
+                ORDER BY Name ASC
+                LIMIT 20];
+    }
+
     // ─── Inner Classes ─────────────────────────────────────────────────
 
     public class ProductPageResult {

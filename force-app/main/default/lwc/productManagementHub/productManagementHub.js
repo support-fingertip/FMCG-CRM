@@ -20,6 +20,7 @@ import saveMustSellConfig from '@salesforce/apex/ProductManagementController.sav
 import deleteMustSellConfig from '@salesforce/apex/ProductManagementController.deleteMustSellConfig';
 import getPriceChangeLogs from '@salesforce/apex/ProductManagementController.getPriceChangeLogs';
 import searchProductsForLookup from '@salesforce/apex/ProductManagementController.searchProductsForLookup';
+import searchTerritoriesForLookup from '@salesforce/apex/ProductManagementController.searchTerritoriesForLookup';
 
 const PAGE_SIZE = 25;
 
@@ -89,6 +90,13 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track selectedProductName = '';
     @track productLookupSearchTerm = '';
     _lookupTimeout;
+
+    // ── Territory Lookup ────────────────────────────────────────────────
+    @track territoryLookupResults = [];
+    @track showTerritoryLookup = false;
+    @track selectedTerritoryName = '';
+    @track territoryLookupSearchTerm = '';
+    _territoryLookupTimeout;
 
     // ── Computed Getters ───────────────────────────────────────────────
 
@@ -687,6 +695,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             Classification__c: 'Must Sell'
         };
         this.resetProductLookup();
+        this.resetTerritoryLookup();
         this.showMustSellModal = true;
     }
 
@@ -697,6 +706,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.isNewMustSell = false;
             this.editMustSell = JSON.parse(JSON.stringify(ms));
             this.selectedProductName = ms.productName || '';
+            this.selectedTerritoryName = ms.territoryName || '';
             this.showMustSellModal = true;
         }
     }
@@ -704,7 +714,20 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     handleMustSellFieldChange(event) {
         const field = event.target.dataset.field;
         const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-        this.editMustSell = { ...this.editMustSell, [field]: value };
+        const updated = { ...this.editMustSell, [field]: value };
+
+        // Enforce mutual exclusivity: Territory vs Channel vs Customer Type
+        if (field === 'Channel__c' && value) {
+            updated.Territory__c = null;
+            updated.Customer_Type__c = '';
+            this.resetTerritoryLookup();
+        } else if (field === 'Customer_Type__c' && value) {
+            updated.Territory__c = null;
+            updated.Channel__c = '';
+            this.resetTerritoryLookup();
+        }
+
+        this.editMustSell = updated;
     }
 
     async handleSaveMustSell() {
@@ -738,6 +761,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     handleCloseMustSellModal() {
         this.showMustSellModal = false;
+        this.resetTerritoryLookup();
     }
 
     // ── Price Change Logs ──────────────────────────────────────────────
@@ -761,6 +785,22 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     get hasSelectedProduct() {
         return !!this.selectedProductName;
+    }
+
+    get hasSelectedTerritory() {
+        return !!this.selectedTerritoryName;
+    }
+
+    get isTerritoryDisabled() {
+        return !!this.editMustSell.Channel__c || !!this.editMustSell.Customer_Type__c;
+    }
+
+    get isChannelDisabled() {
+        return !!this.editMustSell.Territory__c || !!this.editMustSell.Customer_Type__c;
+    }
+
+    get isCustomerTypeDisabled() {
+        return !!this.editMustSell.Territory__c || !!this.editMustSell.Channel__c;
     }
 
     resetProductLookup() {
@@ -821,6 +861,58 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         }
 
         this.resetProductLookup();
+    }
+
+    // ── Territory Lookup (for Must-Sell modal) ─────────────────────────
+
+    resetTerritoryLookup() {
+        this.selectedTerritoryName = '';
+        this.territoryLookupSearchTerm = '';
+        this.territoryLookupResults = [];
+        this.showTerritoryLookup = false;
+    }
+
+    handleTerritoryLookupSearch(event) {
+        const searchTerm = event.target.value;
+        this.territoryLookupSearchTerm = searchTerm;
+        clearTimeout(this._territoryLookupTimeout);
+        if (searchTerm.length < 2) {
+            this.territoryLookupResults = [];
+            this.showTerritoryLookup = false;
+            return;
+        }
+        this._territoryLookupTimeout = setTimeout(async () => {
+            try {
+                this.territoryLookupResults = await searchTerritoriesForLookup({ searchTerm });
+                this.showTerritoryLookup = this.territoryLookupResults.length > 0;
+            } catch (error) {
+                this.territoryLookupResults = [];
+                this.showTerritoryLookup = false;
+            }
+        }, 300);
+    }
+
+    handleSelectLookupTerritory(event) {
+        const territoryId = event.currentTarget.dataset.id;
+        const territoryName = event.currentTarget.dataset.name;
+
+        // Enforce mutual exclusivity: clear Channel and Customer Type
+        this.editMustSell = {
+            ...this.editMustSell,
+            Territory__c: territoryId,
+            Channel__c: '',
+            Customer_Type__c: ''
+        };
+
+        this.selectedTerritoryName = territoryName;
+        this.territoryLookupSearchTerm = '';
+        this.showTerritoryLookup = false;
+        this.territoryLookupResults = [];
+    }
+
+    handleClearTerritorySelection() {
+        this.editMustSell = { ...this.editMustSell, Territory__c: null };
+        this.resetTerritoryLookup();
     }
 
     // ── Utility ────────────────────────────────────────────────────────

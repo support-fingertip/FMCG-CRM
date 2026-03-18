@@ -703,7 +703,7 @@
                                             placeholder="Type to search products..."
                                             value={productLookupSearchTerm}
                                             data-target="priceList"
-                                            oninput={handleProductLookupSearch}></lightning-input>
+                                            onchange={handleProductLookupSearch}></lightning-input>
                                         <template if:true={showProductLookup}>
                                             <ul class="product-lookup-dropdown" role="listbox">
                                                 <template for:each={productLookupResults} for:item="prod">
@@ -807,7 +807,7 @@
                                             placeholder="Type to search products..."
                                             value={productLookupSearchTerm}
                                             data-target="batch"
-                                            oninput={handleProductLookupSearch}></lightning-input>
+                                            onchange={handleProductLookupSearch}></lightning-input>
                                         <template if:true={showProductLookup}>
                                             <ul class="product-lookup-dropdown" role="listbox">
                                                 <template for:each={productLookupResults} for:item="prod">
@@ -893,7 +893,7 @@
                                             placeholder="Type to search products..."
                                             value={productLookupSearchTerm}
                                             data-target="mustSell"
-                                            oninput={handleProductLookupSearch}></lightning-input>
+                                            onchange={handleProductLookupSearch}></lightning-input>
                                         <template if:true={showProductLookup}>
                                             <ul class="product-lookup-dropdown" role="listbox">
                                                 <template for:each={productLookupResults} for:item="prod">
@@ -916,14 +916,56 @@
                                 options={classificationOptions} data-field="Classification__c"
                                 onchange={handleMustSellFieldChange} required></lightning-combobox>
                         </div>
-                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small">
+                            <p class="slds-text-body_small slds-text-color_weak">Configure by one dimension only: Territory, Channel, or Customer Type</p>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Territory</label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedTerritory}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:territory" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedTerritoryName}</span>
+                                            <button class="pill-remove"
+                                                onclick={handleClearTerritorySelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedTerritory}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Search territories..."
+                                            value={territoryLookupSearchTerm}
+                                            disabled={isTerritoryDisabled}
+                                            onchange={handleTerritoryLookupSearch}></lightning-input>
+                                        <template if:true={showTerritoryLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={territoryLookupResults} for:item="terr">
+                                                    <li key={terr.Id} class="lookup-option" role="option"
+                                                        data-id={terr.Id} data-name={terr.Name}
+                                                        onclick={handleSelectLookupTerritory}>
+                                                        <span class="lookup-option-name">{terr.Name}</span>
+                                                        <span class="lookup-option-meta">{terr.Territory_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <lightning-combobox label="Channel" value={editMustSell.Channel__c}
                                 options={channelOptions} data-field="Channel__c"
+                                disabled={isChannelDisabled}
                                 onchange={handleMustSellFieldChange}></lightning-combobox>
                         </div>
-                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <lightning-combobox label="Customer Type" value={editMustSell.Customer_Type__c}
                                 options={customerTypeOptions} data-field="Customer_Type__c"
+                                disabled={isCustomerTypeDisabled}
                                 onchange={handleMustSellFieldChange}></lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
