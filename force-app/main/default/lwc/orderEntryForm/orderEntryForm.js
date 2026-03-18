@@ -9,6 +9,7 @@ import getLastOrder from '@salesforce/apex/OrderEntryController.getLastOrder';
 import getApplicableSchemes from '@salesforce/apex/OrderEntryController.getApplicableSchemes';
 import getMustSellProducts from '@salesforce/apex/OrderEntryController.getMustSellProducts';
 import getProductCategories from '@salesforce/apex/OrderEntryController.getProductCategories';
+import getTopSellingProducts from '@salesforce/apex/OrderEntryController.getTopSellingProducts';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -49,8 +50,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @track showMustSellWarning = false;
     @track missingMustSellProducts = [];
     @track mustSellBelowMinQty = [];
+    @track topSellingProducts = [];
+    @track mustSellHighlightActive = false;
     showFocusedSell = false;
     showSchemesPanel = false;
+    showTopSelling = true;
 
     searchTerm = '';
     selectedCategory = '';
@@ -111,6 +115,14 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     get focusedSellIcon() {
         return this.showFocusedSell ? 'utility:chevronup' : 'utility:chevrondown';
+    }
+
+    get hasTopSellingProducts() {
+        return this.topSellingProducts && this.topSellingProducts.length > 0;
+    }
+
+    get topSellingIcon() {
+        return this.showTopSelling ? 'utility:chevronup' : 'utility:chevrondown';
     }
 
     get schemesForDisplay() {
@@ -227,6 +239,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.loadLastOrder();
             this.loadSchemes();
             this.loadMustSellProducts();
+            this.loadTopSellingProducts();
         } else if (error) {
             this.showToast('Error', 'Failed to load account details', 'error');
         }
@@ -238,6 +251,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.loadLastOrder();
             this.loadSchemes();
             this.loadMustSellProducts();
+            this.loadTopSellingProducts();
         }
     }
 
@@ -248,6 +262,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.loadLastOrder();
             this.loadSchemes();
             this.loadMustSellProducts();
+            this.loadTopSellingProducts();
         }
     }
 
@@ -317,9 +332,156 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     cardClass: orderedProductIds.has(p.productId)
                         ? 'oef-ms-card oef-fs-card oef-ms-card-done' : 'oef-ms-card oef-fs-card'
                 }));
+
+            // Auto-add must-sell products to cart with qty 0
+            this.autoAddMustSellToCart();
         } catch (error) {
             console.error('Error loading must-sell products:', error);
         }
+    }
+
+    autoAddMustSellToCart() {
+        if (!this.mustSellProducts || this.mustSellProducts.length === 0) return;
+        const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+        let added = false;
+
+        this.mustSellProducts.forEach(product => {
+            if (orderedProductIds.has(product.productId)) return;
+
+            this.lineIdCounter++;
+            const newItem = {
+                id: 'LINE_' + this.lineIdCounter,
+                productId: product.productId,
+                productName: product.productName,
+                sku: product.sku || 'N/A',
+                rate: 0,
+                rateFormatted: this.formatCurrency(0),
+                quantity: 0,
+                freeQty: 0,
+                schemeName: product.schemeName || '',
+                schemeId: product.schemeId || null,
+                classification: 'Must Sell',
+                classificationBadgeClass: this.getClassificationBadgeClass('Must Sell'),
+                taxRate: 18,
+                grossAmount: 0,
+                discountAmount: 0,
+                discountFormatted: this.formatCurrency(0),
+                taxAmount: 0,
+                taxFormatted: this.formatCurrency(0),
+                totalAmount: 0,
+                totalFormatted: this.formatCurrency(0),
+                serialNumber: this.lineItems.length + 1,
+                rowClass: 'oef-row-must-sell-pending',
+                isMustSell: true,
+                minQuantity: product.minQuantity || 1
+            };
+            this.lineItems = [...this.lineItems, newItem];
+            added = true;
+        });
+
+        if (added) {
+            this.calculateTotals();
+            this.refreshMustSellStatus();
+        }
+    }
+
+    async loadTopSellingProducts() {
+        if (!this.effectiveAccountId) return;
+        try {
+            const results = await getTopSellingProducts({ accountId: this.effectiveAccountId });
+            const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+            this.topSellingProducts = (results || []).map(product => {
+                const allSchemes = this.findAllApplicableSchemes(product);
+                const scheme = allSchemes.length > 0 ? allSchemes[0] : null;
+                const schemeStrips = allSchemes.map(s => ({
+                    id: s.Id,
+                    name: s.Name,
+                    description: this.buildSchemeBenefitText(s)
+                }));
+                return {
+                    id: product.Id,
+                    name: product.Name,
+                    sku: product.SKU_Code || 'N/A',
+                    mrp: product.MRP || product.Unit_Price || 0,
+                    mrpFormatted: this.formatCurrency(product.MRP || product.Unit_Price || 0),
+                    unitPrice: product.Unit_Price || 0,
+                    taxRate: product.GST_Rate || 18,
+                    schemeName: scheme ? scheme.Name : '',
+                    schemeId: scheme ? scheme.Id : null,
+                    schemeStrips: schemeStrips,
+                    hasSchemes: schemeStrips.length > 0,
+                    isInOrder: orderedProductIds.has(product.Id),
+                    cardClass: 'oef-top-sell-card' + (orderedProductIds.has(product.Id) ? ' oef-top-sell-done' : '')
+                };
+            });
+        } catch (error) {
+            console.error('Error loading top selling products:', error);
+        }
+    }
+
+    toggleTopSelling() {
+        this.showTopSelling = !this.showTopSelling;
+    }
+
+    handleAddTopSelling(event) {
+        const productId = event.currentTarget.dataset.productId;
+        const product = this.topSellingProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        const existingIndex = this.lineItems.findIndex(item => item.productId === productId);
+        if (existingIndex >= 0) {
+            this.showToast('Info', product.name + ' is already in the order', 'info');
+            return;
+        }
+
+        this.lineIdCounter++;
+        const qty = 1;
+        const scheme = product.schemeId ? this.schemes.find(s => s.Id === product.schemeId) : null;
+        const freeQty = scheme ? this.calculateFreeQty(qty, scheme) : 0;
+        const grossAmount = qty * product.unitPrice;
+        const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, qty, scheme) : 0;
+        const taxableAmount = grossAmount - discountAmount;
+        const taxAmount = taxableAmount * (product.taxRate / 100);
+        const totalAmount = taxableAmount + taxAmount;
+
+        const newItem = {
+            id: 'LINE_' + this.lineIdCounter,
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            rate: product.unitPrice,
+            rateFormatted: this.formatCurrency(product.unitPrice),
+            quantity: qty,
+            freeQty: freeQty,
+            schemeName: product.schemeName || '',
+            schemeId: product.schemeId || null,
+            classification: '',
+            classificationBadgeClass: '',
+            taxRate: product.taxRate,
+            grossAmount: grossAmount,
+            discountAmount: discountAmount,
+            discountFormatted: this.formatCurrency(discountAmount),
+            taxAmount: taxAmount,
+            taxFormatted: this.formatCurrency(taxAmount),
+            totalAmount: totalAmount,
+            totalFormatted: this.formatCurrency(totalAmount),
+            serialNumber: this.lineItems.length + 1,
+            rowClass: ''
+        };
+        this.lineItems = [...this.lineItems, newItem];
+        this.calculateTotals();
+        this.refreshMustSellStatus();
+        this.refreshTopSellingStatus();
+        this.showToast('Success', product.name + ' added to order', 'success');
+    }
+
+    refreshTopSellingStatus() {
+        const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+        this.topSellingProducts = this.topSellingProducts.map(p => ({
+            ...p,
+            isInOrder: orderedProductIds.has(p.id),
+            cardClass: 'oef-top-sell-card' + (orderedProductIds.has(p.id) ? ' oef-top-sell-done' : '')
+        }));
     }
 
     refreshMustSellStatus() {
@@ -357,6 +519,25 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         const existingIndex = this.lineItems.findIndex(item => item.productId === productId);
         if (existingIndex >= 0) {
+            // If already in cart with qty 0 (auto-added must-sell), update to min qty
+            const existingItem = this.lineItems[existingIndex];
+            if (existingItem.quantity === 0) {
+                const qty = product.minQuantity || 1;
+                this.lineItems = this.lineItems.map((item, idx) => {
+                    if (idx === existingIndex) {
+                        return this.recalculateLineItem({
+                            ...item,
+                            quantity: qty,
+                            rowClass: classification === 'Must Sell' ? 'oef-row-must-sell-pending' : ''
+                        });
+                    }
+                    return item;
+                });
+                this.calculateTotals();
+                this.refreshMustSellStatus();
+                this.showToast('Success', product.productName + ' quantity updated', 'success');
+                return;
+            }
             this.showToast('Info', product.productName + ' is already in the order', 'info');
             return;
         }
@@ -386,7 +567,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             totalAmount: 0,
             totalFormatted: this.formatCurrency(0),
             serialNumber: this.lineItems.length + 1,
-            rowClass: ''
+            rowClass: classification === 'Must Sell' ? 'oef-row-must-sell-pending' : '',
+            isMustSell: classification === 'Must Sell',
+            minQuantity: product.minQuantity || 1
         };
         this.lineItems = [...this.lineItems, newItem];
         this.calculateTotals();
@@ -565,6 +748,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         this.calculateTotals();
         this.refreshMustSellStatus();
+        this.refreshTopSellingStatus();
         this.showToast('Success', product.name + ' added to order', 'success');
     }
 
@@ -575,25 +759,36 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             .map((item, idx) => ({ ...item, serialNumber: idx + 1 }));
         this.calculateTotals();
         this.refreshMustSellStatus();
+        this.refreshTopSellingStatus();
     }
 
     handleLineQtyChange(event) {
         const lineId = event.target.dataset.lineId;
         const newQty = parseInt(event.target.value, 10) || 0;
 
-        if (newQty <= 0) {
+        const item = this.lineItems.find(i => i.id === lineId);
+        if (!item) return;
+
+        // For non-must-sell items, qty must be at least 1
+        if (!item.isMustSell && newQty <= 0) {
             this.showToast('Warning', 'Quantity must be at least 1', 'warning');
             return;
         }
 
-        this.lineItems = this.lineItems.map(item => {
-            if (item.id === lineId) {
-                return this.recalculateLineItem({ ...item, quantity: newQty });
+        this.lineItems = this.lineItems.map(li => {
+            if (li.id === lineId) {
+                const updated = this.recalculateLineItem({ ...li, quantity: newQty });
+                // Clear red highlight when user enters valid qty
+                if (li.isMustSell && newQty > 0) {
+                    updated.rowClass = 'oef-row-must-sell-pending';
+                }
+                return updated;
             }
-            return item;
+            return li;
         });
 
         this.calculateTotals();
+        this.refreshMustSellStatus();
     }
 
     recalculateLineItem(item) {
@@ -774,6 +969,10 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.lineItems = [];
         this.calculateTotals();
         this.refreshMustSellStatus();
+        this.refreshTopSellingStatus();
+        this.mustSellHighlightActive = false;
+        // Re-add must-sell products with qty 0
+        this.autoAddMustSellToCart();
     }
 
     handleCancel() {
@@ -787,30 +986,32 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     async handleSubmitOrder() {
         if (!this.validateOrder()) return;
 
+        // Check must-sell products with qty 0 or below min - highlight red
         if (this.mustSellProducts && this.mustSellProducts.length > 0) {
-            const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+            let hasViolation = false;
 
-            // Check for missing Must Sell products
-            this.missingMustSellProducts = this.mustSellProducts
-                .filter(p => !orderedProductIds.has(p.productId));
+            this.lineItems = this.lineItems.map(item => {
+                if (item.isMustSell && (!item.quantity || item.quantity <= 0)) {
+                    hasViolation = true;
+                    return { ...item, rowClass: 'oef-row-must-sell-error' };
+                }
+                // Check if must-sell below min qty
+                const msProduct = this.mustSellProducts.find(p => p.productId === item.productId);
+                if (msProduct && msProduct.minQuantity && item.quantity < msProduct.minQuantity) {
+                    hasViolation = true;
+                    return { ...item, rowClass: 'oef-row-must-sell-error' };
+                }
+                // Clear any previous highlight for non-violating rows
+                if (item.rowClass === 'oef-row-must-sell-error') {
+                    return { ...item, rowClass: item.isMustSell ? 'oef-row-must-sell-pending' : '' };
+                }
+                return item;
+            });
 
-            // Check for Must Sell products below min qty
-            this.mustSellBelowMinQty = this.mustSellProducts
-                .filter(p => {
-                    if (!orderedProductIds.has(p.productId)) return false;
-                    const lineItem = this.lineItems.find(li => li.productId === p.productId);
-                    return lineItem && p.minQuantity && lineItem.quantity < p.minQuantity;
-                })
-                .map(p => {
-                    const lineItem = this.lineItems.find(li => li.productId === p.productId);
-                    return {
-                        ...p,
-                        orderedQty: lineItem ? lineItem.quantity : 0
-                    };
-                });
+            this.mustSellHighlightActive = hasViolation;
 
-            if (this.missingMustSellProducts.length > 0 || this.mustSellBelowMinQty.length > 0) {
-                this.showMustSellWarning = true;
+            if (hasViolation) {
+                this.showToast('Warning', 'Please add quantity for all Must Sell products (highlighted in red) before submitting', 'warning');
                 return;
             }
         }
@@ -903,6 +1104,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     buildOrderPayload(status) {
+        // Filter out must-sell items with qty 0 (placeholders only)
+        const activeLineItems = this.lineItems.filter(item => item.quantity && item.quantity > 0);
         return {
             accountId: this.effectiveAccountId,
             visitId: this.visitId || this.recordId,
@@ -912,7 +1115,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             totalDiscount: this.orderSummary.totalDiscount,
             totalTax: this.orderSummary.totalTax,
             netAmount: this.orderSummary.netAmount,
-            lineItems: this.lineItems.map(item => ({
+            lineItems: activeLineItems.map(item => ({
                 productId: item.productId,
                 quantity: item.quantity,
                 freeQty: item.freeQty,
@@ -932,13 +1135,16 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.showToast('Error', 'Please select an outlet', 'error');
             return false;
         }
-        if (this.lineItems.length === 0) {
-            this.showToast('Error', 'Add at least one product to the order', 'error');
+        // Count non-must-sell items with valid qty
+        const validItems = this.lineItems.filter(item => item.quantity && item.quantity > 0);
+        if (validItems.length === 0) {
+            this.showToast('Error', 'Add at least one product with quantity to the order', 'error');
             return false;
         }
-        const invalidItems = this.lineItems.filter(item => !item.quantity || item.quantity <= 0);
-        if (invalidItems.length > 0) {
-            this.showToast('Error', 'All line items must have a valid quantity', 'error');
+        // Check non-must-sell items have valid qty
+        const invalidNonMustSell = this.lineItems.filter(item => !item.isMustSell && (!item.quantity || item.quantity <= 0));
+        if (invalidNonMustSell.length > 0) {
+            this.showToast('Error', 'All non-priority line items must have a valid quantity', 'error');
             return false;
         }
         return true;

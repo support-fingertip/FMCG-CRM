@@ -278,6 +278,73 @@ public with sharing class OrderEntryController {
     }
 
     @AuraEnabled(cacheable=true)
+    public static List<ProductSearchResult> getTopSellingProducts(Id accountId) {
+        // Get top selling products based on order frequency for this account's territory
+        Set<Id> topProductIds = new Set<Id>();
+
+        // First: top products ordered by this specific account
+        for (AggregateResult ar : [
+            SELECT Product_Ext__c prodId, COUNT(Id) cnt
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__r.Account__c = :accountId
+              AND Sales_Order__r.Status__c != 'Cancelled'
+              AND Sales_Order__r.Order_Date__c >= :Date.today().addDays(-90)
+            GROUP BY Product_Ext__c
+            ORDER BY COUNT(Id) DESC
+            LIMIT 10
+        ]) {
+            topProductIds.add((Id) ar.get('prodId'));
+        }
+
+        // If less than 10, supplement with territory-wide top sellers
+        if (topProductIds.size() < 10) {
+            Id territoryId = null;
+            List<Account> accts = [SELECT Territory__c FROM Account WHERE Id = :accountId LIMIT 1];
+            if (!accts.isEmpty()) {
+                territoryId = accts[0].Territory__c;
+            }
+            if (territoryId != null) {
+                for (AggregateResult ar : [
+                    SELECT Product_Ext__c prodId, COUNT(Id) cnt
+                    FROM Order_Line_Item__c
+                    WHERE Sales_Order__r.Account__r.Territory__c = :territoryId
+                      AND Sales_Order__r.Status__c != 'Cancelled'
+                      AND Sales_Order__r.Order_Date__c >= :Date.today().addDays(-90)
+                      AND Product_Ext__c NOT IN :topProductIds
+                    GROUP BY Product_Ext__c
+                    ORDER BY COUNT(Id) DESC
+                    LIMIT :( 10 - topProductIds.size() )
+                ]) {
+                    topProductIds.add((Id) ar.get('prodId'));
+                }
+            }
+        }
+
+        if (topProductIds.isEmpty()) {
+            return new List<ProductSearchResult>();
+        }
+
+        List<Product_Extension__c> products = [
+            SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c
+            FROM Product_Extension__c
+            WHERE Id IN :topProductIds AND Is_Active__c = true
+        ];
+
+        List<ProductSearchResult> results = new List<ProductSearchResult>();
+        for (Product_Extension__c p : products) {
+            ProductSearchResult r = new ProductSearchResult();
+            r.Id = p.Id;
+            r.Name = p.Name;
+            r.SKU_Code = p.SKU_Code__c;
+            r.MRP = p.MRP__c;
+            r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
+            r.GST_Rate = p.GST_Rate__c;
+            results.add(r);
+        }
+        return results;
+    }
+
+    @AuraEnabled(cacheable=true)
     public static List<Product_Extension__c> getProductExtensions(List<Id> productIds) {
         return [SELECT Id, HSN_SAC_Code__c, Barcode_UPC__c, Barcode_EAN__c,
                        Case_Size__c, Min_Order_Qty__c, Weight__c, Weight_Unit__c

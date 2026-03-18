@@ -204,6 +204,57 @@
                 </div>
             </template>
 
+            <!-- Top Selling Products Section -->
+            <template if:true={hasTopSellingProducts}>
+                <div class="oef-top-sell-section">
+                    <div class="oef-top-sell-header" onclick={toggleTopSelling}>
+                        <div class="oef-must-sell-title-row">
+                            <lightning-icon icon-name="utility:trending" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            <h3>Top Selling Products</h3>
+                            <span class="oef-top-sell-count">{topSellingProducts.length}</span>
+                        </div>
+                        <lightning-icon icon-name={topSellingIcon} size="x-small"></lightning-icon>
+                    </div>
+                    <template if:true={showTopSelling}>
+                        <div class="oef-top-sell-grid">
+                            <template for:each={topSellingProducts} for:item="tsp">
+                                <div key={tsp.id} class={tsp.cardClass}>
+                                    <div class="oef-top-sell-body">
+                                        <span class="oef-top-sell-name">{tsp.name}</span>
+                                        <span class="oef-top-sell-sku">SKU: {tsp.sku}</span>
+                                        <span class="oef-top-sell-price">{tsp.mrpFormatted}</span>
+                                        <template if:true={tsp.hasSchemes}>
+                                            <template for:each={tsp.schemeStrips} for:item="ss">
+                                                <div class="oef-top-sell-scheme" key={ss.id}>
+                                                    <lightning-icon icon-name="utility:discount" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                    <span class="oef-top-sell-scheme-name">{ss.name}</span>
+                                                    <template if:true={ss.description}>
+                                                        <span class="oef-top-sell-scheme-desc"> &mdash; {ss.description}</span>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                    <div class="oef-ms-card-action">
+                                        <template if:true={tsp.isInOrder}>
+                                            <span class="oef-fs-done-badge">
+                                                <lightning-icon icon-name="utility:check" size="xx-small"></lightning-icon>
+                                                Added
+                                            </span>
+                                        </template>
+                                        <template if:false={tsp.isInOrder}>
+                                            <button class="oef-top-sell-add-btn" data-product-id={tsp.id} onclick={handleAddTopSelling}>
+                                                + Add
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
             <!-- Product Search Section -->
             <div class="oef-search-section">
                 <div class="oef-search-bar">
@@ -265,15 +316,21 @@
                                     </div>
                                 </div>
                                 <template if:true={product.hasSchemes}>
-                                    <template for:each={product.schemeStrips} for:item="schemeStrip">
-                                        <div class="oef-product-scheme-strip" key={schemeStrip.id}>
-                                            <lightning-icon icon-name="utility:discount" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
-                                            <span>{schemeStrip.name}</span>
-                                            <template if:true={schemeStrip.description}>
-                                                <span class="oef-product-scheme-detail"> &mdash; {schemeStrip.description}</span>
-                                            </template>
-                                        </div>
-                                    </template>
+                                    <div class="oef-product-offers-wrap">
+                                        <template for:each={product.schemeStrips} for:item="schemeStrip">
+                                            <div class="oef-product-offer-card" key={schemeStrip.id}>
+                                                <div class="oef-offer-badge">
+                                                    <lightning-icon icon-name="utility:discount" size="xx-small"></lightning-icon>
+                                                </div>
+                                                <div class="oef-offer-info">
+                                                    <span class="oef-offer-name">{schemeStrip.name}</span>
+                                                    <template if:true={schemeStrip.description}>
+                                                        <span class="oef-offer-desc">{schemeStrip.description}</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </template>
                                 <div class="oef-product-action-row">
                                     <div class="oef-product-qty-group">
@@ -359,7 +416,7 @@
                                         <td class="oef-td-qty">
                                             <lightning-input
                                                 type="number"
-                                                min="1"
+                                                min="0"
                                                 value={item.quantity}
                                                 data-line-id={item.id}
                                                 data-field="quantity"
@@ -492,6 +549,14 @@
                 </div>
             </template>
 
+            <!-- Must-sell inline warning (shown when submit attempted with qty 0) -->
+            <template if:true={mustSellHighlightActive}>
+                <div class="oef-must-sell-inline-warn">
+                    <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                    <span>Please add quantity for all Must Sell products highlighted in red before submitting.</span>
+                </div>
+            </template>
+
             <!-- Action Buttons -->
             <template if:true={hasLineItems}>
                 <div class="oef-action-bar">
@@ -531,53 +596,4 @@
         </div>
     </div>
 
-    <!-- Priority Sell Warning Modal -->
-    <template if:true={showMustSellWarning}>
-        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="must-sell-warning-heading" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-                <header class="slds-modal__header oef-warning-header">
-                    <lightning-button-icon icon-name="utility:close" alternative-text="Close" variant="bare-inverse" class="slds-modal__close" onclick={handleMustSellWarningClose}></lightning-button-icon>
-                    <h2 id="must-sell-warning-heading" class="slds-text-heading_medium">
-                        <lightning-icon icon-name="utility:error" size="small" class="slds-m-right_x-small"></lightning-icon>
-                        Priority Sell Products Required
-                    </h2>
-                </header>
-                <div class="slds-modal__content slds-p-around_medium">
-                    <template if:true={hasMissingMustSell}>
-                        <p class="slds-m-bottom_small oef-warning-text">The following priority sell products are <strong>required</strong> and must be added before submitting:</p>
-                        <ul class="oef-missing-list">
-                            <template for:each={missingMustSellProducts} for:item="mp">
-                                <li key={mp.productId} class="oef-missing-item">
-                                    <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                    <span class="oef-missing-name">{mp.productName}</span>
-                                    <span class="oef-missing-sku">({mp.sku})</span>
-                                    <template if:true={mp.minQuantity}>
-                                        <span class="oef-missing-min-qty">Min Qty: {mp.minQuantity}</span>
-                                    </template>
-                                </li>
-                            </template>
-                        </ul>
-                    </template>
-                    <template if:true={hasMustSellBelowMinQty}>
-                        <p class="slds-m-bottom_small slds-m-top_small oef-warning-text">The following priority sell products are below the <strong>minimum quantity</strong>:</p>
-                        <ul class="oef-missing-list">
-                            <template for:each={mustSellBelowMinQty} for:item="bq">
-                                <li key={bq.productId} class="oef-missing-item oef-missing-item-qty">
-                                    <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                                    <span class="oef-missing-name">{bq.productName}</span>
-                                    <span class="oef-missing-sku">Ordered: {bq.orderedQty}</span>
-                                    <span class="oef-missing-min-qty">Required: {bq.minQuantity}</span>
-                                </li>
-                            </template>
-                        </ul>
-                    </template>
-                    <p class="slds-m-top_small oef-warning-instruction">Please go back and add the required products with minimum quantities to continue.</p>
-                </div>
-                <footer class="slds-modal__footer">
-                    <lightning-button variant="brand" label="Go Back &amp; Add Products" icon-name="utility:back" onclick={handleMustSellAddProducts}></lightning-button>
-                </footer>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
 </template>

@@ -42,10 +42,10 @@
 .oef-header {
     background: linear-gradient(135deg, #0176d3 0%, #032d60 100%);
     color: #fff;
-    padding: 20px 24px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
 }
 
 .oef-header-icon {
@@ -103,10 +103,10 @@
 
 /* ---- Body ---- */
 .oef-body {
-    padding: 20px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
     position: relative;
 }
 
@@ -114,11 +114,11 @@
 .oef-outlet-picker {
     background: var(--bg-card);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 12px;
     box-shadow: var(--shadow-sm);
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: 10px;
 }
 
 .oef-section-icon {
@@ -147,7 +147,7 @@
 .oef-outlet-card {
     background: var(--bg-card);
     border-radius: var(--radius);
-    padding: 16px 20px;
+    padding: 10px 14px;
     box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
@@ -226,7 +226,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
+    padding: 10px 14px;
     cursor: pointer;
     background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
     user-select: none;
@@ -256,17 +256,17 @@
 }
 
 .oef-schemes-body {
-    padding: 12px 16px;
+    padding: 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .oef-scheme-card {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 8px;
+    padding: 8px 10px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-light);
     transition: transform 0.15s, box-shadow 0.15s;
@@ -365,7 +365,7 @@
     background: var(--bg-card);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    padding: 16px 20px;
+    padding: 10px 14px;
     border-left: 4px solid var(--error);
 }
 
@@ -373,7 +373,7 @@
     background: var(--bg-card);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    padding: 16px 20px;
+    padding: 10px 14px;
     border-left: 4px solid var(--brand);
 }
 
@@ -382,7 +382,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .oef-focused-sell-header {
@@ -575,7 +575,7 @@
 .oef-search-section {
     background: var(--bg-card);
     border-radius: var(--radius);
-    padding: 16px 20px;
+    padding: 10px 14px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -604,7 +604,7 @@
 .oef-results-section {
     background: var(--bg-card);
     border-radius: var(--radius);
-    padding: 16px 20px;
+    padding: 10px 14px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -628,7 +628,7 @@
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 14px 16px;
+    padding: 10px 12px;
     transition: all 0.15s;
 }
 
@@ -695,14 +695,14 @@
     letter-spacing: 0.5px;
 }
 
-/* Scheme Strip on Product Card */
+/* Scheme Strip on Product Card (legacy - kept for backward compat) */
 .oef-product-scheme-strip {
     display: flex;
     align-items: center;
     background: linear-gradient(90deg, #eef4ff, #e0eaff);
     border-radius: 4px;
     padding: 5px 10px;
-    margin-top: 8px;
+    margin-top: 6px;
     font-size: 12px;
     font-weight: 600;
     color: #1e40af;
@@ -790,7 +790,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
+    padding: 10px 14px;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     border-bottom: 2px solid var(--brand);
 }
@@ -833,7 +833,7 @@
 }
 
 .oef-cart-table th {
-    padding: 10px 12px;
+    padding: 7px 10px;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -845,7 +845,7 @@
 }
 
 .oef-cart-table td {
-    padding: 10px 12px;
+    padding: 7px 10px;
     font-size: 13px;
     color: var(--text-primary);
     border-bottom: 1px solid var(--border-light);
@@ -973,13 +973,13 @@
     background: var(--bg-card);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    padding: 20px;
+    padding: 12px;
 }
 
 .oef-summary-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 14px;
 }
 
 /* Left: Savings Cards */
@@ -992,11 +992,11 @@
 .oef-savings-card {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
     border: 1px solid #bbf7d0;
     border-radius: var(--radius);
-    padding: 14px 18px;
+    padding: 10px 14px;
 }
 
 .oef-savings-icon {
@@ -1029,11 +1029,11 @@
 .oef-free-items-card {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     border: 1px solid #bfdbfe;
     border-radius: var(--radius);
-    padding: 14px 18px;
+    padding: 10px 14px;
 }
 
 .oef-free-icon {
@@ -1065,10 +1065,10 @@
 
 .oef-items-card {
     display: flex;
-    gap: 24px;
+    gap: 16px;
     background: #f8fafc;
     border-radius: var(--radius);
-    padding: 14px 18px;
+    padding: 10px 14px;
 }
 
 .oef-items-stat {
@@ -1151,7 +1151,7 @@
 .oef-remarks-section {
     background: var(--bg-card);
     border-radius: var(--radius);
-    padding: 16px 20px;
+    padding: 10px 14px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -1308,4 +1308,239 @@
 .oef-results-grid::-webkit-scrollbar-thumb:hover,
 .oef-cart-table-wrap::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
+}
+
+/* ====================================================
+   TOP SELLING PRODUCTS SECTION
+   ==================================================== */
+.oef-top-sell-section {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 10px 14px;
+    border-left: 4px solid #f59e0b;
+}
+
+.oef-top-sell-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 8px;
+}
+
+.oef-top-sell-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.oef-top-sell-count {
+    font-size: 11px;
+    font-weight: 700;
+    background: #f59e0b;
+    color: #fff;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+}
+
+.oef-top-sell-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px;
+}
+
+.oef-top-sell-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fde68a;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.oef-top-sell-card:hover {
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+}
+
+.oef-top-sell-done {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #bbf7d0;
+}
+
+.oef-top-sell-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.oef-top-sell-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.oef-top-sell-sku {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.oef-top-sell-price {
+    font-size: 12px;
+    font-weight: 700;
+    color: #b45309;
+}
+
+.oef-top-sell-scheme {
+    display: flex;
+    align-items: center;
+    font-size: 10px;
+    color: #1e40af;
+    margin-top: 2px;
+    gap: 2px;
+}
+
+.oef-top-sell-scheme-name {
+    font-weight: 600;
+}
+
+.oef-top-sell-scheme-desc {
+    color: #3b82f6;
+}
+
+.oef-top-sell-add-btn {
+    border: none;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #f59e0b;
+    color: #fff;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.oef-top-sell-add-btn:hover {
+    background: #d97706;
+    transform: scale(1.05);
+}
+
+/* ====================================================
+   IMPROVED SCHEME/OFFER DISPLAY ON PRODUCT CARDS
+   ==================================================== */
+.oef-product-offers-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.oef-product-offer-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: linear-gradient(135deg, #eef6ff 0%, #e0ecff 50%, #dbeafe 100%);
+    border: 1px solid #93c5fd;
+    border-radius: 6px;
+    padding: 6px 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.oef-product-offer-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, #3b82f6, #6366f1);
+}
+
+.oef-offer-badge {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.oef-offer-badge lightning-icon {
+    --sds-c-icon-color-foreground-default: #fff;
+    --sds-c-icon-color-foreground: #fff;
+}
+
+.oef-offer-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.oef-offer-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e3a8a;
+    display: block;
+}
+
+.oef-offer-desc {
+    font-size: 11px;
+    font-weight: 600;
+    color: #2563eb;
+    display: block;
+    margin-top: 1px;
+}
+
+/* ====================================================
+   MUST-SELL ROW HIGHLIGHTING IN CART
+   ==================================================== */
+.oef-row-must-sell-pending {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+}
+
+.oef-row-must-sell-error {
+    background: #fef2f2 !important;
+    border-left: 3px solid var(--error) !important;
+    animation: oef-row-flash 0.6s ease-in-out 2;
+}
+
+.oef-row-must-sell-error td {
+    color: var(--error) !important;
+}
+
+@keyframes oef-row-flash {
+    0%, 100% { background: #fef2f2; }
+    50% { background: #fecaca; }
+}
+
+/* ====================================================
+   MUST-SELL INLINE WARNING BANNER
+   ==================================================== */
+.oef-must-sell-inline-warn {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 1px solid #fca5a5;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    color: #991b1b;
+    margin-bottom: 8px;
 }
