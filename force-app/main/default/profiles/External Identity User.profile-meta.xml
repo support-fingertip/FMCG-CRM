@@ -4202,11 +4202,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Claim_Line__c.Claim__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Competitor__c.Account__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4607,11 +4602,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Expense_Item__c.Expense__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Expense_Item__c.From_Location__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4698,11 +4688,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Expense_Rate_Slab__c.Distance_To__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Expense_Rate_Slab__c.Expense_Eligibility__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4852,11 +4837,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>GRN_Line__c.GRN__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Holiday__c.Description__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4877,22 +4857,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Indent_Line__c.Indent__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Invoice_Line__c.Invoice__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Invoice__c.Warehouse__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Journey_Plan_Day__c.Journey_Plan__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4948,11 +4913,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Order_Line_Item__c.Reward_Points__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Order_Line_Item__c.Sales_Order__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -5022,11 +4982,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Return_Line__c.Return_Order__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Sales_Order__c.Scheme_Discount__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -5072,11 +5027,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Scheme_Mapping__c.Scheme__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Scheme_Mapping__c.Sub_Zone__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -5092,22 +5042,12 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Scheme_Product__c.Scheme__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Scheme_Slab__c.Price_Discount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Scheme_Slab__c.Reward_Points__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Scheme_Slab__c.Scheme__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -5247,11 +5187,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Stock_Transfer_Line__c.Stock_Transfer__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Stock_Transfer__c.Approved_By__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -5263,21 +5198,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Stock_Transfer__c.Requested_By__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Survey_Answer__c.Survey_Response__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Survey_Question__c.Survey__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Target_Line__c.Target__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
