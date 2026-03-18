@@ -10,7 +10,7 @@ public with sharing class ProductManagementController {
 
     // ─── Product Extension CRUD ────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static ProductPageResult getProducts(String searchTerm, String categoryId, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
         if (pageNumber == null || pageNumber < 1) pageNumber = 1;
         if (pageSize == null || pageSize < 1) pageSize = 25;
@@ -71,7 +71,7 @@ public with sharing class ProductManagementController {
 
     // ─── Product Category CRUD ─────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Product_Category__c> getCategories() {
         return [SELECT Id, Name, Category_Code__c, Level__c, Is_Active__c, Sort_Order__c,
                        Parent_Category__c, Parent_Category__r.Name
@@ -96,7 +96,7 @@ public with sharing class ProductManagementController {
 
     // ─── Price List CRUD ───────────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static PriceListPageResult getPriceLists(String productId, String channel, String region, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
         if (pageNumber == null || pageNumber < 1) pageNumber = 1;
         if (pageSize == null || pageSize < 1) pageSize = 25;
@@ -153,7 +153,7 @@ public with sharing class ProductManagementController {
 
     // ─── Batch Master CRUD ─────────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Batch_Master__c> getBatches(String productId, String status) {
         String query = 'SELECT Id, Name, Batch_Number__c, Product_Ext__c, Product_Ext__r.Name, ' +
                        'Product_Ext__r.SKU_Code__c, Manufacturing_Date__c, Expiry_Date__c, ' +
@@ -190,7 +190,7 @@ public with sharing class ProductManagementController {
 
     // ─── Must-Sell Configuration CRUD ──────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Must_Sell_Config__c> getMustSellConfigs(Boolean activeOnly) {
         String query = 'SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Classification__c, Channel__c, Customer_Type__c, Territory__c, Territory__r.Name, ' +
@@ -222,7 +222,7 @@ public with sharing class ProductManagementController {
 
     // ─── Price Change Log (Read-only) ──────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Price_Change_Log__c> getPriceChangeLogs(String productId) {
         String query = 'SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Old_Price__c, New_Price__c, Change_Date__c, Change_Reason__c, Changed_By__c, ' +
@@ -237,7 +237,7 @@ public with sharing class ProductManagementController {
 
     // ─── Dashboard Stats ───────────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static DashboardStats getDashboardStats() {
         DashboardStats stats = new DashboardStats();
         stats.totalProducts = [SELECT COUNT() FROM Product_Extension__c];
