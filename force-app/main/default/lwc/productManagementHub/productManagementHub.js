@@ -290,7 +290,10 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 pageNumber: this.productPage,
                 pageSize: PAGE_SIZE
             });
-            this.products = result.products;
+            this.products = result.products.map(p => ({
+                ...p,
+                categoryName: p.Product_Category__r ? p.Product_Category__r.Name : ''
+            }));
             this.productTotalPages = result.totalPages;
             this.productTotalCount = result.totalCount;
         } catch (error) {
@@ -390,7 +393,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async loadCategories() {
         try {
-            this.categories = await getCategories();
+            const rawCategories = await getCategories();
+            this.categories = rawCategories.map(c => ({
+                ...c,
+                parentCategoryName: c.Parent_Category__r ? c.Parent_Category__r.Name : ''
+            }));
             this.parentCategoryOptions = [
                 { label: '-- None --', value: '' },
                 ...this.categories
@@ -472,7 +479,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 pageNumber: this.priceListPage,
                 pageSize: PAGE_SIZE
             });
-            this.priceLists = result.priceLists;
+            this.priceLists = result.priceLists.map(pl => ({
+                ...pl,
+                productName: pl.Product_Ext__r ? pl.Product_Ext__r.Name : '',
+                productSku: pl.Product_Ext__r ? pl.Product_Ext__r.SKU_Code__c : ''
+            }));
             this.priceListTotalPages = result.totalPages;
             this.priceListTotalCount = result.totalCount;
         } catch (error) {
@@ -568,10 +579,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async loadBatches() {
         try {
-            this.batches = await getBatches({
+            const rawBatches = await getBatches({
                 productId: this.batchProductFilter || null,
                 status: this.batchStatusFilter || null
             });
+            this.batches = rawBatches.map(b => ({
+                ...b,
+                productName: b.Product_Ext__r ? b.Product_Ext__r.Name : ''
+            }));
         } catch (error) {
             this.showError('Error loading batches', this.reduceErrors(error));
         }
@@ -640,9 +655,15 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async loadMustSellConfigs() {
         try {
-            this.mustSellConfigs = await getMustSellConfigs({
+            const rawConfigs = await getMustSellConfigs({
                 activeOnly: this.mustSellActiveOnly
             });
+            this.mustSellConfigs = rawConfigs.map(ms => ({
+                ...ms,
+                productName: ms.Product_Ext__r ? ms.Product_Ext__r.Name : '',
+                productSku: ms.Product_Ext__r ? ms.Product_Ext__r.SKU_Code__c : '',
+                territoryName: ms.Territory__r ? ms.Territory__r.Name : ''
+            }));
         } catch (error) {
             this.showError('Error loading must-sell configs', this.reduceErrors(error));
         }
@@ -715,9 +736,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async loadPriceChangeLogs() {
         try {
-            this.priceChangeLogs = await getPriceChangeLogs({
+            const rawLogs = await getPriceChangeLogs({
                 productId: this.priceLogProductFilter || null
             });
+            this.priceChangeLogs = rawLogs.map(log => ({
+                ...log,
+                productName: log.Product_Ext__r ? log.Product_Ext__r.Name : '',
+                productSku: log.Product_Ext__r ? log.Product_Ext__r.SKU_Code__c : ''
+            }));
         } catch (error) {
             this.showError('Error loading price change logs', this.reduceErrors(error));
         }

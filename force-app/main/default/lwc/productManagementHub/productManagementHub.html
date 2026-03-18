@@ -122,7 +122,7 @@
                                         <td class="cell-mono">{product.SKU_Code__c}</td>
                                         <td>{product.Name}</td>
                                         <td>{product.Brand__c}</td>
-                                        <td>{product.Product_Category__r.Name}</td>
+                                        <td>{product.categoryName}</td>
                                         <td class="cell-number">{product.MRP__c}</td>
                                         <td class="cell-number">{product.Unit_Price__c}</td>
                                         <td class="cell-number">{product.GST_Rate__c}</td>
@@ -195,7 +195,7 @@
                                         <td>
                                             <span class="badge badge-blue">{cat.Level__c}</span>
                                         </td>
-                                        <td>{cat.Parent_Category__r.Name}</td>
+                                        <td>{cat.parentCategoryName}</td>
                                         <td class="cell-number">{cat.Sort_Order__c}</td>
                                         <td>
                                             <template if:true={cat.Is_Active__c}>
@@ -265,8 +265,8 @@
                             <tbody>
                                 <template for:each={priceLists} for:item="pl">
                                     <tr key={pl.Id}>
-                                        <td>{pl.Product_Ext__r.Name}</td>
-                                        <td class="cell-mono">{pl.Product_Ext__r.SKU_Code__c}</td>
+                                        <td>{pl.productName}</td>
+                                        <td class="cell-mono">{pl.productSku}</td>
                                         <td>{pl.Channel__c}</td>
                                         <td>{pl.Region__c}</td>
                                         <td>{pl.Price_Type__c}</td>
@@ -344,7 +344,7 @@
                                 <template for:each={batches} for:item="batch">
                                     <tr key={batch.Id}>
                                         <td class="cell-mono">{batch.Batch_Number__c}</td>
-                                        <td>{batch.Product_Ext__r.Name}</td>
+                                        <td>{batch.productName}</td>
                                         <td>{batch.Manufacturing_Date__c}</td>
                                         <td>{batch.Expiry_Date__c}</td>
                                         <td class="cell-number">{batch.Quantity_Manufactured__c}</td>
@@ -419,14 +419,14 @@
                             <tbody>
                                 <template for:each={mustSellConfigs} for:item="ms">
                                     <tr key={ms.Id}>
-                                        <td>{ms.Product_Ext__r.Name}</td>
-                                        <td class="cell-mono">{ms.Product_Ext__r.SKU_Code__c}</td>
+                                        <td>{ms.productName}</td>
+                                        <td class="cell-mono">{ms.productSku}</td>
                                         <td>
                                             <span class="badge badge-purple">{ms.Classification__c}</span>
                                         </td>
                                         <td>{ms.Channel__c}</td>
                                         <td>{ms.Customer_Type__c}</td>
-                                        <td>{ms.Territory__r.Name}</td>
+                                        <td>{ms.territoryName}</td>
                                         <td>{ms.Start_Date__c}</td>
                                         <td>{ms.End_Date__c}</td>
                                         <td class="cell-number">{ms.Min_Qty__c}</td>
@@ -481,8 +481,8 @@
                             <tbody>
                                 <template for:each={priceChangeLogs} for:item="log">
                                     <tr key={log.Id}>
-                                        <td>{log.Product_Ext__r.Name}</td>
-                                        <td class="cell-mono">{log.Product_Ext__r.SKU_Code__c}</td>
+                                        <td>{log.productName}</td>
+                                        <td class="cell-mono">{log.productSku}</td>
                                         <td class="cell-number">{log.Old_Price__c}</td>
                                         <td class="cell-number">{log.New_Price__c}</td>
                                         <td>{log.Change_Date__c}</td>
