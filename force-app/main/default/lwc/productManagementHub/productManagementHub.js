@@ -12,6 +12,7 @@ import deleteCategory from '@salesforce/apex/ProductManagementController.deleteC
 import getPriceLists from '@salesforce/apex/ProductManagementController.getPriceLists';
 import savePriceList from '@salesforce/apex/ProductManagementController.savePriceList';
 import deletePriceList from '@salesforce/apex/ProductManagementController.deletePriceList';
+import getPricebookPriorities from '@salesforce/apex/ProductManagementController.getPricebookPriorities';
 import getBatches from '@salesforce/apex/ProductManagementController.getBatches';
 import saveBatch from '@salesforce/apex/ProductManagementController.saveBatch';
 import deleteBatch from '@salesforce/apex/ProductManagementController.deleteBatch';
@@ -21,8 +22,21 @@ import deleteMustSellConfig from '@salesforce/apex/ProductManagementController.d
 import getPriceChangeLogs from '@salesforce/apex/ProductManagementController.getPriceChangeLogs';
 import searchProductsForLookup from '@salesforce/apex/ProductManagementController.searchProductsForLookup';
 import searchTerritoriesForLookup from '@salesforce/apex/ProductManagementController.searchTerritoriesForLookup';
+import searchCategoriesForLookup from '@salesforce/apex/ProductManagementController.searchCategoriesForLookup';
+import searchCustomersForLookup from '@salesforce/apex/ProductManagementController.searchCustomersForLookup';
 
 const PAGE_SIZE = 25;
+
+const PRIORITY_LABELS = {
+    1: '1st - Customer',
+    2: '2nd - Cat+Terr+Chan',
+    3: '3rd - Terr+Chan',
+    4: '4th - Cat+Terr',
+    5: '5th - Territory',
+    6: '6th - Channel',
+    7: '7th - Category',
+    8: '8th - Base Price'
+};
 
 export default class ProductManagementHub extends NavigationMixin(LightningElement) {
 
@@ -57,6 +71,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track priceLists = [];
     @track priceListProductFilter = '';
     @track priceListChannelFilter = '';
+    @track priceListPriorityFilter = '';
     @track priceListActiveOnly = true;
     @track priceListPage = 1;
     @track priceListTotalPages = 1;
@@ -64,6 +79,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track showPriceListModal = false;
     @track editPriceList = {};
     @track isNewPriceList = false;
+    @track pricebookPriorities = [];
 
     // ── Batches ────────────────────────────────────────────────────────
     @track batches = [];
@@ -98,6 +114,20 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track territoryLookupSearchTerm = '';
     _territoryLookupTimeout;
 
+    // ── Category Lookup (for Price List) ────────────────────────────────
+    @track categoryLookupResults = [];
+    @track showCategoryLookup = false;
+    @track selectedCategoryName = '';
+    @track categoryLookupSearchTerm = '';
+    _categoryLookupTimeout;
+
+    // ── Customer Lookup (for Price List) ────────────────────────────────
+    @track customerLookupResults = [];
+    @track showCustomerLookup = false;
+    @track selectedCustomerName = '';
+    @track customerLookupSearchTerm = '';
+    _customerLookupTimeout;
+
     // ── Computed Getters ───────────────────────────────────────────────
 
     get showDashboard() { return this.activeSection === 'dashboard'; }
@@ -107,6 +137,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get showBatches() { return this.activeSection === 'batches'; }
     get showMustSell() { return this.activeSection === 'mustSell'; }
     get showPriceChangeLogs() { return this.activeSection === 'priceChangeLogs'; }
+    get showPricebookConfig() { return this.activeSection === 'pricebookConfig'; }
 
     get dashboardNavClass() { return 'sidebar-item' + (this.activeSection === 'dashboard' ? ' active' : ''); }
     get productsNavClass() { return 'sidebar-item' + (this.activeSection === 'products' ? ' active' : ''); }
@@ -115,6 +146,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get batchesNavClass() { return 'sidebar-item' + (this.activeSection === 'batches' ? ' active' : ''); }
     get mustSellNavClass() { return 'sidebar-item' + (this.activeSection === 'mustSell' ? ' active' : ''); }
     get priceChangeLogsNavClass() { return 'sidebar-item' + (this.activeSection === 'priceChangeLogs' ? ' active' : ''); }
+    get pricebookConfigNavClass() { return 'sidebar-item' + (this.activeSection === 'pricebookConfig' ? ' active' : ''); }
 
     get sectionTitle() {
         const titles = {
@@ -124,7 +156,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             priceLists: 'Price Lists',
             batches: 'Batch Master',
             mustSell: 'Must-Sell Configuration',
-            priceChangeLogs: 'Price Change Logs'
+            priceChangeLogs: 'Price Change Logs',
+            pricebookConfig: 'Pricebook Priority Configuration'
         };
         return titles[this.activeSection] || 'Product Management';
     }
@@ -141,6 +174,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get hasBatches() { return this.batches.length > 0; }
     get hasMustSellConfigs() { return this.mustSellConfigs.length > 0; }
     get hasPriceChangeLogs() { return this.priceChangeLogs.length > 0; }
+    get hasPricebookPriorities() { return this.pricebookPriorities.length > 0; }
 
     get productPageInfo() {
         return `Page ${this.productPage} of ${this.productTotalPages} (${this.productTotalCount} records)`;
@@ -233,6 +267,19 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'E-Commerce', value: 'E-Commerce' }
         ];
     }
+    get priorityFilterOptions() {
+        return [
+            { label: 'All Priorities', value: '' },
+            { label: '1st - Customer', value: '1' },
+            { label: '2nd - Cat+Terr+Chan', value: '2' },
+            { label: '3rd - Terr+Chan', value: '3' },
+            { label: '4th - Cat+Terr', value: '4' },
+            { label: '5th - Territory', value: '5' },
+            { label: '6th - Channel', value: '6' },
+            { label: '7th - Category', value: '7' },
+            { label: '8th - Base Price', value: '8' }
+        ];
+    }
 
     // ── Lifecycle ──────────────────────────────────────────────────────
 
@@ -259,6 +306,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 case 'batches': await this.loadBatches(); break;
                 case 'mustSell': await this.loadMustSellConfigs(); break;
                 case 'priceChangeLogs': await this.loadPriceChangeLogs(); break;
+                case 'pricebookConfig': await this.loadPricebookPriorities(); break;
                 default: break;
             }
         } catch (error) {
@@ -485,6 +533,10 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 productId: this.priceListProductFilter || null,
                 channel: this.priceListChannelFilter || null,
                 region: null,
+                categoryId: null,
+                territoryId: null,
+                customerId: null,
+                priorityFilter: this.priceListPriorityFilter || null,
                 activeOnly: this.priceListActiveOnly,
                 pageNumber: this.priceListPage,
                 pageSize: PAGE_SIZE
@@ -492,7 +544,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.priceLists = result.priceLists.map(pl => ({
                 ...pl,
                 productName: pl.Product_Ext__r ? pl.Product_Ext__r.Name : '',
-                productSku: pl.Product_Ext__r ? pl.Product_Ext__r.SKU_Code__c : ''
+                productSku: pl.Product_Ext__r ? pl.Product_Ext__r.SKU_Code__c : '',
+                customerName: pl.Customer__r ? pl.Customer__r.Name : '',
+                categoryName: pl.Category__r ? pl.Category__r.Name : '',
+                territoryName: pl.Territory__r ? pl.Territory__r.Name : '',
+                priorityLabel: PRIORITY_LABELS[pl.Priority__c] || 'P' + pl.Priority__c
             }));
             this.priceListTotalPages = result.totalPages;
             this.priceListTotalCount = result.totalCount;
@@ -503,6 +559,12 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     handlePriceListChannelFilter(event) {
         this.priceListChannelFilter = event.target.value;
+        this.priceListPage = 1;
+        this.loadPriceLists();
+    }
+
+    handlePriceListPriorityFilter(event) {
+        this.priceListPriorityFilter = event.target.value;
         this.priceListPage = 1;
         this.loadPriceLists();
     }
@@ -535,6 +597,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             Min_Qty__c: 1
         };
         this.resetProductLookup();
+        this.resetCategoryLookup();
+        this.resetCustomerLookup();
+        this.resetTerritoryLookup();
         this.showPriceListModal = true;
     }
 
@@ -545,6 +610,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.isNewPriceList = false;
             this.editPriceList = JSON.parse(JSON.stringify(pl));
             this.selectedProductName = pl.productName || '';
+            this.selectedCustomerName = pl.customerName || '';
+            this.selectedCategoryName = pl.categoryName || '';
+            this.selectedTerritoryName = pl.territoryName || '';
             this.showPriceListModal = true;
         }
     }
@@ -560,6 +628,16 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         try {
             const plToSave = { ...this.editPriceList };
             delete plToSave.Product_Ext__r;
+            delete plToSave.Customer__r;
+            delete plToSave.Category__r;
+            delete plToSave.Territory__r;
+            // Remove computed fields
+            delete plToSave.productName;
+            delete plToSave.productSku;
+            delete plToSave.customerName;
+            delete plToSave.categoryName;
+            delete plToSave.territoryName;
+            delete plToSave.priorityLabel;
             await savePriceList({ priceList: plToSave });
             this.showPriceListModal = false;
             this.showSuccess(this.isNewPriceList ? 'Price list entry created' : 'Price list entry updated');
@@ -585,6 +663,29 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     handleClosePriceListModal() {
         this.showPriceListModal = false;
+    }
+
+    // ── Pricebook Priority Configuration ────────────────────────────────
+
+    async loadPricebookPriorities() {
+        try {
+            const rawPriorities = await getPricebookPriorities();
+            this.pricebookPriorities = rawPriorities.map(p => ({
+                ...p,
+                dimensionLabel: this.buildDimensionLabel(p)
+            }));
+        } catch (error) {
+            this.showError('Error loading pricebook priorities', this.reduceErrors(error));
+        }
+    }
+
+    buildDimensionLabel(priority) {
+        const parts = [];
+        if (priority.Has_Customer__c) parts.push('Customer');
+        if (priority.Has_Category__c) parts.push('Category');
+        if (priority.Has_Territory__c) parts.push('Territory');
+        if (priority.Has_Channel__c) parts.push('Channel');
+        return parts.length > 0 ? parts.join(' + ') : 'Base Price (No Dimensions)';
     }
 
     // ── Batches ────────────────────────────────────────────────────────
@@ -774,7 +875,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.priceChangeLogs = rawLogs.map(log => ({
                 ...log,
                 productName: log.Product_Ext__r ? log.Product_Ext__r.Name : '',
-                productSku: log.Product_Ext__r ? log.Product_Ext__r.SKU_Code__c : ''
+                productSku: log.Product_Ext__r ? log.Product_Ext__r.SKU_Code__c : '',
+                customerName: log.Customer__r ? log.Customer__r.Name : '',
+                categoryName: log.Category__r ? log.Category__r.Name : '',
+                territoryName: log.Territory__r ? log.Territory__r.Name : '',
+                priorityLabel: PRIORITY_LABELS[log.Priority__c] || ''
             }));
         } catch (error) {
             this.showError('Error loading price change logs', this.reduceErrors(error));
@@ -789,6 +894,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     get hasSelectedTerritory() {
         return !!this.selectedTerritoryName;
+    }
+
+    get hasSelectedCategory() {
+        return !!this.selectedCategoryName;
+    }
+
+    get hasSelectedCustomer() {
+        return !!this.selectedCustomerName;
     }
 
     get isTerritoryDisabled() {
@@ -863,7 +976,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         this.resetProductLookup();
     }
 
-    // ── Territory Lookup (for Must-Sell modal) ─────────────────────────
+    // ── Territory Lookup (for Must-Sell and Price List modals) ──────────
 
     resetTerritoryLookup() {
         this.selectedTerritoryName = '';
@@ -895,14 +1008,19 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     handleSelectLookupTerritory(event) {
         const territoryId = event.currentTarget.dataset.id;
         const territoryName = event.currentTarget.dataset.name;
+        const targetObject = event.currentTarget.dataset.target;
 
-        // Enforce mutual exclusivity: clear Channel and Customer Type
-        this.editMustSell = {
-            ...this.editMustSell,
-            Territory__c: territoryId,
-            Channel__c: '',
-            Customer_Type__c: ''
-        };
+        if (targetObject === 'priceList') {
+            this.editPriceList = { ...this.editPriceList, Territory__c: territoryId };
+        } else {
+            // Must-sell: Enforce mutual exclusivity
+            this.editMustSell = {
+                ...this.editMustSell,
+                Territory__c: territoryId,
+                Channel__c: '',
+                Customer_Type__c: ''
+            };
+        }
 
         this.selectedTerritoryName = territoryName;
         this.territoryLookupSearchTerm = '';
@@ -910,9 +1028,106 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         this.territoryLookupResults = [];
     }
 
-    handleClearTerritorySelection() {
-        this.editMustSell = { ...this.editMustSell, Territory__c: null };
+    handleClearTerritorySelection(event) {
+        const targetObject = event.currentTarget ? event.currentTarget.dataset.target : '';
+
+        if (targetObject === 'priceList') {
+            this.editPriceList = { ...this.editPriceList, Territory__c: null };
+        } else {
+            this.editMustSell = { ...this.editMustSell, Territory__c: null };
+        }
+
         this.resetTerritoryLookup();
+    }
+
+    // ── Category Lookup (for Price List modal) ──────────────────────────
+
+    resetCategoryLookup() {
+        this.selectedCategoryName = '';
+        this.categoryLookupSearchTerm = '';
+        this.categoryLookupResults = [];
+        this.showCategoryLookup = false;
+    }
+
+    handleCategoryLookupSearch(event) {
+        const searchTerm = event.target.value;
+        this.categoryLookupSearchTerm = searchTerm;
+        clearTimeout(this._categoryLookupTimeout);
+        if (searchTerm.length < 2) {
+            this.categoryLookupResults = [];
+            this.showCategoryLookup = false;
+            return;
+        }
+        this._categoryLookupTimeout = setTimeout(async () => {
+            try {
+                this.categoryLookupResults = await searchCategoriesForLookup({ searchTerm });
+                this.showCategoryLookup = this.categoryLookupResults.length > 0;
+            } catch (error) {
+                this.categoryLookupResults = [];
+                this.showCategoryLookup = false;
+            }
+        }, 300);
+    }
+
+    handleSelectLookupCategory(event) {
+        const categoryId = event.currentTarget.dataset.id;
+        const categoryName = event.currentTarget.dataset.name;
+
+        this.editPriceList = { ...this.editPriceList, Category__c: categoryId };
+        this.selectedCategoryName = categoryName;
+        this.categoryLookupSearchTerm = '';
+        this.showCategoryLookup = false;
+        this.categoryLookupResults = [];
+    }
+
+    handleClearCategorySelection() {
+        this.editPriceList = { ...this.editPriceList, Category__c: null };
+        this.resetCategoryLookup();
+    }
+
+    // ── Customer Lookup (for Price List modal) ──────────────────────────
+
+    resetCustomerLookup() {
+        this.selectedCustomerName = '';
+        this.customerLookupSearchTerm = '';
+        this.customerLookupResults = [];
+        this.showCustomerLookup = false;
+    }
+
+    handleCustomerLookupSearch(event) {
+        const searchTerm = event.target.value;
+        this.customerLookupSearchTerm = searchTerm;
+        clearTimeout(this._customerLookupTimeout);
+        if (searchTerm.length < 2) {
+            this.customerLookupResults = [];
+            this.showCustomerLookup = false;
+            return;
+        }
+        this._customerLookupTimeout = setTimeout(async () => {
+            try {
+                this.customerLookupResults = await searchCustomersForLookup({ searchTerm });
+                this.showCustomerLookup = this.customerLookupResults.length > 0;
+            } catch (error) {
+                this.customerLookupResults = [];
+                this.showCustomerLookup = false;
+            }
+        }, 300);
+    }
+
+    handleSelectLookupCustomer(event) {
+        const customerId = event.currentTarget.dataset.id;
+        const customerName = event.currentTarget.dataset.name;
+
+        this.editPriceList = { ...this.editPriceList, Customer__c: customerId };
+        this.selectedCustomerName = customerName;
+        this.customerLookupSearchTerm = '';
+        this.showCustomerLookup = false;
+        this.customerLookupResults = [];
+    }
+
+    handleClearCustomerSelection() {
+        this.editPriceList = { ...this.editPriceList, Customer__c: null };
+        this.resetCustomerLookup();
     }
 
     // ── Utility ────────────────────────────────────────────────────────

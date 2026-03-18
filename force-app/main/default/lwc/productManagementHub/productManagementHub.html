@@ -34,6 +34,10 @@
                     <lightning-icon icon-name="standard:note" size="x-small"></lightning-icon>
                     <span>Price Change Logs</span>
                 </a>
+                <a class={pricebookConfigNavClass} data-section="pricebookConfig" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:settings" size="x-small"></lightning-icon>
+                    <span>Pricebook Config</span>
+                </a>
             </nav>
         </div>
 
@@ -234,6 +238,9 @@
                         <lightning-combobox label="Channel" value={priceListChannelFilter}
                             options={channelFilterOptions} onchange={handlePriceListChannelFilter}
                             variant="label-hidden" placeholder="All Channels"></lightning-combobox>
+                        <lightning-combobox label="Priority" value={priceListPriorityFilter}
+                            options={priorityFilterOptions} onchange={handlePriceListPriorityFilter}
+                            variant="label-hidden" placeholder="All Priorities"></lightning-combobox>
                         <label class="checkbox-label">
                             <lightning-input type="checkbox" label="Active Only" checked={priceListActiveOnly}
                                 onchange={handlePriceListActiveFilter} variant="label-hidden"></lightning-input>
@@ -249,10 +256,13 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th>Priority</th>
                                     <th>Product</th>
                                     <th>SKU</th>
+                                    <th>Customer</th>
+                                    <th>Category</th>
+                                    <th>Territory</th>
                                     <th>Channel</th>
-                                    <th>Region</th>
                                     <th>Price Type</th>
                                     <th>Unit Price</th>
                                     <th>Min Qty</th>
@@ -265,10 +275,13 @@
                             <tbody>
                                 <template for:each={priceLists} for:item="pl">
                                     <tr key={pl.Id}>
+                                        <td><span class="badge badge-blue">{pl.priorityLabel}</span></td>
                                         <td>{pl.productName}</td>
                                         <td class="cell-mono">{pl.productSku}</td>
+                                        <td>{pl.customerName}</td>
+                                        <td>{pl.categoryName}</td>
+                                        <td>{pl.territoryName}</td>
                                         <td>{pl.Channel__c}</td>
-                                        <td>{pl.Region__c}</td>
                                         <td>{pl.Price_Type__c}</td>
                                         <td class="cell-number">{pl.Unit_Price__c}</td>
                                         <td class="cell-number">{pl.Min_Qty__c}</td>
@@ -467,29 +480,33 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th>Priority</th>
                                     <th>Product</th>
                                     <th>SKU</th>
                                     <th>Old Price</th>
                                     <th>New Price</th>
                                     <th>Change Date</th>
+                                    <th>Customer</th>
+                                    <th>Category</th>
+                                    <th>Territory</th>
                                     <th>Channel</th>
-                                    <th>Region</th>
                                     <th>Reason</th>
-                                    <th>Changed By</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <template for:each={priceChangeLogs} for:item="log">
                                     <tr key={log.Id}>
+                                        <td><span class="badge badge-blue">{log.priorityLabel}</span></td>
                                         <td>{log.productName}</td>
                                         <td class="cell-mono">{log.productSku}</td>
                                         <td class="cell-number">{log.Old_Price__c}</td>
                                         <td class="cell-number">{log.New_Price__c}</td>
                                         <td>{log.Change_Date__c}</td>
+                                        <td>{log.customerName}</td>
+                                        <td>{log.categoryName}</td>
+                                        <td>{log.territoryName}</td>
                                         <td>{log.Channel__c}</td>
-                                        <td>{log.Region__c}</td>
                                         <td>{log.Change_Reason__c}</td>
-                                        <td>{log.Changed_By__c}</td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -500,6 +517,86 @@
                     <div class="empty-state">
                         <lightning-icon icon-name="standard:note" size="large"></lightning-icon>
                         <p>No price change logs found.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── Pricebook Priority Configuration Section ─────────────── -->
+            <template if:true={showPricebookConfig}>
+                <div class="priority-config-info slds-p-bottom_medium">
+                    <p>This table shows the configured pricebook priority rules. Priority determines which price is applied when multiple price list entries match. Lower priority number = higher precedence.</p>
+                </div>
+                <template if:true={hasPricebookPriorities}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Priority Order</th>
+                                    <th>Name</th>
+                                    <th>Dimensions</th>
+                                    <th>Customer</th>
+                                    <th>Category</th>
+                                    <th>Territory</th>
+                                    <th>Channel</th>
+                                    <th>Active</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={pricebookPriorities} for:item="pp">
+                                    <tr key={pp.Id}>
+                                        <td class="cell-number"><strong>{pp.Priority_Order__c}</strong></td>
+                                        <td>{pp.MasterLabel}</td>
+                                        <td><span class="badge badge-blue">{pp.dimensionLabel}</span></td>
+                                        <td>
+                                            <template if:true={pp.Has_Customer__c}>
+                                                <span class="badge badge-green">Yes</span>
+                                            </template>
+                                            <template if:false={pp.Has_Customer__c}>
+                                                <span class="badge badge-gray">No</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={pp.Has_Category__c}>
+                                                <span class="badge badge-green">Yes</span>
+                                            </template>
+                                            <template if:false={pp.Has_Category__c}>
+                                                <span class="badge badge-gray">No</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={pp.Has_Territory__c}>
+                                                <span class="badge badge-green">Yes</span>
+                                            </template>
+                                            <template if:false={pp.Has_Territory__c}>
+                                                <span class="badge badge-gray">No</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={pp.Has_Channel__c}>
+                                                <span class="badge badge-green">Yes</span>
+                                            </template>
+                                            <template if:false={pp.Has_Channel__c}>
+                                                <span class="badge badge-gray">No</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={pp.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={pp.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasPricebookPriorities}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:settings" size="large"></lightning-icon>
+                        <p>No pricebook priority configurations found.</p>
                     </div>
                 </template>
             </template>
@@ -681,6 +778,7 @@
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
                     <div class="slds-grid slds-wrap slds-gutters">
+                        <!-- Product Lookup -->
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <div class="slds-form-element slds-is-required">
                                 <label class="slds-form-element__label">
@@ -721,14 +819,121 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Customer Lookup -->
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Customer (for customer-wise pricing)</label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedCustomer}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:account" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedCustomerName}</span>
+                                            <button class="pill-remove" onclick={handleClearCustomerSelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedCustomer}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search customers..."
+                                            value={customerLookupSearchTerm}
+                                            onchange={handleCustomerLookupSearch}></lightning-input>
+                                        <template if:true={showCustomerLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={customerLookupResults} for:item="cust">
+                                                    <li key={cust.Id} class="lookup-option" role="option"
+                                                        data-id={cust.Id} data-name={cust.Name}
+                                                        onclick={handleSelectLookupCustomer}>
+                                                        <span class="lookup-option-name">{cust.Name}</span>
+                                                        <span class="lookup-option-meta">{cust.AccountNumber}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Category Lookup -->
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Category</label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedCategory}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:category" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedCategoryName}</span>
+                                            <button class="pill-remove" onclick={handleClearCategorySelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedCategory}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search categories..."
+                                            value={categoryLookupSearchTerm}
+                                            onchange={handleCategoryLookupSearch}></lightning-input>
+                                        <template if:true={showCategoryLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={categoryLookupResults} for:item="cat">
+                                                    <li key={cat.Id} class="lookup-option" role="option"
+                                                        data-id={cat.Id} data-name={cat.Name}
+                                                        onclick={handleSelectLookupCategory}>
+                                                        <span class="lookup-option-name">{cat.Name}</span>
+                                                        <span class="lookup-option-meta">{cat.Level__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Territory Lookup -->
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Territory</label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedTerritory}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:location" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedTerritoryName}</span>
+                                            <button class="pill-remove" data-target="priceList"
+                                                onclick={handleClearTerritorySelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedTerritory}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search territories..."
+                                            value={territoryLookupSearchTerm}
+                                            data-target="priceList"
+                                            onchange={handleTerritoryLookupSearch}></lightning-input>
+                                        <template if:true={showTerritoryLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={territoryLookupResults} for:item="terr">
+                                                    <li key={terr.Id} class="lookup-option" role="option"
+                                                        data-id={terr.Id} data-name={terr.Name}
+                                                        data-target="priceList"
+                                                        onclick={handleSelectLookupTerritory}>
+                                                        <span class="lookup-option-name">{terr.Name}</span>
+                                                        <span class="lookup-option-meta">{terr.Territory_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-combobox label="Channel" value={editPriceList.Channel__c}
                                 options={channelOptions} data-field="Channel__c"
-                                onchange={handlePriceListFieldChange} required></lightning-combobox>
-                        </div>
-                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                            <lightning-input label="Region" value={editPriceList.Region__c}
-                                data-field="Region__c" onchange={handlePriceListFieldChange}></lightning-input>
+                                onchange={handlePriceListFieldChange}></lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-combobox label="Price Type" value={editPriceList.Price_Type__c}
@@ -755,6 +960,12 @@
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="date" label="Effective To" value={editPriceList.Effective_To__c}
                                 data-field="Effective_To__c" onchange={handlePriceListFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                            <div class="priority-info-box">
+                                <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+                                <span> Priority is auto-calculated based on dimensions: Customer (1st) &gt; Category+Territory+Channel (2nd) &gt; Territory+Channel (3rd) &gt; Category+Territory (4th) &gt; Territory (5th) &gt; Channel (6th) &gt; Category (7th) &gt; Base (8th)</span>
+                            </div>
                         </div>
                     </div>
                 </div>

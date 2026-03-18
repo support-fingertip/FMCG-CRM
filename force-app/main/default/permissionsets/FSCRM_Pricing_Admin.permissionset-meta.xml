@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/metadata">
     <label>FSCRM Pricing Admin</label>
-    <description>Full access to Price Lists, Price Change Logs, and Pricing configuration</description>
+    <description>Full access to Price Lists, Price Change Logs, Pricebook Priority configuration, and Pricing management</description>
     <hasActivationRequired>false</hasActivationRequired>
     <license>Salesforce</license>
     <objectPermissions>
@@ -22,6 +22,46 @@
         <viewAllRecords>true</viewAllRecords>
         <modifyAllRecords>false</modifyAllRecords>
     </objectPermissions>
+    <fieldPermissions>
+        <field>Price_List__c.Customer__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_List__c.Category__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_List__c.Territory__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_List__c.Priority__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_Change_Log__c.Customer__c</field>
+        <readable>true</readable>
+        <editable>false</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_Change_Log__c.Category__c</field>
+        <readable>true</readable>
+        <editable>false</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_Change_Log__c.Territory__c</field>
+        <readable>true</readable>
+        <editable>false</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Price_Change_Log__c.Priority__c</field>
+        <readable>true</readable>
+        <editable>false</editable>
+    </fieldPermissions>
     <tabSettings>
         <tab>Price_List__c</tab>
         <visibility>Visible</visibility>

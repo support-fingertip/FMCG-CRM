@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Priority_Order__c</fullName>
+    <label>Priority Order</label>
+    <type>Number</type>
+    <precision>2</precision>
+    <scale>0</scale>
+    <required>true</required>
+    <unique>true</unique>
+    <externalId>false</externalId>
+    <description>Priority order number. 1 = highest priority (checked first). Lower numbers take precedence.</description>
+</CustomField>

@@ -97,7 +97,7 @@ public with sharing class ProductManagementController {
     // ─── Price List CRUD ───────────────────────────────────────────────
 
     @AuraEnabled
-    public static PriceListPageResult getPriceLists(String productId, String channel, String region, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
+    public static PriceListPageResult getPriceLists(String productId, String channel, String region, String categoryId, String territoryId, String customerId, String priorityFilter, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
         if (pageNumber == null || pageNumber < 1) pageNumber = 1;
         if (pageSize == null || pageSize < 1) pageSize = 25;
 
@@ -116,14 +116,28 @@ public with sharing class ProductManagementController {
             String regionKey = '%' + String.escapeSingleQuotes(region) + '%';
             baseQuery += ' AND Region__c LIKE \'' + String.escapeSingleQuotes(regionKey) + '\'';
         }
+        if (String.isNotBlank(categoryId)) {
+            baseQuery += ' AND Category__c = \'' + String.escapeSingleQuotes(categoryId) + '\'';
+        }
+        if (String.isNotBlank(territoryId)) {
+            baseQuery += ' AND Territory__c = \'' + String.escapeSingleQuotes(territoryId) + '\'';
+        }
+        if (String.isNotBlank(customerId)) {
+            baseQuery += ' AND Customer__c = \'' + String.escapeSingleQuotes(customerId) + '\'';
+        }
+        if (String.isNotBlank(priorityFilter)) {
+            baseQuery += ' AND Priority__c = ' + Integer.valueOf(priorityFilter);
+        }
 
         Integer totalCount = Database.countQuery('SELECT COUNT() ' + baseQuery);
 
         Integer offset = (pageNumber - 1) * pageSize;
         String dataQuery = 'SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                            'Channel__c, Region__c, Unit_Price__c, Price_Type__c, ' +
+                           'Customer__c, Customer__r.Name, Category__c, Category__r.Name, ' +
+                           'Territory__c, Territory__r.Name, Priority__c, ' +
                            'Effective_From__c, Effective_To__c, Is_Active__c, Min_Qty__c ' +
-                           baseQuery + ' ORDER BY Product_Ext__r.Name ASC, Channel__c ASC LIMIT :pageSize OFFSET :offset';
+                           baseQuery + ' ORDER BY Priority__c ASC, Product_Ext__r.Name ASC, Channel__c ASC LIMIT :pageSize OFFSET :offset';
 
         List<Price_List__c> priceLists = Database.query(dataQuery);
 
@@ -141,6 +155,8 @@ public with sharing class ProductManagementController {
         upsert priceList;
         return [SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
                        Channel__c, Region__c, Unit_Price__c, Price_Type__c,
+                       Customer__c, Customer__r.Name, Category__c, Category__r.Name,
+                       Territory__c, Territory__r.Name, Priority__c,
                        Effective_From__c, Effective_To__c, Is_Active__c, Min_Qty__c
                 FROM Price_List__c WHERE Id = :priceList.Id];
     }
@@ -149,6 +165,18 @@ public with sharing class ProductManagementController {
     public static void deletePriceList(Id priceListId) {
         Price_List__c pl = [SELECT Id FROM Price_List__c WHERE Id = :priceListId LIMIT 1];
         delete pl;
+    }
+
+    // ─── Pricebook Priority Configuration (Read-only) ───────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<Pricebook_Priority__mdt> getPricebookPriorities() {
+        return [SELECT Id, MasterLabel, DeveloperName, Priority_Order__c,
+                       Has_Customer__c, Has_Category__c, Has_Territory__c, Has_Channel__c,
+                       Is_Active__c
+                FROM Pricebook_Priority__mdt
+                WHERE Is_Active__c = true
+                ORDER BY Priority_Order__c ASC];
     }
 
     // ─── Batch Master CRUD ─────────────────────────────────────────────
@@ -226,7 +254,9 @@ public with sharing class ProductManagementController {
     public static List<Price_Change_Log__c> getPriceChangeLogs(String productId) {
         String query = 'SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Old_Price__c, New_Price__c, Change_Date__c, Change_Reason__c, Changed_By__c, ' +
-                       'Channel__c, Region__c, Price_List__c ' +
+                       'Channel__c, Region__c, Customer__c, Customer__r.Name, ' +
+                       'Category__c, Category__r.Name, Territory__c, Territory__r.Name, ' +
+                       'Priority__c, Price_List__c ' +
                        'FROM Price_Change_Log__c';
         if (String.isNotBlank(productId)) {
             query += ' WHERE Product_Ext__c = \'' + String.escapeSingleQuotes(productId) + '\'';
@@ -263,7 +293,7 @@ public with sharing class ProductManagementController {
                 LIMIT 20];
     }
 
-    // ─── Territory Lookup for Must-Sell config ──────────────────────────
+    // ─── Territory Lookup for Must-Sell config and Price Lists ──────────
 
     @AuraEnabled(cacheable=true)
     public static List<Territory_Master__c> searchTerritoriesForLookup(String searchTerm) {
@@ -272,6 +302,31 @@ public with sharing class ProductManagementController {
                 FROM Territory_Master__c
                 WHERE Is_Active__c = true
                   AND (Name LIKE :searchKey OR Territory_Code__c LIKE :searchKey)
+                ORDER BY Name ASC
+                LIMIT 20];
+    }
+
+    // ─── Category Lookup for Price Lists ────────────────────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<Product_Category__c> searchCategoriesForLookup(String searchTerm) {
+        String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        return [SELECT Id, Name, Category_Code__c, Level__c
+                FROM Product_Category__c
+                WHERE Is_Active__c = true
+                  AND (Name LIKE :searchKey OR Category_Code__c LIKE :searchKey)
+                ORDER BY Name ASC
+                LIMIT 20];
+    }
+
+    // ─── Customer (Account) Lookup for Price Lists ──────────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<Account> searchCustomersForLookup(String searchTerm) {
+        String searchKey = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+        return [SELECT Id, Name, AccountNumber
+                FROM Account
+                WHERE Name LIKE :searchKey
                 ORDER BY Name ASC
                 LIMIT 20];
     }

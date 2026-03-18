@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Category__c</fullName>
+    <label>Category</label>
+    <type>Lookup</type>
+    <referenceTo>Product_Category__c</referenceTo>
+    <relationshipLabel>Category Price Lists</relationshipLabel>
+    <relationshipName>Category_Price_Lists</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Product category for category-based pricing. Used in combination with Territory and Channel for multi-dimensional price resolution.</description>
+</CustomField>
