@@ -2,3 +2,45 @@
 package.xml
 .eslintrc.json
 **/__tests__/**
+
+# Standard profiles cannot be deployed and cause errors due to spaces in filenames
+**/profiles/Analytics Cloud Integration User.*
+**/profiles/Analytics Cloud Security User.*
+**/profiles/Authenticated Website.*
+**/profiles/B2B Reordering Portal Buyer Profile.*
+**/profiles/Chatter External User.*
+**/profiles/Chatter Free User.*
+**/profiles/Chatter Moderator User.*
+**/profiles/Chatter Only User.*
+**/profiles/Company Communities User.*
+**/profiles/Cross Org Data Proxy User.*
+**/profiles/Custom%3A Marketing Profile.*
+**/profiles/Custom%3A Sales Profile.*
+**/profiles/Custom%3A Support Profile.*
+**/profiles/Customer Community Login User.*
+**/profiles/Customer Community Plus Login User.*
+**/profiles/Customer Community Plus User.*
+**/profiles/Customer Community User.*
+**/profiles/Customer Portal Manager Custom.*
+**/profiles/Customer Portal Manager Standard.*
+**/profiles/External Apps Login User.*
+**/profiles/External Apps Plus Login User.*
+**/profiles/External Apps Plus User.*
+**/profiles/External Apps User.*
+**/profiles/External Identity User.*
+**/profiles/Force%2Ecom - Free User.*
+**/profiles/Gold Partner User.*
+**/profiles/Guest License User.*
+**/profiles/High Volume Customer Portal User.*
+**/profiles/Identity User.*
+**/profiles/Minimum Access - API Only Integrations.*
+**/profiles/Minimum Access - Salesforce.*
+**/profiles/Overage Customer Portal Manager Custom.*
+**/profiles/Overage Customer Portal Manager Standard.*
+**/profiles/Overage High Volume Customer Portal User.*
+**/profiles/Partner Community Login User.*
+**/profiles/Partner Community User.*
+**/profiles/Read Only.*
+**/profiles/Salesforce API Only System Integrations.*
+**/profiles/Silver Partner User.*
+**/profiles/Work%2Ecom Only User.*
