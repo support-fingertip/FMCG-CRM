@@ -316,6 +316,126 @@ private class OrderEntryController_Test {
     }
 
     /**
+     * @description Tests creating a sales order via the JSON-based createSalesOrder
+     *              Apex method used by the LWC component.
+     */
+    @isTest
+    static void testCreateSalesOrderViaJson() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Order Entry Retailer' LIMIT 1];
+        Visit__c visit = [SELECT Id FROM Visit__c LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 3];
+
+        // Build the JSON payload matching what the LWC sends
+        Map<String, Object> payload = new Map<String, Object>();
+        payload.put('accountId', acct.Id);
+        payload.put('visitId', visit.Id);
+        payload.put('status', 'Confirmed');
+        payload.put('remarks', 'Test order');
+        payload.put('grossAmount', 4500);
+        payload.put('totalDiscount', 0);
+        payload.put('totalTax', 810);
+        payload.put('netAmount', 5310);
+        payload.put('mustSellOverride', false);
+
+        List<Map<String, Object>> lineItems = new List<Map<String, Object>>();
+        Map<String, Object> li1 = new Map<String, Object>();
+        li1.put('productId', products[0].Id);
+        li1.put('quantity', 10);
+        li1.put('freeQty', 0);
+        li1.put('rate', 200);
+        li1.put('grossAmount', 2000);
+        li1.put('discountAmount', 0);
+        li1.put('taxRate', 18);
+        li1.put('taxAmount', 360);
+        li1.put('totalAmount', 2360);
+        lineItems.add(li1);
+
+        Map<String, Object> li2 = new Map<String, Object>();
+        li2.put('productId', products[1].Id);
+        li2.put('quantity', 5);
+        li2.put('freeQty', 0);
+        li2.put('rate', 300);
+        li2.put('grossAmount', 1500);
+        li2.put('discountAmount', 0);
+        li2.put('taxRate', 18);
+        li2.put('taxAmount', 270);
+        li2.put('totalAmount', 1770);
+        lineItems.add(li2);
+
+        Map<String, Object> li3 = new Map<String, Object>();
+        li3.put('productId', products[2].Id);
+        li3.put('quantity', 2);
+        li3.put('freeQty', 0);
+        li3.put('rate', 500);
+        li3.put('grossAmount', 1000);
+        li3.put('discountAmount', 0);
+        li3.put('taxRate', 18);
+        li3.put('taxAmount', 180);
+        li3.put('totalAmount', 1180);
+        lineItems.add(li3);
+
+        payload.put('lineItems', lineItems);
+
+        Test.startTest();
+        Sales_Order__c result = OrderEntryController.createSalesOrder(JSON.serialize(payload));
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Should return created order');
+        System.assertNotEquals(null, result.Name, 'Order should have an auto-generated Name');
+        System.assertEquals('Confirmed', result.Status__c, 'Status should be Confirmed');
+
+        // Verify line items were created
+        List<Order_Line_Item__c> createdItems = [
+            SELECT Id, Product_Ext__c, Quantity__c, Unit_Price__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c = :result.Id
+        ];
+        System.assertEquals(3, createdItems.size(), 'Should have 3 line items');
+    }
+
+    /**
+     * @description Tests that createSalesOrder handles mustSellOverride and compliance fields.
+     */
+    @isTest
+    static void testCreateSalesOrderWithMustSellOverride() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Order Entry Retailer' LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 1];
+
+        Map<String, Object> payload = new Map<String, Object>();
+        payload.put('accountId', acct.Id);
+        payload.put('status', 'Confirmed');
+        payload.put('grossAmount', 2000);
+        payload.put('totalDiscount', 0);
+        payload.put('totalTax', 360);
+        payload.put('netAmount', 2360);
+        payload.put('mustSellOverride', true);
+        payload.put('mustSellCompliance', 66.67);
+
+        List<Map<String, Object>> lineItems = new List<Map<String, Object>>();
+        Map<String, Object> li1 = new Map<String, Object>();
+        li1.put('productId', products[0].Id);
+        li1.put('quantity', 10);
+        li1.put('rate', 200);
+        li1.put('grossAmount', 2000);
+        li1.put('taxRate', 18);
+        li1.put('taxAmount', 360);
+        li1.put('totalAmount', 2360);
+        lineItems.add(li1);
+        payload.put('lineItems', lineItems);
+
+        Test.startTest();
+        Sales_Order__c result = OrderEntryController.createSalesOrder(JSON.serialize(payload));
+        Test.stopTest();
+
+        Sales_Order__c order = [
+            SELECT Must_Sell_Override__c, Must_Sell_Compliance__c
+            FROM Sales_Order__c WHERE Id = :result.Id
+        ];
+        System.assertEquals(true, order.Must_Sell_Override__c, 'Must sell override should be true');
+        System.assertEquals(66.67, order.Must_Sell_Compliance__c, 'Must sell compliance should be 66.67');
+    }
+
+    /**
      * @description Tests retrieval of currently applicable schemes for order entry,
      *              verifying only active schemes within valid date ranges are returned.
      */

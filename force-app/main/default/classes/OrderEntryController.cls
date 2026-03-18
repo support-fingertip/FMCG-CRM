@@ -110,14 +110,59 @@ public with sharing class OrderEntryController {
     }
 
     @AuraEnabled
-    public static Sales_Order__c createSalesOrder(Sales_Order__c order, List<Order_Line_Item__c> lineItems) {
+    public static Sales_Order__c createSalesOrder(String orderJson) {
         Savepoint sp = Database.setSavepoint();
         try {
-            insert order;
-            for (Order_Line_Item__c li : lineItems) {
-                li.Sales_Order__c = order.Id;
+            Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(orderJson);
+
+            Sales_Order__c order = new Sales_Order__c();
+            order.Account__c = (String) payload.get('accountId');
+            if (payload.get('visitId') != null) {
+                order.Visit__c = (String) payload.get('visitId');
             }
-            insert lineItems;
+            order.Status__c = (String) payload.get('status');
+            order.Notes__c = (String) payload.get('remarks');
+            order.Order_Date__c = Date.today();
+            order.Total_Gross_Amount__c = toDecimal(payload.get('grossAmount'));
+            order.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
+            order.Total_Tax__c = toDecimal(payload.get('totalTax'));
+            order.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
+            if (payload.containsKey('mustSellOverride') && payload.get('mustSellOverride') == true) {
+                order.Must_Sell_Override__c = true;
+            }
+            if (payload.containsKey('mustSellCompliance')) {
+                order.Must_Sell_Compliance__c = toDecimal(payload.get('mustSellCompliance'));
+            }
+
+            insert order;
+
+            List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>();
+            List<Object> items = (List<Object>) payload.get('lineItems');
+            if (items != null) {
+                for (Object itemObj : items) {
+                    Map<String, Object> item = (Map<String, Object>) itemObj;
+                    Order_Line_Item__c li = new Order_Line_Item__c();
+                    li.Sales_Order__c = order.Id;
+                    li.Product_Ext__c = (String) item.get('productId');
+                    li.Quantity__c = toDecimal(item.get('quantity'));
+                    li.Free_Quantity__c = toDecimal(item.get('freeQty'));
+                    li.Unit_Price__c = toDecimal(item.get('rate'));
+                    li.Line_Total__c = toDecimal(item.get('grossAmount'));
+                    li.Discount_Amount__c = toDecimal(item.get('discountAmount'));
+                    li.Tax_Rate__c = toDecimal(item.get('taxRate'));
+                    li.Tax_Amount__c = toDecimal(item.get('taxAmount'));
+                    li.Total_Amount__c = toDecimal(item.get('totalAmount'));
+                    if (item.get('schemeId') != null) {
+                        li.Scheme__c = (String) item.get('schemeId');
+                    }
+                    lineItems.add(li);
+                }
+            }
+
+            if (!lineItems.isEmpty()) {
+                insert lineItems;
+            }
+
             // Recalculate totals
             updateOrderTotals(order.Id);
             return [SELECT Id, Name, Status__c, Total_Net_Amount__c FROM Sales_Order__c WHERE Id = :order.Id];
@@ -125,6 +170,15 @@ public with sharing class OrderEntryController {
             Database.rollback(sp);
             throw new AuraHandledException(e.getMessage());
         }
+    }
+
+    private static Decimal toDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof Decimal) return (Decimal) value;
+        if (value instanceof Integer) return Decimal.valueOf((Integer) value);
+        if (value instanceof Long) return Decimal.valueOf((Long) value);
+        if (value instanceof Double) return Decimal.valueOf((Double) value);
+        return Decimal.valueOf(String.valueOf(value));
     }
 
     @AuraEnabled(cacheable=true)
