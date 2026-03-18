@@ -1,0 +1,848 @@
+<template>
+    <div class="hub-container">
+        <!-- ─── Sidebar Navigation ──────────────────────────────────────── -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Product Hub</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a class={dashboardNavClass} data-section="dashboard" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:dashboard" size="x-small"></lightning-icon>
+                    <span>Dashboard</span>
+                </a>
+                <a class={productsNavClass} data-section="products" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                    <span>Products</span>
+                </a>
+                <a class={categoriesNavClass} data-section="categories" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:category" size="x-small"></lightning-icon>
+                    <span>Categories</span>
+                </a>
+                <a class={priceListsNavClass} data-section="priceLists" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:pricebook" size="x-small"></lightning-icon>
+                    <span>Price Lists</span>
+                </a>
+                <a class={batchesNavClass} data-section="batches" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:record" size="x-small"></lightning-icon>
+                    <span>Batch Master</span>
+                </a>
+                <a class={mustSellNavClass} data-section="mustSell" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:task" size="x-small"></lightning-icon>
+                    <span>Must-Sell Config</span>
+                </a>
+                <a class={priceChangeLogsNavClass} data-section="priceChangeLogs" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:note" size="x-small"></lightning-icon>
+                    <span>Price Change Logs</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- ─── Main Content Area ───────────────────────────────────────── -->
+        <div class="main-content">
+            <div class="content-header">
+                <h1>{sectionTitle}</h1>
+            </div>
+
+            <template if:true={isLoading}>
+                <div class="loading-container">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- ─── Dashboard Section ───────────────────────────────────── -->
+            <template if:true={showDashboard}>
+                <div class="dashboard-grid">
+                    <div class="stat-card stat-blue" data-section="products" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.totalProducts}</div>
+                        <div class="stat-label">Total Products</div>
+                    </div>
+                    <div class="stat-card stat-green" data-section="products" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.activeProducts}</div>
+                        <div class="stat-label">Active Products</div>
+                    </div>
+                    <div class="stat-card stat-purple" data-section="categories" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.totalCategories}</div>
+                        <div class="stat-label">Categories</div>
+                    </div>
+                    <div class="stat-card stat-teal" data-section="priceLists" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.activePriceLists}</div>
+                        <div class="stat-label">Active Price Lists</div>
+                    </div>
+                    <div class="stat-card stat-orange" data-section="batches" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.activeBatches}</div>
+                        <div class="stat-label">Active Batches</div>
+                    </div>
+                    <div class="stat-card stat-red" data-section="batches" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.nearExpiryBatches}</div>
+                        <div class="stat-label">Near Expiry Batches</div>
+                    </div>
+                    <div class="stat-card stat-indigo" data-section="mustSell" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.mustSellConfigs}</div>
+                        <div class="stat-label">Must-Sell Configs</div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ─── Products Section ────────────────────────────────────── -->
+            <template if:true={showProducts}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left">
+                        <lightning-input type="search" label="Search Products" placeholder="Search by name or SKU..."
+                            value={productSearchTerm} onchange={handleProductSearch} variant="label-hidden"></lightning-input>
+                        <label class="checkbox-label">
+                            <lightning-input type="checkbox" label="Active Only" checked={productActiveOnly}
+                                onchange={handleProductActiveFilter} variant="label-hidden"></lightning-input>
+                        </label>
+                    </div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New Product" variant="brand" icon-name="utility:add"
+                            onclick={handleNewProduct}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasProducts}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Name</th>
+                                    <th>Brand</th>
+                                    <th>Category</th>
+                                    <th>MRP</th>
+                                    <th>Unit Price</th>
+                                    <th>GST %</th>
+                                    <th>UOM</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={products} for:item="product">
+                                    <tr key={product.Id}>
+                                        <td class="cell-mono">{product.SKU_Code__c}</td>
+                                        <td>{product.Name}</td>
+                                        <td>{product.Brand__c}</td>
+                                        <td>{product.Product_Category__r.Name}</td>
+                                        <td class="cell-number">{product.MRP__c}</td>
+                                        <td class="cell-number">{product.Unit_Price__c}</td>
+                                        <td class="cell-number">{product.GST_Rate__c}</td>
+                                        <td>{product.Unit_of_Measure__c}</td>
+                                        <td>
+                                            <template if:true={product.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={product.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={product.Id} onclick={handleEditProduct} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={product.Id} onclick={handleDeleteProduct} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <lightning-button label="Previous" disabled={isFirstProductPage}
+                            onclick={handleProductPrevPage}></lightning-button>
+                        <span class="page-info">{productPageInfo}</span>
+                        <lightning-button label="Next" disabled={isLastProductPage}
+                            onclick={handleProductNextPage}></lightning-button>
+                    </div>
+                </template>
+                <template if:false={hasProducts}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:product" size="large"></lightning-icon>
+                        <p>No products found. Create a new product to get started.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── Categories Section ──────────────────────────────────── -->
+            <template if:true={showCategories}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left"></div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New Category" variant="brand" icon-name="utility:add"
+                            onclick={handleNewCategory}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasCategories}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Level</th>
+                                    <th>Parent</th>
+                                    <th>Sort Order</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={categories} for:item="cat">
+                                    <tr key={cat.Id}>
+                                        <td class="cell-mono">{cat.Category_Code__c}</td>
+                                        <td>{cat.Name}</td>
+                                        <td>
+                                            <span class="badge badge-blue">{cat.Level__c}</span>
+                                        </td>
+                                        <td>{cat.Parent_Category__r.Name}</td>
+                                        <td class="cell-number">{cat.Sort_Order__c}</td>
+                                        <td>
+                                            <template if:true={cat.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={cat.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={cat.Id} onclick={handleEditCategory} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={cat.Id} onclick={handleDeleteCategory} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasCategories}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:category" size="large"></lightning-icon>
+                        <p>No categories found. Create a new category to organize your products.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── Price Lists Section ─────────────────────────────────── -->
+            <template if:true={showPriceLists}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left">
+                        <lightning-combobox label="Channel" value={priceListChannelFilter}
+                            options={channelFilterOptions} onchange={handlePriceListChannelFilter}
+                            variant="label-hidden" placeholder="All Channels"></lightning-combobox>
+                        <label class="checkbox-label">
+                            <lightning-input type="checkbox" label="Active Only" checked={priceListActiveOnly}
+                                onchange={handlePriceListActiveFilter} variant="label-hidden"></lightning-input>
+                        </label>
+                    </div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New Price Entry" variant="brand" icon-name="utility:add"
+                            onclick={handleNewPriceList}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasPriceLists}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Channel</th>
+                                    <th>Region</th>
+                                    <th>Price Type</th>
+                                    <th>Unit Price</th>
+                                    <th>Min Qty</th>
+                                    <th>Effective From</th>
+                                    <th>Effective To</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={priceLists} for:item="pl">
+                                    <tr key={pl.Id}>
+                                        <td>{pl.Product_Ext__r.Name}</td>
+                                        <td class="cell-mono">{pl.Product_Ext__r.SKU_Code__c}</td>
+                                        <td>{pl.Channel__c}</td>
+                                        <td>{pl.Region__c}</td>
+                                        <td>{pl.Price_Type__c}</td>
+                                        <td class="cell-number">{pl.Unit_Price__c}</td>
+                                        <td class="cell-number">{pl.Min_Qty__c}</td>
+                                        <td>{pl.Effective_From__c}</td>
+                                        <td>{pl.Effective_To__c}</td>
+                                        <td>
+                                            <template if:true={pl.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={pl.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={pl.Id} onclick={handleEditPriceList} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={pl.Id} onclick={handleDeletePriceList} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <lightning-button label="Previous" disabled={isFirstPriceListPage}
+                            onclick={handlePriceListPrevPage}></lightning-button>
+                        <span class="page-info">{priceListPageInfo}</span>
+                        <lightning-button label="Next" disabled={isLastPriceListPage}
+                            onclick={handlePriceListNextPage}></lightning-button>
+                    </div>
+                </template>
+                <template if:false={hasPriceLists}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:pricebook" size="large"></lightning-icon>
+                        <p>No price list entries found.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── Batches Section ─────────────────────────────────────── -->
+            <template if:true={showBatches}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left">
+                        <lightning-combobox label="Status" value={batchStatusFilter}
+                            options={batchStatusFilterOptions} onchange={handleBatchStatusFilter}
+                            variant="label-hidden" placeholder="All Statuses"></lightning-combobox>
+                    </div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New Batch" variant="brand" icon-name="utility:add"
+                            onclick={handleNewBatch}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasBatches}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Batch #</th>
+                                    <th>Product</th>
+                                    <th>Mfg Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Qty Manufactured</th>
+                                    <th>Shelf Life (days)</th>
+                                    <th>Status</th>
+                                    <th>Near Expiry</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={batches} for:item="batch">
+                                    <tr key={batch.Id}>
+                                        <td class="cell-mono">{batch.Batch_Number__c}</td>
+                                        <td>{batch.Product_Ext__r.Name}</td>
+                                        <td>{batch.Manufacturing_Date__c}</td>
+                                        <td>{batch.Expiry_Date__c}</td>
+                                        <td class="cell-number">{batch.Quantity_Manufactured__c}</td>
+                                        <td class="cell-number">{batch.Shelf_Life_Days__c}</td>
+                                        <td>
+                                            <template if:true={batch.Status__c}>
+                                                <span class={batch.statusClass}>{batch.Status__c}</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={batch.Is_Near_Expiry__c}>
+                                                <span class="badge badge-red">Yes</span>
+                                            </template>
+                                            <template if:false={batch.Is_Near_Expiry__c}>
+                                                <span class="badge badge-green">No</span>
+                                            </template>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={batch.Id} onclick={handleEditBatch} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={batch.Id} onclick={handleDeleteBatch} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasBatches}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:record" size="large"></lightning-icon>
+                        <p>No batches found.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── Must-Sell Config Section ────────────────────────────── -->
+            <template if:true={showMustSell}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left">
+                        <label class="checkbox-label">
+                            <lightning-input type="checkbox" label="Active Only" checked={mustSellActiveOnly}
+                                onchange={handleMustSellActiveFilter} variant="label-hidden"></lightning-input>
+                        </label>
+                    </div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New Must-Sell Config" variant="brand" icon-name="utility:add"
+                            onclick={handleNewMustSell}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasMustSellConfigs}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Classification</th>
+                                    <th>Channel</th>
+                                    <th>Customer Type</th>
+                                    <th>Territory</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Min Qty</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={mustSellConfigs} for:item="ms">
+                                    <tr key={ms.Id}>
+                                        <td>{ms.Product_Ext__r.Name}</td>
+                                        <td class="cell-mono">{ms.Product_Ext__r.SKU_Code__c}</td>
+                                        <td>
+                                            <span class="badge badge-purple">{ms.Classification__c}</span>
+                                        </td>
+                                        <td>{ms.Channel__c}</td>
+                                        <td>{ms.Customer_Type__c}</td>
+                                        <td>{ms.Territory__r.Name}</td>
+                                        <td>{ms.Start_Date__c}</td>
+                                        <td>{ms.End_Date__c}</td>
+                                        <td class="cell-number">{ms.Min_Qty__c}</td>
+                                        <td>
+                                            <template if:true={ms.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={ms.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={ms.Id} onclick={handleEditMustSell} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={ms.Id} onclick={handleDeleteMustSell} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasMustSellConfigs}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:task" size="large"></lightning-icon>
+                        <p>No must-sell configurations found.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── Price Change Logs Section ───────────────────────────── -->
+            <template if:true={showPriceChangeLogs}>
+                <template if:true={hasPriceChangeLogs}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Old Price</th>
+                                    <th>New Price</th>
+                                    <th>Change Date</th>
+                                    <th>Channel</th>
+                                    <th>Region</th>
+                                    <th>Reason</th>
+                                    <th>Changed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={priceChangeLogs} for:item="log">
+                                    <tr key={log.Id}>
+                                        <td>{log.Product_Ext__r.Name}</td>
+                                        <td class="cell-mono">{log.Product_Ext__r.SKU_Code__c}</td>
+                                        <td class="cell-number">{log.Old_Price__c}</td>
+                                        <td class="cell-number">{log.New_Price__c}</td>
+                                        <td>{log.Change_Date__c}</td>
+                                        <td>{log.Channel__c}</td>
+                                        <td>{log.Region__c}</td>
+                                        <td>{log.Change_Reason__c}</td>
+                                        <td>{log.Changed_By__c}</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasPriceChangeLogs}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:note" size="large"></lightning-icon>
+                        <p>No price change logs found.</p>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MODALS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- ─── Product Modal ───────────────────────────────────────────────── -->
+    <template if:true={showProductModal}>
+        <section class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseProductModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{productModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Product Name" value={editProduct.Name}
+                                data-field="Name" onchange={handleProductFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="SKU Code" value={editProduct.SKU_Code__c}
+                                data-field="SKU_Code__c" onchange={handleProductFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Brand" value={editProduct.Brand__c}
+                                data-field="Brand__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="HSN/SAC Code" value={editProduct.HSN_SAC_Code__c}
+                                data-field="HSN_SAC_Code__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="MRP" value={editProduct.MRP__c}
+                                data-field="MRP__c" onchange={handleProductFieldChange} step="0.01"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Unit Price" value={editProduct.Unit_Price__c}
+                                data-field="Unit_Price__c" onchange={handleProductFieldChange} step="0.01"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="GST Rate (%)" value={editProduct.GST_Rate__c}
+                                data-field="GST_Rate__c" onchange={handleProductFieldChange} step="0.01"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-combobox label="Unit of Measure" value={editProduct.Unit_of_Measure__c}
+                                options={uomOptions} data-field="Unit_of_Measure__c"
+                                onchange={handleProductFieldChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Case Size" value={editProduct.Case_Size__c}
+                                data-field="Case_Size__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Min Order Qty" value={editProduct.Min_Order_Qty__c}
+                                data-field="Min_Order_Qty__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Weight" value={editProduct.Weight__c}
+                                data-field="Weight__c" onchange={handleProductFieldChange} step="0.01"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-combobox label="Weight Unit" value={editProduct.Weight_Unit__c}
+                                options={weightUnitOptions} data-field="Weight_Unit__c"
+                                onchange={handleProductFieldChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Shelf Life (days)" value={editProduct.Shelf_Life_Days__c}
+                                data-field="Shelf_Life_Days__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input label="Barcode (EAN)" value={editProduct.Barcode_EAN__c}
+                                data-field="Barcode_EAN__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input label="Barcode (UPC)" value={editProduct.Barcode_UPC__c}
+                                data-field="Barcode_UPC__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Reorder Level" value={editProduct.Reorder_Level__c}
+                                data-field="Reorder_Level__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Reorder Qty" value={editProduct.Reorder_Quantity__c}
+                                data-field="Reorder_Quantity__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input label="Image URL" value={editProduct.Product_Image_URL__c}
+                                data-field="Product_Image_URL__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Active" checked={editProduct.Is_Active__c}
+                                data-field="Is_Active__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Returnable" checked={editProduct.Is_Returnable__c}
+                                data-field="Is_Returnable__c" onchange={handleProductFieldChange}></lightning-input>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseProductModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSaveProduct}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── Category Modal ──────────────────────────────────────────────── -->
+    <template if:true={showCategoryModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseCategoryModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{categoryModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Category Name" value={editCategory.Name}
+                                data-field="Name" onchange={handleCategoryFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Category Code" value={editCategory.Category_Code__c}
+                                data-field="Category_Code__c" onchange={handleCategoryFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Level" value={editCategory.Level__c}
+                                options={categoryLevelOptions} data-field="Level__c"
+                                onchange={handleCategoryFieldChange} required></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Parent Category" value={editCategory.Parent_Category__c}
+                                options={parentCategoryOptions} data-field="Parent_Category__c"
+                                onchange={handleCategoryFieldChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="number" label="Sort Order" value={editCategory.Sort_Order__c}
+                                data-field="Sort_Order__c" onchange={handleCategoryFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Active" checked={editCategory.Is_Active__c}
+                                data-field="Is_Active__c" onchange={handleCategoryFieldChange}></lightning-input>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseCategoryModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSaveCategory}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── Price List Modal ────────────────────────────────────────────── -->
+    <template if:true={showPriceListModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleClosePriceListModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{priceListModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Product (ID)" value={editPriceList.Product_Ext__c}
+                                data-field="Product_Ext__c" onchange={handlePriceListFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Channel" value={editPriceList.Channel__c}
+                                options={channelOptions} data-field="Channel__c"
+                                onchange={handlePriceListFieldChange} required></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Region" value={editPriceList.Region__c}
+                                data-field="Region__c" onchange={handlePriceListFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Price Type" value={editPriceList.Price_Type__c}
+                                options={priceTypeOptions} data-field="Price_Type__c"
+                                onchange={handlePriceListFieldChange} required></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Unit Price" value={editPriceList.Unit_Price__c}
+                                data-field="Unit_Price__c" onchange={handlePriceListFieldChange}
+                                step="0.01" required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Min Qty" value={editPriceList.Min_Qty__c}
+                                data-field="Min_Qty__c" onchange={handlePriceListFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Active" checked={editPriceList.Is_Active__c}
+                                data-field="Is_Active__c" onchange={handlePriceListFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="date" label="Effective From" value={editPriceList.Effective_From__c}
+                                data-field="Effective_From__c" onchange={handlePriceListFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="date" label="Effective To" value={editPriceList.Effective_To__c}
+                                data-field="Effective_To__c" onchange={handlePriceListFieldChange}></lightning-input>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleClosePriceListModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSavePriceList}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── Batch Modal ─────────────────────────────────────────────────── -->
+    <template if:true={showBatchModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseBatchModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{batchModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Batch Number" value={editBatch.Batch_Number__c}
+                                data-field="Batch_Number__c" onchange={handleBatchFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Product (ID)" value={editBatch.Product_Ext__c}
+                                data-field="Product_Ext__c" onchange={handleBatchFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="date" label="Manufacturing Date" value={editBatch.Manufacturing_Date__c}
+                                data-field="Manufacturing_Date__c" onchange={handleBatchFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="date" label="Expiry Date" value={editBatch.Expiry_Date__c}
+                                data-field="Expiry_Date__c" onchange={handleBatchFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Qty Manufactured" value={editBatch.Quantity_Manufactured__c}
+                                data-field="Quantity_Manufactured__c" onchange={handleBatchFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-input type="number" label="Shelf Life (days)" value={editBatch.Shelf_Life_Days__c}
+                                data-field="Shelf_Life_Days__c" onchange={handleBatchFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <lightning-combobox label="Status" value={editBatch.Status__c}
+                                options={batchStatusOptions} data-field="Status__c"
+                                onchange={handleBatchFieldChange}></lightning-combobox>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseBatchModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSaveBatch}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── Must-Sell Config Modal ──────────────────────────────────────── -->
+    <template if:true={showMustSellModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseMustSellModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{mustSellModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="Product (ID)" value={editMustSell.Product_Ext__c}
+                                data-field="Product_Ext__c" onchange={handleMustSellFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Classification" value={editMustSell.Classification__c}
+                                options={classificationOptions} data-field="Classification__c"
+                                onchange={handleMustSellFieldChange} required></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Channel" value={editMustSell.Channel__c}
+                                options={channelOptions} data-field="Channel__c"
+                                onchange={handleMustSellFieldChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Customer Type" value={editMustSell.Customer_Type__c}
+                                options={customerTypeOptions} data-field="Customer_Type__c"
+                                onchange={handleMustSellFieldChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="date" label="Start Date" value={editMustSell.Start_Date__c}
+                                data-field="Start_Date__c" onchange={handleMustSellFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="date" label="End Date" value={editMustSell.End_Date__c}
+                                data-field="End_Date__c" onchange={handleMustSellFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="number" label="Min Qty" value={editMustSell.Min_Qty__c}
+                                data-field="Min_Qty__c" onchange={handleMustSellFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Active" checked={editMustSell.Is_Active__c}
+                                data-field="Is_Active__c" onchange={handleMustSellFieldChange}></lightning-input>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseMustSellModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSaveMustSell}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

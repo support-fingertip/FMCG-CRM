@@ -47,12 +47,14 @@
     <tabs>Warehouse_Stock_Dashboard</tabs>
     <tabs>Stock_Transfer__c</tabs>
     <tabs>Stock_Dashboard</tabs>
+    <tabs>Product_Management_Hub</tabs>
     <tabs>Batch_Master__c</tabs>
     <tabs>Product_Catalog</tabs>
     <tabs>Product_Extension__c</tabs>
     <tabs>Product_Category__c</tabs>
     <tabs>Price_List__c</tabs>
     <tabs>Price_Change_Log__c</tabs>
+    <tabs>Must_Sell_Config__c</tabs>
     <tabs>Expense_Eligibility__c</tabs>
     <tabs>Expense_Eligibility_Admin</tabs>
     <tabs>City_Tier__c</tabs>
