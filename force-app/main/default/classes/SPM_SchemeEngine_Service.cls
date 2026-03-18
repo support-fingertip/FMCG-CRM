@@ -103,6 +103,11 @@ public without sharing class SPM_SchemeEngine_Service {
             return results;
         }
 
+        // Pre-query per-customer usage counts for schemes with usage limits
+        Map<Id, Integer> schemeUsageCounts = getCustomerSchemeUsageCounts(
+            accountId, candidateSchemes
+        );
+
         // Track stacking rules
         Boolean hasNonStackableScheme = false;
 
@@ -113,6 +118,11 @@ public without sharing class SPM_SchemeEngine_Service {
 
             // Budget check
             if (!hasBudgetRemaining(scheme)) {
+                continue;
+            }
+
+            // Per-customer usage limit check
+            if (!hasUsageRemaining(scheme, schemeUsageCounts)) {
                 continue;
             }
 
@@ -337,6 +347,7 @@ public without sharing class SPM_SchemeEngine_Service {
                    Channel__c, Outlet_Type__c, Max_Discount_Cap__c,
                    Product_Ext__c, Product_Category__c,
                    Budget_Amount__c, Budget_Used__c, Budget_Remaining__c,
+                   Max_Usage_Per_Customer__c,
                    Start_Date__c, End_Date__c,
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name,
                            Is_Buy_Product__c, Is_Get_Product__c,
@@ -413,6 +424,53 @@ public without sharing class SPM_SchemeEngine_Service {
         }
         Decimal used = scheme.Budget_Used__c != null ? scheme.Budget_Used__c : 0;
         return used < scheme.Budget_Amount__c;
+    }
+
+    /**
+     * @description Checks if the customer has not exceeded the per-customer usage limit.
+     */
+    private static Boolean hasUsageRemaining(Scheme__c scheme, Map<Id, Integer> usageCounts) {
+        if (scheme.Max_Usage_Per_Customer__c == null || scheme.Max_Usage_Per_Customer__c <= 0) {
+            return true; // No usage limit
+        }
+        Integer used = usageCounts.containsKey(scheme.Id) ? usageCounts.get(scheme.Id) : 0;
+        return used < scheme.Max_Usage_Per_Customer__c.intValue();
+    }
+
+    /**
+     * @description Bulk-queries how many times each scheme has been used by a given account.
+     *              Only queries schemes that have a Max_Usage_Per_Customer__c set.
+     */
+    private static Map<Id, Integer> getCustomerSchemeUsageCounts(
+        Id accountId,
+        List<Scheme__c> schemes
+    ) {
+        Map<Id, Integer> counts = new Map<Id, Integer>();
+
+        // Collect scheme Ids that have a usage limit
+        Set<Id> limitedSchemeIds = new Set<Id>();
+        for (Scheme__c s : schemes) {
+            if (s.Max_Usage_Per_Customer__c != null && s.Max_Usage_Per_Customer__c > 0) {
+                limitedSchemeIds.add(s.Id);
+            }
+        }
+
+        if (limitedSchemeIds.isEmpty()) {
+            return counts;
+        }
+
+        // Count distinct orders where each scheme was applied for this account
+        for (AggregateResult ar : [
+            SELECT Scheme_Applied__c schemeId, COUNT_DISTINCT(Sales_Order__c) usageCount
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__r.Account__c = :accountId
+              AND Scheme_Applied__c IN :limitedSchemeIds
+            GROUP BY Scheme_Applied__c
+        ]) {
+            counts.put((Id) ar.get('schemeId'), (Integer) ar.get('usageCount'));
+        }
+
+        return counts;
     }
 
     /**

@@ -349,6 +349,10 @@
                                     <span class="field-label">Stackable</span>
                                     <span class="field-value">{selectedScheme.stackableLabel}</span>
                                 </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Max Usage Per Customer</span>
+                                    <span class="field-value">{selectedScheme.maxUsageLabel}</span>
+                                </div>
                             </div>
                             <template if:true={selectedScheme.description}>
                                 <div class="description-block">
@@ -715,6 +719,16 @@
                                     value={wizScheme.Budget_Amount__c}
                                     data-field="Budget_Amount__c"
                                     formatter="currency" step="0.01"
+                                    onchange={handleWizFieldChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                <lightning-input
+                                    type="number" label="Max Usage Per Customer"
+                                    value={wizScheme.Max_Usage_Per_Customer__c}
+                                    data-field="Max_Usage_Per_Customer__c"
+                                    min="0" step="1"
+                                    field-level-help="Maximum number of times a customer can avail this scheme. Leave blank for unlimited."
                                     onchange={handleWizFieldChange}>
                                 </lightning-input>
                             </div>

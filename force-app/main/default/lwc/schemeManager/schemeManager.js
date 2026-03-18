@@ -649,6 +649,9 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             priority: scheme.Priority__c || '-',
             isStackable: scheme.Is_Stackable__c || false,
             stackableLabel: scheme.Is_Stackable__c ? 'Yes' : 'No',
+            maxUsagePerCustomer: scheme.Max_Usage_Per_Customer__c || null,
+            maxUsageLabel: scheme.Max_Usage_Per_Customer__c ? String(scheme.Max_Usage_Per_Customer__c) : 'Unlimited',
+            hasUsageLimit: scheme.Max_Usage_Per_Customer__c != null && scheme.Max_Usage_Per_Customer__c > 0,
             budgetAmount: this.formatCurrency(scheme.Budget_Amount__c || 0),
             budgetUsed: this.formatCurrency(scheme.Budget_Used__c || 0),
             budgetRemaining: this.formatCurrency(scheme.Budget_Remaining__c || 0),
@@ -905,6 +908,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Is_Stackable__c: false,
             Tier__c: '',
             Budget_Amount__c: null,
+            Max_Usage_Per_Customer__c: null,
             Product_Ext__c: null,
             Product_Category__c: null
         };
@@ -1460,6 +1464,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Is_Stackable__c: s.Is_Stackable__c || false,
             Tier__c: s.Tier__c || null,
             Budget_Amount__c: s.Budget_Amount__c,
+            Max_Usage_Per_Customer__c: s.Max_Usage_Per_Customer__c,
             Product_Ext__c: s.Product_Ext__c || null,
             Product_Category__c: s.Product_Category__c || null
         };

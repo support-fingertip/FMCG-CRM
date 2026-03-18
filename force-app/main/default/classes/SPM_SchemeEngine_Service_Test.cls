@@ -396,6 +396,101 @@ private class SPM_SchemeEngine_Service_Test {
         Test.stopTest();
     }
 
+    // ── Max Usage Per Customer ──────────────────────────────────────────
+
+    @isTest
+    static void testMaxUsagePerCustomerLimit() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Scheme Test Retailer' LIMIT 1];
+        List<Product_Extension__c> prods = [SELECT Id FROM Product_Extension__c ORDER BY Name LIMIT 5];
+
+        // Create a scheme with max usage = 1
+        Scheme__c usageLimitedScheme = TestDataFactory.createScheme(
+            'Usage Limited', 'SCH-USG01', 'Discount in %', 'Same Product (QTY)');
+        usageLimitedScheme.Min_Quantity__c = 1;
+        usageLimitedScheme.Discount_Percent__c = 5;
+        usageLimitedScheme.Priority__c = 10;
+        usageLimitedScheme.Is_Stackable__c = true;
+        usageLimitedScheme.Product_Ext__c = prods[0].Id;
+        usageLimitedScheme.Max_Usage_Per_Customer__c = 1;
+        insert usageLimitedScheme;
+
+        // First time - should be applicable (no prior usage)
+        List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>{
+            new Order_Line_Item__c(
+                Product_Ext__c = prods[0].Id,
+                Quantity__c = 5,
+                Net_Amount__c = 2500
+            )
+        };
+
+        Test.startTest();
+        List<SPM_SchemeEngine_Service.SchemeResult> results =
+            SPM_SchemeEngine_Service.getApplicableSchemes(acct.Id, lineItems, Date.today());
+
+        Boolean foundUsageLimited = false;
+        for (SPM_SchemeEngine_Service.SchemeResult r : results) {
+            if (r.schemeId == usageLimitedScheme.Id) {
+                foundUsageLimited = true;
+            }
+        }
+        System.assert(foundUsageLimited,
+            'Usage-limited scheme should be applicable on first use');
+
+        // Now simulate a previous order with this scheme applied
+        Sales_Order__c order = new Sales_Order__c(
+            Account__c = acct.Id,
+            Order_Date__c = Date.today().addDays(-1)
+        );
+        insert order;
+
+        Order_Line_Item__c existingLine = new Order_Line_Item__c(
+            Sales_Order__c = order.Id,
+            Product_Ext__c = prods[0].Id,
+            Quantity__c = 3,
+            Net_Amount__c = 1500,
+            Scheme_Applied__c = usageLimitedScheme.Id
+        );
+        insert existingLine;
+
+        // Second time - should be blocked (already used once, limit = 1)
+        List<SPM_SchemeEngine_Service.SchemeResult> results2 =
+            SPM_SchemeEngine_Service.getApplicableSchemes(acct.Id, lineItems, Date.today());
+
+        Boolean foundUsageLimited2 = false;
+        for (SPM_SchemeEngine_Service.SchemeResult r : results2) {
+            if (r.schemeId == usageLimitedScheme.Id) {
+                foundUsageLimited2 = true;
+            }
+        }
+        System.assert(!foundUsageLimited2,
+            'Usage-limited scheme should be blocked after reaching max usage');
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testUnlimitedUsageScheme() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Scheme Test Retailer' LIMIT 1];
+        List<Product_Extension__c> prods = [SELECT Id FROM Product_Extension__c ORDER BY Name LIMIT 5];
+
+        // Scheme with no usage limit (null) should always be applicable
+        List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>{
+            new Order_Line_Item__c(
+                Product_Ext__c = prods[0].Id,
+                Quantity__c = 5,
+                Net_Amount__c = 2500
+            )
+        };
+
+        Test.startTest();
+        List<SPM_SchemeEngine_Service.SchemeResult> results =
+            SPM_SchemeEngine_Service.getApplicableSchemes(acct.Id, lineItems, Date.today());
+        Test.stopTest();
+
+        // Existing schemes have no usage limit - they should still be applicable
+        System.assert(!results.isEmpty(),
+            'Schemes without usage limit should remain applicable');
+    }
+
     // ── SchemeResult hasAnyBenefit ───────────────────────────────────────
 
     @isTest
