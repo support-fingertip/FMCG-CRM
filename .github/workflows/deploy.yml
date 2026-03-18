@@ -1,9 +1,19 @@
 name: Auto Deploy to Salesforce
 
 on:
-  push: 
+  push:
     branches:
       - claude/plan-visit-activities-Kgzjz
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: 'Deployment type'
+        required: true
+        default: 'changed-only'
+        type: choice
+        options:
+          - changed-only
+          - full-deployment
 
 jobs:
   deploy:
@@ -42,7 +52,7 @@ jobs:
           rm authfile.txt
       
       - name: Deploy - Changed Files Only
-        if: ${{ github.event.inputs.deployment_type == 'changed-only' }}
+        if: ${{ github.event.inputs.deployment_type == 'changed-only' || github.event.inputs.deployment_type == '' }}
         run: |
           echo "Deploying changed files only..."
           
