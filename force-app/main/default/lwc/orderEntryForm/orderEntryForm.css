@@ -502,6 +502,17 @@
     color: var(--brand);
 }
 
+.oef-ms-min-qty {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--warning);
+    background: var(--warning-light);
+    padding: 1px 8px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-top: 2px;
+}
+
 .oef-ms-card-action {
     flex-shrink: 0;
 }
@@ -1199,6 +1210,29 @@
     font-size: 12px;
     color: var(--text-secondary);
     margin-left: 6px;
+}
+
+.oef-missing-min-qty {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warning);
+    margin-left: 8px;
+}
+
+.oef-missing-item-qty {
+    background: var(--warning-light);
+    border: 1px solid #f9e3b6;
+}
+
+.oef-warning-text {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.oef-warning-instruction {
+    font-size: 13px;
+    color: var(--error);
+    font-weight: 600;
 }
 
 /* ====================================================

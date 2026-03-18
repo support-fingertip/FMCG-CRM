@@ -177,6 +177,71 @@ public with sharing class OrderEntryController {
 
         Date effectiveDate = orderDate != null ? orderDate : Date.today();
 
+        // Fetch account attributes for filtering
+        String accountChannel = '';
+        String accountCustomerType = '';
+        Id accountTerritoryId = null;
+
+        if (accountId != null) {
+            List<Account> accts = [
+                SELECT Channel__c, Outlet_Type__c, Territory__c
+                FROM Account
+                WHERE Id = :accountId
+                LIMIT 1
+            ];
+            if (!accts.isEmpty()) {
+                accountChannel = accts[0].Channel__c != null ? accts[0].Channel__c : '';
+                accountCustomerType = accts[0].Outlet_Type__c != null ? accts[0].Outlet_Type__c : '';
+                accountTerritoryId = accts[0].Territory__c;
+            }
+        }
+
+        // Query Must_Sell_Config__c records that are active and within date range
+        List<Must_Sell_Config__c> configs = [
+            SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                   Classification__c, Min_Qty__c,
+                   Territory__c, Channel__c, Customer_Type__c
+            FROM Must_Sell_Config__c
+            WHERE Is_Active__c = true
+              AND Start_Date__c <= :effectiveDate
+              AND End_Date__c >= :effectiveDate
+              AND Product_Ext__c != null
+            ORDER BY Classification__c, Product_Ext__r.Name
+        ];
+
+        // Filter configs by account's territory, channel, and customer type
+        Set<Id> seenProductIds = new Set<Id>();
+        for (Must_Sell_Config__c cfg : configs) {
+            // Territory filter: config applies if territory is blank (all) or matches account
+            if (cfg.Territory__c != null && cfg.Territory__c != accountTerritoryId) {
+                continue;
+            }
+            // Channel filter: config applies if channel is blank (all) or matches account
+            if (String.isNotBlank(cfg.Channel__c) && cfg.Channel__c != accountChannel) {
+                continue;
+            }
+            // Customer Type filter: config applies if customer type is blank (all) or matches account
+            if (String.isNotBlank(cfg.Customer_Type__c) && cfg.Customer_Type__c != accountCustomerType) {
+                continue;
+            }
+
+            // Deduplicate by product Id — first matching config wins
+            if (seenProductIds.contains(cfg.Product_Ext__c)) {
+                continue;
+            }
+            seenProductIds.add(cfg.Product_Ext__c);
+
+            Map<String, Object> item = new Map<String, Object>();
+            item.put('productId', cfg.Product_Ext__c);
+            item.put('productName', cfg.Product_Ext__r.Name);
+            item.put('sku', cfg.Product_Ext__r.SKU_Code__c);
+            item.put('minQuantity', cfg.Min_Qty__c != null ? cfg.Min_Qty__c : 1);
+            item.put('classification', cfg.Classification__c);
+            item.put('configId', cfg.Id);
+            result.add(item);
+        }
+
+        // Also include legacy scheme-based must-sell products (backward compatibility)
         List<Scheme__c> schemes = [
             SELECT Id, Name,
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
@@ -191,8 +256,6 @@ public with sharing class OrderEntryController {
             ORDER BY Priority__c
         ];
 
-        // Deduplicate by product Id — first scheme wins (highest priority)
-        Set<Id> seenProductIds = new Set<Id>();
         for (Scheme__c scheme : schemes) {
             if (scheme.Scheme_Products__r == null) continue;
             for (Scheme_Product__c sp : scheme.Scheme_Products__r) {

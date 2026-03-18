@@ -195,6 +195,22 @@ public class TestDataFactory {
         return target;
     }
 
+    public static Must_Sell_Config__c createMustSellConfig(Id productId, String classification,
+            Decimal minQty, Id territoryId, String channel, String customerType) {
+        Must_Sell_Config__c config = new Must_Sell_Config__c(
+            Product_Ext__c = productId,
+            Classification__c = classification,
+            Min_Qty__c = minQty,
+            Territory__c = territoryId,
+            Channel__c = channel,
+            Customer_Type__c = customerType,
+            Start_Date__c = Date.today().addDays(-10),
+            End_Date__c = Date.today().addDays(30),
+            Is_Active__c = true
+        );
+        return config;
+    }
+
     public static Return_Order__c createReturnOrder(Id accountId, Id invoiceId, Id userId) {
         Return_Order__c ro = new Return_Order__c(
             Account__c = accountId,

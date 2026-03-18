@@ -14,6 +14,8 @@ const ACCOUNT_FIELDS = [
     'Account.Name',
     'Account.Channel__c',
     'Account.Outlet_Class__c',
+    'Account.Outlet_Type__c',
+    'Account.Territory__c',
     'Account.BillingCity'
 ];
 
@@ -46,6 +48,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @track focusedSellProducts = [];
     @track showMustSellWarning = false;
     @track missingMustSellProducts = [];
+    @track mustSellBelowMinQty = [];
     showFocusedSell = false;
     showSchemesPanel = false;
 
@@ -87,6 +90,10 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     get hasMissingMustSell() {
         return this.missingMustSellProducts && this.missingMustSellProducts.length > 0;
+    }
+
+    get hasMustSellBelowMinQty() {
+        return this.mustSellBelowMinQty && this.mustSellBelowMinQty.length > 0;
     }
 
     // --- Schemes panel getters ---
@@ -297,7 +304,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     ...p,
                     isInOrder: orderedProductIds.has(p.productId),
                     cardClass: orderedProductIds.has(p.productId)
-                        ? 'oef-ms-card oef-ms-card-done' : 'oef-ms-card'
+                        ? 'oef-ms-card oef-ms-card-done' : 'oef-ms-card',
+                    hasMinQty: p.minQuantity && p.minQuantity > 1,
+                    minQtyLabel: p.minQuantity ? 'Min Qty: ' + p.minQuantity : ''
                 }));
 
             this.focusedSellProducts = items
@@ -319,7 +328,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             ...p,
             isInOrder: orderedProductIds.has(p.productId),
             cardClass: orderedProductIds.has(p.productId)
-                ? 'oef-ms-card oef-ms-card-done' : 'oef-ms-card'
+                ? 'oef-ms-card oef-ms-card-done' : 'oef-ms-card',
+            hasMinQty: p.minQuantity && p.minQuantity > 1,
+            minQtyLabel: p.minQuantity ? 'Min Qty: ' + p.minQuantity : ''
         }));
         this.focusedSellProducts = this.focusedSellProducts.map(p => ({
             ...p,
@@ -432,6 +443,12 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     description: this.buildSchemeBenefitText(s)
                 }));
 
+                // Check if product is Must Sell or Focused Sell
+                const msMatch = this.mustSellProducts.find(p => p.productId === product.Id);
+                const fsMatch = this.focusedSellProducts.find(p => p.productId === product.Id);
+                const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
+                const classificationBadgeClass = this.getClassificationBadgeClass(classification);
+
                 return {
                     id: product.Id,
                     name: product.Name,
@@ -448,6 +465,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     schemeDescription: schemeDescription,
                     schemeStrips: schemeStrips,
                     hasSchemes: schemeStrips.length > 0,
+                    classification: classification,
+                    classificationBadgeClass: classificationBadgeClass,
+                    hasClassification: !!classification,
                     lineTotal: lineTotal,
                     lineTotalFormatted: this.formatCurrency(lineTotal),
                     cardClass: allSchemes.length > 0 ? 'oef-product-card oef-product-card-scheme' : 'oef-product-card'
@@ -769,10 +789,27 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         if (this.mustSellProducts && this.mustSellProducts.length > 0) {
             const orderedProductIds = new Set(this.lineItems.map(li => li.productId));
+
+            // Check for missing Must Sell products
             this.missingMustSellProducts = this.mustSellProducts
                 .filter(p => !orderedProductIds.has(p.productId));
 
-            if (this.missingMustSellProducts.length > 0) {
+            // Check for Must Sell products below min qty
+            this.mustSellBelowMinQty = this.mustSellProducts
+                .filter(p => {
+                    if (!orderedProductIds.has(p.productId)) return false;
+                    const lineItem = this.lineItems.find(li => li.productId === p.productId);
+                    return lineItem && p.minQuantity && lineItem.quantity < p.minQuantity;
+                })
+                .map(p => {
+                    const lineItem = this.lineItems.find(li => li.productId === p.productId);
+                    return {
+                        ...p,
+                        orderedQty: lineItem ? lineItem.quantity : 0
+                    };
+                });
+
+            if (this.missingMustSellProducts.length > 0 || this.mustSellBelowMinQty.length > 0) {
                 this.showMustSellWarning = true;
                 return;
             }
@@ -789,7 +826,16 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.showMustSellWarning = false;
     }
 
+    get canOverrideMustSell() {
+        // Cannot override if Must Sell products are missing or below min qty
+        return this.missingMustSellProducts.length === 0 && this.mustSellBelowMinQty.length === 0;
+    }
+
     handleMustSellSubmitAnyway() {
+        if (!this.canOverrideMustSell) {
+            this.showToast('Error', 'Cannot submit without all Must Sell products meeting minimum quantity', 'error');
+            return;
+        }
         this.showMustSellWarning = false;
         this._submitOrder(true);
     }

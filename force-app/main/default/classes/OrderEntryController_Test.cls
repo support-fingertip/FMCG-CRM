@@ -10,11 +10,17 @@ private class OrderEntryController_Test {
 
     @testSetup
     static void setupTestData() {
-        // Create account
-        Account retailer = TestDataFactory.createAndInsertAccount('Order Entry Retailer', 'Retailer');
-
-        // Create territory, beat, day attendance, visit
+        // Create territory first (needed for account)
         Territory_Master__c territory = TestDataFactory.createAndInsertTerritory('OE Territory', 'TER-OE01');
+
+        // Create account with channel, outlet type, and territory
+        Account retailer = TestDataFactory.createAccount('Order Entry Retailer', 'Retailer');
+        retailer.Channel__c = 'GT';
+        retailer.Outlet_Type__c = 'Grocery';
+        retailer.Territory__c = territory.Id;
+        insert retailer;
+
+        // Create beat, day attendance, visit
         Beat__c beat = TestDataFactory.createAndInsertBeat('OE Beat', 'BEAT-OE01', territory.Id);
 
         Day_Attendance__c da = TestDataFactory.createDayAttendance(UserInfo.getUserId(), Date.today());
@@ -51,6 +57,26 @@ private class OrderEntryController_Test {
         // Create active schemes
         Scheme__c activeScheme = TestDataFactory.createScheme('Monsoon Offer', 'SCH-OE01', 'Flat Discount');
         insert activeScheme;
+
+        // Create Must Sell Config records
+        List<Must_Sell_Config__c> mustSellConfigs = new List<Must_Sell_Config__c>();
+        // Must Sell for GT + Grocery in this territory
+        mustSellConfigs.add(TestDataFactory.createMustSellConfig(
+            products[0].Id, 'Must Sell', 6, territory.Id, 'GT', 'Grocery'
+        ));
+        // Must Sell for all territories/channels/types
+        mustSellConfigs.add(TestDataFactory.createMustSellConfig(
+            products[1].Id, 'Must Sell', 3, null, null, null
+        ));
+        // Focused Sell for GT channel
+        mustSellConfigs.add(TestDataFactory.createMustSellConfig(
+            products[2].Id, 'Focused Sell', null, null, 'GT', null
+        ));
+        // Must Sell for MT channel only (should NOT match our GT retailer)
+        mustSellConfigs.add(TestDataFactory.createMustSellConfig(
+            products[3].Id, 'Must Sell', 2, null, 'MT', null
+        ));
+        insert mustSellConfigs;
     }
 
     /**
@@ -218,6 +244,75 @@ private class OrderEntryController_Test {
 
         System.assert(lineItemsTotal > 0,
             'Total value of line items should be positive');
+    }
+
+    /**
+     * @description Tests getMustSellProducts returns correct Must Sell and Focused Sell
+     *              products filtered by territory, channel, and customer type.
+     */
+    @isTest
+    static void testGetMustSellProducts() {
+        Account acct = [SELECT Id, Channel__c, Outlet_Type__c, Territory__c
+                        FROM Account WHERE Name = 'Order Entry Retailer' LIMIT 1];
+
+        Test.startTest();
+        List<Map<String, Object>> mustSellItems = OrderEntryController.getMustSellProducts(acct.Id, null);
+        Test.stopTest();
+
+        // Should include: products[0] (GT+Grocery+territory match), products[1] (all match),
+        // products[2] (GT channel match as Focused Sell)
+        // Should NOT include: products[3] (MT channel, doesn't match GT account)
+        System.assert(mustSellItems.size() >= 3,
+            'Should return at least 3 must-sell/focused-sell products for GT/Grocery account, got: ' + mustSellItems.size());
+
+        // Verify the MT-only product is not included
+        Set<Id> returnedProductIds = new Set<Id>();
+        for (Map<String, Object> item : mustSellItems) {
+            returnedProductIds.add((Id) item.get('productId'));
+        }
+
+        Product_Extension__c mtProduct = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'VIM-001' LIMIT 1];
+        System.assert(!returnedProductIds.contains(mtProduct.Id),
+            'MT-only must-sell product should not appear for GT account');
+
+        // Verify min quantity is set for Must Sell products
+        for (Map<String, Object> item : mustSellItems) {
+            if (item.get('classification') == 'Must Sell') {
+                System.assertNotEquals(null, item.get('minQuantity'),
+                    'Must Sell products should have a minQuantity');
+            }
+        }
+    }
+
+    /**
+     * @description Tests that getMustSellProducts correctly filters out configs
+     *              that don't match the account's territory.
+     */
+    @isTest
+    static void testGetMustSellProductsTerritoryFiltering() {
+        // Create a different territory and account
+        Territory_Master__c otherTerritory = TestDataFactory.createAndInsertTerritory('Other Territory', 'TER-OTH01');
+        Account otherAcct = TestDataFactory.createAccount('Other Retailer', 'Retailer');
+        otherAcct.Channel__c = 'GT';
+        otherAcct.Outlet_Type__c = 'Grocery';
+        otherAcct.Territory__c = otherTerritory.Id;
+        insert otherAcct;
+
+        Test.startTest();
+        List<Map<String, Object>> items = OrderEntryController.getMustSellProducts(otherAcct.Id, null);
+        Test.stopTest();
+
+        // products[0] is territory-specific to 'OE Territory', so should NOT appear for otherAcct
+        // products[1] has no territory filter, so should appear
+        // products[2] has no territory filter + GT channel, so should appear
+        Product_Extension__c territoryProduct = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'MAGGI-001' LIMIT 1];
+        Set<Id> returnedProductIds = new Set<Id>();
+        for (Map<String, Object> item : items) {
+            returnedProductIds.add((Id) item.get('productId'));
+        }
+
+        System.assert(!returnedProductIds.contains(territoryProduct.Id),
+            'Territory-specific config should not appear for account in different territory');
     }
 
     /**
