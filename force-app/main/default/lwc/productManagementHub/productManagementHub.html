@@ -682,8 +682,44 @@
                 <div class="slds-modal__content slds-p-around_medium">
                     <div class="slds-grid slds-wrap slds-gutters">
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                            <lightning-input label="Product (ID)" value={editPriceList.Product_Ext__c}
-                                data-field="Product_Ext__c" onchange={handlePriceListFieldChange} required></lightning-input>
+                            <div class="slds-form-element slds-is-required">
+                                <label class="slds-form-element__label">
+                                    <abbr class="slds-required" title="required">*</abbr>Product
+                                </label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedProduct}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedProductName}</span>
+                                            <button class="pill-remove" data-target="priceList"
+                                                onclick={handleClearProductSelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedProduct}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search products..."
+                                            value={productLookupSearchTerm}
+                                            data-target="priceList"
+                                            oninput={handleProductLookupSearch}></lightning-input>
+                                        <template if:true={showProductLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={productLookupResults} for:item="prod">
+                                                    <li key={prod.Id} class="lookup-option" role="option"
+                                                        data-id={prod.Id} data-name={prod.Name}
+                                                        data-target="priceList"
+                                                        onclick={handleSelectLookupProduct}>
+                                                        <span class="lookup-option-name">{prod.Name}</span>
+                                                        <span class="lookup-option-meta">{prod.SKU_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-combobox label="Channel" value={editPriceList.Channel__c}
@@ -750,8 +786,44 @@
                                 data-field="Batch_Number__c" onchange={handleBatchFieldChange} required></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                            <lightning-input label="Product (ID)" value={editBatch.Product_Ext__c}
-                                data-field="Product_Ext__c" onchange={handleBatchFieldChange} required></lightning-input>
+                            <div class="slds-form-element slds-is-required">
+                                <label class="slds-form-element__label">
+                                    <abbr class="slds-required" title="required">*</abbr>Product
+                                </label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedProduct}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedProductName}</span>
+                                            <button class="pill-remove" data-target="batch"
+                                                onclick={handleClearProductSelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedProduct}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search products..."
+                                            value={productLookupSearchTerm}
+                                            data-target="batch"
+                                            oninput={handleProductLookupSearch}></lightning-input>
+                                        <template if:true={showProductLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={productLookupResults} for:item="prod">
+                                                    <li key={prod.Id} class="lookup-option" role="option"
+                                                        data-id={prod.Id} data-name={prod.Name}
+                                                        data-target="batch"
+                                                        onclick={handleSelectLookupProduct}>
+                                                        <span class="lookup-option-name">{prod.Name}</span>
+                                                        <span class="lookup-option-meta">{prod.SKU_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="date" label="Manufacturing Date" value={editBatch.Manufacturing_Date__c}
@@ -800,8 +872,44 @@
                 <div class="slds-modal__content slds-p-around_medium">
                     <div class="slds-grid slds-wrap slds-gutters">
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                            <lightning-input label="Product (ID)" value={editMustSell.Product_Ext__c}
-                                data-field="Product_Ext__c" onchange={handleMustSellFieldChange} required></lightning-input>
+                            <div class="slds-form-element slds-is-required">
+                                <label class="slds-form-element__label">
+                                    <abbr class="slds-required" title="required">*</abbr>Product
+                                </label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedProduct}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedProductName}</span>
+                                            <button class="pill-remove" data-target="mustSell"
+                                                onclick={handleClearProductSelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedProduct}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search products..."
+                                            value={productLookupSearchTerm}
+                                            data-target="mustSell"
+                                            oninput={handleProductLookupSearch}></lightning-input>
+                                        <template if:true={showProductLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={productLookupResults} for:item="prod">
+                                                    <li key={prod.Id} class="lookup-option" role="option"
+                                                        data-id={prod.Id} data-name={prod.Name}
+                                                        data-target="mustSell"
+                                                        onclick={handleSelectLookupProduct}>
+                                                        <span class="lookup-option-name">{prod.Name}</span>
+                                                        <span class="lookup-option-meta">{prod.SKU_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-combobox label="Classification" value={editMustSell.Classification__c}

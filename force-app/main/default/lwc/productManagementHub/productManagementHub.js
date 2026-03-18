@@ -86,6 +86,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     // ── Product Lookup ─────────────────────────────────────────────────
     @track productLookupResults = [];
     @track showProductLookup = false;
+    @track selectedProductName = '';
+    @track productLookupSearchTerm = '';
     _lookupTimeout;
 
     // ── Computed Getters ───────────────────────────────────────────────
@@ -524,6 +526,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             Price_Type__c: 'MRP',
             Min_Qty__c: 1
         };
+        this.resetProductLookup();
         this.showPriceListModal = true;
     }
 
@@ -533,6 +536,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         if (pl) {
             this.isNewPriceList = false;
             this.editPriceList = JSON.parse(JSON.stringify(pl));
+            this.selectedProductName = pl.productName || '';
             this.showPriceListModal = true;
         }
     }
@@ -600,6 +604,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     handleNewBatch() {
         this.isNewBatch = true;
         this.editBatch = { Status__c: 'Active' };
+        this.resetProductLookup();
         this.showBatchModal = true;
     }
 
@@ -609,6 +614,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         if (batch) {
             this.isNewBatch = false;
             this.editBatch = JSON.parse(JSON.stringify(batch));
+            this.selectedProductName = batch.productName || '';
             this.showBatchModal = true;
         }
     }
@@ -680,6 +686,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             Is_Active__c: true,
             Classification__c: 'Must Sell'
         };
+        this.resetProductLookup();
         this.showMustSellModal = true;
     }
 
@@ -689,6 +696,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         if (ms) {
             this.isNewMustSell = false;
             this.editMustSell = JSON.parse(JSON.stringify(ms));
+            this.selectedProductName = ms.productName || '';
             this.showMustSellModal = true;
         }
     }
@@ -751,8 +759,20 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     // ── Product Lookup (for modal fields) ──────────────────────────────
 
+    get hasSelectedProduct() {
+        return !!this.selectedProductName;
+    }
+
+    resetProductLookup() {
+        this.selectedProductName = '';
+        this.productLookupSearchTerm = '';
+        this.productLookupResults = [];
+        this.showProductLookup = false;
+    }
+
     handleProductLookupSearch(event) {
         const searchTerm = event.target.value;
+        this.productLookupSearchTerm = searchTerm;
         clearTimeout(this._lookupTimeout);
         if (searchTerm.length < 2) {
             this.productLookupResults = [];
@@ -783,8 +803,24 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.editMustSell = { ...this.editMustSell, Product_Ext__c: productId };
         }
 
+        this.selectedProductName = productName;
+        this.productLookupSearchTerm = '';
         this.showProductLookup = false;
         this.productLookupResults = [];
+    }
+
+    handleClearProductSelection(event) {
+        const targetObject = event.currentTarget.dataset.target;
+
+        if (targetObject === 'priceList') {
+            this.editPriceList = { ...this.editPriceList, Product_Ext__c: null };
+        } else if (targetObject === 'batch') {
+            this.editBatch = { ...this.editBatch, Product_Ext__c: null };
+        } else if (targetObject === 'mustSell') {
+            this.editMustSell = { ...this.editMustSell, Product_Ext__c: null };
+        }
+
+        this.resetProductLookup();
     }
 
     // ── Utility ────────────────────────────────────────────────────────
