@@ -1,7 +1,7 @@
 /**
  * @description Unified controller for the Product Management Hub LWC.
  *              Provides CRUD operations for Products, Categories, Price Lists,
- *              Batch Master, and Must-Sell Configuration in a single management console.
+ *              Batch Master, and Priority Sell Configuration in a single management console.
  *
  * @author  SFA Development Team
  * @date    2026

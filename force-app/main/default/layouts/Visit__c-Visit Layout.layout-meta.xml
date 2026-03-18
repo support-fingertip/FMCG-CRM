@@ -188,7 +188,7 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Must Sell Compliance</label>
+        <label>Priority Sell Compliance</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Readonly</behavior>

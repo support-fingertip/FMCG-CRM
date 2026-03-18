@@ -170,7 +170,7 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
     }
 
     get mustSellSummaryText() {
-        return this.mustSellOrdered + '/' + this.mustSellRequired + ' must-sell products ordered';
+        return this.mustSellOrdered + '/' + this.mustSellRequired + ' priority sell products ordered';
     }
 
     get complianceBarStyle() {

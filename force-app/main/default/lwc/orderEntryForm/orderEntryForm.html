@@ -531,7 +531,7 @@
         </div>
     </div>
 
-    <!-- Must Sell Warning Modal -->
+    <!-- Priority Sell Warning Modal -->
     <template if:true={showMustSellWarning}>
         <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="must-sell-warning-heading" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
@@ -539,12 +539,12 @@
                     <lightning-button-icon icon-name="utility:close" alternative-text="Close" variant="bare-inverse" class="slds-modal__close" onclick={handleMustSellWarningClose}></lightning-button-icon>
                     <h2 id="must-sell-warning-heading" class="slds-text-heading_medium">
                         <lightning-icon icon-name="utility:error" size="small" class="slds-m-right_x-small"></lightning-icon>
-                        Must Sell Products Required
+                        Priority Sell Products Required
                     </h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium">
                     <template if:true={hasMissingMustSell}>
-                        <p class="slds-m-bottom_small oef-warning-text">The following must-sell products are <strong>required</strong> and must be added before submitting:</p>
+                        <p class="slds-m-bottom_small oef-warning-text">The following priority sell products are <strong>required</strong> and must be added before submitting:</p>
                         <ul class="oef-missing-list">
                             <template for:each={missingMustSellProducts} for:item="mp">
                                 <li key={mp.productId} class="oef-missing-item">
@@ -559,7 +559,7 @@
                         </ul>
                     </template>
                     <template if:true={hasMustSellBelowMinQty}>
-                        <p class="slds-m-bottom_small slds-m-top_small oef-warning-text">The following must-sell products are below the <strong>minimum quantity</strong>:</p>
+                        <p class="slds-m-bottom_small slds-m-top_small oef-warning-text">The following priority sell products are below the <strong>minimum quantity</strong>:</p>
                         <ul class="oef-missing-list">
                             <template for:each={mustSellBelowMinQty} for:item="bq">
                                 <li key={bq.productId} class="oef-missing-item oef-missing-item-qty">

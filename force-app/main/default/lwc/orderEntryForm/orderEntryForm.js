@@ -833,7 +833,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     handleMustSellSubmitAnyway() {
         if (!this.canOverrideMustSell) {
-            this.showToast('Error', 'Cannot submit without all Must Sell products meeting minimum quantity', 'error');
+            this.showToast('Error', 'Cannot submit without all priority sell products meeting minimum quantity', 'error');
             return;
         }
         this.showMustSellWarning = false;

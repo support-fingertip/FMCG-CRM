@@ -155,7 +155,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             categories: 'Product Categories',
             priceLists: 'Price Lists',
             batches: 'Batch Master',
-            mustSell: 'Must-Sell Configuration',
+            mustSell: 'Priority Sell Configuration',
             priceChangeLogs: 'Price Change Logs',
             pricebookConfig: 'Pricebook Priority Configuration'
         };
@@ -166,7 +166,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get categoryModalTitle() { return this.isNewCategory ? 'New Category' : 'Edit Category'; }
     get priceListModalTitle() { return this.isNewPriceList ? 'New Price List Entry' : 'Edit Price List Entry'; }
     get batchModalTitle() { return this.isNewBatch ? 'New Batch' : 'Edit Batch'; }
-    get mustSellModalTitle() { return this.isNewMustSell ? 'New Must-Sell Config' : 'Edit Must-Sell Config'; }
+    get mustSellModalTitle() { return this.isNewMustSell ? 'New Priority Sell Config' : 'Edit Priority Sell Config'; }
 
     get hasProducts() { return this.products.length > 0; }
     get hasCategories() { return this.categories.length > 0; }
@@ -780,7 +780,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 territoryName: ms.Territory__r ? ms.Territory__r.Name : ''
             }));
         } catch (error) {
-            this.showError('Error loading must-sell configs', this.reduceErrors(error));
+            this.showError('Error loading priority sell configs', this.reduceErrors(error));
         }
     }
 
@@ -842,7 +842,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.showSuccess(this.isNewMustSell ? 'Must-sell config created' : 'Must-sell config updated');
             await this.loadMustSellConfigs();
         } catch (error) {
-            this.showError('Error saving must-sell config', this.reduceErrors(error));
+            this.showError('Error saving priority sell config', this.reduceErrors(error));
         } finally {
             this.isSaving = false;
         }
@@ -850,13 +850,13 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async handleDeleteMustSell(event) {
         const msId = event.currentTarget.dataset.id;
-        if (!confirm('Delete this must-sell config?')) return;
+        if (!confirm('Delete this priority sell config?')) return;
         try {
             await deleteMustSellConfig({ configId: msId });
             this.showSuccess('Must-sell config deleted');
             await this.loadMustSellConfigs();
         } catch (error) {
-            this.showError('Error deleting must-sell config', this.reduceErrors(error));
+            this.showError('Error deleting priority sell config', this.reduceErrors(error));
         }
     }
 

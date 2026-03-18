@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Must_Sell_Products_Required__c</fullName>
-    <label>Must Sell Products Required</label>
+    <label>Priority Sell Products Required</label>
     <type>Number</type>
     <precision>5</precision>
     <scale>0</scale>

@@ -5,17 +5,17 @@
         <type>Default</type>
     </actionOverrides>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Configuration for Must Sell and Focused Sell products. Defines which products are mandatory or recommended for ordering, filtered by Territory, Channel, and Customer Type.</description>
+    <description>Configuration for Priority Sell products (Must Sell and Focused Sell). Defines which products are mandatory or recommended for ordering, filtered by Territory, Channel, and Customer Type.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableReports>true</enableReports>
     <enableSearch>true</enableSearch>
-    <label>Must Sell Config</label>
+    <label>Priority Sell Config</label>
     <nameField>
         <displayFormat>MSC-{0000}</displayFormat>
         <label>Config Number</label>
         <type>AutoNumber</type>
     </nameField>
-    <pluralLabel>Must Sell Configs</pluralLabel>
+    <pluralLabel>Priority Sell Configs</pluralLabel>
     <sharingModel>ReadWrite</sharingModel>
 </CustomObject>

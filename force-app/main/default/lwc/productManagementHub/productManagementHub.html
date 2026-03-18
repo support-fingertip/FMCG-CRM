@@ -28,7 +28,7 @@
                 </a>
                 <a class={mustSellNavClass} data-section="mustSell" onclick={handleSectionChange}>
                     <lightning-icon icon-name="standard:task" size="x-small"></lightning-icon>
-                    <span>Must-Sell Config</span>
+                    <span>Priority Sell Config</span>
                 </a>
                 <a class={priceChangeLogsNavClass} data-section="priceChangeLogs" onclick={handleSectionChange}>
                     <lightning-icon icon-name="standard:note" size="x-small"></lightning-icon>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="stat-card stat-indigo" data-section="mustSell" onclick={handleStatClick}>
                         <div class="stat-value">{stats.mustSellConfigs}</div>
-                        <div class="stat-label">Must-Sell Configs</div>
+                        <div class="stat-label">Priority Sell Configs</div>
                     </div>
                 </div>
             </template>
@@ -395,17 +395,15 @@
                 </template>
             </template>
 
-            <!-- ─── Must-Sell Config Section ────────────────────────────── -->
+            <!-- ─── Priority Sell Config Section ────────────────────────────── -->
             <template if:true={showMustSell}>
                 <div class="section-toolbar">
                     <div class="toolbar-left">
-                        <label class="checkbox-label">
-                            <lightning-input type="checkbox" label="Active Only" checked={mustSellActiveOnly}
-                                onchange={handleMustSellActiveFilter} variant="label-hidden"></lightning-input>
-                        </label>
+                        <lightning-input type="checkbox" label="Active Only" checked={mustSellActiveOnly}
+                            onchange={handleMustSellActiveFilter}></lightning-input>
                     </div>
                     <div class="toolbar-right">
-                        <lightning-button label="New Must-Sell Config" variant="brand" icon-name="utility:add"
+                        <lightning-button label="New Priority Sell Config" variant="brand" icon-name="utility:add"
                             onclick={handleNewMustSell}></lightning-button>
                     </div>
                 </div>
@@ -466,7 +464,7 @@
                 <template if:false={hasMustSellConfigs}>
                     <div class="empty-state">
                         <lightning-icon icon-name="standard:task" size="large"></lightning-icon>
-                        <p>No must-sell configurations found.</p>
+                        <p>No priority sell configurations found.</p>
                     </div>
                 </template>
             </template>
@@ -1069,7 +1067,7 @@
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
-    <!-- ─── Must-Sell Config Modal ──────────────────────────────────────── -->
+    <!-- ─── Priority Sell Config Modal ──────────────────────────────────────── -->
     <template if:true={showMustSellModal}>
         <section class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">

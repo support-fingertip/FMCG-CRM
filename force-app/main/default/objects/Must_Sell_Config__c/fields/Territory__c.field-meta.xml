@@ -5,7 +5,7 @@
     <description>When set, this config applies only to accounts in this territory. Leave blank for all territories.</description>
     <type>Lookup</type>
     <referenceTo>Territory_Master__c</referenceTo>
-    <relationshipLabel>Must Sell Configs</relationshipLabel>
+    <relationshipLabel>Priority Sell Configs</relationshipLabel>
     <relationshipName>Must_Sell_Configs</relationshipName>
     <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
