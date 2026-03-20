@@ -255,17 +255,6 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'Expired', value: 'Expired' }
         ];
     }
-    get uomOptions() {
-        return [
-            { label: 'Piece', value: 'Piece' },
-            { label: 'Box', value: 'Box' },
-            { label: 'Case', value: 'Case' },
-            { label: 'Kg', value: 'Kg' },
-            { label: 'Litre', value: 'Litre' },
-            { label: 'Dozen', value: 'Dozen' },
-            { label: 'Pack', value: 'Pack' }
-        ];
-    }
     get weightUnitOptions() {
         return [
             { label: 'g', value: 'g' },
@@ -443,8 +432,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     handleNewProduct() {
         this.isNewProduct = true;
         this.editProduct = {
-            Is_Active__c: true,
-            Unit_of_Measure__c: 'Piece'
+            Is_Active__c: true
         };
         this.selectedUOMName = '';
         this.showProductModal = true;

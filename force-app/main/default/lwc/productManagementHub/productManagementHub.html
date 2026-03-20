@@ -147,7 +147,7 @@
                                         <td class="cell-number">{product.MRP__c}</td>
                                         <td class="cell-number">{product.Unit_Price__c}</td>
                                         <td class="cell-number">{product.GST_Rate__c}</td>
-                                        <td>{product.Unit_of_Measure__c}</td>
+                                        <td>{product.baseUOMName}</td>
                                         <td>
                                             <template if:true={product.Is_Active__c}>
                                                 <span class="badge badge-green">Active</span>
@@ -799,11 +799,6 @@
                         <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <lightning-input type="number" label="GST Rate (%)" value={editProduct.GST_Rate__c}
                                 data-field="GST_Rate__c" onchange={handleProductFieldChange} step="0.01"></lightning-input>
-                        </div>
-                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
-                            <lightning-combobox label="Unit of Measure" value={editProduct.Unit_of_Measure__c}
-                                options={uomOptions} data-field="Unit_of_Measure__c"
-                                onchange={handleProductFieldChange}></lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <div class="slds-form-element">
