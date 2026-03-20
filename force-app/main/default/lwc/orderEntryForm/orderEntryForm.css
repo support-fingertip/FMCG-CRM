@@ -797,7 +797,7 @@
     background: var(--bg-card);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .oef-cart-header {
@@ -807,6 +807,7 @@
     padding: 10px 14px;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     border-bottom: 2px solid var(--brand);
+    border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .oef-cart-title {
@@ -834,7 +835,7 @@
 
 .oef-cart-table-wrap {
     max-height: 400px;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .oef-cart-table {
@@ -868,7 +869,7 @@
 
 .oef-th-serial, .oef-td-serial { width: 36px; text-align: center; }
 .oef-th-qty, .oef-td-qty { width: 80px; }
-.oef-th-uom, .oef-td-uom { width: 100px; }
+.oef-th-uom, .oef-td-uom { width: 130px; }
 .oef-th-free, .oef-td-free { width: 55px; text-align: center; }
 .oef-th-action, .oef-td-action { width: 40px; text-align: center; }
 
