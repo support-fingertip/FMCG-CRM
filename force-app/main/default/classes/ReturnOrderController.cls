@@ -131,7 +131,7 @@ public with sharing class ReturnOrderController {
             if (payload.get('invoiceId') != null) {
                 returnOrder.Invoice__c = (String) payload.get('invoiceId');
             }
-            returnOrder.Remarks__c = (String) payload.get('remarks');
+            returnOrder.Notes__c = (String) payload.get('remarks');
             returnOrder.Return_Date__c = Date.today();
             returnOrder.Status__c = 'Draft';
 
