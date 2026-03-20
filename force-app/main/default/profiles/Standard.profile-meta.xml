@@ -6028,6 +6028,10 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
+        <tab>Home_Page</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Visit__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
