@@ -11,6 +11,7 @@
     <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
     <navType>Standard</navType>
     <tabs>standard-home</tabs>
+    <tabs>Home_Page</tabs>
     <tabs>FSCRM_Dashboard</tabs>
     <tabs>Visit__c</tabs>
     <tabs>Visit_Manager</tabs>
