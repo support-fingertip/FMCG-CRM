@@ -388,7 +388,7 @@ public with sharing class ProductManagementController {
         if (conversion.Conversion_Factor__c == null || conversion.Conversion_Factor__c <= 0) {
             throw new AuraHandledException('Conversion factor must be a positive number.');
         }
-        conversion.Inverse_Conversion_Factor__c = 1 / conversion.Conversion_Factor__c;
+        conversion.Inverse_Conversion_Factor__c = (1 / conversion.Conversion_Factor__c).setScale(4, RoundingMode.HALF_UP);
         upsert conversion;
         return [
             SELECT Id, Name, From_UOM__c, From_UOM__r.Name, From_UOM__r.UOM_Code__c,

@@ -14,7 +14,7 @@ const CONVERSION_COLUMNS = [
     { label: 'Factor', fieldName: 'Conversion_Factor__c', type: 'number',
         typeAttributes: { minimumFractionDigits: 2, maximumFractionDigits: 6 } },
     { label: 'Inverse Factor', fieldName: 'Inverse_Conversion_Factor__c', type: 'number',
-        typeAttributes: { minimumFractionDigits: 2, maximumFractionDigits: 6 } },
+        typeAttributes: { minimumFractionDigits: 4, maximumFractionDigits: 4 } },
     { label: 'Product', fieldName: 'productName', type: 'text' },
     { label: 'Active', fieldName: 'Is_Active__c', type: 'boolean' },
     {

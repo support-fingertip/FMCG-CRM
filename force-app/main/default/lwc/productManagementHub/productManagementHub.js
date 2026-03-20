@@ -1286,7 +1286,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     handleUOMConvFieldChange(event) {
         const field = event.target.dataset.field;
-        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        let value;
+        if (event.target.type === 'checkbox') {
+            value = event.target.checked;
+        } else if (event.target.type === 'number') {
+            value = event.target.value !== '' ? parseFloat(event.target.value) : null;
+        } else {
+            value = event.target.value;
+        }
         this.editUOMConv = { ...this.editUOMConv, [field]: value };
     }
 

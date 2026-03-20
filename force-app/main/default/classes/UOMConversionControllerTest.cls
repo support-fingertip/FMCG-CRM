@@ -158,7 +158,7 @@ private class UOMConversionControllerTest {
         );
         UOM_Conversion__c saved = UOMConversionController.saveConversion(newConv);
         System.assertNotEquals(null, saved.Id);
-        System.assertEquals(0.500000, saved.Inverse_Conversion_Factor__c.setScale(6));
+        System.assertEquals(0.5000, saved.Inverse_Conversion_Factor__c.setScale(4));
     }
 
     @IsTest
