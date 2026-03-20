@@ -22,7 +22,7 @@ public with sharing class HomePageController {
             FROM Visit__c
             WHERE OwnerId = :userId
               AND Visit_Date__c = :today
-              AND Status__c = 'Completed'
+              AND Visit_Status__c = 'Completed'
         ];
 
         // ── Pending Orders ──
@@ -30,7 +30,7 @@ public with sharing class HomePageController {
             SELECT COUNT()
             FROM Sales_Order__c
             WHERE OwnerId = :userId
-              AND Status__c IN ('Draft', 'Pending')
+              AND Order_Status__c IN ('Draft', 'Pending')
         ];
 
         // ── Pending Collections ──
@@ -53,8 +53,9 @@ public with sharing class HomePageController {
         List<Day_Attendance__c> att = [
             SELECT Id, Status__c, Day_Start_Time__c
             FROM Day_Attendance__c
-            WHERE Employee__r.User__c = :userId
+            WHERE User__c = :userId
               AND Attendance_Date__c = :today
+            ORDER BY CreatedDate DESC
             LIMIT 1
         ];
         data.isDayStarted = !att.isEmpty();
@@ -80,8 +81,8 @@ public with sharing class HomePageController {
         data.lowStockAlertCount = [
             SELECT COUNT()
             FROM Distributor_Stock__c
-            WHERE Quantity__c <= 10
-              AND Quantity__c > 0
+            WHERE Closing_Stock__c <= 10
+              AND Closing_Stock__c > 0
         ];
 
         // ── Active Schemes ──
