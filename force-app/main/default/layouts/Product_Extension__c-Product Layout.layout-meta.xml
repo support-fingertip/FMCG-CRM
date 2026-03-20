@@ -88,6 +88,14 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>Base_UOM__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Secondary_UOM__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>Case_Size__c</field>
             </layoutItems>
         </layoutColumns>
@@ -171,6 +179,15 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
+    <relatedLists>
+        <relatedList>UOM_Conversion__c.Product__c</relatedList>
+        <fields>NAME</fields>
+        <fields>From_UOM__c</fields>
+        <fields>To_UOM__c</fields>
+        <fields>Conversion_Factor__c</fields>
+        <fields>Inverse_Conversion_Factor__c</fields>
+        <fields>Is_Active__c</fields>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

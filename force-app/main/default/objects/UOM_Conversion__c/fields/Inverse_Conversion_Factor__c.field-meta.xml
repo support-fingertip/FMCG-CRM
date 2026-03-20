@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Inverse_Conversion_Factor__c</fullName>
+    <label>Inverse Conversion Factor</label>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>6</scale>
+    <required>false</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+    <description>Auto-calculated inverse factor (1 / Conversion Factor). Used for reverse conversions.</description>
+</CustomField>

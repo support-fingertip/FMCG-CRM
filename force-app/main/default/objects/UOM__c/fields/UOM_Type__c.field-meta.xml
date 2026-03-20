@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>UOM_Type__c</fullName>
+    <label>UOM Type</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Count</fullName><default>true</default><label>Count</label></value>
+            <value><fullName>Weight</fullName><default>false</default><label>Weight</label></value>
+            <value><fullName>Volume</fullName><default>false</default><label>Volume</label></value>
+            <value><fullName>Length</fullName><default>false</default><label>Length</label></value>
+            <value><fullName>Packaging</fullName><default>false</default><label>Packaging</label></value>
+        </valueSetDefinition>
+    </valueSet>
+    <description>Category of the unit of measure</description>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Base_UOM__c</fullName>
+    <label>Base UOM</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>UOM__c</referenceTo>
+    <relationshipLabel>Products</relationshipLabel>
+    <relationshipName>Products</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The base unit of measure for this product (links to the UOM master)</description>
+</CustomField>
