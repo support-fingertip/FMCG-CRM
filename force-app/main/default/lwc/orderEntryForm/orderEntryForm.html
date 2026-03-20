@@ -346,6 +346,9 @@
                                             class="oef-qty-input">
                                         </lightning-input>
                                     </div>
+                                    <div class="oef-product-uom-group">
+                                        <span class="oef-uom-label">{product.defaultOrderUOM}</span>
+                                    </div>
                                     <template if:true={product.freeQty}>
                                         <div class="oef-product-free-badge">
                                             +{product.freeQty} FREE
@@ -389,6 +392,7 @@
                                     <th class="oef-th-product">Product</th>
                                     <th class="oef-th-rate">Rate</th>
                                     <th class="oef-th-qty">Qty</th>
+                                    <th class="oef-th-uom">UOM</th>
                                     <th class="oef-th-free">Free</th>
                                     <th class="oef-th-scheme">Scheme</th>
                                     <th class="oef-th-discount">Disc.</th>
@@ -424,6 +428,16 @@
                                                 onchange={handleLineQtyChange}
                                                 class="oef-cart-qty-input">
                                             </lightning-input>
+                                        </td>
+                                        <td class="oef-td-uom">
+                                            <lightning-combobox
+                                                value={item.uom}
+                                                options={uomOptions}
+                                                data-line-id={item.id}
+                                                variant="label-hidden"
+                                                onchange={handleLineUOMChange}
+                                                class="oef-cart-uom-input">
+                                            </lightning-combobox>
                                         </td>
                                         <td class="oef-td-free">
                                             <template if:true={item.freeQty}>

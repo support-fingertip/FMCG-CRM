@@ -10,7 +10,7 @@ public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
     public static List<ProductSearchResult> searchProducts(String searchTerm, String categoryId, String accountId) {
-        String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c ' +
+        String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true';
         String searchKey;
         if (String.isNotBlank(searchTerm)) {
@@ -80,6 +80,7 @@ public with sharing class OrderEntryController {
             r.Unit_Price = resolvedPrice != null && resolvedPrice > 0
                 ? resolvedPrice
                 : (p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c);
+            r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
 
             results.add(r);
         }
@@ -155,6 +156,11 @@ public with sharing class OrderEntryController {
                     if (item.get('schemeId') != null) {
                         li.Scheme__c = (String) item.get('schemeId');
                     }
+                    if (item.get('uom') != null) {
+                        li.UOM__c = (String) item.get('uom');
+                    } else {
+                        li.UOM__c = 'Pieces';
+                    }
                     lineItems.add(li);
                 }
             }
@@ -185,7 +191,7 @@ public with sharing class OrderEntryController {
     public static Sales_Order__c getLastOrder(Id accountId) {
         List<Sales_Order__c> orders = [
             SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c,
-                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Quantity__c, Unit_Price__c, Line_Total__c
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Quantity__c, Unit_Price__c, Line_Total__c, UOM__c
                     FROM Order_Line_Items__r ORDER BY CreatedDate)
             FROM Sales_Order__c
             WHERE Account__c = :accountId
@@ -205,6 +211,7 @@ public with sharing class OrderEntryController {
                    Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c,
                    Reward_Points__c, MOV__c, Min_Quantity__c, Max_Quantity__c,
                    Min_Value__c, Max_Value__c, Product_Ext__c, Product_Category__c,
+                   Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
                    Is_Stackable__c, Priority__c,
                    (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
                            Discount_Type__c, Discount_Value__c, Discount_Percent__c,
@@ -377,7 +384,7 @@ public with sharing class OrderEntryController {
         // Fallback: if no top sellers found, show recently added active products
         if (topProductIds.isEmpty()) {
             List<Product_Extension__c> fallbackProducts = [
-                SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c
+                SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c
                 FROM Product_Extension__c
                 WHERE Is_Active__c = true
                 ORDER BY CreatedDate DESC
@@ -392,13 +399,14 @@ public with sharing class OrderEntryController {
                 r.MRP = p.MRP__c;
                 r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
                 r.GST_Rate = p.GST_Rate__c;
+                r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
                 fallbackResults.add(r);
             }
             return fallbackResults;
         }
 
         List<Product_Extension__c> products = [
-            SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c
+            SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c
             FROM Product_Extension__c
             WHERE Id IN :topProductIds AND Is_Active__c = true
         ];
@@ -412,6 +420,7 @@ public with sharing class OrderEntryController {
             r.MRP = p.MRP__c;
             r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
             r.GST_Rate = p.GST_Rate__c;
+            r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
             results.add(r);
         }
         return results;
@@ -431,6 +440,46 @@ public with sharing class OrderEntryController {
         @AuraEnabled public Decimal MRP;
         @AuraEnabled public Decimal Unit_Price;
         @AuraEnabled public Decimal GST_Rate;
+        @AuraEnabled public String UOM;
+    }
+
+    /**
+     * @description Returns the available UOM options for order line items.
+     *              Maps product UOM values to Order_Line_Item__c.UOM__c picklist values.
+     * @return List of label/value pairs for UOM combobox.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getOrderUOMOptions() {
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        // These match the Order_Line_Item__c.UOM__c picklist values
+        String[] uomValues = new String[]{ 'Pieces', 'Cases', 'Boxes', 'Kg', 'Liters' };
+        for (String uom : uomValues) {
+            Map<String, String> opt = new Map<String, String>();
+            opt.put('label', uom);
+            opt.put('value', uom);
+            options.add(opt);
+        }
+        return options;
+    }
+
+    /**
+     * @description Maps a Product_Extension__c.Unit_of_Measure__c value to
+     *              the corresponding Order_Line_Item__c.UOM__c picklist value.
+     * @param productUOM The product's Unit_of_Measure__c value.
+     * @return The matching Order_Line_Item__c.UOM__c picklist value.
+     */
+    public static String mapProductUOMToOrderUOM(String productUOM) {
+        if (String.isBlank(productUOM)) return 'Pieces';
+        Map<String, String> mapping = new Map<String, String>{
+            'Piece' => 'Pieces',
+            'Box' => 'Boxes',
+            'Case' => 'Cases',
+            'Kg' => 'Kg',
+            'Litre' => 'Liters',
+            'Dozen' => 'Pieces',
+            'Pack' => 'Pieces'
+        };
+        return mapping.containsKey(productUOM) ? mapping.get(productUOM) : 'Pieces';
     }
 
     private static void updateOrderTotals(Id orderId) {

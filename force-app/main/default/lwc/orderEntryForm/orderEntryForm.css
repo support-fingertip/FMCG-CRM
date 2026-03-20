@@ -739,6 +739,20 @@
     width: 80px;
 }
 
+.oef-product-uom-group {
+    display: flex;
+    align-items: center;
+}
+
+.oef-uom-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--border-light);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+}
+
 .oef-product-free-badge {
     font-size: 12px;
     font-weight: 700;
@@ -854,6 +868,7 @@
 
 .oef-th-serial, .oef-td-serial { width: 36px; text-align: center; }
 .oef-th-qty, .oef-td-qty { width: 80px; }
+.oef-th-uom, .oef-td-uom { width: 100px; }
 .oef-th-free, .oef-td-free { width: 55px; text-align: center; }
 .oef-th-action, .oef-td-action { width: 40px; text-align: center; }
 
@@ -880,6 +895,10 @@
 
 .oef-cart-qty-input {
     width: 72px;
+}
+
+.oef-cart-uom-input {
+    width: 95px;
 }
 
 .oef-free-qty-pill {

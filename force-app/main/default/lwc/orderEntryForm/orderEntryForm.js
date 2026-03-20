@@ -10,6 +10,7 @@ import getApplicableSchemes from '@salesforce/apex/OrderEntryController.getAppli
 import getMustSellProducts from '@salesforce/apex/OrderEntryController.getMustSellProducts';
 import getProductCategories from '@salesforce/apex/OrderEntryController.getProductCategories';
 import getTopSellingProducts from '@salesforce/apex/OrderEntryController.getTopSellingProducts';
+import getOrderUOMOptions from '@salesforce/apex/OrderEntryController.getOrderUOMOptions';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -59,6 +60,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     searchTerm = '';
     selectedCategory = '';
     categoryOptionsData = [];
+    uomOptionsData = [];
     selectedAccountId;
     accountName = '';
     accountChannel = '';
@@ -181,6 +183,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         if (scheme.MOV__c) {
             parts.push('Min order: ' + this.formatCurrency(scheme.MOV__c));
         }
+        if (scheme.Invoice_Qty_Threshold__c) {
+            parts.push('Min invoice qty: ' + scheme.Invoice_Qty_Threshold__c + ' ' + (scheme.Invoice_Qty_UOM__c || ''));
+        }
         if (scheme.Min_Quantity__c) {
             parts.push('Min qty: ' + scheme.Min_Quantity__c);
         }
@@ -222,10 +227,44 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         return [{ label: 'All Categories', value: '' }];
     }
 
+    get uomOptions() {
+        if (this.uomOptionsData && this.uomOptionsData.length > 0) {
+            return this.uomOptionsData;
+        }
+        return [
+            { label: 'Pieces', value: 'Pieces' },
+            { label: 'Cases', value: 'Cases' },
+            { label: 'Boxes', value: 'Boxes' },
+            { label: 'Kg', value: 'Kg' },
+            { label: 'Liters', value: 'Liters' }
+        ];
+    }
+
+    mapProductUOMToOrderUOM(productUOM) {
+        if (!productUOM) return 'Pieces';
+        const mapping = {
+            'Piece': 'Pieces',
+            'Box': 'Boxes',
+            'Case': 'Cases',
+            'Kg': 'Kg',
+            'Litre': 'Liters',
+            'Dozen': 'Pieces',
+            'Pack': 'Pieces'
+        };
+        return mapping[productUOM] || 'Pieces';
+    }
+
     @wire(getProductCategories)
     wiredCategories({ error, data }) {
         if (data) {
             this.categoryOptionsData = data;
+        }
+    }
+
+    @wire(getOrderUOMOptions)
+    wiredUOMOptions({ error, data }) {
+        if (data) {
+            this.uomOptionsData = data;
         }
     }
 
@@ -349,11 +388,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             if (orderedProductIds.has(product.productId)) return;
 
             this.lineIdCounter++;
+            const defaultUOM = this.mapProductUOMToOrderUOM(product.uom);
             const newItem = {
                 id: 'LINE_' + this.lineIdCounter,
                 productId: product.productId,
                 productName: product.productName,
                 sku: product.sku || 'N/A',
+                uom: defaultUOM,
                 rate: 0,
                 rateFormatted: this.formatCurrency(0),
                 quantity: 0,
@@ -406,6 +447,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     mrpFormatted: this.formatCurrency(product.MRP || product.Unit_Price || 0),
                     unitPrice: product.Unit_Price || 0,
                     taxRate: product.GST_Rate || 18,
+                    productUOM: product.UOM || 'Piece',
                     schemeName: scheme ? scheme.Name : '',
                     schemeId: scheme ? scheme.Id : null,
                     schemeStrips: schemeStrips,
@@ -444,11 +486,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const taxAmount = taxableAmount * (product.taxRate / 100);
         const totalAmount = taxableAmount + taxAmount;
 
+        const defaultUOM = this.mapProductUOMToOrderUOM(product.productUOM);
         const newItem = {
             id: 'LINE_' + this.lineIdCounter,
             productId: product.id,
             productName: product.name,
             sku: product.sku,
+            uom: defaultUOM,
             rate: product.unitPrice,
             rateFormatted: this.formatCurrency(product.unitPrice),
             quantity: qty,
@@ -545,11 +589,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.lineIdCounter++;
         const qty = product.minQuantity || 1;
         const rate = 0;
+        const defaultUOM = this.mapProductUOMToOrderUOM(product.uom);
         const newItem = {
             id: 'LINE_' + this.lineIdCounter,
             productId: product.productId,
             productName: product.productName,
             sku: product.sku || 'N/A',
+            uom: defaultUOM,
             rate: rate,
             rateFormatted: this.formatCurrency(rate),
             quantity: qty,
@@ -641,6 +687,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     unitPrice: unitPrice,
                     category: '',
                     taxRate: product.GST_Rate || 18,
+                    productUOM: product.UOM || 'Piece',
+                    defaultOrderUOM: this.mapProductUOMToOrderUOM(product.UOM || 'Piece'),
                     quantity: qty,
                     freeQty: freeQty,
                     schemeName: scheme ? scheme.Name : '',
@@ -719,11 +767,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const fsMatch = this.focusedSellProducts.find(p => p.productId === product.id);
             const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
 
+            const defaultUOM = this.mapProductUOMToOrderUOM(product.productUOM);
             const newItem = {
                 id: 'LINE_' + this.lineIdCounter,
                 productId: product.id,
                 productName: product.name,
                 sku: product.sku,
+                uom: defaultUOM,
                 rate: product.unitPrice,
                 rateFormatted: this.formatCurrency(product.unitPrice),
                 quantity: qty,
@@ -789,6 +839,18 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         this.calculateTotals();
         this.refreshMustSellStatus();
+    }
+
+    handleLineUOMChange(event) {
+        const lineId = event.target.dataset.lineId;
+        const newUOM = event.detail.value;
+
+        this.lineItems = this.lineItems.map(li => {
+            if (li.id === lineId) {
+                return { ...li, uom: newUOM };
+            }
+            return li;
+        });
     }
 
     recalculateLineItem(item) {
@@ -1030,6 +1092,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     productId: lastItem.Product_Ext__c,
                     productName: lastItem.Product_Name__c || lastItem.Product_Ext__r?.Name || 'Product',
                     sku: lastItem.SKU__c || 'N/A',
+                    uom: lastItem.UOM__c || 'Pieces',
                     rate: lastItem.Unit_Price__c || 0,
                     rateFormatted: this.formatCurrency(lastItem.Unit_Price__c || 0),
                     quantity: lastItem.Quantity__c || 0,
@@ -1214,6 +1277,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 quantity: item.quantity,
                 freeQty: item.freeQty,
                 rate: item.rate,
+                uom: item.uom || 'Pieces',
                 grossAmount: item.grossAmount,
                 discountAmount: item.discountAmount,
                 taxRate: item.taxRate,

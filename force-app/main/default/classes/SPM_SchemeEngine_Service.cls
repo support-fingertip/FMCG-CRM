@@ -711,7 +711,8 @@ public without sharing class SPM_SchemeEngine_Service {
 
     /**
      * @description Invoice Qty Based: Total invoice quantity (across scheme materials)
-     *              must meet the invoice qty threshold.
+     *              must meet the invoice qty threshold. Converts line item UOMs to the
+     *              scheme's Invoice_Qty_UOM__c before comparing against the threshold.
      */
     private static SchemeResult evaluateInvoiceQty(
         Scheme__c scheme,
@@ -719,6 +720,7 @@ public without sharing class SPM_SchemeEngine_Service {
     ) {
         Set<Id> schemeProductIds = getBuyProductIds(scheme);
 
+        String schemeUOM = scheme.Invoice_Qty_UOM__c;
         Decimal totalQty = 0;
         Decimal totalVal = 0;
         Map<Id, Decimal> allLineAmounts = new Map<Id, Decimal>();
@@ -729,7 +731,17 @@ public without sharing class SPM_SchemeEngine_Service {
                 continue;
             }
 
-            totalQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+            Decimal itemQty = item.Quantity__c != null ? item.Quantity__c : 0;
+
+            // Convert line item qty to scheme's target UOM if they differ
+            if (String.isNotBlank(schemeUOM) && String.isNotBlank(item.UOM__c)) {
+                String lineUOMCode = mapOrderUOMToSchemeCode(item.UOM__c);
+                if (lineUOMCode != schemeUOM) {
+                    itemQty = convertQtyViaUOMRecords(itemQty, lineUOMCode, schemeUOM, item.Product_Ext__c);
+                }
+            }
+
+            totalQty += itemQty;
             Decimal val = getLineValue(item);
             totalVal += val;
             allLineAmounts.put(item.Id, val);
@@ -948,5 +960,105 @@ public without sharing class SPM_SchemeEngine_Service {
         Boolean aboveMin = (minVal == null) || (value >= minVal);
         Boolean belowMax = (maxVal == null) || (value <= maxVal);
         return aboveMin && belowMax;
+    }
+
+    // ── UOM Conversion helpers for scheme evaluation ─────────────────────────
+
+    /**
+     * @description Maps Order_Line_Item__c.UOM__c picklist values to the short
+     *              codes used in Scheme__c.Invoice_Qty_UOM__c (PC, KG, LTR, CS).
+     */
+    private static String mapOrderUOMToSchemeCode(String orderUOM) {
+        if (String.isBlank(orderUOM)) return 'PC';
+        Map<String, String> mapping = new Map<String, String>{
+            'Pieces' => 'PC',
+            'Cases' => 'CS',
+            'Boxes' => 'BX',
+            'Kg' => 'KG',
+            'Liters' => 'LTR'
+        };
+        return mapping.containsKey(orderUOM) ? mapping.get(orderUOM) : 'PC';
+    }
+
+    /**
+     * @description Converts quantity between UOM codes (PC, KG, LTR, CS, BX) by
+     *              looking up UOM__c records and UOM_Conversion__c rules.
+     *              Falls back to the original quantity if no conversion rule is found.
+     * @param qty The quantity to convert.
+     * @param fromCode The source UOM code (e.g., 'CS').
+     * @param toCode The target UOM code (e.g., 'PC').
+     * @param productId Optional product Id for product-specific conversions.
+     * @return The converted quantity, or the original qty if no rule found.
+     */
+    private static Decimal convertQtyViaUOMRecords(Decimal qty, String fromCode, String toCode, Id productId) {
+        if (qty == null || qty == 0 || fromCode == toCode) {
+            return qty != null ? qty : 0;
+        }
+
+        // Look up UOM__c records by code
+        List<UOM__c> fromUOMs = [SELECT Id FROM UOM__c WHERE UOM_Code__c = :fromCode AND Is_Active__c = true LIMIT 1];
+        List<UOM__c> toUOMs = [SELECT Id FROM UOM__c WHERE UOM_Code__c = :toCode AND Is_Active__c = true LIMIT 1];
+
+        if (fromUOMs.isEmpty() || toUOMs.isEmpty()) {
+            return qty; // No UOM records found, return original
+        }
+
+        Id fromUOMId = fromUOMs[0].Id;
+        Id toUOMId = toUOMs[0].Id;
+
+        // Try product-specific conversion first, then global
+        List<UOM_Conversion__c> conversions;
+        if (productId != null) {
+            conversions = [
+                SELECT Conversion_Factor__c
+                FROM UOM_Conversion__c
+                WHERE From_UOM__c = :fromUOMId AND To_UOM__c = :toUOMId
+                AND Is_Active__c = true
+                AND (Product__c = :productId OR Product__c = null)
+                ORDER BY Product__c NULLS LAST
+                LIMIT 1
+            ];
+        } else {
+            conversions = [
+                SELECT Conversion_Factor__c
+                FROM UOM_Conversion__c
+                WHERE From_UOM__c = :fromUOMId AND To_UOM__c = :toUOMId
+                AND Is_Active__c = true AND Product__c = null
+                LIMIT 1
+            ];
+        }
+
+        if (!conversions.isEmpty()) {
+            return qty * conversions[0].Conversion_Factor__c;
+        }
+
+        // Try reverse conversion
+        List<UOM_Conversion__c> reverseConversions;
+        if (productId != null) {
+            reverseConversions = [
+                SELECT Conversion_Factor__c
+                FROM UOM_Conversion__c
+                WHERE From_UOM__c = :toUOMId AND To_UOM__c = :fromUOMId
+                AND Is_Active__c = true
+                AND (Product__c = :productId OR Product__c = null)
+                ORDER BY Product__c NULLS LAST
+                LIMIT 1
+            ];
+        } else {
+            reverseConversions = [
+                SELECT Conversion_Factor__c
+                FROM UOM_Conversion__c
+                WHERE From_UOM__c = :toUOMId AND To_UOM__c = :fromUOMId
+                AND Is_Active__c = true AND Product__c = null
+                LIMIT 1
+            ];
+        }
+
+        if (!reverseConversions.isEmpty() && reverseConversions[0].Conversion_Factor__c != 0) {
+            return qty / reverseConversions[0].Conversion_Factor__c;
+        }
+
+        // No conversion rule found — return original quantity
+        return qty;
     }
 }
