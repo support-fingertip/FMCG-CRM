@@ -68,6 +68,12 @@
     font-weight: 600;
 }
 
+.sidebar-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 6px 16px;
+}
+
 /* ── Main Content ───────────────────────────────────────────────────── */
 
 .main-content {
@@ -144,6 +150,10 @@
 .stat-red .stat-value { color: #ef4444; }
 .stat-indigo { border-left-color: #6366f1; }
 .stat-indigo .stat-value { color: #6366f1; }
+.stat-cyan { border-left-color: #06b6d4; }
+.stat-cyan .stat-value { color: #06b6d4; }
+.stat-pink { border-left-color: #ec4899; }
+.stat-pink .stat-value { color: #ec4899; }
 
 /* ── Toolbar ────────────────────────────────────────────────────────── */
 

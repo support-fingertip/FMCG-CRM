@@ -38,6 +38,15 @@
                     <lightning-icon icon-name="standard:settings" size="x-small"></lightning-icon>
                     <span>Pricebook Config</span>
                 </a>
+                <div class="sidebar-divider"></div>
+                <a class={uomMasterNavClass} data-section="uomMaster" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:data_transforms" size="x-small"></lightning-icon>
+                    <span>UOM Master</span>
+                </a>
+                <a class={uomConversionsNavClass} data-section="uomConversions" onclick={handleSectionChange}>
+                    <lightning-icon icon-name="standard:formula" size="x-small"></lightning-icon>
+                    <span>UOM Conversions</span>
+                </a>
             </nav>
         </div>
 
@@ -83,6 +92,14 @@
                     <div class="stat-card stat-indigo" data-section="mustSell" onclick={handleStatClick}>
                         <div class="stat-value">{stats.mustSellConfigs}</div>
                         <div class="stat-label">Priority Sell Configs</div>
+                    </div>
+                    <div class="stat-card stat-cyan" data-section="uomMaster" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.totalUOMs}</div>
+                        <div class="stat-label">Active UOMs</div>
+                    </div>
+                    <div class="stat-card stat-pink" data-section="uomConversions" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.totalConversions}</div>
+                        <div class="stat-label">Conversion Rules</div>
                     </div>
                 </div>
             </template>
@@ -596,6 +613,145 @@
                     </div>
                 </template>
             </template>
+
+            <!-- ─── UOM Master Section ────────────────────────────────────── -->
+            <template if:true={showUOMMaster}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left"></div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New UOM" variant="brand" icon-name="utility:add"
+                            onclick={handleNewUOM}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasUOMs}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>Type</th>
+                                    <th>Base Unit</th>
+                                    <th>Active</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={uomList} for:item="uom">
+                                    <tr key={uom.Id}>
+                                        <td><strong>{uom.Name}</strong></td>
+                                        <td class="cell-mono">{uom.UOM_Code__c}</td>
+                                        <td><span class="badge badge-blue">{uom.UOM_Type__c}</span></td>
+                                        <td>
+                                            <template if:true={uom.Is_Base_Unit__c}>
+                                                <span class="badge badge-purple">Base</span>
+                                            </template>
+                                            <template if:false={uom.Is_Base_Unit__c}>
+                                                <span class="badge badge-gray">No</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={uom.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={uom.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                        <td>{uom.Description__c}</td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={uom.Id} onclick={handleEditUOM} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={uom.Id} onclick={handleDeleteUOM} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasUOMs}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:data_transforms" size="large"></lightning-icon>
+                        <p>No UOM records found. Create a new unit of measure to get started.</p>
+                    </div>
+                </template>
+            </template>
+
+            <!-- ─── UOM Conversions Section ───────────────────────────────── -->
+            <template if:true={showUOMConversions}>
+                <div class="section-toolbar">
+                    <div class="toolbar-left"></div>
+                    <div class="toolbar-right">
+                        <lightning-button label="New Conversion Rule" variant="brand" icon-name="utility:add"
+                            onclick={handleNewUOMConv}></lightning-button>
+                    </div>
+                </div>
+                <template if:true={hasUOMConversions}>
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>From UOM</th>
+                                    <th>To UOM</th>
+                                    <th>Factor</th>
+                                    <th>Inverse Factor</th>
+                                    <th>Product</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={uomConversions} for:item="conv">
+                                    <tr key={conv.Id}>
+                                        <td>{conv.Name}</td>
+                                        <td>{conv.fromUOMName}</td>
+                                        <td>{conv.toUOMName}</td>
+                                        <td class="cell-number">{conv.Conversion_Factor__c}</td>
+                                        <td class="cell-number">{conv.Inverse_Conversion_Factor__c}</td>
+                                        <td>
+                                            <template if:true={conv.Product__c}>
+                                                <span class="badge badge-purple">{conv.productName}</span>
+                                            </template>
+                                            <template if:false={conv.Product__c}>
+                                                <span class="badge badge-blue">Global</span>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <template if:true={conv.Is_Active__c}>
+                                                <span class="badge badge-green">Active</span>
+                                            </template>
+                                            <template if:false={conv.Is_Active__c}>
+                                                <span class="badge badge-gray">Inactive</span>
+                                            </template>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"
+                                                data-id={conv.Id} onclick={handleEditUOMConv} variant="border-filled"
+                                                size="small"></lightning-button-icon>
+                                            <lightning-button-icon icon-name="utility:delete" alternative-text="Delete"
+                                                data-id={conv.Id} onclick={handleDeleteUOMConv} variant="border-filled"
+                                                size="small" class="slds-m-left_xx-small"></lightning-button-icon>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template if:false={hasUOMConversions}>
+                    <div class="empty-state">
+                        <lightning-icon icon-name="standard:formula" size="large"></lightning-icon>
+                        <p>No conversion rules found. Create a new rule to define UOM relationships.</p>
+                    </div>
+                </template>
+            </template>
+
         </div>
     </div>
 
@@ -648,6 +804,41 @@
                             <lightning-combobox label="Unit of Measure" value={editProduct.Unit_of_Measure__c}
                                 options={uomOptions} data-field="Unit_of_Measure__c"
                                 onchange={handleProductFieldChange}></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Base UOM (Master)</label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedUOM}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:data_transforms" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedUOMName}</span>
+                                            <button class="pill-remove" onclick={handleClearUOMSelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedUOM}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Search UOMs..."
+                                            value={uomLookupSearchTerm}
+                                            onchange={handleUOMLookupSearch}></lightning-input>
+                                        <template if:true={showUOMLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={uomLookupResults} for:item="uom">
+                                                    <li key={uom.Id} class="lookup-option" role="option"
+                                                        data-id={uom.Id} data-name={uom.Name}
+                                                        onclick={handleSelectUOM}>
+                                                        <span class="lookup-option-name">{uom.Name}</span>
+                                                        <span class="lookup-option-meta">{uom.UOM_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                         <div class="slds-col slds-size_1-of-3 slds-p-bottom_small">
                             <lightning-input type="number" label="Case Size" value={editProduct.Case_Size__c}
@@ -1198,6 +1389,148 @@
                 <footer class="slds-modal__footer">
                     <lightning-button label="Cancel" onclick={handleCloseMustSellModal}></lightning-button>
                     <lightning-button label="Save" variant="brand" onclick={handleSaveMustSell}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── UOM Modal ─────────────────────────────────────────────────────── -->
+    <template if:true={showUOMModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseUOMModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{uomModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="UOM Name" value={editUOM.Name}
+                                data-field="Name" onchange={handleUOMFieldChange} required></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input label="UOM Code" value={editUOM.UOM_Code__c}
+                                data-field="UOM_Code__c" onchange={handleUOMFieldChange} required
+                                max-length="10" placeholder="e.g. PCS, BOX, KG"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="UOM Type" value={editUOM.UOM_Type__c}
+                                options={uomTypeOptions} data-field="UOM_Type__c"
+                                onchange={handleUOMFieldChange} required></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Base Unit" checked={editUOM.Is_Base_Unit__c}
+                                data-field="Is_Base_Unit__c" onchange={handleUOMFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Active" checked={editUOM.Is_Active__c}
+                                data-field="Is_Active__c" onchange={handleUOMFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                            <lightning-textarea label="Description" value={editUOM.Description__c}
+                                data-field="Description__c" onchange={handleUOMFieldChange}></lightning-textarea>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseUOMModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSaveUOM}
+                        disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── UOM Conversion Modal ──────────────────────────────────────────── -->
+    <template if:true={showUOMConvModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseUOMConvModal}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title">{uomConvModalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="From UOM" value={editUOMConv.From_UOM__c}
+                                options={uomLookupOptions} data-field="From_UOM__c"
+                                onchange={handleUOMConvFieldChange} required
+                                placeholder="Select source UOM"></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="To UOM" value={editUOMConv.To_UOM__c}
+                                options={uomLookupOptions} data-field="To_UOM__c"
+                                onchange={handleUOMConvFieldChange} required
+                                placeholder="Select target UOM"></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="number" label="Conversion Factor" value={editUOMConv.Conversion_Factor__c}
+                                data-field="Conversion_Factor__c" onchange={handleUOMConvFieldChange}
+                                step="0.000001" min="0.000001" required
+                                message-when-range-underflow="Factor must be positive"></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Product (optional - leave blank for global)</label>
+                                <div class="product-lookup-container">
+                                    <template if:true={hasSelectedProduct}>
+                                        <div class="product-lookup-pill">
+                                            <lightning-icon icon-name="standard:product" size="x-small"></lightning-icon>
+                                            <span class="pill-label">{selectedProductName}</span>
+                                            <button class="pill-remove" data-target="uomConv"
+                                                onclick={handleClearProductSelection} type="button">
+                                                <lightning-icon icon-name="utility:close" size="xx-small"
+                                                    alternative-text="Remove"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template if:false={hasSelectedProduct}>
+                                        <lightning-input label="" variant="label-hidden"
+                                            placeholder="Type to search products..."
+                                            value={productLookupSearchTerm}
+                                            data-target="uomConv"
+                                            onchange={handleProductLookupSearch}></lightning-input>
+                                        <template if:true={showProductLookup}>
+                                            <ul class="product-lookup-dropdown" role="listbox">
+                                                <template for:each={productLookupResults} for:item="prod">
+                                                    <li key={prod.Id} class="lookup-option" role="option"
+                                                        data-id={prod.Id} data-name={prod.Name}
+                                                        data-target="uomConv"
+                                                        onclick={handleSelectLookupProduct}>
+                                                        <span class="lookup-option-name">{prod.Name}</span>
+                                                        <span class="lookup-option-meta">{prod.SKU_Code__c}</span>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-input type="checkbox" label="Active" checked={editUOMConv.Is_Active__c}
+                                data-field="Is_Active__c" onchange={handleUOMConvFieldChange}></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                            <div class="priority-info-box">
+                                <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+                                <span>Inverse factor is auto-calculated. Product-specific conversions take priority over global ones.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCloseUOMConvModal}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSaveUOMConv}
                         disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
                 </footer>
             </div>

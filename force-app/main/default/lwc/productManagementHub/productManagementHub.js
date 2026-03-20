@@ -20,6 +20,13 @@ import getMustSellConfigs from '@salesforce/apex/ProductManagementController.get
 import saveMustSellConfig from '@salesforce/apex/ProductManagementController.saveMustSellConfig';
 import deleteMustSellConfig from '@salesforce/apex/ProductManagementController.deleteMustSellConfig';
 import getPriceChangeLogs from '@salesforce/apex/ProductManagementController.getPriceChangeLogs';
+import getUOMs from '@salesforce/apex/ProductManagementController.getUOMs';
+import saveUOM from '@salesforce/apex/ProductManagementController.saveUOM';
+import deleteUOMApex from '@salesforce/apex/ProductManagementController.deleteUOM';
+import getUOMConversions from '@salesforce/apex/ProductManagementController.getUOMConversions';
+import saveUOMConversion from '@salesforce/apex/ProductManagementController.saveUOMConversion';
+import deleteUOMConversionApex from '@salesforce/apex/ProductManagementController.deleteUOMConversion';
+import getActiveUOMsForLookup from '@salesforce/apex/ProductManagementController.getActiveUOMsForLookup';
 import searchProductsForLookup from '@salesforce/apex/ProductManagementController.searchProductsForLookup';
 import searchTerritoriesForLookup from '@salesforce/apex/ProductManagementController.searchTerritoriesForLookup';
 import searchCategoriesForLookup from '@salesforce/apex/ProductManagementController.searchCategoriesForLookup';
@@ -100,6 +107,27 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track priceChangeLogs = [];
     @track priceLogProductFilter = '';
 
+    // ── UOM Master ───────────────────────────────────────────────────────
+    @track uomList = [];
+    @track showUOMModal = false;
+    @track editUOM = {};
+    @track isNewUOM = false;
+
+    // ── UOM Conversions ──────────────────────────────────────────────────
+    @track uomConversions = [];
+    @track uomConvProductFilter = '';
+    @track showUOMConvModal = false;
+    @track editUOMConv = {};
+    @track isNewUOMConv = false;
+    @track uomLookupOptions = [];
+
+    // ── UOM Lookup (for product Base_UOM and conversion modal) ───────────
+    @track uomLookupResults = [];
+    @track showUOMLookup = false;
+    @track selectedUOMName = '';
+    @track uomLookupSearchTerm = '';
+    _uomLookupTimeout;
+
     // ── Product Lookup ─────────────────────────────────────────────────
     @track productLookupResults = [];
     @track showProductLookup = false;
@@ -138,6 +166,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get showMustSell() { return this.activeSection === 'mustSell'; }
     get showPriceChangeLogs() { return this.activeSection === 'priceChangeLogs'; }
     get showPricebookConfig() { return this.activeSection === 'pricebookConfig'; }
+    get showUOMMaster() { return this.activeSection === 'uomMaster'; }
+    get showUOMConversions() { return this.activeSection === 'uomConversions'; }
 
     get dashboardNavClass() { return 'sidebar-item' + (this.activeSection === 'dashboard' ? ' active' : ''); }
     get productsNavClass() { return 'sidebar-item' + (this.activeSection === 'products' ? ' active' : ''); }
@@ -147,6 +177,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get mustSellNavClass() { return 'sidebar-item' + (this.activeSection === 'mustSell' ? ' active' : ''); }
     get priceChangeLogsNavClass() { return 'sidebar-item' + (this.activeSection === 'priceChangeLogs' ? ' active' : ''); }
     get pricebookConfigNavClass() { return 'sidebar-item' + (this.activeSection === 'pricebookConfig' ? ' active' : ''); }
+    get uomMasterNavClass() { return 'sidebar-item' + (this.activeSection === 'uomMaster' ? ' active' : ''); }
+    get uomConversionsNavClass() { return 'sidebar-item' + (this.activeSection === 'uomConversions' ? ' active' : ''); }
 
     get sectionTitle() {
         const titles = {
@@ -157,7 +189,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             batches: 'Batch Master',
             mustSell: 'Priority Sell Configuration',
             priceChangeLogs: 'Price Change Logs',
-            pricebookConfig: 'Pricebook Priority Configuration'
+            pricebookConfig: 'Pricebook Priority Configuration',
+            uomMaster: 'Unit of Measure (UOM) Master',
+            uomConversions: 'UOM Conversions'
         };
         return titles[this.activeSection] || 'Product Management';
     }
@@ -167,6 +201,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get priceListModalTitle() { return this.isNewPriceList ? 'New Price List Entry' : 'Edit Price List Entry'; }
     get batchModalTitle() { return this.isNewBatch ? 'New Batch' : 'Edit Batch'; }
     get mustSellModalTitle() { return this.isNewMustSell ? 'New Priority Sell Config' : 'Edit Priority Sell Config'; }
+    get uomModalTitle() { return this.isNewUOM ? 'New UOM' : 'Edit UOM'; }
+    get uomConvModalTitle() { return this.isNewUOMConv ? 'New Conversion Rule' : 'Edit Conversion Rule'; }
 
     get hasProducts() { return this.products.length > 0; }
     get hasCategories() { return this.categories.length > 0; }
@@ -175,6 +211,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     get hasMustSellConfigs() { return this.mustSellConfigs.length > 0; }
     get hasPriceChangeLogs() { return this.priceChangeLogs.length > 0; }
     get hasPricebookPriorities() { return this.pricebookPriorities.length > 0; }
+    get hasUOMs() { return this.uomList.length > 0; }
+    get hasUOMConversions() { return this.uomConversions.length > 0; }
+    get hasSelectedUOM() { return !!this.selectedUOMName; }
 
     get productPageInfo() {
         return `Page ${this.productPage} of ${this.productTotalPages} (${this.productTotalCount} records)`;
@@ -251,6 +290,15 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'Modern Trade', value: 'Modern Trade' }
         ];
     }
+    get uomTypeOptions() {
+        return [
+            { label: 'Count', value: 'Count' },
+            { label: 'Weight', value: 'Weight' },
+            { label: 'Volume', value: 'Volume' },
+            { label: 'Length', value: 'Length' },
+            { label: 'Packaging', value: 'Packaging' }
+        ];
+    }
     get batchStatusFilterOptions() {
         return [
             { label: 'All', value: '' },
@@ -307,6 +355,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 case 'mustSell': await this.loadMustSellConfigs(); break;
                 case 'priceChangeLogs': await this.loadPriceChangeLogs(); break;
                 case 'pricebookConfig': await this.loadPricebookPriorities(); break;
+                case 'uomMaster': await this.loadUOMs(); break;
+                case 'uomConversions': await this.loadUOMConversions(); break;
                 default: break;
             }
         } catch (error) {
@@ -350,7 +400,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             });
             this.products = result.products.map(p => ({
                 ...p,
-                categoryName: p.Product_Category__r ? p.Product_Category__r.Name : ''
+                categoryName: p.Product_Category__r ? p.Product_Category__r.Name : '',
+                baseUOMName: p.Base_UOM__r ? p.Base_UOM__r.Name : '',
+                baseUOMCode: p.Base_UOM__r ? p.Base_UOM__r.UOM_Code__c : ''
             }));
             this.productTotalPages = result.totalPages;
             this.productTotalCount = result.totalCount;
@@ -394,6 +446,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             Is_Active__c: true,
             Unit_of_Measure__c: 'Piece'
         };
+        this.selectedUOMName = '';
         this.showProductModal = true;
     }
 
@@ -403,6 +456,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         if (product) {
             this.isNewProduct = false;
             this.editProduct = JSON.parse(JSON.stringify(product));
+            this.selectedUOMName = product.baseUOMName || '';
             this.showProductModal = true;
         }
     }
@@ -419,6 +473,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             const productToSave = { ...this.editProduct };
             // Remove relationship fields
             delete productToSave.Product_Category__r;
+            delete productToSave.Base_UOM__r;
+            delete productToSave.baseUOMName;
+            delete productToSave.categoryName;
             await saveProduct({ product: productToSave });
             this.showProductModal = false;
             this.showSuccess(this.isNewProduct ? 'Product created' : 'Product updated');
@@ -954,6 +1011,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.editBatch = { ...this.editBatch, Product_Ext__c: productId };
         } else if (targetObject === 'mustSell') {
             this.editMustSell = { ...this.editMustSell, Product_Ext__c: productId };
+        } else if (targetObject === 'uomConv') {
+            this.editUOMConv = { ...this.editUOMConv, Product__c: productId };
         }
 
         this.selectedProductName = productName;
@@ -971,6 +1030,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.editBatch = { ...this.editBatch, Product_Ext__c: null };
         } else if (targetObject === 'mustSell') {
             this.editMustSell = { ...this.editMustSell, Product_Ext__c: null };
+        } else if (targetObject === 'uomConv') {
+            this.editUOMConv = { ...this.editUOMConv, Product__c: null };
         }
 
         this.resetProductLookup();
@@ -1128,6 +1189,207 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     handleClearCustomerSelection() {
         this.editPriceList = { ...this.editPriceList, Customer__c: null };
         this.resetCustomerLookup();
+    }
+
+    // ── UOM Master ────────────────────────────────────────────────────
+
+    async loadUOMs() {
+        try {
+            this.uomList = await getUOMs();
+        } catch (error) {
+            this.showError('Error loading UOMs', this.reduceErrors(error));
+        }
+    }
+
+    handleNewUOM() {
+        this.isNewUOM = true;
+        this.editUOM = { Is_Active__c: true, UOM_Type__c: 'Count' };
+        this.showUOMModal = true;
+    }
+
+    handleEditUOM(event) {
+        const uomId = event.currentTarget.dataset.id;
+        const uom = this.uomList.find(u => u.Id === uomId);
+        if (uom) {
+            this.isNewUOM = false;
+            this.editUOM = JSON.parse(JSON.stringify(uom));
+            this.showUOMModal = true;
+        }
+    }
+
+    handleUOMFieldChange(event) {
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        this.editUOM = { ...this.editUOM, [field]: value };
+    }
+
+    async handleSaveUOM() {
+        this.isSaving = true;
+        try {
+            await saveUOM({ uom: this.editUOM });
+            this.showUOMModal = false;
+            this.showSuccess(this.isNewUOM ? 'UOM created' : 'UOM updated');
+            await this.loadUOMs();
+        } catch (error) {
+            this.showError('Error saving UOM', this.reduceErrors(error));
+        } finally {
+            this.isSaving = false;
+        }
+    }
+
+    async handleDeleteUOM(event) {
+        const uomId = event.currentTarget.dataset.id;
+        const uom = this.uomList.find(u => u.Id === uomId);
+        if (!confirm(`Delete UOM "${uom.Name}"? This cannot be undone.`)) return;
+        try {
+            await deleteUOMApex({ uomId });
+            this.showSuccess('UOM deleted');
+            await this.loadUOMs();
+        } catch (error) {
+            this.showError('Error deleting UOM', this.reduceErrors(error));
+        }
+    }
+
+    handleCloseUOMModal() {
+        this.showUOMModal = false;
+    }
+
+    // ── UOM Conversions ──────────────────────────────────────────────
+
+    async loadUOMConversions() {
+        try {
+            const rawConversions = await getUOMConversions({
+                productId: this.uomConvProductFilter || null
+            });
+            this.uomConversions = rawConversions.map(c => ({
+                ...c,
+                fromUOMName: c.From_UOM__r ? `${c.From_UOM__r.Name} (${c.From_UOM__r.UOM_Code__c})` : '',
+                toUOMName: c.To_UOM__r ? `${c.To_UOM__r.Name} (${c.To_UOM__r.UOM_Code__c})` : '',
+                productName: c.Product__r ? c.Product__r.Name : 'Global'
+            }));
+            // Also load UOM options for the conversion modal dropdowns
+            const activeUOMs = await getActiveUOMsForLookup();
+            this.uomLookupOptions = activeUOMs.map(u => ({
+                label: `${u.Name} (${u.UOM_Code__c})`,
+                value: u.Id
+            }));
+        } catch (error) {
+            this.showError('Error loading UOM conversions', this.reduceErrors(error));
+        }
+    }
+
+    handleNewUOMConv() {
+        this.isNewUOMConv = true;
+        this.editUOMConv = { Is_Active__c: true };
+        this.resetProductLookup();
+        this.showUOMConvModal = true;
+    }
+
+    handleEditUOMConv(event) {
+        const convId = event.currentTarget.dataset.id;
+        const conv = this.uomConversions.find(c => c.Id === convId);
+        if (conv) {
+            this.isNewUOMConv = false;
+            this.editUOMConv = JSON.parse(JSON.stringify(conv));
+            this.selectedProductName = conv.productName !== 'Global' ? conv.productName : '';
+            this.showUOMConvModal = true;
+        }
+    }
+
+    handleUOMConvFieldChange(event) {
+        const field = event.target.dataset.field;
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        this.editUOMConv = { ...this.editUOMConv, [field]: value };
+    }
+
+    async handleSaveUOMConv() {
+        if (!this.editUOMConv.From_UOM__c || !this.editUOMConv.To_UOM__c || !this.editUOMConv.Conversion_Factor__c) {
+            this.showError('Validation Error', 'From UOM, To UOM, and Conversion Factor are required.');
+            return;
+        }
+        this.isSaving = true;
+        try {
+            const convToSave = { ...this.editUOMConv };
+            delete convToSave.From_UOM__r;
+            delete convToSave.To_UOM__r;
+            delete convToSave.Product__r;
+            delete convToSave.fromUOMName;
+            delete convToSave.toUOMName;
+            delete convToSave.productName;
+            await saveUOMConversion({ conversion: convToSave });
+            this.showUOMConvModal = false;
+            this.showSuccess(this.isNewUOMConv ? 'Conversion rule created' : 'Conversion rule updated');
+            await this.loadUOMConversions();
+        } catch (error) {
+            this.showError('Error saving conversion', this.reduceErrors(error));
+        } finally {
+            this.isSaving = false;
+        }
+    }
+
+    async handleDeleteUOMConv(event) {
+        const convId = event.currentTarget.dataset.id;
+        if (!confirm('Delete this conversion rule?')) return;
+        try {
+            await deleteUOMConversionApex({ conversionId: convId });
+            this.showSuccess('Conversion rule deleted');
+            await this.loadUOMConversions();
+        } catch (error) {
+            this.showError('Error deleting conversion', this.reduceErrors(error));
+        }
+    }
+
+    handleCloseUOMConvModal() {
+        this.showUOMConvModal = false;
+    }
+
+    // ── UOM Lookup (for product Base_UOM field) ─────────────────────
+
+    resetUOMLookup() {
+        this.selectedUOMName = '';
+        this.uomLookupSearchTerm = '';
+        this.uomLookupResults = [];
+        this.showUOMLookup = false;
+    }
+
+    handleUOMLookupSearch(event) {
+        const searchTerm = event.target.value;
+        this.uomLookupSearchTerm = searchTerm;
+        clearTimeout(this._uomLookupTimeout);
+        if (searchTerm.length < 1) {
+            this.uomLookupResults = [];
+            this.showUOMLookup = false;
+            return;
+        }
+        this._uomLookupTimeout = setTimeout(async () => {
+            try {
+                const allUOMs = await getActiveUOMsForLookup();
+                const lowerSearch = searchTerm.toLowerCase();
+                this.uomLookupResults = allUOMs.filter(u =>
+                    u.Name.toLowerCase().includes(lowerSearch) ||
+                    u.UOM_Code__c.toLowerCase().includes(lowerSearch)
+                ).slice(0, 10);
+                this.showUOMLookup = this.uomLookupResults.length > 0;
+            } catch (error) {
+                this.uomLookupResults = [];
+                this.showUOMLookup = false;
+            }
+        }, 200);
+    }
+
+    handleSelectUOM(event) {
+        const uomId = event.currentTarget.dataset.id;
+        const uomName = event.currentTarget.dataset.name;
+        this.editProduct = { ...this.editProduct, Base_UOM__c: uomId };
+        this.selectedUOMName = uomName;
+        this.uomLookupSearchTerm = '';
+        this.showUOMLookup = false;
+        this.uomLookupResults = [];
+    }
+
+    handleClearUOMSelection() {
+        this.editProduct = { ...this.editProduct, Base_UOM__c: null };
+        this.resetUOMLookup();
     }
 
     // ── Utility ────────────────────────────────────────────────────────

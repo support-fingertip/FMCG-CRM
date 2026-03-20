@@ -32,7 +32,8 @@ public with sharing class ProductManagementController {
         Integer totalCount = Database.countQuery('SELECT COUNT() ' + baseQuery);
 
         String dataQuery = 'SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Unit_Price__c, GST_Rate__c, ' +
-                           'Is_Active__c, Unit_of_Measure__c, Case_Size__c, Min_Order_Qty__c, ' +
+                           'Is_Active__c, Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c, ' +
+                           'Case_Size__c, Min_Order_Qty__c, ' +
                            'Product_Category__r.Name, Product_Category__r.Id, HSN_SAC_Code__c, ' +
                            'Barcode_EAN__c, Barcode_UPC__c, Weight__c, Weight_Unit__c, ' +
                            'Is_Returnable__c, Shelf_Life_Days__c, Reorder_Level__c, Reorder_Quantity__c, ' +
@@ -55,7 +56,8 @@ public with sharing class ProductManagementController {
     public static Product_Extension__c saveProduct(Product_Extension__c product) {
         upsert product;
         return [SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Unit_Price__c, GST_Rate__c,
-                       Is_Active__c, Unit_of_Measure__c, Case_Size__c, Min_Order_Qty__c,
+                       Is_Active__c, Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c,
+                       Case_Size__c, Min_Order_Qty__c,
                        Product_Category__r.Name, HSN_SAC_Code__c,
                        Barcode_EAN__c, Barcode_UPC__c, Weight__c, Weight_Unit__c,
                        Is_Returnable__c, Shelf_Life_Days__c, Reorder_Level__c, Reorder_Quantity__c,
@@ -277,6 +279,8 @@ public with sharing class ProductManagementController {
         stats.activeBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Status__c = 'Active'];
         stats.nearExpiryBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Is_Near_Expiry__c = true AND Status__c = 'Active'];
         stats.mustSellConfigs = [SELECT COUNT() FROM Must_Sell_Config__c WHERE Is_Active__c = true];
+        stats.totalUOMs = [SELECT COUNT() FROM UOM__c WHERE Is_Active__c = true];
+        stats.totalConversions = [SELECT COUNT() FROM UOM_Conversion__c WHERE Is_Active__c = true];
         return stats;
     }
 
@@ -331,6 +335,87 @@ public with sharing class ProductManagementController {
                 LIMIT 20];
     }
 
+    // ─── UOM Master CRUD ─────────────────────────────────────────────────
+
+    @AuraEnabled
+    public static List<UOM__c> getUOMs() {
+        return [
+            SELECT Id, Name, UOM_Code__c, UOM_Type__c, Is_Base_Unit__c,
+                   Is_Active__c, Description__c
+            FROM UOM__c
+            ORDER BY UOM_Type__c, Name
+            LIMIT 200
+        ];
+    }
+
+    @AuraEnabled
+    public static UOM__c saveUOM(UOM__c uom) {
+        upsert uom;
+        return [
+            SELECT Id, Name, UOM_Code__c, UOM_Type__c, Is_Base_Unit__c,
+                   Is_Active__c, Description__c
+            FROM UOM__c WHERE Id = :uom.Id
+        ];
+    }
+
+    @AuraEnabled
+    public static void deleteUOM(Id uomId) {
+        delete [SELECT Id FROM UOM__c WHERE Id = :uomId LIMIT 1];
+    }
+
+    // ─── UOM Conversion CRUD ──────────────────────────────────────────────
+
+    @AuraEnabled
+    public static List<UOM_Conversion__c> getUOMConversions(String productId) {
+        String query = 'SELECT Id, Name, From_UOM__c, From_UOM__r.Name, From_UOM__r.UOM_Code__c, ' +
+                       'To_UOM__c, To_UOM__r.Name, To_UOM__r.UOM_Code__c, ' +
+                       'Conversion_Factor__c, Inverse_Conversion_Factor__c, ' +
+                       'Product__c, Product__r.Name, Is_Active__c ' +
+                       'FROM UOM_Conversion__c WHERE Id != null';
+
+        if (String.isNotBlank(productId)) {
+            query += ' AND (Product__c = \'' + String.escapeSingleQuotes(productId) + '\' OR Product__c = null)';
+        }
+        query += ' ORDER BY Product__c NULLS LAST, From_UOM__r.Name, To_UOM__r.Name LIMIT 200';
+        return Database.query(query);
+    }
+
+    @AuraEnabled
+    public static UOM_Conversion__c saveUOMConversion(UOM_Conversion__c conversion) {
+        if (conversion.From_UOM__c == conversion.To_UOM__c) {
+            throw new AuraHandledException('From UOM and To UOM must be different.');
+        }
+        if (conversion.Conversion_Factor__c == null || conversion.Conversion_Factor__c <= 0) {
+            throw new AuraHandledException('Conversion factor must be a positive number.');
+        }
+        conversion.Inverse_Conversion_Factor__c = 1 / conversion.Conversion_Factor__c;
+        upsert conversion;
+        return [
+            SELECT Id, Name, From_UOM__c, From_UOM__r.Name, From_UOM__r.UOM_Code__c,
+                   To_UOM__c, To_UOM__r.Name, To_UOM__r.UOM_Code__c,
+                   Conversion_Factor__c, Inverse_Conversion_Factor__c,
+                   Product__c, Product__r.Name, Is_Active__c
+            FROM UOM_Conversion__c WHERE Id = :conversion.Id
+        ];
+    }
+
+    @AuraEnabled
+    public static void deleteUOMConversion(Id conversionId) {
+        delete [SELECT Id FROM UOM_Conversion__c WHERE Id = :conversionId LIMIT 1];
+    }
+
+    // ─── UOM Lookup for dropdowns ──────────────────────────────────────────
+
+    @AuraEnabled(cacheable=true)
+    public static List<UOM__c> getActiveUOMsForLookup() {
+        return [
+            SELECT Id, Name, UOM_Code__c, UOM_Type__c
+            FROM UOM__c
+            WHERE Is_Active__c = true
+            ORDER BY UOM_Type__c, Name
+        ];
+    }
+
     // ─── Inner Classes ─────────────────────────────────────────────────
 
     public class ProductPageResult {
@@ -357,5 +442,7 @@ public with sharing class ProductManagementController {
         @AuraEnabled public Integer activeBatches;
         @AuraEnabled public Integer nearExpiryBatches;
         @AuraEnabled public Integer mustSellConfigs;
+        @AuraEnabled public Integer totalUOMs;
+        @AuraEnabled public Integer totalConversions;
     }
 }
