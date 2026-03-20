@@ -145,11 +145,6 @@
     </objectPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>UOM__c.UOM_Code__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>UOM__c.Description__c</field>
         <readable>true</readable>
     </fieldPermissions>

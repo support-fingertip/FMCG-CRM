@@ -3127,11 +3127,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>UOM__c.UOM_Code__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>UOM__c.Description__c</field>
         <readable>true</readable>
     </fieldPermissions>
