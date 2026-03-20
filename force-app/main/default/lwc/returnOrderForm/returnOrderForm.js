@@ -108,17 +108,21 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
         try {
             const result = await getInvoiceLines({ invoiceId: this.selectedInvoiceId });
             this.invoiceLines = (result || []).map(line => {
-                const qtySold = line.Quantity__c || 0;
-                const qtyReturned = line.Qty_Returned__c || 0;
-                const maxReturn = qtySold - qtyReturned;
-                const unitPrice = line.Unit_Price__c || line.Rate__c || 0;
+                // Backend returns Map<String, Object> with these keys:
+                // invoiceLineId, productId, productName, productCode,
+                // invoicedQty, unitPrice, discount, taxAmount, lineTotal,
+                // hsnCode, batchNo, alreadyReturned, availableForReturn
+                const qtySold = line.invoicedQty || 0;
+                const qtyReturned = line.alreadyReturned || 0;
+                const maxReturn = line.availableForReturn || (qtySold - qtyReturned);
+                const unitPrice = line.unitPrice || 0;
                 const isFullyReturned = maxReturn <= 0;
 
                 return {
-                    id: line.Id,
-                    productId: line.Product_Ext__c,
-                    productName: line.Product_Name__c || line.Product_Ext__r?.Name || 'Product',
-                    sku: line.SKU__c || line.Product_Ext__r?.SKU__c || 'N/A',
+                    id: line.invoiceLineId,
+                    productId: line.productId,
+                    productName: line.productName || 'Product',
+                    sku: line.productCode || 'N/A',
                     qtySold: qtySold,
                     qtyAlreadyReturned: qtyReturned,
                     maxReturnQty: maxReturn,
@@ -126,7 +130,7 @@ export default class ReturnOrderForm extends NavigationMixin(LightningElement) {
                     returnQty: 0,
                     returnReason: '',
                     returnAmount: 0,
-                    returnAmountFormatted: '0.00',
+                    returnAmountFormatted: this.formatCurrency(0),
                     photoPreview: null,
                     photoData: null,
                     isFullyReturned: isFullyReturned,

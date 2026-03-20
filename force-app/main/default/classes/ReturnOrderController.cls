@@ -109,7 +109,69 @@ public with sharing class ReturnOrderController {
         return results;
     }
 
-    // ── Create Return Order ─────────────────────────────────────────────────────
+    // ── Create Return Order (JSON) ──────────────────────────────────────────────
+
+    /**
+     * @description Creates a Return Order from a JSON payload sent by the LWC component.
+     *              Parses the JSON into Return_Order__c header and Return_Line__c items,
+     *              then delegates to the typed createReturnOrderFromRecords method.
+     * @param returnJson JSON string containing return order data.
+     * @return The inserted Return_Order__c record with Id.
+     */
+    @AuraEnabled
+    public static Return_Order__c createReturnOrder(String returnJson) {
+        try {
+            Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(returnJson);
+
+            Return_Order__c returnOrder = new Return_Order__c();
+            returnOrder.Account__c = (String) payload.get('accountId');
+            if (payload.get('visitId') != null) {
+                returnOrder.Visit__c = (String) payload.get('visitId');
+            }
+            if (payload.get('invoiceId') != null) {
+                returnOrder.Invoice__c = (String) payload.get('invoiceId');
+            }
+            returnOrder.Remarks__c = (String) payload.get('remarks');
+            returnOrder.Return_Date__c = Date.today();
+            returnOrder.Status__c = 'Draft';
+
+            List<Return_Line__c> returnLines = new List<Return_Line__c>();
+            List<Object> items = (List<Object>) payload.get('returnLines');
+            if (items != null) {
+                for (Object itemObj : items) {
+                    Map<String, Object> item = (Map<String, Object>) itemObj;
+                    Return_Line__c rl = new Return_Line__c();
+                    if (item.get('invoiceLineId') != null) {
+                        rl.Invoice_Line__c = (String) item.get('invoiceLineId');
+                    }
+                    rl.Product_Ext__c = (String) item.get('productId');
+                    rl.Return_Quantity__c = toDecimal(item.get('returnQty'));
+                    rl.Return_Reason__c = (String) item.get('reason');
+                    rl.Unit_Price__c = toDecimal(item.get('returnAmount')) != null && toDecimal(item.get('returnQty')) != null && toDecimal(item.get('returnQty')) > 0
+                        ? (toDecimal(item.get('returnAmount')) / toDecimal(item.get('returnQty')))
+                        : null;
+                    returnLines.add(rl);
+                }
+            }
+
+            return createReturnOrderFromRecords(returnOrder, returnLines);
+        } catch (AuraHandledException ahe) {
+            throw ahe;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    private static Decimal toDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof Decimal) return (Decimal) value;
+        if (value instanceof Integer) return Decimal.valueOf((Integer) value);
+        if (value instanceof Long) return Decimal.valueOf((Long) value);
+        if (value instanceof Double) return Decimal.valueOf((Double) value);
+        return Decimal.valueOf(String.valueOf(value));
+    }
+
+    // ── Create Return Order (typed) ─────────────────────────────────────────────
 
     /**
      * @description Creates a Return Order with its line items after validating
@@ -119,8 +181,7 @@ public with sharing class ReturnOrderController {
      * @param returnLines List of Return_Line__c records.
      * @return The inserted Return_Order__c record with Id.
      */
-    @AuraEnabled
-    public static Return_Order__c createReturnOrder(Return_Order__c returnOrder, List<Return_Line__c> returnLines) {
+    public static Return_Order__c createReturnOrderFromRecords(Return_Order__c returnOrder, List<Return_Line__c> returnLines) {
         Savepoint sp = Database.setSavepoint();
         try {
             // Validate inputs

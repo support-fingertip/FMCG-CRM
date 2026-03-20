@@ -898,7 +898,19 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     calculateFreeQty(qty, scheme) {
         if (!scheme) return 0;
+
+        // Check slab-based free products first
+        if (scheme.Scheme_Slabs__r && scheme.Scheme_Slabs__r.length > 0) {
+            const slab = this.findApplicableSlab(qty, 0, scheme);
+            if (slab && slab.Discount_Type__c === 'Free Product' && slab.Free_Quantity__c) {
+                return slab.Free_Quantity__c;
+            }
+            return 0;
+        }
+
+        // Scheme-level free products
         if (scheme.Scheme_Category__c === 'Free Products' && scheme.Min_Quantity__c && scheme.Free_Quantity__c) {
+            if (qty < scheme.Min_Quantity__c) return 0;
             return Math.floor(qty / scheme.Min_Quantity__c) * scheme.Free_Quantity__c;
         }
         return 0;
@@ -906,21 +918,103 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     calculateSchemeDiscount(amount, qty, scheme) {
         if (!scheme || !scheme.Scheme_Category__c) return 0;
+
+        // Check slab-based discounts first
+        if (scheme.Scheme_Slabs__r && scheme.Scheme_Slabs__r.length > 0) {
+            const slab = this.findApplicableSlab(qty, amount, scheme);
+            if (!slab) return 0;
+            return this.calculateSlabDiscount(amount, slab, scheme);
+        }
+
+        // Check minimum thresholds before applying scheme-level discounts
+        if (!this.meetsSchemeThreshold(qty, amount, scheme)) return 0;
+
+        let discount = 0;
+
         if (scheme.Scheme_Category__c === 'Discount in %' && scheme.Discount_Percent__c) {
-            return amount * (scheme.Discount_Percent__c / 100);
+            discount = amount * (scheme.Discount_Percent__c / 100);
+        } else if (scheme.Scheme_Category__c === 'Discount in Value') {
+            const discountVal = scheme.Price_Discount__c || scheme.Discount_Amount__c || 0;
+            discount = Math.min(discountVal, amount);
         }
-        if (scheme.Scheme_Category__c === 'Discount in Value' && scheme.Discount_Amount__c) {
-            return Math.min(scheme.Discount_Amount__c, amount);
+
+        // Apply Max Discount Cap
+        if (scheme.Max_Discount_Cap__c && discount > scheme.Max_Discount_Cap__c) {
+            discount = scheme.Max_Discount_Cap__c;
         }
-        if (scheme.Scheme_Slabs__r) {
-            const applicableSlab = scheme.Scheme_Slabs__r.find(slab =>
-                qty >= slab.Min_Value__c && (!slab.Max_Value__c || qty <= slab.Max_Value__c)
-            );
-            if (applicableSlab && applicableSlab.Discount_Percent__c) {
-                return amount * (applicableSlab.Discount_Percent__c / 100);
+
+        return discount;
+    }
+
+    meetsSchemeThreshold(qty, amount, scheme) {
+        const schemeType = scheme.Scheme_Type__c || '';
+
+        // Quantity-based types: check Min_Quantity__c
+        if (schemeType.includes('(QTY)') || schemeType === 'Invoice Qty Based') {
+            const minQty = scheme.Min_Quantity__c || 0;
+            if (minQty > 0 && qty < minQty) return false;
+        }
+
+        // Value-based types: check MOV or Min_Value__c
+        if (schemeType.includes('(VAL)') || schemeType === 'Invoice Val Based') {
+            const minVal = scheme.MOV__c || scheme.Min_Value__c || 0;
+            if (minVal > 0 && amount < minVal) return false;
+        }
+
+        // Invoice Val Based: also check Invoice_Val_Threshold__c
+        if (schemeType === 'Invoice Val Based' && scheme.Invoice_Val_Threshold__c) {
+            if (amount < scheme.Invoice_Val_Threshold__c) return false;
+        }
+
+        // Invoice Qty Based: also check Invoice_Qty_Threshold__c
+        if (schemeType === 'Invoice Qty Based' && scheme.Invoice_Qty_Threshold__c) {
+            if (qty < scheme.Invoice_Qty_Threshold__c) return false;
+        }
+
+        return true;
+    }
+
+    findApplicableSlab(qty, amount, scheme) {
+        if (!scheme.Scheme_Slabs__r || scheme.Scheme_Slabs__r.length === 0) return null;
+
+        for (const slab of scheme.Scheme_Slabs__r) {
+            let compareValue;
+            if (slab.Slab_Type__c === 'Quantity') {
+                compareValue = qty || 0;
+            } else {
+                compareValue = amount || 0;
             }
+
+            const meetsMin = slab.Min_Value__c == null || compareValue >= slab.Min_Value__c;
+            const meetsMax = slab.Max_Value__c == null || compareValue <= slab.Max_Value__c;
+
+            if (meetsMin && meetsMax) return slab;
         }
-        return 0;
+        return null;
+    }
+
+    calculateSlabDiscount(amount, slab, scheme) {
+        let discount = 0;
+        const discountType = slab.Discount_Type__c || '';
+
+        if (discountType === 'Percent') {
+            const pct = slab.Discount_Value__c || slab.Discount_Percent__c || 0;
+            discount = amount * (pct / 100);
+        } else if (discountType === 'Amount') {
+            discount = slab.Discount_Value__c || slab.Discount_Amount__c || 0;
+            discount = Math.min(discount, amount);
+        } else if (discountType === 'Price Discount') {
+            discount = slab.Price_Discount__c || 0;
+            discount = Math.min(discount, amount);
+        }
+        // Free Product and Reward Points don't produce a monetary discount
+
+        // Apply Max Discount Cap from parent scheme
+        if (scheme && scheme.Max_Discount_Cap__c && discount > scheme.Max_Discount_Cap__c) {
+            discount = scheme.Max_Discount_Cap__c;
+        }
+
+        return discount;
     }
 
     async handleReorderLastOrder() {
