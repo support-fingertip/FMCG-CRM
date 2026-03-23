@@ -344,6 +344,7 @@ public without sharing class SPM_SchemeEngine_Service {
                    Min_Quantity__c, Max_Quantity__c,
                    Min_Value__c, Max_Value__c, MOV__c,
                    Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
+                   Base_UOM__c, Base_UOM__r.UOM_Code__c,
                    Channel__c, Outlet_Type__c, Max_Discount_Cap__c,
                    Product_Ext__c, Product_Category__c,
                    Budget_Amount__c, Budget_Used__c, Budget_Remaining__c,
@@ -514,6 +515,7 @@ public without sharing class SPM_SchemeEngine_Service {
         Set<Id> buyProductIds = getBuyProductIds(scheme);
         Map<Id, Decimal> minQtyMap = getSchemeProductMinQty(scheme);
         Decimal schemeMinQty = scheme.Min_Quantity__c != null ? scheme.Min_Quantity__c : 0;
+        String schemeBaseUOMCode = getSchemeBaseUOMCode(scheme);
 
         Boolean anyQualifies = false;
         Decimal totalQualifyingQty = 0;
@@ -526,6 +528,7 @@ public without sharing class SPM_SchemeEngine_Service {
             }
 
             Decimal itemQty = item.Quantity__c != null ? item.Quantity__c : 0;
+            itemQty = convertToSchemeBaseUOM(itemQty, item.UOM__c, schemeBaseUOMCode, item.Product_Ext__c);
             Decimal requiredQty = minQtyMap.containsKey(item.Product_Ext__c)
                 ? minQtyMap.get(item.Product_Ext__c) : schemeMinQty;
 
@@ -614,6 +617,7 @@ public without sharing class SPM_SchemeEngine_Service {
         List<Order_Line_Item__c> lineItems
     ) {
         Set<Id> buyProductIds = getBuyProductIds(scheme);
+        String schemeBaseUOMCode = getSchemeBaseUOMCode(scheme);
 
         Decimal totalQty = 0;
         Decimal totalVal = 0;
@@ -625,19 +629,21 @@ public without sharing class SPM_SchemeEngine_Service {
             }
 
             Decimal qty = item.Quantity__c != null ? item.Quantity__c : 0;
+            qty = convertToSchemeBaseUOM(qty, item.UOM__c, schemeBaseUOMCode, item.Product_Ext__c);
             Decimal val = getLineValue(item);
             totalQty += qty;
             totalVal += val;
             qualifyingLineAmounts.put(item.Id, val);
         }
 
-        // Check each product meets its individual min qty
+        // Check each product meets its individual min qty (quantities already converted to scheme base UOM)
         Map<Id, Decimal> minQtyMap = getSchemeProductMinQty(scheme);
         for (Id prodId : minQtyMap.keySet()) {
             Decimal prodQty = 0;
             for (Order_Line_Item__c item : lineItems) {
                 if (item.Product_Ext__c == prodId) {
-                    prodQty += (item.Quantity__c != null ? item.Quantity__c : 0);
+                    Decimal qty = item.Quantity__c != null ? item.Quantity__c : 0;
+                    prodQty += convertToSchemeBaseUOM(qty, item.UOM__c, schemeBaseUOMCode, item.Product_Ext__c);
                 }
             }
             if (prodQty < minQtyMap.get(prodId)) {
@@ -720,7 +726,11 @@ public without sharing class SPM_SchemeEngine_Service {
     ) {
         Set<Id> schemeProductIds = getBuyProductIds(scheme);
 
-        String schemeUOM = scheme.Invoice_Qty_UOM__c;
+        // Prefer Base_UOM__c (Lookup), fall back to Invoice_Qty_UOM__c (picklist)
+        String schemeBaseUOMCode = getSchemeBaseUOMCode(scheme);
+        if (String.isBlank(schemeBaseUOMCode)) {
+            schemeBaseUOMCode = scheme.Invoice_Qty_UOM__c;
+        }
         Decimal totalQty = 0;
         Decimal totalVal = 0;
         Map<Id, Decimal> allLineAmounts = new Map<Id, Decimal>();
@@ -732,14 +742,7 @@ public without sharing class SPM_SchemeEngine_Service {
             }
 
             Decimal itemQty = item.Quantity__c != null ? item.Quantity__c : 0;
-
-            // Convert line item qty to scheme's target UOM if they differ
-            if (String.isNotBlank(schemeUOM) && String.isNotBlank(item.UOM__c)) {
-                String lineUOMCode = mapOrderUOMToSchemeCode(item.UOM__c);
-                if (lineUOMCode != schemeUOM) {
-                    itemQty = convertQtyViaUOMRecords(itemQty, lineUOMCode, schemeUOM, item.Product_Ext__c);
-                }
-            }
+            itemQty = convertToSchemeBaseUOM(itemQty, item.UOM__c, schemeBaseUOMCode, item.Product_Ext__c);
 
             totalQty += itemQty;
             Decimal val = getLineValue(item);
@@ -963,6 +966,36 @@ public without sharing class SPM_SchemeEngine_Service {
     }
 
     // ── UOM Conversion helpers for scheme evaluation ─────────────────────────
+
+    /**
+     * @description Extracts the UOM code from the scheme's Base_UOM__c lookup.
+     *              Returns null if Base_UOM__c is not set.
+     */
+    private static String getSchemeBaseUOMCode(Scheme__c scheme) {
+        if (scheme.Base_UOM__c != null && scheme.Base_UOM__r != null
+            && String.isNotBlank(scheme.Base_UOM__r.UOM_Code__c)) {
+            return scheme.Base_UOM__r.UOM_Code__c;
+        }
+        return null;
+    }
+
+    /**
+     * @description Converts a line item quantity from the order's UOM to the
+     *              scheme's base UOM code. Returns the original quantity if no
+     *              base UOM is set on the scheme or if UOMs already match.
+     */
+    private static Decimal convertToSchemeBaseUOM(
+        Decimal qty, String orderUOM, String schemeBaseUOMCode, Id productId
+    ) {
+        if (qty == null || qty == 0 || String.isBlank(schemeBaseUOMCode) || String.isBlank(orderUOM)) {
+            return qty != null ? qty : 0;
+        }
+        String lineUOMCode = mapOrderUOMToSchemeCode(orderUOM);
+        if (lineUOMCode == schemeBaseUOMCode) {
+            return qty;
+        }
+        return convertQtyViaUOMRecords(qty, lineUOMCode, schemeBaseUOMCode, productId);
+    }
 
     /**
      * @description Maps Order_Line_Item__c.UOM__c picklist values to the short

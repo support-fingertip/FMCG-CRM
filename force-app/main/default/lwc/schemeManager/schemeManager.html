@@ -938,6 +938,22 @@
                             <span>Set the conditions that must be met for the scheme to activate. These fields depend on the Scheme Type selected in Step 1.</span>
                         </div>
 
+                        <!-- Base UOM for qty-based schemes -->
+                        <template if:true={wizShowBaseUOM}>
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <lightning-combobox
+                                        label="Base UOM"
+                                        value={wizScheme.Base_UOM__c}
+                                        options={uomOptions}
+                                        data-field="Base_UOM__c"
+                                        field-level-help="Base Unit of Measure for this scheme. Order quantities will be converted to this UOM before evaluation. Leave blank to use order quantities as-is."
+                                        onchange={handleWizFieldChange}>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+                        </template>
+
                         <!-- QTY-based trigger -->
                         <template if:true={wizShowMinMaxQty}>
                             <div class="slds-grid slds-gutters slds-wrap">

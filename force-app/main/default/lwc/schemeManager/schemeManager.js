@@ -16,6 +16,7 @@ import saveScheme from '@salesforce/apex/SchemeManagerController.saveScheme';
 import searchProducts from '@salesforce/apex/SchemeManagerController.searchProducts';
 import generateSchemeCode from '@salesforce/apex/SchemeManagerController.generateSchemeCode';
 import searchTerritories from '@salesforce/apex/SchemeManagerController.searchTerritories';
+import getActiveUOMs from '@salesforce/apex/UOMConversionController.getActiveUOMs';
 
 const STATUS_CONFIG = {
     'Draft':            { icon: 'utility:edit', class: 'status-draft', color: '#706e6b' },
@@ -212,6 +213,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     wizEditId = null;
     @track wizTerritorySearchResults = [];
     wizTerritorySearchTerms = {};
+    @track uomOptions = [];
 
     // ── Wizard Option Getters ────────────────────────────────────────────
     get wizCategoryOptions() { return WIZARD_CATEGORY_OPTIONS; }
@@ -231,6 +233,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     connectedCallback() {
         this.loadStats();
         this.loadSchemes();
+        this.loadUOMOptions();
         this._handleDocClick = this.handleDocumentClick.bind(this);
         document.addEventListener('click', this._handleDocClick);
     }
@@ -258,6 +261,19 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
         this.wizGetProductSearchResults = [];
         this.wizTerritorySearchResults = [];
         this._activeTerritoryKey = null;
+    }
+
+    async loadUOMOptions() {
+        try {
+            const uoms = await getActiveUOMs();
+            this.uomOptions = [
+                { label: '-- None --', value: '' },
+                ...uoms.map(u => ({ label: u.Name + ' (' + u.UOM_Code__c + ')', value: u.Id }))
+            ];
+        } catch (e) {
+            // UOM options are non-critical; silently fallback to empty
+            this.uomOptions = [{ label: '-- None --', value: '' }];
+        }
     }
 
     // ── Stats ────────────────────────────────────────────────────────────
@@ -903,6 +919,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Invoice_Qty_Threshold__c: null,
             Invoice_Qty_UOM__c: 'PC',
             Invoice_Val_Threshold__c: null,
+            Base_UOM__c: null,
             Max_Discount_Cap__c: null,
             Priority__c: 1,
             Is_Stackable__c: false,
@@ -1047,6 +1064,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
     get wizShowMOV() { return this.wizIsValBased; }
     get wizShowInvoiceQtyFields() { return this.wizIsInvoiceQtyBased; }
     get wizShowInvoiceValFields() { return this.wizIsInvoiceValBased; }
+    get wizShowBaseUOM() { return this.wizIsQtyBased || this.wizIsInvoiceQtyBased; }
 
     // Product/slab/mapping list getters
     get wizBuyProducts() { return this.wizProducts.filter(p => p.Is_Buy_Product__c); }
@@ -1459,6 +1477,7 @@ export default class SchemeManager extends NavigationMixin(LightningElement) {
             Invoice_Qty_Threshold__c: s.Invoice_Qty_Threshold__c,
             Invoice_Qty_UOM__c: s.Invoice_Qty_UOM__c || null,
             Invoice_Val_Threshold__c: s.Invoice_Val_Threshold__c,
+            Base_UOM__c: s.Base_UOM__c || null,
             Max_Discount_Cap__c: s.Max_Discount_Cap__c,
             Priority__c: s.Priority__c,
             Is_Stackable__c: s.Is_Stackable__c || false,

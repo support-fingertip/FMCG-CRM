@@ -513,4 +513,95 @@ private class SPM_SchemeEngine_Service_Test {
 
         Test.stopTest();
     }
+
+    // ── Base UOM Conversion in Scheme Evaluation ─────────────────────────
+
+    @isTest
+    static void testSchemeBaseUOMConversion() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Scheme Test Retailer' LIMIT 1];
+        List<Product_Extension__c> prods = [SELECT Id, Base_UOM__c FROM Product_Extension__c ORDER BY Name LIMIT 5];
+
+        // Create UOM records
+        UOM__c pieceUOM = new UOM__c(Name = 'Piece', UOM_Code__c = 'PC', Is_Active__c = true, Is_Base_Unit__c = true);
+        UOM__c caseUOM = new UOM__c(Name = 'Case', UOM_Code__c = 'CS', Is_Active__c = true, Is_Base_Unit__c = false);
+        insert new List<UOM__c>{ pieceUOM, caseUOM };
+
+        // Create conversion: 1 Case = 12 Pieces
+        UOM_Conversion__c conv = new UOM_Conversion__c(
+            From_UOM__c = caseUOM.Id,
+            To_UOM__c = pieceUOM.Id,
+            Conversion_Factor__c = 12,
+            Inverse_Conversion_Factor__c = 0.0833,
+            Is_Active__c = true
+        );
+        insert conv;
+
+        // Create a scheme with Base_UOM__c = Piece, requiring min 10 pieces
+        Scheme__c schemeWithBaseUOM = TestDataFactory.createScheme(
+            'UOM Convert Scheme', 'SCH-UOM01', 'Free Products', 'Same Product (QTY)');
+        schemeWithBaseUOM.Min_Quantity__c = 10;
+        schemeWithBaseUOM.Free_Product_Ext__c = prods[0].Id;
+        schemeWithBaseUOM.Free_Quantity__c = 1;
+        schemeWithBaseUOM.Product_Ext__c = prods[0].Id;
+        schemeWithBaseUOM.Priority__c = 20;
+        schemeWithBaseUOM.Is_Stackable__c = true;
+        schemeWithBaseUOM.Base_UOM__c = pieceUOM.Id;
+        insert schemeWithBaseUOM;
+
+        // Order 1 Case (=12 Pieces) which should meet the 10 Piece min after conversion
+        List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>{
+            new Order_Line_Item__c(
+                Product_Ext__c = prods[0].Id,
+                Quantity__c = 1,
+                UOM__c = 'Cases',
+                Net_Amount__c = 1200
+            )
+        };
+
+        Test.startTest();
+        List<SPM_SchemeEngine_Service.SchemeResult> results =
+            SPM_SchemeEngine_Service.getApplicableSchemes(acct.Id, lineItems, Date.today());
+        Test.stopTest();
+
+        Boolean foundUOMScheme = false;
+        for (SPM_SchemeEngine_Service.SchemeResult r : results) {
+            if (r.schemeId == schemeWithBaseUOM.Id) {
+                foundUOMScheme = true;
+                System.assertEquals(1, r.freeQty, 'Should get 1 free product after UOM conversion');
+            }
+        }
+        System.assert(foundUOMScheme,
+            'Scheme should apply: 1 Case = 12 Pieces >= 10 Piece min after Base UOM conversion');
+    }
+
+    @isTest
+    static void testSchemeWithoutBaseUOMUsesRawQuantity() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Scheme Test Retailer' LIMIT 1];
+        List<Product_Extension__c> prods = [SELECT Id FROM Product_Extension__c ORDER BY Name LIMIT 5];
+
+        // Scheme without Base_UOM__c should use raw quantity (backward compatibility)
+        List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>{
+            new Order_Line_Item__c(
+                Product_Ext__c = prods[0].Id,
+                Quantity__c = 5,
+                UOM__c = 'Cases',
+                Net_Amount__c = 2500
+            )
+        };
+
+        Test.startTest();
+        List<SPM_SchemeEngine_Service.SchemeResult> results =
+            SPM_SchemeEngine_Service.getApplicableSchemes(acct.Id, lineItems, Date.today());
+        Test.stopTest();
+
+        // Existing scheme requires min qty 3, and 5 Cases (raw) >= 3 without conversion
+        Boolean foundFreeProduct = false;
+        for (SPM_SchemeEngine_Service.SchemeResult r : results) {
+            if (r.schemeCategory == 'Free Products' && r.freeQty > 0) {
+                foundFreeProduct = true;
+            }
+        }
+        System.assert(foundFreeProduct,
+            'Scheme without Base_UOM__c should use raw quantity and still apply');
+    }
 }

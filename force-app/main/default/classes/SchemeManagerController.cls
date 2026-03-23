@@ -149,6 +149,7 @@ public with sharing class SchemeManagerController {
                    Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c,
                    Min_Quantity__c, Max_Quantity__c, Min_Value__c, Max_Value__c,
                    Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
+                   Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c,
                    Max_Discount_Cap__c, Priority__c, Is_Stackable__c, Tier__c,
                    Budget_Amount__c, Max_Usage_Per_Customer__c,
                    Product_Ext__c, Product_Category__c,

@@ -77,6 +77,7 @@ public with sharing class SchemeViewController {
                    Free_Product_Ext__c, Free_Product_Ext__r.Name, Free_Quantity__c,
                    Min_Quantity__c, Max_Quantity__c, Min_Value__c, Max_Value__c,
                    Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
+                   Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c,
                    Max_Discount_Cap__c, Priority__c, Is_Stackable__c,
                    Budget_Amount__c, Budget_Used__c, Budget_Remaining__c,
                    Applicable_Channel__c, Applicable_Outlet_Type__c, Applicable_Region__c,
