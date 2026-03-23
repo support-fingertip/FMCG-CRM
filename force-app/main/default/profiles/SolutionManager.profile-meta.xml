@@ -3369,7 +3369,6 @@
         <field>Scheme_Product__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Scheme_Slab__c.Discount_Amount__c</field>
