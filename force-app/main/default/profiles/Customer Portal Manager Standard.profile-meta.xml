@@ -6131,11 +6131,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Scheme_Slab__c.Slab_Type__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Scheme_Mapping__c.Scheme__c</field>
         <readable>true</readable>
     </fieldPermissions>
