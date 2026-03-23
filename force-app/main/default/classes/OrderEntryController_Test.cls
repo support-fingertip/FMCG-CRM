@@ -329,7 +329,7 @@ private class OrderEntryController_Test {
         Map<String, Object> payload = new Map<String, Object>();
         payload.put('accountId', acct.Id);
         payload.put('visitId', visit.Id);
-        payload.put('status', 'Confirmed');
+        payload.put('status', 'Submitted');
         payload.put('remarks', 'Test order');
         payload.put('grossAmount', 4500);
         payload.put('totalDiscount', 0);
@@ -382,7 +382,7 @@ private class OrderEntryController_Test {
 
         System.assertNotEquals(null, result, 'Should return created order');
         System.assertNotEquals(null, result.Name, 'Order should have an auto-generated Name');
-        System.assertEquals('Confirmed', result.Status__c, 'Status should be Confirmed');
+        System.assertEquals('Submitted', result.Status__c, 'Status should be Submitted');
 
         // Verify line items were created
         List<Order_Line_Item__c> createdItems = [
@@ -403,7 +403,7 @@ private class OrderEntryController_Test {
 
         Map<String, Object> payload = new Map<String, Object>();
         payload.put('accountId', acct.Id);
-        payload.put('status', 'Confirmed');
+        payload.put('status', 'Submitted');
         payload.put('grossAmount', 2000);
         payload.put('totalDiscount', 0);
         payload.put('totalTax', 360);

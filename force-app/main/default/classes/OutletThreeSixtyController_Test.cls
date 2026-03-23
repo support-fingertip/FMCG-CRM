@@ -60,7 +60,7 @@ private class OutletThreeSixtyController_Test {
         Sales_Order__c order1 = new Sales_Order__c(
             Account__c = acc.Id,
             Order_Date__c = Date.today(),
-            Status__c = 'Confirmed',
+            Status__c = 'Submitted',
             Total_Net_Amount__c = 15000,
             Total_Items__c = 5,
             Channel__c = 'GT'

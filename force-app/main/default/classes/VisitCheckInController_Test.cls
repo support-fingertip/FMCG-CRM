@@ -48,7 +48,7 @@ private class VisitCheckInController_Test {
         );
         order.Total_Gross_Amount__c = 8000;
         order.Total_Net_Amount__c = 8000;
-        order.Status__c = 'Confirmed';
+        order.Status__c = 'Submitted';
         insert order;
 
         Invoice__c invoice = TestDataFactory.createInvoice(order.Id, geoOutlet.Id);

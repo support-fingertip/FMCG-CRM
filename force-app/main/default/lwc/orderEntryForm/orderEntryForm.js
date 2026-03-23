@@ -1401,7 +1401,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.isLoading = true;
 
         try {
-            const orderData = this.buildOrderPayload('Confirmed');
+            const orderData = this.buildOrderPayload('Submitted');
             orderData.mustSellOverride = mustSellOverride;
             if (mustSellOverride && this.mustSellProducts.length > 0) {
                 const orderedProductIds = new Set(this.lineItems.map(li => li.productId));

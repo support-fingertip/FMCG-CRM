@@ -54,7 +54,7 @@ private class OVE_Visit_Service_Test {
         );
         order.Total_Gross_Amount__c = 10000;
         order.Total_Net_Amount__c = 10000;
-        order.Status__c = 'Confirmed';
+        order.Status__c = 'Submitted';
         insert order;
 
         // Invoice for outstanding balance test
