@@ -342,6 +342,10 @@
                                     <span class="field-value">{selectedScheme.outletType}</span>
                                 </div>
                                 <div class="detail-field">
+                                    <span class="field-label">Region</span>
+                                    <span class="field-value">{selectedScheme.region}</span>
+                                </div>
+                                <div class="detail-field">
                                     <span class="field-label">Priority</span>
                                     <span class="field-value">{selectedScheme.priority}</span>
                                 </div>
@@ -350,8 +354,24 @@
                                     <span class="field-value">{selectedScheme.stackableLabel}</span>
                                 </div>
                                 <div class="detail-field">
+                                    <span class="field-label">Active</span>
+                                    <span class="field-value">{selectedScheme.isActive}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Tier</span>
+                                    <span class="field-value">{selectedScheme.tier}</span>
+                                </div>
+                                <div class="detail-field">
                                     <span class="field-label">Max Usage Per Customer</span>
                                     <span class="field-value">{selectedScheme.maxUsageLabel}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Max Discount Cap</span>
+                                    <span class="field-value">{selectedScheme.maxDiscountCap}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Base UOM</span>
+                                    <span class="field-value">{selectedScheme.baseUom}</span>
                                 </div>
                             </div>
                             <template if:true={selectedScheme.description}>
@@ -360,6 +380,76 @@
                                     <p class="field-value">{selectedScheme.description}</p>
                                 </div>
                             </template>
+                        </div>
+
+                        <!-- Trigger Details -->
+                        <div class="detail-section">
+                            <h3 class="section-heading">Trigger Details</h3>
+                            <div class="detail-grid">
+                                <div class="detail-field">
+                                    <span class="field-label">Min Quantity</span>
+                                    <span class="field-value">{selectedScheme.minQty}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Max Quantity</span>
+                                    <span class="field-value">{selectedScheme.maxQty}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Min Value</span>
+                                    <span class="field-value">{selectedScheme.minValue}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Max Value</span>
+                                    <span class="field-value">{selectedScheme.maxValue}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">MOV</span>
+                                    <span class="field-value">{selectedScheme.mov}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Invoice Qty Threshold</span>
+                                    <span class="field-value">{selectedScheme.invoiceQtyThreshold}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Invoice Qty UOM</span>
+                                    <span class="field-value">{selectedScheme.invoiceQtyUom}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Invoice Val Threshold</span>
+                                    <span class="field-value">{selectedScheme.invoiceValThreshold}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Benefit Details -->
+                        <div class="detail-section">
+                            <h3 class="section-heading">Benefit Details</h3>
+                            <div class="detail-grid">
+                                <div class="detail-field">
+                                    <span class="field-label">Discount %</span>
+                                    <span class="field-value">{selectedScheme.discountPercent}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Discount Amount</span>
+                                    <span class="field-value">{selectedScheme.discountAmount}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Price Discount</span>
+                                    <span class="field-value">{selectedScheme.priceDiscount}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Reward Points</span>
+                                    <span class="field-value">{selectedScheme.rewardPoints}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Free Quantity</span>
+                                    <span class="field-value">{selectedScheme.freeQty}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="field-label">Free Product</span>
+                                    <span class="field-value">{selectedScheme.freeProductName}</span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Benefit Info -->
