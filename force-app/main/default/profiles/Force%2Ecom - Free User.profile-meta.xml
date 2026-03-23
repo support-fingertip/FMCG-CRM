@@ -6178,11 +6178,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Scheme_Slab__c.Discount_Type__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Scheme_Slab__c.Min_Value__c</field>
         <readable>true</readable>
     </fieldPermissions>
