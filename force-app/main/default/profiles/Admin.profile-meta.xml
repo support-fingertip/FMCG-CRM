@@ -3635,10 +3635,6 @@
         <field>Scheme_Product__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Scheme_Product__c.Scheme__c</field>
-        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
