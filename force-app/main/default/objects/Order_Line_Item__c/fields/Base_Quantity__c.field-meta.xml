@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Base_Quantity__c</fullName>
+    <description>Quantity converted to the product base UOM for accurate reporting and stock management</description>
+    <label>Base Quantity</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>3</scale>
+    <type>Number</type>
+</CustomField>

@@ -431,13 +431,16 @@
                                         </td>
                                         <td class="oef-td-uom">
                                             <lightning-combobox
-                                                value={item.uom}
-                                                options={uomOptions}
+                                                value={item.uomCode}
+                                                options={item.productUOMOptions}
                                                 data-line-id={item.id}
                                                 variant="label-hidden"
                                                 onchange={handleLineUOMChange}
                                                 class="oef-cart-uom-input">
                                             </lightning-combobox>
+                                            <template if:true={item.baseQuantityLabel}>
+                                                <span class="oef-base-qty-hint">{item.baseQuantityLabel}</span>
+                                            </template>
                                         </td>
                                         <td class="oef-td-free">
                                             <template if:true={item.freeQty}>

@@ -10,7 +10,10 @@ public with sharing class OrderEntryController {
 
     @AuraEnabled(cacheable=true)
     public static List<ProductSearchResult> searchProducts(String searchTerm, String categoryId, String accountId) {
-        String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c ' +
+        String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c, ' +
+                       'Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.UOM_Code__c, Base_UOM__r.Name, ' +
+                       'Secondary_UOM__c, Secondary_UOM__r.UOM_Code__c, Secondary_UOM__r.Name, ' +
+                       'Ordering_UOMs__c, Case_Size__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true';
         String searchKey;
         if (String.isNotBlank(searchTerm)) {
@@ -81,6 +84,18 @@ public with sharing class OrderEntryController {
                 ? resolvedPrice
                 : (p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c);
             r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
+            r.BaseUOMCode = (p.Base_UOM__c != null && p.Base_UOM__r.UOM_Code__c != null)
+                ? p.Base_UOM__r.UOM_Code__c : 'PC';
+            r.BaseUOMId = p.Base_UOM__c;
+            r.BaseUOMName = (p.Base_UOM__c != null && p.Base_UOM__r.Name != null)
+                ? p.Base_UOM__r.Name : 'Piece';
+            r.SecondaryUOMCode = (p.Secondary_UOM__c != null && p.Secondary_UOM__r.UOM_Code__c != null)
+                ? p.Secondary_UOM__r.UOM_Code__c : null;
+            r.SecondaryUOMId = p.Secondary_UOM__c;
+            r.SecondaryUOMName = (p.Secondary_UOM__c != null && p.Secondary_UOM__r.Name != null)
+                ? p.Secondary_UOM__r.Name : null;
+            r.OrderingUOMs = p.Ordering_UOMs__c;
+            r.CaseSize = p.Case_Size__c;
 
             results.add(r);
         }
@@ -140,8 +155,71 @@ public with sharing class OrderEntryController {
             List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>();
             List<Object> items = (List<Object>) payload.get('lineItems');
             if (items != null) {
+                // Collect product Ids for bulk UOM resolution
+                Set<Id> lineProductIds = new Set<Id>();
+                for (Object itemObj : items) {
+                    Map<String, Object> itm = (Map<String, Object>) itemObj;
+                    if (itm.get('productId') != null) {
+                        try {
+                            lineProductIds.add(Id.valueOf((String) itm.get('productId')));
+                        } catch (Exception ex) { /* skip invalid ids */ }
+                    }
+                }
+
+                // Bulk-fetch product base UOM info
+                Map<Id, Product_Extension__c> productUOMMap = new Map<Id, Product_Extension__c>();
+                if (!lineProductIds.isEmpty()) {
+                    for (Product_Extension__c pe : [
+                        SELECT Id, Base_UOM__c, Base_UOM__r.UOM_Code__c
+                        FROM Product_Extension__c
+                        WHERE Id IN :lineProductIds
+                    ]) {
+                        productUOMMap.put(pe.Id, pe);
+                    }
+                }
+
+                // Build conversion requests for bulk conversion
+                List<UOM_Conversion_Service.ConversionRequest> convRequests = new List<UOM_Conversion_Service.ConversionRequest>();
+                List<Map<String, Object>> itemMaps = new List<Map<String, Object>>();
+
                 for (Object itemObj : items) {
                     Map<String, Object> item = (Map<String, Object>) itemObj;
+                    itemMaps.add(item);
+
+                    Id productId = item.get('productId') != null ? Id.valueOf((String) item.get('productId')) : null;
+                    String uomCode = item.get('uomCode') != null ? (String) item.get('uomCode') : null;
+                    String uomPicklist = item.get('uom') != null ? (String) item.get('uom') : 'Pieces';
+                    Decimal qty = toDecimal(item.get('quantity'));
+
+                    // Resolve the order UOM code
+                    if (String.isBlank(uomCode)) {
+                        uomCode = UOM_Conversion_Service.mapPicklistToCode(uomPicklist);
+                    }
+
+                    // Get base UOM code for the product
+                    String baseUomCode = 'PC';
+                    if (productId != null && productUOMMap.containsKey(productId)) {
+                        Product_Extension__c pe = productUOMMap.get(productId);
+                        if (pe.Base_UOM__c != null && String.isNotBlank(pe.Base_UOM__r.UOM_Code__c)) {
+                            baseUomCode = pe.Base_UOM__r.UOM_Code__c;
+                        }
+                    }
+
+                    UOM_Conversion_Service.ConversionRequest cr = new UOM_Conversion_Service.ConversionRequest();
+                    cr.productId = productId;
+                    cr.fromUomCode = uomCode;
+                    cr.toUomCode = baseUomCode;
+                    cr.quantity = qty;
+                    convRequests.add(cr);
+                }
+
+                // Bulk convert
+                List<UOM_Conversion_Service.ConvertedResult> convResults = UOM_Conversion_Service.bulkConvert(convRequests);
+
+                for (Integer i = 0; i < itemMaps.size(); i++) {
+                    Map<String, Object> item = itemMaps[i];
+                    UOM_Conversion_Service.ConvertedResult conv = convResults[i];
+
                     Order_Line_Item__c li = new Order_Line_Item__c();
                     li.Sales_Order__c = order.Id;
                     li.Product_Ext__c = (String) item.get('productId');
@@ -156,11 +234,32 @@ public with sharing class OrderEntryController {
                     if (item.get('schemeId') != null) {
                         li.Scheme__c = (String) item.get('schemeId');
                     }
-                    if (item.get('uom') != null) {
-                        li.UOM__c = (String) item.get('uom');
+
+                    // Set UOM picklist (backward compatibility)
+                    String uomPicklist = item.get('uom') != null ? (String) item.get('uom') : null;
+                    String uomCode = item.get('uomCode') != null ? (String) item.get('uomCode') : null;
+                    if (String.isNotBlank(uomPicklist)) {
+                        li.UOM__c = uomPicklist;
+                    } else if (String.isNotBlank(uomCode)) {
+                        li.UOM__c = UOM_Conversion_Service.mapCodeToPicklist(uomCode);
                     } else {
                         li.UOM__c = 'Pieces';
                     }
+
+                    // Set UOM lookup fields
+                    if (String.isNotBlank(uomCode)) {
+                        li.Order_UOM__c = UOM_Conversion_Service.getUOMIdByCode(uomCode);
+                    } else {
+                        li.Order_UOM__c = UOM_Conversion_Service.getUOMIdByCode(
+                            UOM_Conversion_Service.mapPicklistToCode(li.UOM__c)
+                        );
+                    }
+
+                    // Set base quantity and conversion factor
+                    li.Base_Quantity__c = conv.convertedQuantity;
+                    li.Conversion_Factor__c = conv.conversionFactor;
+                    li.Base_UOM__c = conv.baseUomId;
+
                     lineItems.add(li);
                 }
             }
@@ -384,7 +483,10 @@ public with sharing class OrderEntryController {
         // Fallback: if no top sellers found, show recently added active products
         if (topProductIds.isEmpty()) {
             List<Product_Extension__c> fallbackProducts = [
-                SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c
+                SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c,
+                       Base_UOM__c, Base_UOM__r.UOM_Code__c, Base_UOM__r.Name,
+                       Secondary_UOM__c, Secondary_UOM__r.UOM_Code__c, Secondary_UOM__r.Name,
+                       Ordering_UOMs__c, Case_Size__c
                 FROM Product_Extension__c
                 WHERE Is_Active__c = true
                 ORDER BY CreatedDate DESC
@@ -392,36 +494,23 @@ public with sharing class OrderEntryController {
             ];
             List<ProductSearchResult> fallbackResults = new List<ProductSearchResult>();
             for (Product_Extension__c p : fallbackProducts) {
-                ProductSearchResult r = new ProductSearchResult();
-                r.Id = p.Id;
-                r.Name = p.Name;
-                r.SKU_Code = p.SKU_Code__c;
-                r.MRP = p.MRP__c;
-                r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
-                r.GST_Rate = p.GST_Rate__c;
-                r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
-                fallbackResults.add(r);
+                fallbackResults.add(buildProductSearchResult(p));
             }
             return fallbackResults;
         }
 
         List<Product_Extension__c> products = [
-            SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c
+            SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c,
+                   Base_UOM__c, Base_UOM__r.UOM_Code__c, Base_UOM__r.Name,
+                   Secondary_UOM__c, Secondary_UOM__r.UOM_Code__c, Secondary_UOM__r.Name,
+                   Ordering_UOMs__c, Case_Size__c
             FROM Product_Extension__c
             WHERE Id IN :topProductIds AND Is_Active__c = true
         ];
 
         List<ProductSearchResult> results = new List<ProductSearchResult>();
         for (Product_Extension__c p : products) {
-            ProductSearchResult r = new ProductSearchResult();
-            r.Id = p.Id;
-            r.Name = p.Name;
-            r.SKU_Code = p.SKU_Code__c;
-            r.MRP = p.MRP__c;
-            r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
-            r.GST_Rate = p.GST_Rate__c;
-            r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
-            results.add(r);
+            results.add(buildProductSearchResult(p));
         }
         return results;
     }
@@ -441,6 +530,14 @@ public with sharing class OrderEntryController {
         @AuraEnabled public Decimal Unit_Price;
         @AuraEnabled public Decimal GST_Rate;
         @AuraEnabled public String UOM;
+        @AuraEnabled public String BaseUOMCode;
+        @AuraEnabled public Id BaseUOMId;
+        @AuraEnabled public String BaseUOMName;
+        @AuraEnabled public String SecondaryUOMCode;
+        @AuraEnabled public Id SecondaryUOMId;
+        @AuraEnabled public String SecondaryUOMName;
+        @AuraEnabled public String OrderingUOMs;
+        @AuraEnabled public Decimal CaseSize;
     }
 
     /**
@@ -463,6 +560,35 @@ public with sharing class OrderEntryController {
     }
 
     /**
+     * @description Returns allowed UOM options for a specific product, using
+     *              the UOM master and product configuration.
+     * @param productId The Product_Extension__c Id.
+     * @return List of maps with label, value (UOM code), uomId, isBase keys.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getProductUOMOptions(Id productId) {
+        return UOM_Conversion_Service.getProductUOMOptions(productId);
+    }
+
+    /**
+     * @description Converts a quantity between UOMs for a product. Used by LWC
+     *              to display the base quantity equivalent inline.
+     * @param productId The Product_Extension__c Id.
+     * @param fromUomCode Source UOM code (e.g., 'CS').
+     * @param toUomCode Target UOM code (e.g., 'PC').
+     * @param quantity The quantity to convert.
+     * @return Map with convertedQuantity and conversionFactor.
+     */
+    @AuraEnabled
+    public static Map<String, Decimal> convertQuantity(Id productId, String fromUomCode, String toUomCode, Decimal quantity) {
+        Map<String, Decimal> result = new Map<String, Decimal>();
+        Decimal factor = UOM_Conversion_Service.getConversionFactor(productId, fromUomCode, toUomCode);
+        result.put('conversionFactor', factor);
+        result.put('convertedQuantity', quantity != null ? quantity * factor : 0);
+        return result;
+    }
+
+    /**
      * @description Maps a Product_Extension__c.Unit_of_Measure__c value to
      *              the corresponding Order_Line_Item__c.UOM__c picklist value.
      * @param productUOM The product's Unit_of_Measure__c value.
@@ -480,6 +606,30 @@ public with sharing class OrderEntryController {
             'Pack' => 'Pieces'
         };
         return mapping.containsKey(productUOM) ? mapping.get(productUOM) : 'Pieces';
+    }
+
+    private static ProductSearchResult buildProductSearchResult(Product_Extension__c p) {
+        ProductSearchResult r = new ProductSearchResult();
+        r.Id = p.Id;
+        r.Name = p.Name;
+        r.SKU_Code = p.SKU_Code__c;
+        r.MRP = p.MRP__c;
+        r.Unit_Price = p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c;
+        r.GST_Rate = p.GST_Rate__c;
+        r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
+        r.BaseUOMCode = (p.Base_UOM__c != null && p.Base_UOM__r.UOM_Code__c != null)
+            ? p.Base_UOM__r.UOM_Code__c : 'PC';
+        r.BaseUOMId = p.Base_UOM__c;
+        r.BaseUOMName = (p.Base_UOM__c != null && p.Base_UOM__r.Name != null)
+            ? p.Base_UOM__r.Name : 'Piece';
+        r.SecondaryUOMCode = (p.Secondary_UOM__c != null && p.Secondary_UOM__r.UOM_Code__c != null)
+            ? p.Secondary_UOM__r.UOM_Code__c : null;
+        r.SecondaryUOMId = p.Secondary_UOM__c;
+        r.SecondaryUOMName = (p.Secondary_UOM__c != null && p.Secondary_UOM__r.Name != null)
+            ? p.Secondary_UOM__r.Name : null;
+        r.OrderingUOMs = p.Ordering_UOMs__c;
+        r.CaseSize = p.Case_Size__c;
+        return r;
     }
 
     private static void updateOrderTotals(Id orderId) {
