@@ -6082,14 +6082,4 @@
         <field>Scheme__c.Base_UOM__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Scheme_Slab__c.Scheme__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Scheme_Mapping__c.Scheme__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
 </Profile>
