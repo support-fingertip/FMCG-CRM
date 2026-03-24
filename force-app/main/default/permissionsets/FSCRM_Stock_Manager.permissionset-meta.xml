@@ -1157,4 +1157,44 @@
         <field>Order_Line_Item__c.UOM__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <!-- #30 Sales_Order__c Read for Stock Manager -->
+    <objectPermissions>
+        <object>Sales_Order__c</object>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <!-- #30 Order_Line_Item__c Read for Stock Manager -->
+    <objectPermissions>
+        <object>Order_Line_Item__c</object>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <!-- Invoice__c Read for Stock Manager -->
+    <objectPermissions>
+        <object>Invoice__c</object>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <!-- Invoice_Line__c Read for Stock Manager -->
+    <objectPermissions>
+        <object>Invoice_Line__c</object>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
 </PermissionSet>

@@ -93,10 +93,19 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
             }
         }
 
-        // Invoice generation disabled – not required at this stage
-        // if (!approvedOrderIds.isEmpty()) {
-        //     OMS_InvoiceGeneration_Service.generateInvoices(approvedOrderIds);
-        // }
+        if (!approvedOrderIds.isEmpty()) {
+            // Validate stock availability before generating invoices
+            Map<Id, List<String>> stockShortages = OMS_StockAvailability_Service.validateStockAvailability(approvedOrderIds);
+            Set<Id> stockAvailableOrders = new Set<Id>();
+            for (Id orderId : approvedOrderIds) {
+                if (stockShortages.get(orderId).isEmpty()) {
+                    stockAvailableOrders.add(orderId);
+                }
+            }
+            if (!stockAvailableOrders.isEmpty()) {
+                OMS_InvoiceGeneration_Service.generateInvoices(stockAvailableOrders);
+            }
+        }
 
         if (!cancelledOrderIds.isEmpty()) {
             releaseCreditHold(cancelledOrderIds);
