@@ -290,7 +290,7 @@
                             <tbody>
                                 <template for:each={priceLists} for:item="pl">
                                     <tr key={pl.Id}>
-                                        <td><span class="badge badge-blue">{pl.priorityLabel}</span></td>
+                                        <td><template if:true={pl.priorityLabel}><span class="badge badge-blue">{pl.priorityLabel}</span></template></td>
                                         <td>{pl.productName}</td>
                                         <td class="cell-mono">{pl.productSku}</td>
                                         <td>{pl.customerName}</td>

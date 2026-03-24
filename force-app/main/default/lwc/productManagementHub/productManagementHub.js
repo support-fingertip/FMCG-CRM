@@ -593,7 +593,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 customerName: pl.Customer__r ? pl.Customer__r.Name : '',
                 categoryName: pl.Category__r ? pl.Category__r.Name : '',
                 territoryName: pl.Territory__r ? pl.Territory__r.Name : '',
-                priorityLabel: PRIORITY_LABELS[pl.Priority__c] || 'P' + pl.Priority__c
+                priorityLabel: PRIORITY_LABELS[pl.Priority__c] || (pl.Priority__c != null ? 'P' + pl.Priority__c : '')
             }));
             this.priceListTotalPages = result.totalPages;
             this.priceListTotalCount = result.totalCount;
