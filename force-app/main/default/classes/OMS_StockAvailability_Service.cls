@@ -43,14 +43,14 @@ public with sharing class OMS_StockAvailability_Service {
         // Get current stock levels
         Map<String, Decimal> stockMap = new Map<String, Decimal>();
         for (Warehouse_Stock__c ws : [
-            SELECT Product_Ext__c, Warehouse__c, On_Hand_Qty__c, Reserved_Qty__c
+            SELECT Product_Ext__c, Warehouse__c, Qty_On_Hand__c, Qty_Reserved__c
             FROM Warehouse_Stock__c
             WHERE Product_Ext__c IN :productIds
               AND Warehouse__c IN :warehouseIds
         ]) {
             String key = ws.Warehouse__c + '|' + ws.Product_Ext__c;
-            Decimal available = (ws.On_Hand_Qty__c != null ? ws.On_Hand_Qty__c : 0)
-                              - (ws.Reserved_Qty__c != null ? ws.Reserved_Qty__c : 0);
+            Decimal available = (ws.Qty_On_Hand__c != null ? ws.Qty_On_Hand__c : 0)
+                              - (ws.Qty_Reserved__c != null ? ws.Qty_Reserved__c : 0);
             stockMap.put(key, available);
         }
 

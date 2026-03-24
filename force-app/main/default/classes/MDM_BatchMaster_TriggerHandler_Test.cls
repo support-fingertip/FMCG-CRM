@@ -8,7 +8,7 @@ private class MDM_BatchMaster_TriggerHandler_Test {
 
         Batch_Master__c batch = new Batch_Master__c(
             Batch_Number__c = 'BATCH-001',
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Manufacturing_Date__c = Date.today().addDays(-30),
             Expiry_Date__c = Date.today().addDays(365),
             Status__c = 'Active'
@@ -28,7 +28,7 @@ private class MDM_BatchMaster_TriggerHandler_Test {
 
         Batch_Master__c batch = new Batch_Master__c(
             Batch_Number__c = 'BATCH-002',
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Manufacturing_Date__c = Date.today(),
             Expiry_Date__c = Date.today().addDays(-10),
             Status__c = 'Active'
@@ -51,7 +51,7 @@ private class MDM_BatchMaster_TriggerHandler_Test {
 
         Batch_Master__c batch1 = new Batch_Master__c(
             Batch_Number__c = 'BATCH-DUP',
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Manufacturing_Date__c = Date.today().addDays(-30),
             Expiry_Date__c = Date.today().addDays(365),
             Status__c = 'Active'
@@ -60,7 +60,7 @@ private class MDM_BatchMaster_TriggerHandler_Test {
 
         Batch_Master__c batch2 = new Batch_Master__c(
             Batch_Number__c = 'BATCH-DUP',
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Manufacturing_Date__c = Date.today(),
             Expiry_Date__c = Date.today().addDays(180),
             Status__c = 'Active'

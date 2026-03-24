@@ -34,14 +34,14 @@ public class MDM_BatchMaster_TriggerHandler extends TriggerHandler {
         Set<Id> productIds = new Set<Id>();
 
         for (Batch_Master__c rec : records) {
-            if (String.isNotBlank(rec.Batch_Number__c) && rec.Product__c != null) {
-                String key = rec.Product__c + '|' + rec.Batch_Number__c;
+            if (String.isNotBlank(rec.Batch_Number__c) && rec.Product_Ext__c != null) {
+                String key = rec.Product_Ext__c + '|' + rec.Batch_Number__c;
                 if (batchKeys.containsKey(key)) {
                     rec.Batch_Number__c.addError('Duplicate batch number in this batch.');
                 } else {
                     batchKeys.put(key, rec);
                     batchNumbers.add(rec.Batch_Number__c);
-                    productIds.add(rec.Product__c);
+                    productIds.add(rec.Product_Ext__c);
                 }
             }
         }
@@ -49,12 +49,12 @@ public class MDM_BatchMaster_TriggerHandler extends TriggerHandler {
         if (batchNumbers.isEmpty()) return;
 
         for (Batch_Master__c existing : [
-            SELECT Id, Batch_Number__c, Product__c
+            SELECT Id, Batch_Number__c, Product_Ext__c
             FROM Batch_Master__c
             WHERE Batch_Number__c IN :batchNumbers
-              AND Product__c IN :productIds
+              AND Product_Ext__c IN :productIds
         ]) {
-            String key = existing.Product__c + '|' + existing.Batch_Number__c;
+            String key = existing.Product_Ext__c + '|' + existing.Batch_Number__c;
             if (batchKeys.containsKey(key)) {
                 batchKeys.get(key).Batch_Number__c.addError(
                     'A batch with this number already exists for this product.'
