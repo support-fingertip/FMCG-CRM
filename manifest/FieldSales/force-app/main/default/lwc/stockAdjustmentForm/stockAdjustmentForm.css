@@ -1,0 +1,18 @@
+:host {
+    display: block;
+}
+
+.stock-level_healthy {
+    color: #2e844a;
+    font-weight: 600;
+}
+
+.stock-level_warning {
+    color: #fe9339;
+    font-weight: 600;
+}
+
+.stock-level_danger {
+    color: #ea001e;
+    font-weight: 600;
+}

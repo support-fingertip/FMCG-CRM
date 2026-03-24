@@ -1,0 +1,307 @@
+<template>
+    <lightning-card title="Target vs Achievement" icon-name="standard:performance">
+        <div slot="actions">
+            <div class="slds-grid slds-gutters_xx-small slds-grid_vertical-align-center">
+                <div class="slds-col">
+                    <lightning-combobox
+                        label="Period"
+                        value={selectedPeriod}
+                        options={periodOptions}
+                        variant="label-hidden"
+                        onchange={handlePeriodChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col">
+                    <lightning-combobox
+                        label="Year"
+                        value={selectedYear}
+                        options={yearOptions}
+                        variant="label-hidden"
+                        onchange={handleYearChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col">
+                    <lightning-button-icon
+                        icon-name="utility:refresh"
+                        alternative-text="Refresh"
+                        onclick={handleRefresh}>
+                    </lightning-button-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="slds-p-around_medium">
+            <!-- KPI Cards Row -->
+            <div class="kpi-row slds-m-bottom_medium">
+                <div class="slds-grid slds-gutters slds-wrap">
+                    <!-- Revenue KPI -->
+                    <div class="slds-col slds-size_1-of-5">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Revenue</span>
+                                <span class={revenueKpi.badgeClass}>{revenueKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-progress-ring-container">
+                                <svg class="progress-ring" viewBox="0 0 80 80">
+                                    <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
+                                    <circle class={revenueKpi.ringClass} cx="40" cy="40" r="34"
+                                        stroke-dasharray={revenueKpi.dashArray}
+                                        stroke-dashoffset={revenueKpi.dashOffset} />
+                                </svg>
+                                <span class="ring-label">{revenueKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-details">
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Target</span>
+                                    <span class="detail-value">{revenueKpi.targetFormatted}</span>
+                                </div>
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Actual</span>
+                                    <span class="detail-value actual">{revenueKpi.actualFormatted}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Volume KPI -->
+                    <div class="slds-col slds-size_1-of-5">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Volume</span>
+                                <span class={volumeKpi.badgeClass}>{volumeKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-progress-ring-container">
+                                <svg class="progress-ring" viewBox="0 0 80 80">
+                                    <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
+                                    <circle class={volumeKpi.ringClass} cx="40" cy="40" r="34"
+                                        stroke-dasharray={volumeKpi.dashArray}
+                                        stroke-dashoffset={volumeKpi.dashOffset} />
+                                </svg>
+                                <span class="ring-label">{volumeKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-details">
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Target</span>
+                                    <span class="detail-value">{volumeKpi.targetFormatted}</span>
+                                </div>
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Actual</span>
+                                    <span class="detail-value actual">{volumeKpi.actualFormatted}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collection KPI -->
+                    <div class="slds-col slds-size_1-of-5">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Collection</span>
+                                <span class={collectionKpi.badgeClass}>{collectionKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-progress-ring-container">
+                                <svg class="progress-ring" viewBox="0 0 80 80">
+                                    <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
+                                    <circle class={collectionKpi.ringClass} cx="40" cy="40" r="34"
+                                        stroke-dasharray={collectionKpi.dashArray}
+                                        stroke-dashoffset={collectionKpi.dashOffset} />
+                                </svg>
+                                <span class="ring-label">{collectionKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-details">
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Target</span>
+                                    <span class="detail-value">{collectionKpi.targetFormatted}</span>
+                                </div>
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Actual</span>
+                                    <span class="detail-value actual">{collectionKpi.actualFormatted}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coverage KPI -->
+                    <div class="slds-col slds-size_1-of-5">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Coverage</span>
+                                <span class={coverageKpi.badgeClass}>{coverageKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-progress-ring-container">
+                                <svg class="progress-ring" viewBox="0 0 80 80">
+                                    <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
+                                    <circle class={coverageKpi.ringClass} cx="40" cy="40" r="34"
+                                        stroke-dasharray={coverageKpi.dashArray}
+                                        stroke-dashoffset={coverageKpi.dashOffset} />
+                                </svg>
+                                <span class="ring-label">{coverageKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-details">
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Target</span>
+                                    <span class="detail-value">{coverageKpi.targetFormatted}</span>
+                                </div>
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Actual</span>
+                                    <span class="detail-value actual">{coverageKpi.actualFormatted}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Outlets KPI -->
+                    <div class="slds-col slds-size_1-of-5">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">New Outlets</span>
+                                <span class={newOutletsKpi.badgeClass}>{newOutletsKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-progress-ring-container">
+                                <svg class="progress-ring" viewBox="0 0 80 80">
+                                    <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
+                                    <circle class={newOutletsKpi.ringClass} cx="40" cy="40" r="34"
+                                        stroke-dasharray={newOutletsKpi.dashArray}
+                                        stroke-dashoffset={newOutletsKpi.dashOffset} />
+                                </svg>
+                                <span class="ring-label">{newOutletsKpi.percent}%</span>
+                            </div>
+                            <div class="kpi-details">
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Target</span>
+                                    <span class="detail-value">{newOutletsKpi.targetFormatted}</span>
+                                </div>
+                                <div class="kpi-detail-row">
+                                    <span class="detail-label">Actual</span>
+                                    <span class="detail-value actual">{newOutletsKpi.actualFormatted}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trend Chart (SVG Bar Chart) -->
+            <div class="chart-section slds-m-bottom_medium">
+                <h3 class="slds-text-heading_small slds-m-bottom_small">Revenue Trend</h3>
+                <div class="chart-container">
+                    <svg class="bar-chart" viewBox="0 0 700 250" preserveAspectRatio="xMidYMid meet">
+                        <!-- Grid Lines -->
+                        <line x1="50" y1="20" x2="50" y2="210" stroke="#e5e5e5" stroke-width="1" />
+                        <line x1="50" y1="210" x2="680" y2="210" stroke="#e5e5e5" stroke-width="1" />
+                        <line x1="50" y1="163" x2="680" y2="163" stroke="#f0f0f0" stroke-width="0.5" stroke-dasharray="4" />
+                        <line x1="50" y1="116" x2="680" y2="116" stroke="#f0f0f0" stroke-width="0.5" stroke-dasharray="4" />
+                        <line x1="50" y1="69" x2="680" y2="69" stroke="#f0f0f0" stroke-width="0.5" stroke-dasharray="4" />
+
+                        <!-- Target and Actual Bars -->
+                        <template for:each={trendData} for:item="item">
+                            <g key={item.month}>
+                                <!-- Target Bar -->
+                                <rect x={item.targetX} y={item.targetY} width="22"
+                                    height={item.targetHeight} fill="#d0e5fb" rx="2" />
+                                <!-- Actual Bar -->
+                                <rect x={item.actualX} y={item.actualY} width="22"
+                                    height={item.actualHeight} fill={item.barColor} rx="2" />
+                                <!-- Month Label -->
+                                <text x={item.labelX} y="230" text-anchor="middle"
+                                    font-size="11" fill="#706e6b">{item.monthLabel}</text>
+                            </g>
+                        </template>
+
+                        <!-- Legend -->
+                        <rect x="560" y="5" width="12" height="12" fill="#d0e5fb" rx="2" />
+                        <text x="576" y="15" font-size="10" fill="#706e6b">Target</text>
+                        <rect x="620" y="5" width="12" height="12" fill="#0176d3" rx="2" />
+                        <text x="636" y="15" font-size="10" fill="#706e6b">Actual</text>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Drill-down Table -->
+            <div class="drilldown-section slds-m-bottom_medium">
+                <h3 class="slds-text-heading_small slds-m-bottom_small">Territory Breakdown</h3>
+                <template if:true={hasDrillDownData}>
+                    <div class="slds-scrollable_y drilldown-table-container">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"><div class="slds-truncate">Territory / Salesperson</div></th>
+                                    <th scope="col"><div class="slds-truncate">Revenue Target</div></th>
+                                    <th scope="col"><div class="slds-truncate">Revenue Actual</div></th>
+                                    <th scope="col"><div class="slds-truncate">Achievement %</div></th>
+                                    <th scope="col"><div class="slds-truncate">Volume</div></th>
+                                    <th scope="col"><div class="slds-truncate">Collection</div></th>
+                                    <th scope="col"><div class="slds-truncate">Coverage</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={drillDownData} for:item="row">
+                                    <tr key={row.id} class={row.rowClass}>
+                                        <td>
+                                            <div class={row.nameClass}>
+                                                <template if:true={row.isTerritory}>
+                                                    <lightning-icon icon-name="utility:chevronright"
+                                                        size="xx-small" class="slds-m-right_xx-small">
+                                                    </lightning-icon>
+                                                </template>
+                                                {row.name}
+                                            </div>
+                                        </td>
+                                        <td>{row.revenueTargetFormatted}</td>
+                                        <td>{row.revenueActualFormatted}</td>
+                                        <td>
+                                            <div class="achievement-cell">
+                                                <div class="mini-progress-bar">
+                                                    <div class="mini-progress-fill" style={row.progressStyle}></div>
+                                                </div>
+                                                <span class={row.achievementBadge}>{row.achievementPercent}%</span>
+                                            </div>
+                                        </td>
+                                        <td>{row.volumeFormatted}</td>
+                                        <td>{row.collectionFormatted}</td>
+                                        <td>{row.coveragePercent}%</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="leaderboard-section">
+                <h3 class="slds-text-heading_small slds-m-bottom_small">
+                    <lightning-icon icon-name="standard:reward" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    Top 10 Performers
+                </h3>
+                <div class="leaderboard-container">
+                    <template for:each={leaderboard} for:item="person">
+                        <div class="leaderboard-row" key={person.id}>
+                            <div class="rank-container">
+                                <span class={person.rankClass}>{person.rank}</span>
+                            </div>
+                            <div class="person-info">
+                                <span class="person-name">{person.name}</span>
+                                <span class="person-territory">{person.territory}</span>
+                            </div>
+                            <div class="person-achievement">
+                                <div class="leader-progress-bar">
+                                    <div class="leader-progress-fill" style={person.progressStyle}></div>
+                                </div>
+                                <span class={person.achievementBadge}>{person.achievementPercent}%</span>
+                            </div>
+                            <div class="person-value">
+                                <span class="achievement-value">{person.revenueFormatted}</span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Spinner -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+            </template>
+        </div>
+    </lightning-card>
+</template>
