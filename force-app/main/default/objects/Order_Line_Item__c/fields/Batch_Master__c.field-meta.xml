@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Batch_Master__c</fullName>
+    <label>Batch</label>
+    <type>Lookup</type>
+    <referenceTo>Batch_Master__c</referenceTo>
+    <relationshipLabel>Order Line Items</relationshipLabel>
+    <relationshipName>Order_Line_Items</relationshipName>
+    <required>false</required>
+    <deleteConstraint>Restrict</deleteConstraint>
+</CustomField>

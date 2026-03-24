@@ -90,6 +90,10 @@
                 <behavior>Edit</behavior>
                 <field>Case_Size__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Ordering_UOMs__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>

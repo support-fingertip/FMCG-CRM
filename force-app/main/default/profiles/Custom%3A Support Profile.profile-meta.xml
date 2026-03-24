@@ -221,6 +221,11 @@
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.FSSAI_License_No__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>Account.GSTIN__c</field>
         <readable>false</readable>
@@ -284,6 +289,11 @@
         <editable>false</editable>
         <field>Account.Outstanding_Balance__c</field>
         <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Account.Owner_Name__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
@@ -1961,6 +1971,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Order_Line_Item__c.Batch_Master__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>Price_Change_Log__c.Change_Date__c</field>
         <readable>false</readable>
@@ -2458,6 +2473,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Sales_Order__c.Visit__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Sales_Order__c.Day_Attendance__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

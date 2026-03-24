@@ -146,6 +146,10 @@
                 <behavior>Readonly</behavior>
                 <field>Last_Order_Date__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Last_Visit_Date__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>

@@ -2977,6 +2977,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Order_Line_Item__c.Batch_Master__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Price_Change_Log__c.Category__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -3568,6 +3573,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Sales_Order__c.Visit__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Sales_Order__c.Day_Attendance__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
