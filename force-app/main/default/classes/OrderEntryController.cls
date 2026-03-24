@@ -359,6 +359,11 @@ public with sharing class OrderEntryController {
         // Query Must_Sell_Config__c records that are active and within date range
         List<Must_Sell_Config__c> configs = [
             SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                   Product_Ext__r.Unit_of_Measure__c,
+                   Product_Ext__r.Base_UOM__c, Product_Ext__r.Base_UOM__r.UOM_Code__c, Product_Ext__r.Base_UOM__r.Name,
+                   Product_Ext__r.Secondary_UOM__c, Product_Ext__r.Secondary_UOM__r.UOM_Code__c, Product_Ext__r.Secondary_UOM__r.Name,
+                   Product_Ext__r.Ordering_UOMs__c, Product_Ext__r.Case_Size__c,
+                   Product_Ext__r.MRP__c, Product_Ext__r.Unit_Price__c, Product_Ext__r.GST_Rate__c,
                    Classification__c, Min_Qty__c,
                    Territory__c, Channel__c, Customer_Type__c
             FROM Must_Sell_Config__c
@@ -398,6 +403,16 @@ public with sharing class OrderEntryController {
             item.put('minQuantity', cfg.Min_Qty__c != null ? cfg.Min_Qty__c : 1);
             item.put('classification', cfg.Classification__c);
             item.put('configId', cfg.Id);
+            item.put('uom', cfg.Product_Ext__r.Unit_of_Measure__c != null ? cfg.Product_Ext__r.Unit_of_Measure__c : 'Piece');
+            item.put('baseUOMCode', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PC');
+            item.put('baseUOMName', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.Name != null) ? cfg.Product_Ext__r.Base_UOM__r.Name : 'Piece');
+            item.put('secondaryUOMCode', (cfg.Product_Ext__r.Secondary_UOM__c != null && cfg.Product_Ext__r.Secondary_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Secondary_UOM__r.UOM_Code__c : null);
+            item.put('secondaryUOMName', (cfg.Product_Ext__r.Secondary_UOM__c != null && cfg.Product_Ext__r.Secondary_UOM__r.Name != null) ? cfg.Product_Ext__r.Secondary_UOM__r.Name : null);
+            item.put('orderingUOMs', cfg.Product_Ext__r.Ordering_UOMs__c);
+            item.put('caseSize', cfg.Product_Ext__r.Case_Size__c);
+            item.put('mrp', cfg.Product_Ext__r.MRP__c);
+            item.put('unitPrice', cfg.Product_Ext__r.Unit_Price__c);
+            item.put('gstRate', cfg.Product_Ext__r.GST_Rate__c);
             result.add(item);
         }
 
@@ -405,6 +420,11 @@ public with sharing class OrderEntryController {
         List<Scheme__c> schemes = [
             SELECT Id, Name,
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                           Product_Ext__r.Unit_of_Measure__c,
+                           Product_Ext__r.Base_UOM__c, Product_Ext__r.Base_UOM__r.UOM_Code__c, Product_Ext__r.Base_UOM__r.Name,
+                           Product_Ext__r.Secondary_UOM__c, Product_Ext__r.Secondary_UOM__r.UOM_Code__c, Product_Ext__r.Secondary_UOM__r.Name,
+                           Product_Ext__r.Ordering_UOMs__c, Product_Ext__r.Case_Size__c,
+                           Product_Ext__r.MRP__c, Product_Ext__r.Unit_Price__c, Product_Ext__r.GST_Rate__c,
                            Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r
                     WHERE Product_Classification__c IN ('Must Sell', 'Focused Sell')
@@ -430,6 +450,16 @@ public with sharing class OrderEntryController {
                 item.put('schemeName', scheme.Name);
                 item.put('schemeId', scheme.Id);
                 item.put('classification', sp.Product_Classification__c);
+                item.put('uom', sp.Product_Ext__r.Unit_of_Measure__c != null ? sp.Product_Ext__r.Unit_of_Measure__c : 'Piece');
+                item.put('baseUOMCode', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PC');
+                item.put('baseUOMName', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.Name != null) ? sp.Product_Ext__r.Base_UOM__r.Name : 'Piece');
+                item.put('secondaryUOMCode', (sp.Product_Ext__r.Secondary_UOM__c != null && sp.Product_Ext__r.Secondary_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Secondary_UOM__r.UOM_Code__c : null);
+                item.put('secondaryUOMName', (sp.Product_Ext__r.Secondary_UOM__c != null && sp.Product_Ext__r.Secondary_UOM__r.Name != null) ? sp.Product_Ext__r.Secondary_UOM__r.Name : null);
+                item.put('orderingUOMs', sp.Product_Ext__r.Ordering_UOMs__c);
+                item.put('caseSize', sp.Product_Ext__r.Case_Size__c);
+                item.put('mrp', sp.Product_Ext__r.MRP__c);
+                item.put('unitPrice', sp.Product_Ext__r.Unit_Price__c);
+                item.put('gstRate', sp.Product_Ext__r.GST_Rate__c);
                 result.add(item);
             }
         }

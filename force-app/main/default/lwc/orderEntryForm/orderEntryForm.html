@@ -415,6 +415,9 @@
                                                     {item.classification}
                                                 </span>
                                             </template>
+                                            <template if:true={item.minQuantity}>
+                                                <span class="oef-min-qty-badge">Min: {item.minQuantity}</span>
+                                            </template>
                                         </td>
                                         <td class="oef-td-rate">{item.rateFormatted}</td>
                                         <td class="oef-td-qty">
