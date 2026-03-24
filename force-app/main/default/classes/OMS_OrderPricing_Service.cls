@@ -114,8 +114,12 @@ public without sharing class OMS_OrderPricing_Service {
                 item.Unit_Price__c = unitPrice;
             }
 
-            // Calculate line amount
-            Decimal lineAmount = (unitPrice != null ? unitPrice : 0) * quantity;
+            // Use base quantity (UOM-converted) for pricing when available;
+            // unit price is always per base UOM, so we must multiply by the
+            // converted base quantity to get the correct line amount.
+            Decimal pricingQuantity = (item.Base_Quantity__c != null && item.Base_Quantity__c > 0)
+                ? item.Base_Quantity__c : quantity;
+            Decimal lineAmount = (unitPrice != null ? unitPrice : 0) * pricingQuantity;
             item.Line_Amount__c = lineAmount.setScale(2, RoundingMode.HALF_UP);
 
             // Calculate net amount (after line-level discount)

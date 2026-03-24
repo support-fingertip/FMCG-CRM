@@ -437,4 +437,78 @@ private class OMS_OrderPricing_Service_Test {
         System.assertNotEquals(null, price3.Id,
             'Price for different customer should be created without overlap error');
     }
+
+    /**
+     * @description Validates that when Base_Quantity__c is populated (UOM conversion),
+     *              the line amount uses the base quantity instead of the raw order quantity.
+     *              E.g., ordering 2 Cases at Rs.250/piece with conversion factor 48
+     *              should produce Line_Amount = 96 * 250 = 24,000 (not 2 * 250 = 500).
+     */
+    @isTest
+    static void testPricingUsesBaseQuantityWhenAvailable() {
+        Sales_Order__c order = [SELECT Id FROM Sales_Order__c LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 1];
+        Id productId = products[0].Id;
+
+        // Create a line item with UOM conversion: 2 Cases, each case = 48 pieces
+        Order_Line_Item__c item = new Order_Line_Item__c(
+            Sales_Order__c = order.Id,
+            Product_Ext__c = productId,
+            Quantity__c = 2,
+            Unit_Price__c = 250,
+            UOM__c = 'Cases',
+            Base_Quantity__c = 96,
+            Conversion_Factor__c = 48
+        );
+
+        Test.startTest();
+        insert item;
+        Test.stopTest();
+
+        Order_Line_Item__c result = [
+            SELECT Id, Quantity__c, Base_Quantity__c, Unit_Price__c,
+                   Line_Amount__c, Net_Amount__c
+            FROM Order_Line_Item__c
+            WHERE Id = :item.Id
+        ];
+
+        // Line amount should use Base_Quantity__c (96) not Quantity__c (2)
+        System.assertEquals(96 * 250, result.Line_Amount__c,
+            'Line amount should be Base_Quantity (96) x Unit_Price (250) = 24000');
+    }
+
+    /**
+     * @description Validates that when Base_Quantity__c is null (no UOM conversion),
+     *              the line amount falls back to using Quantity__c as before.
+     */
+    @isTest
+    static void testPricingFallsBackToQuantityWhenNoBaseQuantity() {
+        Sales_Order__c order = [SELECT Id FROM Sales_Order__c LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 1];
+        Id productId = products[0].Id;
+
+        // Create a line item without UOM conversion (Base_Quantity__c is null)
+        Order_Line_Item__c item = new Order_Line_Item__c(
+            Sales_Order__c = order.Id,
+            Product_Ext__c = productId,
+            Quantity__c = 10,
+            Unit_Price__c = 100,
+            UOM__c = 'Pieces'
+        );
+
+        Test.startTest();
+        insert item;
+        Test.stopTest();
+
+        Order_Line_Item__c result = [
+            SELECT Id, Quantity__c, Base_Quantity__c, Unit_Price__c,
+                   Line_Amount__c, Net_Amount__c
+            FROM Order_Line_Item__c
+            WHERE Id = :item.Id
+        ];
+
+        // Line amount should use Quantity__c (10) since Base_Quantity__c is null
+        System.assertEquals(10 * 100, result.Line_Amount__c,
+            'Line amount should be Quantity (10) x Unit_Price (100) = 1000');
+    }
 }
