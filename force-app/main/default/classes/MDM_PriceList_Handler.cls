@@ -146,7 +146,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
     private void validateDateRangeOverlap(List<Price_List__c> records, Set<Id> excludeIds) {
         // Build composite keys and collect dimension values for query
         Set<Id> productIds = new Set<Id>();
-        Set<String> regionValues = new Set<String>();
+        Set<Id> regionValues = new Set<Id>();
         Set<String> channelValues = new Set<String>();
         Set<Id> customerIds = new Set<Id>();
         Set<Id> categoryIds = new Set<Id>();
@@ -156,7 +156,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
             if (rec.Product_Ext__c != null) {
                 productIds.add(rec.Product_Ext__c);
             }
-            if (String.isNotBlank(rec.Region__c)) {
+            if (rec.Region__c != null) {
                 regionValues.add(rec.Region__c);
             }
             if (String.isNotBlank(rec.Channel__c)) {
@@ -267,7 +267,7 @@ public class MDM_PriceList_Handler extends TriggerHandler {
                (rec.Customer__c != null ? String.valueOf(rec.Customer__c) : '') + '|' +
                (rec.Category__c != null ? String.valueOf(rec.Category__c) : '') + '|' +
                (rec.Territory__c != null ? String.valueOf(rec.Territory__c) : '') + '|' +
-               (String.isNotBlank(rec.Region__c) ? rec.Region__c : '') + '|' +
+               (rec.Region__c != null ? String.valueOf(rec.Region__c) : '') + '|' +
                (String.isNotBlank(rec.Channel__c) ? rec.Channel__c : '');
     }
 
