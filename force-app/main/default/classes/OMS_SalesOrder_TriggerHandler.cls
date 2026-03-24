@@ -93,9 +93,10 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
             }
         }
 
-        if (!approvedOrderIds.isEmpty()) {
-            OMS_InvoiceGeneration_Service.generateInvoices(approvedOrderIds);
-        }
+        // Invoice generation disabled – not required at this stage
+        // if (!approvedOrderIds.isEmpty()) {
+        //     OMS_InvoiceGeneration_Service.generateInvoices(approvedOrderIds);
+        // }
 
         if (!cancelledOrderIds.isEmpty()) {
             releaseCreditHold(cancelledOrderIds);
