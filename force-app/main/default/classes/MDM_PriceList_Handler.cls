@@ -47,8 +47,9 @@ public class MDM_PriceList_Handler extends TriggerHandler {
         for (Price_List__c rec : newRecords) {
             Price_List__c oldRec = oldMap.get(rec.Id);
 
-            // Check if any dimension field changed (need priority recalc)
-            if (rec.Customer__c != oldRec.Customer__c ||
+            // Check if any dimension field changed or priority is missing (need priority recalc)
+            if (rec.Priority__c == null ||
+                rec.Customer__c != oldRec.Customer__c ||
                 rec.Category__c != oldRec.Category__c ||
                 rec.Territory__c != oldRec.Territory__c ||
                 rec.Channel__c != oldRec.Channel__c) {
