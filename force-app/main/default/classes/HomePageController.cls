@@ -94,6 +94,50 @@ public with sharing class HomePageController {
               AND End_Date__c >= :today
         ];
 
+        // ── Monthly Order Value ──
+        Date monthStart = today.toStartOfMonth();
+        AggregateResult[] orderAgg = [
+            SELECT SUM(Total_Net_Amount__c) totalValue, COUNT(Id) orderCount
+            FROM Sales_Order__c
+            WHERE OwnerId = :userId
+              AND Order_Date__c >= :monthStart
+              AND Order_Date__c <= :today
+              AND Order_Status__c NOT IN ('Cancelled', 'Rejected')
+        ];
+        if (!orderAgg.isEmpty() && orderAgg[0].get('totalValue') != null) {
+            data.monthlyOrderValue = (Decimal) orderAgg[0].get('totalValue');
+            data.monthlyOrderCount = (Integer) orderAgg[0].get('orderCount');
+        }
+
+        // ── Monthly Collection Value ──
+        AggregateResult[] collAgg = [
+            SELECT SUM(Amount__c) totalCollected
+            FROM Collection__c
+            WHERE OwnerId = :userId
+              AND Collection_Date__c >= :monthStart
+              AND Collection_Date__c <= :today
+              AND Status__c = 'Approved'
+        ];
+        if (!collAgg.isEmpty() && collAgg[0].get('totalCollected') != null) {
+            data.monthlyCollectionValue = (Decimal) collAgg[0].get('totalCollected');
+        }
+
+        // ── Pending Return Orders ──
+        data.pendingReturnCount = [
+            SELECT COUNT()
+            FROM Return_Order__c
+            WHERE OwnerId = :userId
+              AND Status__c IN ('Draft', 'Submitted')
+        ];
+
+        // ── Near Expiry Batches ──
+        data.nearExpiryBatchCount = [
+            SELECT COUNT()
+            FROM Batch_Master__c
+            WHERE Status__c = 'Active'
+              AND Is_Near_Expiry__c = true
+        ];
+
         return data;
     }
 
@@ -109,5 +153,10 @@ public with sharing class HomePageController {
         @AuraEnabled public Integer pendingExpenseCount = 0;
         @AuraEnabled public Integer lowStockAlertCount = 0;
         @AuraEnabled public Integer activeSchemeCount = 0;
+        @AuraEnabled public Decimal monthlyOrderValue = 0;
+        @AuraEnabled public Integer monthlyOrderCount = 0;
+        @AuraEnabled public Decimal monthlyCollectionValue = 0;
+        @AuraEnabled public Integer pendingReturnCount = 0;
+        @AuraEnabled public Integer nearExpiryBatchCount = 0;
     }
 }

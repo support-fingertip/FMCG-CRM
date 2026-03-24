@@ -3,7 +3,7 @@
     <fullName>To_UOM__c</fullName>
     <label>To UOM</label>
     <type>Lookup</type>
-    <required>true</required>
+    <required>false</required>
     <referenceTo>UOM__c</referenceTo>
     <relationshipLabel>Conversions (To)</relationshipLabel>
     <relationshipName>Conversions_To</relationshipName>

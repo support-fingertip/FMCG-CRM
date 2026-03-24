@@ -13,6 +13,8 @@ import getTopSellingProducts from '@salesforce/apex/OrderEntryController.getTopS
 import getOrderUOMOptions from '@salesforce/apex/OrderEntryController.getOrderUOMOptions';
 import getProductUOMOptions from '@salesforce/apex/OrderEntryController.getProductUOMOptions';
 import convertQuantity from '@salesforce/apex/OrderEntryController.convertQuantity';
+import getWarehouses from '@salesforce/apex/OrderEntryController.getWarehouses';
+import checkStockAvailability from '@salesforce/apex/OrderEntryController.checkStockAvailability';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -73,6 +75,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     isLoading = false;
     isSubmitting = false;
     lineIdCounter = 0;
+
+    // Warehouse & Stock Availability
+    @track warehouseOptions = [];
+    @track selectedWarehouseId = '';
+    @track stockAvailabilityMap = {}; // productId -> available qty
 
     get effectiveAccountId() {
         return this.accountId || this.recordId || this.selectedAccountId;
@@ -339,6 +346,91 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     wiredCategories({ error, data }) {
         if (data) {
             this.categoryOptionsData = data;
+        }
+    }
+
+    @wire(getWarehouses)
+    wiredWarehouses({ error, data }) {
+        if (data) {
+            this.warehouseOptions = [
+                { label: '-- Select Warehouse --', value: '' },
+                ...data.map(w => ({ label: w.label, value: w.value }))
+            ];
+        }
+    }
+
+    get hasWarehouseSelected() {
+        return !!this.selectedWarehouseId;
+    }
+
+    handleWarehouseChange(event) {
+        this.selectedWarehouseId = event.detail.value;
+        // Re-check stock availability for all products in cart
+        if (this.selectedWarehouseId && this.lineItems.length > 0) {
+            this.refreshStockAvailability();
+        } else {
+            this.stockAvailabilityMap = {};
+            this.updateLineItemStockInfo();
+        }
+    }
+
+    async refreshStockAvailability() {
+        if (!this.selectedWarehouseId) return;
+        const productIds = [...new Set(this.lineItems.map(li => li.productId))];
+        if (productIds.length === 0) return;
+
+        try {
+            const result = await checkStockAvailability({
+                warehouseId: this.selectedWarehouseId,
+                productIds: productIds
+            });
+            this.stockAvailabilityMap = result || {};
+            this.updateLineItemStockInfo();
+        } catch (error) {
+            console.error('Error checking stock availability:', error);
+        }
+    }
+
+    async checkStockForProducts(productIds) {
+        if (!this.selectedWarehouseId || !productIds || productIds.length === 0) return;
+        try {
+            const result = await checkStockAvailability({
+                warehouseId: this.selectedWarehouseId,
+                productIds: productIds
+            });
+            if (result) {
+                this.stockAvailabilityMap = { ...this.stockAvailabilityMap, ...result };
+                this.updateLineItemStockInfo();
+            }
+        } catch (error) {
+            console.error('Error checking stock:', error);
+        }
+    }
+
+    updateLineItemStockInfo() {
+        this.lineItems = this.lineItems.map(item => {
+            const availQty = this.stockAvailabilityMap[item.productId];
+            const hasStock = availQty !== undefined && availQty !== null;
+            const isLowStock = hasStock && availQty < (item.quantity || 0);
+            return {
+                ...item,
+                availableStock: hasStock ? availQty : null,
+                availableStockLabel: hasStock ? 'Avail: ' + availQty : '',
+                stockClass: isLowStock ? 'oef-stock-low' : (hasStock ? 'oef-stock-ok' : '')
+            };
+        });
+
+        // Also update product search results
+        if (this.productResults && this.productResults.length > 0) {
+            this.productResults = this.productResults.map(product => {
+                const availQty = this.stockAvailabilityMap[product.id];
+                const hasStock = availQty !== undefined && availQty !== null;
+                return {
+                    ...product,
+                    availableStock: hasStock ? availQty : null,
+                    availableStockLabel: hasStock ? 'Stock: ' + availQty : ''
+                };
+            });
         }
     }
 
@@ -906,6 +998,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     cardClass: allSchemes.length > 0 ? 'oef-product-card oef-product-card-scheme' : 'oef-product-card'
                 };
             });
+            // Check stock availability for search results if warehouse selected
+            if (this.selectedWarehouseId && this.productResults.length > 0) {
+                const searchProductIds = this.productResults.map(p => p.id);
+                this.checkStockForProducts(searchProductIds);
+            }
         } catch (error) {
             this.showToast('Error', 'Failed to search products: ' + this.reduceErrors(error), 'error');
         } finally {
@@ -1012,6 +1109,10 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.calculateTotals();
         this.refreshMustSellStatus();
         this.refreshTopSellingStatus();
+        // Check stock for newly added product
+        if (this.selectedWarehouseId) {
+            this.checkStockForProducts([product.id]);
+        }
         this.showToast('Success', product.name + ' added to order', 'success');
     }
 
@@ -1603,6 +1704,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         return {
             accountId: this.effectiveAccountId,
             visitId: this.visitId || this.recordId,
+            warehouseId: this.selectedWarehouseId || null,
             status: status,
             remarks: this.orderRemarks,
             grossAmount: this.orderSummary.grossAmount,

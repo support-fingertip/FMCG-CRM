@@ -3,5 +3,5 @@
     <fullName>Collection_Date__c</fullName>
     <label>Collection Date</label>
     <type>Date</type>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

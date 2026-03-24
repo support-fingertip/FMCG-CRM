@@ -4,5 +4,5 @@
     <label>Site Name</label>
     <type>Text</type>
     <length>255</length>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

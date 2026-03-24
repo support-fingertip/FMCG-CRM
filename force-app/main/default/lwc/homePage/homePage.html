@@ -120,6 +120,39 @@
                                 <span class="hp-stat-label">Active Schemes</span>
                             </div>
                         </div>
+
+                        <!-- Pending Returns -->
+                        <div class="hp-stat-card hp-card-orange" data-object="Return_Order__c" onclick={navigateToObject}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:return_order" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.pendingReturnCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Pending Returns</span>
+                            </div>
+                        </div>
+
+                        <!-- Low Stock Alerts -->
+                        <div class="hp-stat-card hp-card-red" data-target="Stock_Dashboard" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="utility:warning" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.lowStockAlertCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Low Stock Alerts</span>
+                            </div>
+                        </div>
+
+                        <!-- Near Expiry Batches -->
+                        <div class="hp-stat-card hp-card-orange" data-target="Product_Management_Hub" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="utility:clock" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.nearExpiryBatchCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Near Expiry Batches</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

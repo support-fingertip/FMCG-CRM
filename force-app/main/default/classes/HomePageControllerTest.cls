@@ -18,5 +18,10 @@ private class HomePageControllerTest {
         System.assert(data.pendingExpenseCount >= 0, 'Expense count should be non-negative');
         System.assert(data.lowStockAlertCount >= 0, 'Stock alert count should be non-negative');
         System.assert(data.activeSchemeCount >= 0, 'Scheme count should be non-negative');
+        System.assert(data.monthlyOrderValue >= 0, 'Monthly order value should be non-negative');
+        System.assert(data.monthlyOrderCount >= 0, 'Monthly order count should be non-negative');
+        System.assert(data.monthlyCollectionValue >= 0, 'Monthly collection value should be non-negative');
+        System.assert(data.pendingReturnCount >= 0, 'Pending return count should be non-negative');
+        System.assert(data.nearExpiryBatchCount >= 0, 'Near expiry batch count should be non-negative');
     }
 }

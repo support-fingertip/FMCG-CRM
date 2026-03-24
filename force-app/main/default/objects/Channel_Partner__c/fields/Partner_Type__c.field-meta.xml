@@ -3,7 +3,7 @@
     <fullName>Partner_Type__c</fullName>
     <label>Partner Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

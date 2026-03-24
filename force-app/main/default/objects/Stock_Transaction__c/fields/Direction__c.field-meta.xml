@@ -3,7 +3,7 @@
     <fullName>Direction__c</fullName>
     <label>Direction</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

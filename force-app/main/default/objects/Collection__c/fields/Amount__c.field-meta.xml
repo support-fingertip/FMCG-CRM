@@ -5,5 +5,5 @@
     <type>Currency</type>
     <precision>18</precision>
     <scale>2</scale>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

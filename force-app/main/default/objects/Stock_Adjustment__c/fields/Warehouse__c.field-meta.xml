@@ -6,6 +6,6 @@
     <referenceTo>Warehouse__c</referenceTo>
     <relationshipLabel>Stock Adjustments</relationshipLabel>
     <relationshipName>Stock_Adjustments</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

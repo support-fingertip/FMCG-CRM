@@ -1584,3 +1584,72 @@
     color: #991b1b;
     margin-bottom: 8px;
 }
+
+/* ---- Warehouse Selection ---- */
+.oef-warehouse-section {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 0 12px 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-left: 4px solid #7c3aed;
+}
+
+.oef-warehouse-info {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.oef-warehouse-hint {
+    font-style: italic;
+}
+
+/* ---- Stock Availability ---- */
+.oef-th-stock,
+.oef-td-stock {
+    text-align: center;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+.oef-stock-ok {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--success-light);
+    color: var(--success);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+}
+
+.oef-stock-low {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--warning-light);
+    color: var(--warning);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+}
+
+.oef-stock-na {
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+.oef-product-stock-badge {
+    display: block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+    text-align: center;
+}

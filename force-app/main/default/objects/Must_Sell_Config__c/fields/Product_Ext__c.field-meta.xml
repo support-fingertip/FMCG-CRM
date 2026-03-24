@@ -6,6 +6,6 @@
     <referenceTo>Product_Extension__c</referenceTo>
     <relationshipLabel>Priority Sell Configs</relationshipLabel>
     <relationshipName>Must_Sell_Configs</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

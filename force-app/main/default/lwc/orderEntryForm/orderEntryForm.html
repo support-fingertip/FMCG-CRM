@@ -81,6 +81,37 @@
                 </template>
             </template>
 
+            <!-- Warehouse Selection -->
+            <template if:true={accountName}>
+                <div class="oef-section oef-warehouse-section">
+                    <div class="oef-section-icon">
+                        <lightning-icon icon-name="utility:warehouse" size="small"></lightning-icon>
+                    </div>
+                    <div class="oef-section-content">
+                        <h2 class="oef-section-title">Dispatch Warehouse</h2>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-combobox
+                                    label=""
+                                    value={selectedWarehouseId}
+                                    options={warehouseOptions}
+                                    placeholder="Select warehouse for stock check..."
+                                    onchange={handleWarehouseChange}>
+                                </lightning-combobox>
+                            </div>
+                            <template if:true={hasWarehouseSelected}>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div class="oef-warehouse-info">
+                                        <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                        <span class="oef-warehouse-hint">Stock availability will be shown for each product</span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <!-- Active Schemes Panel -->
             <template if:true={hasSchemes}>
                 <div class="oef-schemes-panel">
@@ -313,6 +344,9 @@
                                     <div class="oef-product-price">
                                         <span class="oef-product-mrp">{product.mrpFormatted}</span>
                                         <span class="oef-product-mrp-label">MRP</span>
+                                        <template if:true={product.availableStockLabel}>
+                                            <span class="oef-product-stock-badge">{product.availableStockLabel}</span>
+                                        </template>
                                     </div>
                                 </div>
                                 <template if:true={product.hasSchemes}>
@@ -391,6 +425,7 @@
                                     <th class="oef-th-serial">#</th>
                                     <th class="oef-th-product">Product</th>
                                     <th class="oef-th-rate">Rate</th>
+                                    <th class="oef-th-stock">Stock</th>
                                     <th class="oef-th-qty">Qty</th>
                                     <th class="oef-th-uom">UOM</th>
                                     <th class="oef-th-free">Free</th>
@@ -420,6 +455,14 @@
                                             </template>
                                         </td>
                                         <td class="oef-td-rate">{item.rateFormatted}</td>
+                                        <td class="oef-td-stock">
+                                            <template if:true={item.availableStockLabel}>
+                                                <span class={item.stockClass}>{item.availableStockLabel}</span>
+                                            </template>
+                                            <template if:false={item.availableStockLabel}>
+                                                <span class="oef-stock-na">-</span>
+                                            </template>
+                                        </td>
                                         <td class="oef-td-qty">
                                             <lightning-input
                                                 type="number"

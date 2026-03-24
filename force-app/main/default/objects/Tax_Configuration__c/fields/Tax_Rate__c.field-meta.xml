@@ -5,5 +5,5 @@
     <type>Percent</type>
     <precision>5</precision>
     <scale>2</scale>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

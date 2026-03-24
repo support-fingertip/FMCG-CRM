@@ -6,6 +6,6 @@
     <referenceTo>Employee__c</referenceTo>
     <relationshipLabel>Expenses</relationshipLabel>
     <relationshipName>Expenses</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

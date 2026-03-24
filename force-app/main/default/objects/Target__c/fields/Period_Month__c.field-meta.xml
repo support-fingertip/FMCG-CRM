@@ -3,7 +3,7 @@
     <fullName>Period_Month__c</fullName>
     <label>Period Month</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

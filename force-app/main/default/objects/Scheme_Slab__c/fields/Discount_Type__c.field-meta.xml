@@ -3,7 +3,7 @@
     <fullName>Discount_Type__c</fullName>
     <label>Discount Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

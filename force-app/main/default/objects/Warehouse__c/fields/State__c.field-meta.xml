@@ -4,6 +4,6 @@
     <label>State</label>
     <type>Text</type>
     <length>50</length>
-    <required>true</required>
+    <required>false</required>
     <description>State where warehouse is located, used for GST determination</description>
 </CustomField>

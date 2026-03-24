@@ -3,5 +3,5 @@
     <fullName>Invoice_Date__c</fullName>
     <label>Invoice Date</label>
     <type>Date</type>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

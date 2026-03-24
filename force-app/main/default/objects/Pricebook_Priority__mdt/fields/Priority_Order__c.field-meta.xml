@@ -5,7 +5,7 @@
     <type>Number</type>
     <precision>2</precision>
     <scale>0</scale>
-    <required>true</required>
+    <required>false</required>
     <unique>true</unique>
     <externalId>false</externalId>
     <description>Priority order number. 1 = highest priority (checked first). Lower numbers take precedence.</description>

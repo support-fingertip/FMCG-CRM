@@ -143,6 +143,10 @@ public with sharing class OrderEntryController {
             order.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
             order.Total_Tax__c = toDecimal(payload.get('totalTax'));
             order.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
+            // Set warehouse if selected
+            if (payload.get('warehouseId') != null) {
+                order.Warehouse__c = (String) payload.get('warehouseId');
+            }
             if (payload.containsKey('mustSellOverride') && payload.get('mustSellOverride') == true) {
                 order.Must_Sell_Override__c = true;
             }
@@ -719,5 +723,50 @@ public with sharing class OrderEntryController {
             options.add(opt);
         }
         return options;
+    }
+
+    /**
+     * @description Returns active warehouses for the warehouse selection dropdown.
+     * @return List of warehouse options with Id and Name.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getWarehouses() {
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        for (Warehouse__c wh : [
+            SELECT Id, Name, Warehouse_Code__c, Warehouse_Type__c, State__c, City__c
+            FROM Warehouse__c
+            WHERE Is_Active__c = true
+            ORDER BY Name ASC
+        ]) {
+            Map<String, String> opt = new Map<String, String>();
+            String label = wh.Name;
+            if (String.isNotBlank(wh.Warehouse_Code__c)) {
+                label += ' (' + wh.Warehouse_Code__c + ')';
+            }
+            if (String.isNotBlank(wh.City__c)) {
+                label += ' - ' + wh.City__c;
+            }
+            opt.put('label', label);
+            opt.put('value', wh.Id);
+            opt.put('warehouseType', wh.Warehouse_Type__c != null ? wh.Warehouse_Type__c : '');
+            opt.put('state', wh.State__c != null ? wh.State__c : '');
+            options.add(opt);
+        }
+        return options;
+    }
+
+    /**
+     * @description Checks stock availability for given products at a warehouse.
+     *              Does NOT restrict order creation - only shows available quantities.
+     * @param warehouseId The warehouse to check stock at.
+     * @param productIds  List of product Ids to check.
+     * @return Map of Product Id to available quantity (on hand minus reserved).
+     */
+    @AuraEnabled
+    public static Map<Id, Decimal> checkStockAvailability(Id warehouseId, List<Id> productIds) {
+        if (warehouseId == null || productIds == null || productIds.isEmpty()) {
+            return new Map<Id, Decimal>();
+        }
+        return INV_WarehouseStock_Service.checkAvailability(warehouseId, productIds);
     }
 }

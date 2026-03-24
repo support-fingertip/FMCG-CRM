@@ -483,6 +483,143 @@ private class OrderEntryController_Test {
     }
 
     /**
+     * @description Tests getWarehouses returns active warehouses for the dropdown.
+     */
+    @isTest
+    static void testGetWarehouses() {
+        // Create a warehouse
+        Warehouse__c wh = new Warehouse__c(
+            Name = 'Test Warehouse',
+            Warehouse_Code__c = 'WH-TEST',
+            Warehouse_Type__c = 'Distribution Center',
+            State__c = 'Maharashtra',
+            City__c = 'Mumbai',
+            Is_Active__c = true
+        );
+        insert wh;
+
+        Test.startTest();
+        List<Map<String, String>> options = OrderEntryController.getWarehouses();
+        Test.stopTest();
+
+        System.assert(!options.isEmpty(), 'Should return at least one warehouse');
+        Boolean found = false;
+        for (Map<String, String> opt : options) {
+            if (opt.get('value') == wh.Id) {
+                found = true;
+                System.assert(opt.get('label').contains('WH-TEST'),
+                    'Label should contain warehouse code');
+            }
+        }
+        System.assert(found, 'Created warehouse should be in results');
+    }
+
+    /**
+     * @description Tests checkStockAvailability returns stock quantities for a warehouse.
+     */
+    @isTest
+    static void testCheckStockAvailability() {
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 2];
+        Warehouse__c wh = new Warehouse__c(
+            Name = 'Stock Test WH',
+            Warehouse_Code__c = 'WH-STK',
+            Warehouse_Type__c = 'Distribution Center',
+            State__c = 'Karnataka',
+            Is_Active__c = true
+        );
+        insert wh;
+
+        // Create stock records
+        List<Warehouse_Stock__c> stocks = new List<Warehouse_Stock__c>();
+        stocks.add(new Warehouse_Stock__c(
+            Warehouse__c = wh.Id,
+            Product_Ext__c = products[0].Id,
+            Qty_On_Hand__c = 100,
+            Qty_Reserved__c = 20
+        ));
+        stocks.add(new Warehouse_Stock__c(
+            Warehouse__c = wh.Id,
+            Product_Ext__c = products[1].Id,
+            Qty_On_Hand__c = 50,
+            Qty_Reserved__c = 0
+        ));
+        insert stocks;
+
+        Test.startTest();
+        Map<Id, Decimal> availability = OrderEntryController.checkStockAvailability(
+            wh.Id, new List<Id>{ products[0].Id, products[1].Id }
+        );
+        Test.stopTest();
+
+        System.assertEquals(80, availability.get(products[0].Id),
+            'Available stock should be 100 - 20 = 80');
+        System.assertEquals(50, availability.get(products[1].Id),
+            'Available stock should be 50 - 0 = 50');
+    }
+
+    /**
+     * @description Tests checkStockAvailability with null/empty parameters.
+     */
+    @isTest
+    static void testCheckStockAvailabilityEmpty() {
+        Test.startTest();
+        Map<Id, Decimal> result1 = OrderEntryController.checkStockAvailability(null, null);
+        Map<Id, Decimal> result2 = OrderEntryController.checkStockAvailability(null, new List<Id>());
+        Test.stopTest();
+
+        System.assert(result1.isEmpty(), 'Null params should return empty map');
+        System.assert(result2.isEmpty(), 'Empty product list should return empty map');
+    }
+
+    /**
+     * @description Tests creating a sales order with warehouse selection.
+     */
+    @isTest
+    static void testCreateSalesOrderWithWarehouse() {
+        Account acct = [SELECT Id FROM Account WHERE Name = 'Order Entry Retailer' LIMIT 1];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c LIMIT 1];
+        Warehouse__c wh = new Warehouse__c(
+            Name = 'Order WH',
+            Warehouse_Code__c = 'WH-ORD',
+            Warehouse_Type__c = 'Distribution Center',
+            State__c = 'Delhi',
+            Is_Active__c = true
+        );
+        insert wh;
+
+        Map<String, Object> payload = new Map<String, Object>();
+        payload.put('accountId', acct.Id);
+        payload.put('warehouseId', wh.Id);
+        payload.put('status', 'Submitted');
+        payload.put('grossAmount', 2000);
+        payload.put('totalDiscount', 0);
+        payload.put('totalTax', 360);
+        payload.put('netAmount', 2360);
+
+        List<Map<String, Object>> lineItems = new List<Map<String, Object>>();
+        Map<String, Object> li1 = new Map<String, Object>();
+        li1.put('productId', products[0].Id);
+        li1.put('quantity', 10);
+        li1.put('rate', 200);
+        li1.put('grossAmount', 2000);
+        li1.put('taxRate', 18);
+        li1.put('taxAmount', 360);
+        li1.put('totalAmount', 2360);
+        lineItems.add(li1);
+        payload.put('lineItems', lineItems);
+
+        Test.startTest();
+        Sales_Order__c result = OrderEntryController.createSalesOrder(JSON.serialize(payload));
+        Test.stopTest();
+
+        Sales_Order__c order = [
+            SELECT Warehouse__c FROM Sales_Order__c WHERE Id = :result.Id
+        ];
+        System.assertEquals(wh.Id, order.Warehouse__c,
+            'Order should have the selected warehouse');
+    }
+
+    /**
      * @description Tests retrieval of currently applicable schemes for order entry,
      *              verifying only active schemes within valid date ranges are returned.
      */

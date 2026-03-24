@@ -4,7 +4,7 @@
     <label>Batch Number</label>
     <type>Text</type>
     <length>100</length>
-    <required>true</required>
+    <required>false</required>
     <unique>true</unique>
     <caseSensitive>false</caseSensitive>
     <externalId>true</externalId>

@@ -3,7 +3,7 @@
     <fullName>Expense_Category__c</fullName>
     <label>Expense Category</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

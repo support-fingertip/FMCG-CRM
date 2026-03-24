@@ -6,6 +6,6 @@
     <referenceTo>Warehouse__c</referenceTo>
     <relationshipLabel>Inbound Transfers</relationshipLabel>
     <relationshipName>Inbound_Transfers</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

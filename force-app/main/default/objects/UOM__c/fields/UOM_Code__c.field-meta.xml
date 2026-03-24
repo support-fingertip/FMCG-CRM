@@ -4,7 +4,7 @@
     <label>UOM Code</label>
     <type>Text</type>
     <length>10</length>
-    <required>true</required>
+    <required>false</required>
     <unique>true</unique>
     <externalId>true</externalId>
     <caseSensitive>false</caseSensitive>
