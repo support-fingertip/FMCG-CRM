@@ -236,11 +236,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             return this.uomOptionsData;
         }
         return [
-            { label: 'Pieces', value: 'Pieces' },
-            { label: 'Cases', value: 'Cases' },
-            { label: 'Boxes', value: 'Boxes' },
-            { label: 'Kg', value: 'Kg' },
-            { label: 'Liters', value: 'Liters' }
+            { label: 'Piece (PC)', value: 'PC' },
+            { label: 'Case (CS)', value: 'CS' },
+            { label: 'Box (BX)', value: 'BX' },
+            { label: 'Kilogram (KG)', value: 'KG' },
+            { label: 'Litre (LTR)', value: 'LTR' }
         ];
     }
 
@@ -283,13 +283,13 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const options = [];
         const addedCodes = new Set();
 
-        // Add base UOM
+        // 1. Add product's base UOM first (always the default)
         const baseCode = product.BaseUOMCode || product.baseUOMCode || 'PC';
         const baseName = product.BaseUOMName || product.baseUOMName || 'Piece';
         options.push({ label: baseName + ' (' + baseCode + ')', value: baseCode });
         addedCodes.add(baseCode);
 
-        // Add secondary UOM
+        // 2. Add secondary UOM if defined
         const secCode = product.SecondaryUOMCode || product.secondaryUOMCode;
         const secName = product.SecondaryUOMName || product.secondaryUOMName;
         if (secCode && !addedCodes.has(secCode)) {
@@ -297,7 +297,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             addedCodes.add(secCode);
         }
 
-        // Add from ordering UOMs string
+        // 3. Add from ordering UOMs string if populated
         const orderingUOMs = product.OrderingUOMs || product.orderingUOMs;
         if (orderingUOMs) {
             const uomCodeMap = {
@@ -314,13 +314,15 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             });
         }
 
-        // Fallback: if only base UOM exists, also add the legacy picklist value
-        if (options.length <= 1) {
-            const legacyUOM = product.UOM || product.productUOM || 'Piece';
-            const legacyCode = this.mapPicklistToCode(legacyUOM);
-            if (!addedCodes.has(legacyCode)) {
-                options.push({ label: legacyUOM, value: legacyCode });
-            }
+        // 4. Merge remaining active UOMs from the master (loaded via getOrderUOMOptions)
+        if (this.uomOptionsData && this.uomOptionsData.length > 0) {
+            this.uomOptionsData.forEach(masterUOM => {
+                const code = masterUOM.value;
+                if (code && !addedCodes.has(code)) {
+                    options.push({ label: masterUOM.label, value: code });
+                    addedCodes.add(code);
+                }
+            });
         }
 
         return options;
@@ -344,7 +346,43 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     wiredUOMOptions({ error, data }) {
         if (data) {
             this.uomOptionsData = data;
+            // Refresh UOM options on any existing line items that may have loaded before master UOMs
+            this.refreshLineItemUOMOptions();
         }
+    }
+
+    refreshLineItemUOMOptions() {
+        if (!this.lineItems || this.lineItems.length === 0 || !this.uomOptionsData || this.uomOptionsData.length === 0) return;
+
+        this.lineItems = this.lineItems.map(item => {
+            // Rebuild UOM options for each line item using the now-available master UOMs
+            const uomOptions = this.buildProductUOMOptions({
+                BaseUOMCode: item.baseUOMCode,
+                BaseUOMName: this.getUOMNameByCode(item.baseUOMCode),
+                SecondaryUOMCode: null,
+                OrderingUOMs: null
+            });
+            this.productUOMOptionsMap = { ...this.productUOMOptionsMap, [item.productId]: uomOptions };
+            return { ...item, productUOMOptions: uomOptions };
+        });
+    }
+
+    getUOMNameByCode(code) {
+        if (!code) return 'Piece';
+        if (this.uomOptionsData && this.uomOptionsData.length > 0) {
+            const match = this.uomOptionsData.find(u => u.value === code);
+            if (match) {
+                // Extract name from "Name (CODE)" format
+                const label = match.label;
+                const parenIdx = label.lastIndexOf('(');
+                return parenIdx > 0 ? label.substring(0, parenIdx).trim() : label;
+            }
+        }
+        const codeNameMap = {
+            'PC': 'Piece', 'CS': 'Case', 'BX': 'Box', 'KG': 'Kilogram',
+            'LTR': 'Litre', 'DZ': 'Dozen', 'PK': 'Pack', 'G': 'Gram', 'ML': 'Millilitre'
+        };
+        return codeNameMap[code] || code;
     }
 
     @wire(getRecord, { recordId: '$recordId', fields: ACCOUNT_FIELDS })
@@ -1377,9 +1415,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 this.lineIdCounter++;
                 const reorderUOM = lastItem.UOM__c || 'Pieces';
                 const reorderUOMCode = this.mapPicklistToCode(reorderUOM);
-                // Use product UOM options if available in the map, otherwise fallback
+                // Build full UOM options; use cached map if available, else build with base UOM + master UOMs
                 const reorderUOMOptions = this.productUOMOptionsMap[lastItem.Product_Ext__c]
-                    || [{ label: reorderUOM + ' (' + reorderUOMCode + ')', value: reorderUOMCode }];
+                    || this.buildProductUOMOptions({ BaseUOMCode: reorderUOMCode, BaseUOMName: this.getUOMNameByCode(reorderUOMCode) });
                 const newItem = {
                     id: 'LINE_' + this.lineIdCounter,
                     productId: lastItem.Product_Ext__c,

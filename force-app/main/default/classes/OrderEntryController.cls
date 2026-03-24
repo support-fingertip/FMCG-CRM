@@ -578,13 +578,32 @@ public with sharing class OrderEntryController {
     @AuraEnabled(cacheable=true)
     public static List<Map<String, String>> getOrderUOMOptions() {
         List<Map<String, String>> options = new List<Map<String, String>>();
-        // These match the Order_Line_Item__c.UOM__c picklist values
-        String[] uomValues = new String[]{ 'Pieces', 'Cases', 'Boxes', 'Kg', 'Liters' };
-        for (String uom : uomValues) {
-            Map<String, String> opt = new Map<String, String>();
-            opt.put('label', uom);
-            opt.put('value', uom);
-            options.add(opt);
+        // Query all active UOMs from the UOM master table
+        List<UOM__c> activeUOMs = [
+            SELECT Id, UOM_Code__c, Name, Is_Base_Unit__c
+            FROM UOM__c
+            WHERE Is_Active__c = true
+            ORDER BY Is_Base_Unit__c DESC, Name ASC
+        ];
+        if (!activeUOMs.isEmpty()) {
+            for (UOM__c u : activeUOMs) {
+                Map<String, String> opt = new Map<String, String>();
+                opt.put('label', u.Name + ' (' + u.UOM_Code__c + ')');
+                opt.put('value', u.UOM_Code__c);
+                opt.put('uomId', u.Id);
+                opt.put('isBase', String.valueOf(u.Is_Base_Unit__c));
+                options.add(opt);
+            }
+        }
+        // Fallback to hardcoded values if no UOM master records exist
+        if (options.isEmpty()) {
+            String[] uomValues = new String[]{ 'Pieces', 'Cases', 'Boxes', 'Kg', 'Liters' };
+            for (String uom : uomValues) {
+                Map<String, String> opt = new Map<String, String>();
+                opt.put('label', uom);
+                opt.put('value', uom);
+                options.add(opt);
+            }
         }
         return options;
     }
