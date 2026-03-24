@@ -2847,7 +2847,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Order_Line_Item__c.Base_Quantity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Order_Line_Item__c.Base_UOM__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Order_Line_Item__c.CGST__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Order_Line_Item__c.Conversion_Factor__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2893,6 +2908,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Order_Line_Item__c.Net_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Order_Line_Item__c.Order_UOM__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
