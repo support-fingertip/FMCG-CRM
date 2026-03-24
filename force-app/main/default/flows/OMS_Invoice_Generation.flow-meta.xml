@@ -135,7 +135,7 @@
         <inputAssignments>
             <field>Status__c</field>
             <value>
-                <stringValue>Pending</stringValue>
+                <stringValue>Draft</stringValue>
             </value>
         </inputAssignments>
         <storeOutputAutomatically>true</storeOutputAutomatically>
