@@ -115,6 +115,7 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
 
         if (!cancelledOrderIds.isEmpty()) {
             releaseCreditHold(cancelledOrderIds);
+            reverseSchemeBudgetUsage(cancelledOrderIds);
         }
 
         if (!deliveredOrderIds.isEmpty()) {
@@ -276,6 +277,46 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
         for (Scheme__c scheme : schemesToUpdate) {
             Decimal currentUsed = scheme.Budget_Used__c != null ? scheme.Budget_Used__c : 0;
             scheme.Budget_Used__c = currentUsed + budgetByScheme.get(scheme.Id);
+        }
+
+        if (!schemesToUpdate.isEmpty()) {
+            update schemesToUpdate;
+        }
+    }
+
+    /**
+     * @description Reverses scheme budget usage when orders are cancelled.
+     *              Decrements Budget_Used__c on referenced schemes.
+     * @param cancelledOrderIds Set of cancelled Sales_Order__c IDs.
+     */
+    private void reverseSchemeBudgetUsage(Set<Id> cancelledOrderIds) {
+        Map<Id, Decimal> budgetByScheme = new Map<Id, Decimal>();
+        for (Order_Line_Item__c li : [
+            SELECT Id, Scheme__c, Scheme_Discount__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c IN :cancelledOrderIds
+              AND Scheme__c != null
+              AND Scheme_Discount__c != null
+              AND Scheme_Discount__c > 0
+        ]) {
+            Decimal current = budgetByScheme.containsKey(li.Scheme__c)
+                ? budgetByScheme.get(li.Scheme__c) : 0;
+            budgetByScheme.put(li.Scheme__c, current + li.Scheme_Discount__c);
+        }
+
+        if (budgetByScheme.isEmpty()) {
+            return;
+        }
+
+        List<Scheme__c> schemesToUpdate = [
+            SELECT Id, Budget_Used__c
+            FROM Scheme__c
+            WHERE Id IN :budgetByScheme.keySet()
+        ];
+
+        for (Scheme__c scheme : schemesToUpdate) {
+            Decimal currentUsed = scheme.Budget_Used__c != null ? scheme.Budget_Used__c : 0;
+            scheme.Budget_Used__c = Math.max(0, currentUsed - budgetByScheme.get(scheme.Id));
         }
 
         if (!schemesToUpdate.isEmpty()) {

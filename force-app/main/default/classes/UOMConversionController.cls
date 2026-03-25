@@ -172,8 +172,8 @@ public with sharing class UOMConversionController {
                 throw new AuraHandledException('Conversion factor must be a positive number.');
             }
 
-            // Auto-calculate inverse factor (rounded to 4 decimals)
-            conversion.Inverse_Conversion_Factor__c = (1 / conversion.Conversion_Factor__c).setScale(4, RoundingMode.HALF_UP);
+            // Auto-calculate inverse factor (rounded to 6 decimals to match field precision)
+            conversion.Inverse_Conversion_Factor__c = (1 / conversion.Conversion_Factor__c).setScale(6, RoundingMode.HALF_UP);
 
             upsert conversion;
             return [
