@@ -402,6 +402,56 @@ The `DFO_AutoDayEnd` flow exists for auto-closing open day attendance records, b
 
 ---
 
+### GAP-030: Missing Pricebook_Priority__mdt Record for Base Price (Priority 8)
+
+`MDM_PriceList_Handler.calculatePriority()` hardcodes Priority 8 as the fallback for "base price (no dimensions)" when no metadata record matches. But there is no `Pricebook_Priority__mdt` record with `Priority_Order__c = 8` and all Has_* flags = false.
+
+**Impact:** If the priority calculation logic is later changed to be fully metadata-driven, base price priority would break.
+
+**Fix:** Add a `Pricebook_Priority__mdt` record: `Base_Price` with Priority_Order=8, all Has_* = false, Is_Active = true.
+
+---
+
+### GAP-031: Must_Sell_Config Intra-Batch Duplicate Detection Missing
+
+`SPM_MustSellConfig_TriggerHandler.checkDuplicateConfigs()` only checks against existing DB records. If two Must_Sell_Config__c records with the same Product + Territory + Channel + Customer_Type are inserted in the same batch (e.g., via Data Loader), both will pass validation and create duplicates.
+
+**Fix:** Add a batch-level duplicate map check before querying the database, similar to how `MDM_BatchMaster_TriggerHandler` and `INV_WarehouseStock_TriggerHandler` handle it.
+
+---
+
+### GAP-032: UOM Conversion Cache Staleness Within Transaction
+
+`UOM_Conversion_Service` uses static transaction-level caches (`uomCodeToIdCache`, `conversionCache`). If UOM or UOM_Conversion records are inserted/updated in the same transaction (e.g., test setup or batch operations), subsequent calls use stale cache data.
+
+**Fix:** Clear cache in UOM and UOM_Conversion triggers after DML events (`UOM_Conversion_Service.clearCache()` already exists but is only called in tests).
+
+---
+
+### GAP-033: UOM_Conversion__c Allows Cross-Type Conversions Without Validation
+
+`UOM_Conversion__c` has no validation preventing conversions between different `UOM_Type__c` categories (e.g., Weight KG to Count PCS). While this may be intentional for FMCG (e.g., 1 KG bag = 1 Piece), it should be explicitly documented or validated.
+
+**Fix:** Either add a validation rule or add a `Description__c` field requirement when From and To UOM types differ.
+
+---
+
+### GAP-034: Price_List__c Effective_From__c Not Required at Field Level
+
+The layout marks `Effective_From__c` as required, but the field metadata does not set `required: true`. The trigger handler (`MDM_PriceList_Handler.validateDateRangeOverlap()`) requires it and will throw an error, but Data API/Import operations bypass the layout-level requirement.
+
+**Fix:** Set `required: true` on the `Effective_From__c` field metadata.
+
+---
+
+### GAP-035: Inverse_Conversion_Factor Precision Loss
+
+`UOM_Conversion__c.Inverse_Conversion_Factor__c` has scale 4 (4 decimal places), but `Conversion_Factor__c` has scale 6. For factors like 1/3 = 0.333333, the inverse is truncated to 0.3333, causing ~0.01% error in reverse conversions.
+
+**Fix:** Increase `Inverse_Conversion_Factor__c` scale from 4 to 6 to match `Conversion_Factor__c`.
+
+---
+
 ## SUMMARY BY MODULE
 
 | # | Module | Critical | High | Medium | Total |
@@ -412,16 +462,16 @@ The `DFO_AutoDayEnd` flow exists for auto-closing open day attendance records, b
 | 4 | Day Attendance | 0 | 1 | 2 | 3 |
 | 5 | Visits | 0 | 1 | 1 | 2 |
 | 6 | Products | 0 | 0 | 1 | 1 |
-| 7 | Pricebooks | 0 | 0 | 1 | 1 |
-| 8 | Must Sell Config | 1 | 0 | 1 | 2 |
-| 9 | UOM / Conversions | 0 | 0 | 1 | 1 |
+| 7 | Pricebooks | 0 | 0 | 3 | 3 |
+| 8 | Must Sell Config | 1 | 1 | 1 | 3 |
+| 9 | UOM / Conversions | 0 | 0 | 4 | 4 |
 | 10 | Warehouse Stock | 1 | 1 | 1 | 3 |
 | 11 | Batch Master | 0 | 0 | 1 | 1 |
 | 12 | Schemes | 1 | 1 | 1 | 3 |
 | 13 | Orders / Line Items | 2 | 2 | 3 | 7 |
 | - | Permissions | 0 | 3 | 0 | 3 |
 | - | Test Coverage | 0 | 1 | 0 | 1 |
-| **Total** | | **5** | **12** | **14** | **31** |
+| **Total** | | **5** | **13** | **19** | **37** |
 
 ---
 
@@ -440,10 +490,15 @@ The `DFO_AutoDayEnd` flow exists for auto-closing open day attendance records, b
 8. **GAP-022** - Connect scheme budget tracking to orders
 9. **GAP-023** - Implement stock reservation on order submission
 10. **GAP-027** - Resolve auto-approval/approval process conflict
+11. **GAP-031** - Fix MustSellConfig intra-batch duplicate detection
 
 ### Phase 3 - Medium Priority (Quality)
-11. **GAP-008/011/012** - Clean up deprecated and dual-purpose fields
-12. **GAP-016** - Add missing test classes
-13. **GAP-017/018** - Fix data model gaps (Batch lookup, Price List status)
-14. **GAP-019/020/021** - Add missing trigger events and validation rules
-15. **GAP-024/025/026** - Clean up layouts
+12. **GAP-008/011/012** - Clean up deprecated and dual-purpose fields
+13. **GAP-016** - Add missing test classes
+14. **GAP-017/018** - Fix data model gaps (Batch lookup, Price List status)
+15. **GAP-019/020/021** - Add missing trigger events and validation rules
+16. **GAP-024/025/026** - Clean up layouts
+17. **GAP-030** - Add missing Pricebook_Priority metadata record
+18. **GAP-032/033** - UOM cache staleness and cross-type conversion documentation
+19. **GAP-034** - Make Price_List Effective_From required at field level
+20. **GAP-035** - Fix Inverse_Conversion_Factor precision
