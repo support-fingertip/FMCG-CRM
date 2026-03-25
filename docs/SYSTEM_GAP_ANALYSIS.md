@@ -452,6 +452,24 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 
 ---
 
+### GAP-036: OMS_Invoice_Generation Flow is DRAFT While Apex Class Handles It
+
+`OMS_Invoice_Generation.flow` is in `Draft` status (inactive), but invoice generation actually happens in `OMS_InvoiceGeneration_Service.generateInvoices()` called from the trigger handler. Having a dead flow creates maintenance confusion about which mechanism handles invoicing.
+
+**Fix:** Either complete and activate the flow (removing the Apex-based generation), or delete the draft flow to eliminate confusion.
+
+---
+
+### GAP-037: No Credit Release After Delivery
+
+`OMS_SalesOrder_TriggerHandler.releaseCreditHold()` only fires on order cancellation. When an order is delivered and payment collected, `Account.Credit_Utilized__c` is never decremented. Over time, accounts will hit their credit limit even though they've paid.
+
+**Impact:** Accounts gradually become unable to place orders despite having paid for previous ones.
+
+**Fix:** Release credit hold when order status changes to 'Delivered' or when payment/collection is recorded against the invoice.
+
+---
+
 ## SUMMARY BY MODULE
 
 | # | Module | Critical | High | Medium | Total |
@@ -468,10 +486,10 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 | 10 | Warehouse Stock | 1 | 1 | 1 | 3 |
 | 11 | Batch Master | 0 | 0 | 1 | 1 |
 | 12 | Schemes | 1 | 1 | 1 | 3 |
-| 13 | Orders / Line Items | 2 | 2 | 3 | 7 |
+| 13 | Orders / Line Items | 2 | 3 | 4 | 9 |
 | - | Permissions | 0 | 3 | 0 | 3 |
 | - | Test Coverage | 0 | 1 | 0 | 1 |
-| **Total** | | **5** | **13** | **19** | **37** |
+| **Total** | | **5** | **14** | **20** | **39** |
 
 ---
 
@@ -502,3 +520,5 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 18. **GAP-032/033** - UOM cache staleness and cross-type conversion documentation
 19. **GAP-034** - Make Price_List Effective_From required at field level
 20. **GAP-035** - Fix Inverse_Conversion_Factor precision
+21. **GAP-036** - Remove or complete dead Invoice Generation flow
+22. **GAP-037** - Implement credit release on delivery/payment
