@@ -460,7 +460,7 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 
 ---
 
-### GAP-037: No Credit Release After Delivery
+### GAP-037: No Credit Release After Delivery (HIGH)
 
 `OMS_SalesOrder_TriggerHandler.releaseCreditHold()` only fires on order cancellation. When an order is delivered and payment collected, `Account.Credit_Utilized__c` is never decremented. Over time, accounts will hit their credit limit even though they've paid.
 
@@ -470,14 +470,44 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 
 ---
 
+### GAP-038: Journey Plan Bi-Weekly Frequency Logic is Broken (HIGH)
+
+`BPM_JourneyPlan_Service.shouldIncludeForFrequency()` implements bi-weekly as `dayOfMonth <= 14`, which means the beat is scheduled for the first 14 days of every month, not on alternating weeks. Monthly frequency uses `dayOfMonth <= 7` (first week only).
+
+**Impact:** Salespersons with bi-weekly beats get incorrect schedules - too many visits in the first half of the month, none in the second half.
+
+**Fix:** Implement proper alternating-week logic using week number modulo (e.g., `weekOfYear % 2 == 0` for even weeks).
+
+---
+
+### GAP-039: Duplicate Day Summary Calculation (DFO Module)
+
+`DFO_DayAttendance_Service.endDay()` calls `recalculateDaySummaryFields()` which aggregates Visit data, and then the trigger handler's `beforeUpdate` also calls `calculateDaySummary()` which runs the same aggregate queries again. This is double work.
+
+**Impact:** Performance overhead (6 SOQL queries instead of 3 per day-end operation). With high concurrency could approach governor limits.
+
+**Fix:** Remove the calculation from one location. Either let the service handle it (and bypass trigger calculation) or let the trigger handle it (and remove from service).
+
+---
+
+### GAP-040: Auto-Close Flow Skips Day Summary Finalization
+
+`DFO_AutoDayEnd.flow` sets `Status__c = 'Auto-Closed'` and `End_Time__c = NOW()` but does NOT trigger `calculateDaySummary()` or distance calculation. The trigger's `afterUpdate` does call `finalizeDailySummary()` for status changes to 'Ended' or 'Auto-Closed', but the `beforeUpdate` summary calculation may not fire correctly since the flow bypasses the service layer.
+
+**Impact:** Auto-closed attendance records may have incomplete/zero summary metrics (Total_Visits, Productive_Calls, Order_Value, etc.).
+
+**Fix:** Verify trigger handles auto-close correctly. If not, add explicit summary calculation to the flow or ensure trigger catches all cases.
+
+---
+
 ## SUMMARY BY MODULE
 
 | # | Module | Critical | High | Medium | Total |
 |---|--------|----------|------|--------|-------|
 | 1 | Account | 0 | 0 | 1 | 1 |
 | 2 | Beats | 0 | 1 | 0 | 1 |
-| 3 | Journey Plans | 0 | 1 | 0 | 1 |
-| 4 | Day Attendance | 0 | 1 | 2 | 3 |
+| 3 | Journey Plans | 0 | 2 | 0 | 2 |
+| 4 | Day Attendance | 0 | 2 | 2 | 4 |
 | 5 | Visits | 0 | 1 | 1 | 2 |
 | 6 | Products | 0 | 0 | 1 | 1 |
 | 7 | Pricebooks | 0 | 0 | 3 | 3 |
@@ -486,10 +516,10 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 | 10 | Warehouse Stock | 1 | 1 | 1 | 3 |
 | 11 | Batch Master | 0 | 0 | 1 | 1 |
 | 12 | Schemes | 1 | 1 | 1 | 3 |
-| 13 | Orders / Line Items | 2 | 3 | 4 | 9 |
+| 13 | Orders / Line Items | 2 | 4 | 4 | 10 |
 | - | Permissions | 0 | 3 | 0 | 3 |
 | - | Test Coverage | 0 | 1 | 0 | 1 |
-| **Total** | | **5** | **14** | **20** | **39** |
+| **Total** | | **5** | **17** | **20** | **42** |
 
 ---
 
@@ -522,3 +552,6 @@ The layout marks `Effective_From__c` as required, but the field metadata does no
 20. **GAP-035** - Fix Inverse_Conversion_Factor precision
 21. **GAP-036** - Remove or complete dead Invoice Generation flow
 22. **GAP-037** - Implement credit release on delivery/payment
+23. **GAP-038** - Fix bi-weekly frequency logic in Journey Plan generation
+24. **GAP-039** - Remove duplicate day summary calculation
+25. **GAP-040** - Verify auto-close flow triggers proper finalization
