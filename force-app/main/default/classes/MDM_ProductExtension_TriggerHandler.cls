@@ -44,7 +44,7 @@ public class MDM_ProductExtension_TriggerHandler extends TriggerHandler {
             SELECT Product_Ext__c
             FROM Order_Line_Item__c
             WHERE Product_Ext__c IN :deactivatingIds
-              AND Sales_Order__r.Order_Status__c NOT IN ('Delivered', 'Cancelled', 'Rejected')
+              AND Sales_Order__r.Status__c NOT IN ('Delivered', 'Cancelled', 'Rejected')
         ]) {
             inOpenOrders.add(oli.Product_Ext__c);
         }

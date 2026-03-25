@@ -23,7 +23,7 @@ public with sharing class OMS_StockAvailability_Service {
         // Get all line items for the orders
         List<Order_Line_Item__c> lineItems = [
             SELECT Id, Sales_Order__c, Product_Ext__c, Product_Ext__r.Name,
-                   Quantity__c, Sales_Order__r.Warehouse__c
+                   Quantity__c, Base_Quantity__c, Sales_Order__r.Warehouse__c
             FROM Order_Line_Item__c
             WHERE Sales_Order__c IN :orderIds
         ];
@@ -64,7 +64,9 @@ public with sharing class OMS_StockAvailability_Service {
 
             String key = li.Sales_Order__r.Warehouse__c + '|' + li.Product_Ext__c;
             Decimal current = demandMap.containsKey(key) ? demandMap.get(key) : 0;
-            demandMap.put(key, current + (li.Quantity__c != null ? li.Quantity__c : 0));
+            Decimal qty = (li.Base_Quantity__c != null && li.Base_Quantity__c > 0)
+                ? li.Base_Quantity__c : (li.Quantity__c != null ? li.Quantity__c : 0);
+            demandMap.put(key, current + qty);
             demandToOrder.put(key, li.Sales_Order__c);
             demandToProduct.put(key, li.Product_Ext__r.Name);
         }

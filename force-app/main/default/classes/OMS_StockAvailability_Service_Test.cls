@@ -12,7 +12,7 @@ private class OMS_StockAvailability_Service_Test {
         insert prod;
 
         Sales_Order__c order = TestDataFactory.createSalesOrder(acc.Id, UserInfo.getUserId(), null);
-        order.Order_Status__c = 'Draft';
+        order.Status__c = 'Draft';
         insert order;
 
         Order_Line_Item__c li = TestDataFactory.createOrderLineItem(order.Id, prod.Id, 10, 100);

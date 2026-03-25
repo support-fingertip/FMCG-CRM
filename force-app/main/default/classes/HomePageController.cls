@@ -30,7 +30,7 @@ public with sharing class HomePageController {
             SELECT COUNT()
             FROM Sales_Order__c
             WHERE OwnerId = :userId
-              AND Order_Status__c IN ('Draft', 'Pending')
+              AND Status__c IN ('Draft', 'Pending')
         ];
 
         // ── Pending Collections ──
@@ -102,7 +102,7 @@ public with sharing class HomePageController {
             WHERE OwnerId = :userId
               AND Order_Date__c >= :monthStart
               AND Order_Date__c <= :today
-              AND Order_Status__c NOT IN ('Cancelled', 'Rejected')
+              AND Status__c NOT IN ('Cancelled', 'Rejected')
         ];
         if (!orderAgg.isEmpty() && orderAgg[0].get('totalValue') != null) {
             data.monthlyOrderValue = (Decimal) orderAgg[0].get('totalValue');

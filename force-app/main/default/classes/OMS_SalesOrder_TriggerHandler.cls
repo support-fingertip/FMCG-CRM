@@ -57,8 +57,8 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
             Sales_Order__c oldRec = oldMap.get(rec.Id);
             if (rec.Total_Amount__c != null && oldRec.Total_Amount__c != null &&
                 rec.Total_Amount__c > oldRec.Total_Amount__c &&
-                rec.Order_Status__c != 'Cancelled' &&
-                rec.Order_Status__c != 'Rejected') {
+                rec.Status__c != 'Cancelled' &&
+                rec.Status__c != 'Rejected') {
                 valueIncreased.add(rec);
             }
         }
@@ -80,15 +80,18 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
 
         Set<Id> approvedOrderIds = new Set<Id>();
         Set<Id> cancelledOrderIds = new Set<Id>();
+        Set<Id> deliveredOrderIds = new Set<Id>();
 
         for (Sales_Order__c rec : newRecords) {
             Sales_Order__c oldRec = oldMap.get(rec.Id);
 
-            if (rec.Order_Status__c != oldRec.Order_Status__c) {
-                if (rec.Order_Status__c == 'Approved') {
+            if (rec.Status__c != oldRec.Status__c) {
+                if (rec.Status__c == 'Approved') {
                     approvedOrderIds.add(rec.Id);
-                } else if (rec.Order_Status__c == 'Cancelled') {
+                } else if (rec.Status__c == 'Cancelled') {
                     cancelledOrderIds.add(rec.Id);
+                } else if (rec.Status__c == 'Delivered') {
+                    deliveredOrderIds.add(rec.Id);
                 }
             }
         }
@@ -105,10 +108,17 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
             if (!stockAvailableOrders.isEmpty()) {
                 OMS_InvoiceGeneration_Service.generateInvoices(stockAvailableOrders);
             }
+
+            // Update scheme budget usage for approved orders
+            updateSchemeBudgetUsage(approvedOrderIds);
         }
 
         if (!cancelledOrderIds.isEmpty()) {
             releaseCreditHold(cancelledOrderIds);
+        }
+
+        if (!deliveredOrderIds.isEmpty()) {
+            releaseCreditHold(deliveredOrderIds);
         }
     }
 
@@ -121,8 +131,8 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
     private void setDefaults(List<Sales_Order__c> records) {
         for (Sales_Order__c rec : records) {
             // Default status
-            if (String.isBlank(rec.Order_Status__c)) {
-                rec.Order_Status__c = 'Draft';
+            if (String.isBlank(rec.Status__c)) {
+                rec.Status__c = 'Draft';
             }
 
             // Default order date
@@ -161,15 +171,15 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
         for (Sales_Order__c rec : newRecords) {
             Sales_Order__c oldRec = oldMap.get(rec.Id);
 
-            if (rec.Order_Status__c == oldRec.Order_Status__c) {
+            if (rec.Status__c == oldRec.Status__c) {
                 continue;
             }
 
-            String currentStatus = oldRec.Order_Status__c;
-            String newStatus = rec.Order_Status__c;
+            String currentStatus = oldRec.Status__c;
+            String newStatus = rec.Status__c;
 
             if (!VALID_TRANSITIONS.containsKey(currentStatus)) {
-                rec.Order_Status__c.addError(
+                rec.Status__c.addError(
                     'Unknown current status: ' + currentStatus + '. Cannot determine valid transitions.'
                 );
                 continue;
@@ -177,7 +187,7 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
 
             Set<String> allowedNext = VALID_TRANSITIONS.get(currentStatus);
             if (!allowedNext.contains(newStatus)) {
-                rec.Order_Status__c.addError(
+                rec.Status__c.addError(
                     'Invalid status transition from \'' + currentStatus +
                     '\' to \'' + newStatus + '\'. Allowed transitions: ' +
                     String.join(new List<String>(allowedNext), ', ') + '.'
@@ -228,6 +238,48 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
 
         if (!accountsToUpdate.isEmpty()) {
             update accountsToUpdate;
+        }
+    }
+
+    /**
+     * @description Updates scheme budget usage when orders are approved.
+     *              Aggregates scheme discounts from line items and increments
+     *              the Budget_Used__c on each referenced Scheme__c.
+     * @param approvedOrderIds Set of approved Sales_Order__c IDs.
+     */
+    private void updateSchemeBudgetUsage(Set<Id> approvedOrderIds) {
+        // Aggregate scheme discounts by scheme ID
+        Map<Id, Decimal> budgetByScheme = new Map<Id, Decimal>();
+        for (Order_Line_Item__c li : [
+            SELECT Id, Scheme__c, Scheme_Discount__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c IN :approvedOrderIds
+              AND Scheme__c != null
+              AND Scheme_Discount__c != null
+              AND Scheme_Discount__c > 0
+        ]) {
+            Decimal current = budgetByScheme.containsKey(li.Scheme__c)
+                ? budgetByScheme.get(li.Scheme__c) : 0;
+            budgetByScheme.put(li.Scheme__c, current + li.Scheme_Discount__c);
+        }
+
+        if (budgetByScheme.isEmpty()) {
+            return;
+        }
+
+        List<Scheme__c> schemesToUpdate = [
+            SELECT Id, Budget_Used__c
+            FROM Scheme__c
+            WHERE Id IN :budgetByScheme.keySet()
+        ];
+
+        for (Scheme__c scheme : schemesToUpdate) {
+            Decimal currentUsed = scheme.Budget_Used__c != null ? scheme.Budget_Used__c : 0;
+            scheme.Budget_Used__c = currentUsed + budgetByScheme.get(scheme.Id);
+        }
+
+        if (!schemesToUpdate.isEmpty()) {
+            update schemesToUpdate;
         }
     }
 }

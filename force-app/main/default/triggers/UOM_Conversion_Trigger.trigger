@@ -1,7 +1,13 @@
-trigger UOM_Conversion_Trigger on UOM_Conversion__c (before insert, before update) {
+trigger UOM_Conversion_Trigger on UOM_Conversion__c (before insert, before update, after insert, after update, after delete) {
+    // Clear UOM conversion cache on any conversion change to prevent stale data
+    if (Trigger.isAfter) {
+        UOM_Conversion_Service.clearCache();
+        return;
+    }
+
     for (UOM_Conversion__c conv : Trigger.new) {
         if (conv.Conversion_Factor__c != null && conv.Conversion_Factor__c != 0) {
-            conv.Inverse_Conversion_Factor__c = (1 / conv.Conversion_Factor__c).setScale(4, RoundingMode.HALF_UP);
+            conv.Inverse_Conversion_Factor__c = (1 / conv.Conversion_Factor__c).setScale(6, RoundingMode.HALF_UP);
         }
 
         // Prevent self-referencing conversions

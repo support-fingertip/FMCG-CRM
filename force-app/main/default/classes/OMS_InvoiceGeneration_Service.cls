@@ -39,7 +39,7 @@ public without sharing class OMS_InvoiceGeneration_Service {
                     FROM Order_Line_Items__r)
             FROM Sales_Order__c
             WHERE Id IN :orderIds
-              AND Order_Status__c = 'Approved'
+              AND Status__c = 'Approved'
         ];
 
         if (orders.isEmpty()) {
