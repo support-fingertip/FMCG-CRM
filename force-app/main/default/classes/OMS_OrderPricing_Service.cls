@@ -125,9 +125,24 @@ public without sharing class OMS_OrderPricing_Service {
             // Calculate net amount (after line-level discount)
             Decimal discountPercent = item.Discount_Percent__c != null
                 ? item.Discount_Percent__c : 0;
-            Decimal discountAmount = (lineAmount * discountPercent / 100)
-                .setScale(2, RoundingMode.HALF_UP);
-            item.Discount_Amount__c = discountAmount;
+            Decimal discountAmount;
+            if (discountPercent > 0) {
+                // Calculate from percentage
+                discountAmount = (lineAmount * discountPercent / 100)
+                    .setScale(2, RoundingMode.HALF_UP);
+                item.Discount_Amount__c = discountAmount;
+            } else if (item.Discount_Amount__c != null && item.Discount_Amount__c > 0) {
+                // Preserve pre-set discount amount (e.g., from controller/LWC)
+                discountAmount = item.Discount_Amount__c;
+                // Back-calculate the percentage for consistency
+                if (lineAmount > 0) {
+                    item.Discount_Percent__c = (discountAmount / lineAmount * 100)
+                        .setScale(2, RoundingMode.HALF_UP);
+                }
+            } else {
+                discountAmount = 0;
+                item.Discount_Amount__c = 0;
+            }
             item.Net_Amount__c = (lineAmount - discountAmount).setScale(2, RoundingMode.HALF_UP);
         }
     }
@@ -233,7 +248,10 @@ public without sharing class OMS_OrderPricing_Service {
                 continue;
             }
 
-            Decimal taxableAmount = item.Net_Amount__c != null ? item.Net_Amount__c : 0;
+            // Taxable amount = Net Amount (after line discount) - Scheme Discount
+            Decimal netAmount = item.Net_Amount__c != null ? item.Net_Amount__c : 0;
+            Decimal schemeDisc = item.Scheme_Discount__c != null ? item.Scheme_Discount__c : 0;
+            Decimal taxableAmount = netAmount - schemeDisc;
             if (taxableAmount <= 0) {
                 continue;
             }
