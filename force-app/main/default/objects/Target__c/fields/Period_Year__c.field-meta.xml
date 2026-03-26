@@ -4,6 +4,6 @@
     <label>Period Year</label>
     <type>Text</type>
     <length>4</length>
-    <required>true</required>
+    <required>false</required>
     <unique>false</unique>
 </CustomField>

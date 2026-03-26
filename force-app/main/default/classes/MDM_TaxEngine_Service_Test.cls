@@ -11,13 +11,13 @@ private class MDM_TaxEngine_Service_Test {
     @testSetup
     static void setupTestData() {
         // Create products
-        List<Product2> products = TestDataFactory.createAndInsertProducts(5);
+        List<Product_Extension__c> products = TestDataFactory.createAndInsertProducts(5);
 
         // Create tax configurations
         List<Tax_Configuration__c> taxConfigs = new List<Tax_Configuration__c>();
         for (Integer i = 0; i < products.size(); i++) {
             Tax_Configuration__c tc = new Tax_Configuration__c(
-                Product__c = products[i].Id,
+                Product_Ext__c = products[i].Id,
                 Tax_Rate__c = 18,
                 HSN_SAC_Code__c = '2106',
                 CGST_Rate__c = 9,
@@ -34,11 +34,11 @@ private class MDM_TaxEngine_Service_Test {
         insert taxConfigs;
 
         // Create a product with 5% GST (essential commodity)
-        Product2 essentialProd = TestDataFactory.createProduct('Essential Item', 'ESS-001');
+        Product_Extension__c essentialProd = TestDataFactory.createProduct('Essential Item', 'ESS-001');
         insert essentialProd;
 
         Tax_Configuration__c essentialTax = new Tax_Configuration__c(
-            Product__c = essentialProd.Id,
+            Product_Ext__c = essentialProd.Id,
             Tax_Rate__c = 5,
             HSN_SAC_Code__c = '1905',
             CGST_Rate__c = 2.5,
@@ -53,7 +53,7 @@ private class MDM_TaxEngine_Service_Test {
         insert essentialTax;
 
         // Create a product with no tax config (for missing config test)
-        Product2 noTaxProd = TestDataFactory.createProduct('No Tax Product', 'NOTAX-001');
+        Product_Extension__c noTaxProd = TestDataFactory.createProduct('No Tax Product', 'NOTAX-001');
         insert noTaxProd;
     }
 
@@ -64,7 +64,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testIntraStateTax() {
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP-0000' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP-0000' LIMIT 1];
 
         Test.startTest();
 
@@ -107,7 +107,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testInterStateTax() {
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP-0000' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP-0000' LIMIT 1];
 
         Test.startTest();
 
@@ -148,7 +148,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testTaxCalculation() {
-        Product2 essentialProd = [SELECT Id FROM Product2 WHERE ProductCode = 'ESS-001' LIMIT 1];
+        Product_Extension__c essentialProd = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'ESS-001' LIMIT 1];
         Decimal amount = 5000;
 
         Test.startTest();
@@ -190,7 +190,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testNoTaxConfig() {
-        Product2 noTaxProd = [SELECT Id FROM Product2 WHERE ProductCode = 'NOTAX-001' LIMIT 1];
+        Product_Extension__c noTaxProd = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'NOTAX-001' LIMIT 1];
 
         Test.startTest();
 
@@ -222,11 +222,11 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testBulkTaxCalculation() {
-        List<Product2> products = [SELECT Id FROM Product2 WHERE ProductCode LIKE 'TP-%' ORDER BY ProductCode];
+        List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c LIKE 'TP-%' ORDER BY SKU_Code__c];
         List<Id> productIds = new List<Id>();
         List<Decimal> amounts = new List<Decimal>();
 
-        for (Product2 p : products) {
+        for (Product_Extension__c p : products) {
             productIds.add(p.Id);
             amounts.add(1000);
         }
@@ -255,7 +255,7 @@ private class MDM_TaxEngine_Service_Test {
      */
     @isTest
     static void testZeroAndNullAmounts() {
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP-0000' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE SKU_Code__c = 'TP-0000' LIMIT 1];
 
         Test.startTest();
 

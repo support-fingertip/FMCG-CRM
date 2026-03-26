@@ -3,7 +3,7 @@
     <fullName>Rate_Type__c</fullName>
     <label>Rate Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

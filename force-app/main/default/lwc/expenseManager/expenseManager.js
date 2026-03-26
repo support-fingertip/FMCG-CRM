@@ -1524,8 +1524,8 @@ export default class ExpenseManager extends LightningElement {
     get isRejected() { return this.expense.Status__c === 'Rejected'; }
     get isFinanceApproved() { return this.expense.Status__c === 'Finance Approved'; }
     get isPaid() { return this.expense.Status__c === 'Paid'; }
-    get canSubmit() { return !this.isFinanceApproved && !this.isPaid; }
-    get canEdit() { return !this.isFinanceApproved && !this.isPaid; }
+    get canSubmit() { return !this.isPaid; }
+    get canEdit() { return !this.isPaid; }
     get acceptedFileFormats() { return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']; }
     get cannotEdit() { return !this.canEdit; }
     get isExpenseTab() { return this.activeTab === 'expense'; }

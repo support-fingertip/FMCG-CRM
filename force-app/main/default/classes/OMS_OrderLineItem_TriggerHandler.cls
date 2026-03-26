@@ -33,7 +33,8 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
         for (Order_Line_Item__c rec : newRecords) {
             Order_Line_Item__c oldRec = oldMap.get(rec.Id);
             if (rec.Quantity__c != oldRec.Quantity__c ||
-                rec.Product__c != oldRec.Product__c ||
+                rec.Base_Quantity__c != oldRec.Base_Quantity__c ||
+                rec.Product_Ext__c != oldRec.Product_Ext__c ||
                 rec.Discount_Percent__c != oldRec.Discount_Percent__c ||
                 rec.Unit_Price__c != oldRec.Unit_Price__c) {
                 pricingChanged.add(rec);

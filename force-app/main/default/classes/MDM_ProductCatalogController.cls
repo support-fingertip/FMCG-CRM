@@ -27,28 +27,27 @@ public with sharing class MDM_ProductCatalogController {
         offset = offset != null ? offset : 0;
 
         // Build dynamic query
-        String query = 'SELECT Id, Name, ProductCode, Family, IsActive, Description, ' +
-                       '(SELECT Id, Product_Category__c, Product_Category__r.Name, ' +
+        String query = 'SELECT Id, Name, Is_Active__c, ' +
+                       'Product_Category__c, Product_Category__r.Name, ' +
                        'Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c, ' +
-                       'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Is_Active__c ' +
-                       'FROM Product_Extensions__r LIMIT 1) ' +
-                       'FROM Product2';
+                       'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c ' +
+                       'FROM Product_Extension__c';
 
         List<String> conditions = new List<String>();
 
         if (String.isNotBlank(searchTerm)) {
             String searchWild = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
-            conditions.add('(Name LIKE :searchWild OR ProductCode LIKE :searchWild)');
+            conditions.add('(Name LIKE :searchWild OR SKU_Code__c LIKE :searchWild)');
         }
 
         if (isActiveOnly != null && isActiveOnly) {
-            conditions.add('IsActive = true');
+            conditions.add('Is_Active__c = true');
         }
 
         if (categoryId != null) {
             // Get all category IDs in the hierarchy below this category
             Set<Id> categoryIds = getCategoryHierarchyIds(categoryId);
-            conditions.add('Id IN (SELECT Product__c FROM Product_Extension__c WHERE Product_Category__c IN :categoryIds)');
+            conditions.add('Product_Category__c IN :categoryIds');
         }
 
         if (!conditions.isEmpty()) {
@@ -57,17 +56,16 @@ public with sharing class MDM_ProductCatalogController {
 
         // Count query for pagination
         String countQuery = query.replace(
-            'SELECT Id, Name, ProductCode, Family, IsActive, Description, ' +
-            '(SELECT Id, Product_Category__c, Product_Category__r.Name, ' +
+            'SELECT Id, Name, Is_Active__c, ' +
+            'Product_Category__c, Product_Category__r.Name, ' +
             'Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c, ' +
-            'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Is_Active__c ' +
-            'FROM Product_Extensions__r LIMIT 1)',
+            'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c',
             'SELECT COUNT()'
         );
 
         query += ' ORDER BY Name ASC LIMIT :limitCount OFFSET :offset';
 
-        List<Product2> products = Database.query(query);
+        List<Product_Extension__c> products = Database.query(query);
         Integer totalCount = Database.countQuery(countQuery);
 
         // Build result
@@ -75,28 +73,21 @@ public with sharing class MDM_ProductCatalogController {
         result.totalCount = totalCount;
         result.products = new List<ProductWrapper>();
 
-        for (Product2 p : products) {
+        for (Product_Extension__c p : products) {
             ProductWrapper pw = new ProductWrapper();
             pw.productId = p.Id;
             pw.name = p.Name;
-            pw.productCode = p.ProductCode;
-            pw.family = p.Family;
-            pw.isActive = p.IsActive;
-            pw.description = p.Description;
-
-            if (p.Product_Extensions__r != null && !p.Product_Extensions__r.isEmpty()) {
-                Product_Extension__c ext = p.Product_Extensions__r[0];
-                pw.categoryName = ext.Product_Category__r != null ? ext.Product_Category__r.Name : null;
-                pw.categoryId = ext.Product_Category__c;
-                pw.barcodeEAN = ext.Barcode_EAN__c;
-                pw.barcodeUPC = ext.Barcode_UPC__c;
-                pw.hsnCode = ext.HSN_SAC_Code__c;
-                pw.weight = ext.Weight__c;
-                pw.weightUnit = ext.Weight_Unit__c;
-                pw.caseSize = ext.Case_Size__c;
-                pw.minOrderQty = ext.Min_Order_Qty__c;
-                pw.extIsActive = ext.Is_Active__c;
-            }
+            pw.isActive = p.Is_Active__c;
+            pw.categoryName = p.Product_Category__r != null ? p.Product_Category__r.Name : null;
+            pw.categoryId = p.Product_Category__c;
+            pw.barcodeEAN = p.Barcode_EAN__c;
+            pw.barcodeUPC = p.Barcode_UPC__c;
+            pw.hsnCode = p.HSN_SAC_Code__c;
+            pw.weight = p.Weight__c;
+            pw.weightUnit = p.Weight_Unit__c;
+            pw.caseSize = p.Case_Size__c;
+            pw.minOrderQty = p.Min_Order_Qty__c;
+            pw.extIsActive = p.Is_Active__c;
 
             result.products.add(pw);
         }
@@ -146,7 +137,7 @@ public with sharing class MDM_ProductCatalogController {
 
     /**
      * @description Retrieves active price list entries for a given product.
-     * @param productId The Product2 Id.
+     * @param productId The Product_Extension__c Id.
      * @return List of Price_List__c records.
      */
     @AuraEnabled(cacheable=true)
@@ -156,7 +147,7 @@ public with sharing class MDM_ProductCatalogController {
                    Region__c, Region__r.Name, Effective_From__c, Effective_To__c,
                    Min_Qty__c, Is_Active__c
             FROM Price_List__c
-            WHERE Product__c = :productId
+            WHERE Product_Ext__c = :productId
               AND Is_Active__c = true
               AND (Effective_To__c = null OR Effective_To__c >= TODAY)
               AND Effective_From__c <= TODAY
@@ -166,40 +157,31 @@ public with sharing class MDM_ProductCatalogController {
 
     /**
      * @description Retrieves product details including extension, pricing, and stock counts.
-     * @param productId The Product2 Id.
+     * @param productId The Product_Extension__c Id.
      * @return ProductDetailWrapper with full product info.
      */
     @AuraEnabled(cacheable=true)
     public static ProductDetailWrapper getProductDetail(Id productId) {
-        Product2 product = [
-            SELECT Id, Name, ProductCode, Family, IsActive, Description,
-                   (SELECT Id, Product_Category__c, Product_Category__r.Name,
-                    Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c,
-                    Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Is_Active__c
-                    FROM Product_Extensions__r LIMIT 1)
-            FROM Product2
+        Product_Extension__c product = [
+            SELECT Id, Name, Product_Category__c, Product_Category__r.Name,
+                   Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c,
+                   Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Is_Active__c
+            FROM Product_Extension__c
             WHERE Id = :productId
         ];
 
         ProductDetailWrapper detail = new ProductDetailWrapper();
         detail.productId = product.Id;
         detail.name = product.Name;
-        detail.productCode = product.ProductCode;
-        detail.family = product.Family;
-        detail.isActive = product.IsActive;
-        detail.description = product.Description;
-
-        if (product.Product_Extensions__r != null && !product.Product_Extensions__r.isEmpty()) {
-            Product_Extension__c ext = product.Product_Extensions__r[0];
-            detail.categoryName = ext.Product_Category__r != null ? ext.Product_Category__r.Name : null;
-            detail.barcodeEAN = ext.Barcode_EAN__c;
-            detail.barcodeUPC = ext.Barcode_UPC__c;
-            detail.hsnCode = ext.HSN_SAC_Code__c;
-            detail.weight = ext.Weight__c;
-            detail.weightUnit = ext.Weight_Unit__c;
-            detail.caseSize = ext.Case_Size__c;
-            detail.minOrderQty = ext.Min_Order_Qty__c;
-        }
+        detail.isActive = product.Is_Active__c;
+        detail.categoryName = product.Product_Category__r != null ? product.Product_Category__r.Name : null;
+        detail.barcodeEAN = product.Barcode_EAN__c;
+        detail.barcodeUPC = product.Barcode_UPC__c;
+        detail.hsnCode = product.HSN_SAC_Code__c;
+        detail.weight = product.Weight__c;
+        detail.weightUnit = product.Weight_Unit__c;
+        detail.caseSize = product.Case_Size__c;
+        detail.minOrderQty = product.Min_Order_Qty__c;
 
         // Get pricing
         detail.priceLists = getProductPricing(productId);
@@ -207,14 +189,14 @@ public with sharing class MDM_ProductCatalogController {
         // Get active batch count
         detail.activeBatchCount = [
             SELECT COUNT() FROM Batch_Master__c
-            WHERE Product__c = :productId AND Status__c = 'Active'
+            WHERE Product_Ext__c = :productId AND Status__c = 'Active'
         ];
 
         // Get total distributor stock (current entries)
         AggregateResult[] stockAgg = [
             SELECT SUM(Closing_Stock__c) totalStock
             FROM Distributor_Stock__c
-            WHERE Product__c = :productId AND Is_Current__c = true
+            WHERE Product_Ext__c = :productId AND Is_Current__c = true
         ];
         detail.totalDistributorStock = stockAgg[0].get('totalStock') != null ?
             (Decimal) stockAgg[0].get('totalStock') : 0;

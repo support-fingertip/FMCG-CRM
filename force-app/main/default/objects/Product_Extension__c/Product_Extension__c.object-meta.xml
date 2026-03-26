@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/metadata">
-    <label>Product Extension</label>
-    <pluralLabel>Product Extensions</pluralLabel>
+    <label>Product</label>
+    <pluralLabel>Products</pluralLabel>
     <nameField>
-        <label>Product Extension Name</label>
+        <label>Product Name</label>
         <type>Text</type>
     </nameField>
     <deploymentStatus>Deployed</deploymentStatus>
     <sharingModel>ReadWrite</sharingModel>
-    <description>Extends standard Product2 with FMCG-specific attributes such as barcodes, weight, and ordering details (MOD-01 Master Data Management)</description>
+    <description>Central product master storing all product attributes including barcodes, pricing, weight, and ordering details (MOD-01 Master Data Management)</description>
 </CustomObject>

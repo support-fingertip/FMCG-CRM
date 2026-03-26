@@ -3,7 +3,7 @@
     <fullName>Payment_Mode__c</fullName>
     <label>Payment Mode</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

@@ -4,9 +4,12 @@
 
 // Fetch territories
 Map<String, Id> terMap = new Map<String, Id>();
-for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master__c]) {
+for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master__c WHERE Is_Active__c = true]) {
     terMap.put(t.Territory_Code__c, t.Id);
 }
+System.debug('Territories found: ' + terMap.keySet());
+System.assert(!terMap.isEmpty(), 'No territories found. Run 02_territory_master.apex first.');
+System.assert(terMap.containsKey('TER-DEL-001'), 'Territory TER-DEL-001 not found. Available: ' + terMap.keySet());
 
 // Create beats - 6 beats for Delhi and Mumbai territories
 List<Beat__c> beats = new List<Beat__c>{

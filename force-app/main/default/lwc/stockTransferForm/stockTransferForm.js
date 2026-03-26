@@ -94,8 +94,8 @@ export default class StockTransferForm extends LightningElement {
         getAvailableProducts({ warehouseId: this.sourceWarehouseId, searchTerm: null })
             .then(result => {
                 this.sourceProducts = (result || []).map(s => ({
-                    label: (s.Product__r ? s.Product__r.Name : '') + ' (Avail: ' + (s.Qty_Available__c || 0) + ')',
-                    value: s.Product__c,
+                    label: (s.Product_Ext__r ? s.Product_Ext__r.Name : '') + ' (Avail: ' + (s.Qty_Available__c || 0) + ')',
+                    value: s.Product_Ext__c,
                     available: s.Qty_Available__c || 0,
                     batchNumber: s.Batch_Number__c || ''
                 }));
@@ -279,7 +279,7 @@ export default class StockTransferForm extends LightningElement {
         if (!this.transferDetail || !this.transferDetail.lineItems) return;
         this.receiveLineItems = this.transferDetail.lineItems.map(line => ({
             id: line.Id,
-            productName: line.Product__r ? line.Product__r.Name : '',
+            productName: line.Product_Ext__r ? line.Product_Ext__r.Name : '',
             approvedQty: line.Approved_Qty__c || line.Requested_Qty__c || 0,
             receivedQty: line.Approved_Qty__c || line.Requested_Qty__c || 0
         }));
@@ -375,8 +375,8 @@ export default class StockTransferForm extends LightningElement {
         return this.transferDetail.lineItems.map(line => ({
             id: line.Id,
             name: line.Name,
-            productName: line.Product__r ? line.Product__r.Name : '',
-            productCode: line.Product__r ? line.Product__r.ProductCode : '',
+            productName: line.Product_Ext__r ? line.Product_Ext__r.Name : '',
+            productCode: line.Product_Ext__r ? line.Product_Ext__r.SKU_Code__c : '',
             batchNumber: line.Batch_Number__c || '',
             requestedQty: line.Requested_Qty__c || 0,
             approvedQty: line.Approved_Qty__c || 0,

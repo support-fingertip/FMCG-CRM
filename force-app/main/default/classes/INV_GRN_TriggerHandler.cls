@@ -48,7 +48,7 @@ public class INV_GRN_TriggerHandler extends TriggerHandler {
         // Get GRN line items
         Map<Id, List<GRN_Line__c>> linesByGRN = new Map<Id, List<GRN_Line__c>>();
         for (GRN_Line__c line : [
-            SELECT Id, GRN__c, Product__c, Received_Qty__c, Damaged_Qty__c, Batch_No__c
+            SELECT Id, GRN__c, Product_Ext__c, Received_Qty__c, Damaged_Qty__c, Batch_No__c
             FROM GRN_Line__c
             WHERE GRN__c IN :grnIds
         ]) {
@@ -76,9 +76,9 @@ public class INV_GRN_TriggerHandler extends TriggerHandler {
                 Decimal received = line.Received_Qty__c != null ? line.Received_Qty__c : 0;
                 Decimal damaged = line.Damaged_Qty__c != null ? line.Damaged_Qty__c : 0;
                 Decimal usable = received - damaged;
-                if (usable > 0 && line.Product__c != null) {
+                if (usable > 0 && line.Product_Ext__c != null) {
                     stockItems.add(new INV_WarehouseStock_Service.StockLineItem(
-                        line.Product__c, line.Batch_No__c, usable
+                        line.Product_Ext__c, line.Batch_No__c, usable
                     ));
                 }
             }

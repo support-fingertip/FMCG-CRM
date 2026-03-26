@@ -13,6 +13,7 @@ public without sharing class OVE_Visit_Service {
     public static final String FEATURE_VISIT_EXECUTION  = 'OVE-001';
     public static final String FEATURE_GEOFENCE         = 'OVE-002';
     public static final String FEATURE_AD_HOC_VISITS    = 'OVE-003';
+    public static final String FEATURE_MUST_SELL        = 'SPM-002';
 
     // ── Config Keys ─────────────────────────────────────────────────────────
     private static final String CFG_MIN_VISIT_DURATION  = 'MIN_VISIT_DURATION_SEC';
@@ -210,11 +211,6 @@ public without sharing class OVE_Visit_Service {
                 }
             }
 
-            // Handle check-in photo
-            if (String.isNotBlank(request.photoBase64)) {
-                visit.Check_In_Photo_URL__c = saveVisitPhoto(request.photoBase64, 'CheckIn_' + request.accountId);
-            }
-
             // Initialize counters
             visit.Order_Value__c = 0;
             visit.Collection_Amount__c = 0;
@@ -224,6 +220,11 @@ public without sharing class OVE_Visit_Service {
                 update visit;
             } else {
                 insert visit;
+            }
+
+            // Attach check-in photo to visit record
+            if (String.isNotBlank(request.photoBase64)) {
+                FileAttachment_Util.saveFileToParent(request.photoBase64, 'CheckIn_' + request.accountId, visit.Id);
             }
 
             // Log GPS for visit check-in
@@ -315,15 +316,20 @@ public without sharing class OVE_Visit_Service {
                 visit.Completion_Activities__c = request.completedActivities;
             }
 
-            // Handle check-out photo
-            if (String.isNotBlank(request.photoBase64)) {
-                visit.Check_Out_Photo_URL__c = saveVisitPhoto(request.photoBase64, 'CheckOut_' + visit.Account__c);
-            }
-
             // Aggregate order and collection totals from this visit
             aggregateVisitTotals(visit);
 
+            // Calculate Must Sell compliance if feature is enabled
+            if (BPM_FeatureToggle_Util.isEnabled(FEATURE_MUST_SELL)) {
+                calculateMustSellCompliance(visit);
+            }
+
             update visit;
+
+            // Attach check-out photo to visit record
+            if (String.isNotBlank(request.photoBase64)) {
+                FileAttachment_Util.saveFileToParent(request.photoBase64, 'CheckOut_' + visit.Account__c, visit.Id);
+            }
 
             // Log GPS for visit check-out
             if (BPM_FeatureToggle_Util.isEnabled(DFO_DayAttendance_Service.FEATURE_GPS_TRACKING) &&
@@ -479,7 +485,6 @@ public without sharing class OVE_Visit_Service {
                    Is_Productive__c, Non_Productive_Reason__c,
                    Order_Value__c, Collection_Amount__c, Total_Orders_Count__c,
                    Notes__c, Completion_Activities__c,
-                   Check_In_Photo_URL__c, Check_Out_Photo_URL__c,
                    Distance_To_Outlet__c, Is_Geo_Fenced__c,
                    Day_Attendance__c
             FROM Visit__c
@@ -676,7 +681,10 @@ public without sharing class OVE_Visit_Service {
         List<Visit__c> visits = [
             SELECT Id, Account__c, Visit_Status__c, Check_In_Time__c, Check_Out_Time__c,
                    Duration_Minutes__c, Is_Productive__c, Order_Value__c, Collection_Amount__c,
-                   Total_Orders_Count__c, Notes__c, Completion_Activities__c
+                   Total_Orders_Count__c, Notes__c, Completion_Activities__c,
+                   Stock_Check_Completed__c, Competitor_Check_Completed__c,
+                   Merchandising_Completed__c, Survey_Completed__c, Ticket_Logged__c,
+                   Must_Sell_Compliance__c, Must_Sell_Products_Ordered__c, Must_Sell_Products_Required__c
             FROM Visit__c WHERE Id = :visitId LIMIT 1
         ];
 
@@ -710,6 +718,28 @@ public without sharing class OVE_Visit_Service {
         ];
         summary.put('collections', collections);
 
+        // Return orders
+        List<Return_Order__c> returnOrders = [
+            SELECT Id, Name, Total_Return_Amount__c, Status__c
+            FROM Return_Order__c
+            WHERE Visit__c = :visitId
+            ORDER BY CreatedDate DESC
+        ];
+        summary.put('returns', returnOrders);
+        summary.put('returnsCount', returnOrders.size());
+
+        // Activity completion flags
+        summary.put('stockCheckCompleted', visit.Stock_Check_Completed__c);
+        summary.put('competitorCheckCompleted', visit.Competitor_Check_Completed__c);
+        summary.put('merchandisingCompleted', visit.Merchandising_Completed__c);
+        summary.put('surveyCompleted', visit.Survey_Completed__c);
+        summary.put('ticketLogged', visit.Ticket_Logged__c);
+
+        // Must Sell compliance
+        summary.put('mustSellCompliance', visit.Must_Sell_Compliance__c);
+        summary.put('mustSellOrdered', visit.Must_Sell_Products_Ordered__c);
+        summary.put('mustSellRequired', visit.Must_Sell_Products_Required__c);
+
         return summary;
     }
 
@@ -717,24 +747,64 @@ public without sharing class OVE_Visit_Service {
      * @description Gets configurable visit activities list.
      * @return List of activity definitions.
      */
-    public static List<Map<String, Object>> getVisitActivities() {
+    public static List<Map<String, Object>> getVisitActivities(Id visitId) {
         List<Map<String, Object>> activities = new List<Map<String, Object>>();
 
-        activities.add(createActivity('order', 'Order', 'standard:orders', true));
-        activities.add(createActivity('collection', 'Collection', 'standard:payment_gateway', true));
-        activities.add(createActivity('merchandising', 'Merchandising', 'standard:product_item', BPM_FeatureToggle_Util.isEnabled('OVE-004')));
-        activities.add(createActivity('survey', 'Survey', 'standard:survey', BPM_FeatureToggle_Util.isEnabled('OVE-005')));
-        activities.add(createActivity('returns', 'Returns', 'standard:return_order', true));
-        activities.add(createActivity('scheme', 'Scheme Info', 'standard:reward', BPM_FeatureToggle_Util.isEnabled('SPM-001')));
+        // Query visit for completion flags
+        Boolean stockCompleted = false;
+        Boolean competitorCompleted = false;
+        Boolean merchandisingCompleted = false;
+        Boolean surveyCompleted = false;
+        Boolean ticketLogged = false;
+        Integer ordersCount = 0;
+        Integer collectionsCount = 0;
+        Integer returnsCount = 0;
 
-        // Filter only enabled activities
-        List<Map<String, Object>> enabled = new List<Map<String, Object>>();
-        for (Map<String, Object> act : activities) {
-            if ((Boolean)act.get('enabled')) {
-                enabled.add(act);
+        if (visitId != null) {
+            List<Visit__c> visits = [
+                SELECT Id, Stock_Check_Completed__c, Competitor_Check_Completed__c,
+                       Merchandising_Completed__c, Survey_Completed__c, Ticket_Logged__c
+                FROM Visit__c WHERE Id = :visitId LIMIT 1
+            ];
+            if (!visits.isEmpty()) {
+                Visit__c v = visits[0];
+                stockCompleted = v.Stock_Check_Completed__c == true;
+                competitorCompleted = v.Competitor_Check_Completed__c == true;
+                merchandisingCompleted = v.Merchandising_Completed__c == true;
+                surveyCompleted = v.Survey_Completed__c == true;
+                ticketLogged = v.Ticket_Logged__c == true;
             }
+            ordersCount = [SELECT COUNT() FROM Sales_Order__c WHERE Visit__c = :visitId AND Status__c != 'Cancelled'];
+            collectionsCount = [SELECT COUNT() FROM Collection__c WHERE Visit__c = :visitId AND Status__c NOT IN ('Cancelled', 'Bounced')];
+            returnsCount = [SELECT COUNT() FROM Return_Order__c WHERE Visit__c = :visitId AND Status__c != 'Cancelled'];
         }
-        return enabled;
+
+        // Core activities (always enabled)
+        activities.add(createActivity('order', 'Order', 'standard:orders', true, ordersCount > 0));
+        activities.add(createActivity('collection', 'Collection', 'standard:payment_gateway', true, collectionsCount > 0));
+        activities.add(createActivity('returns', 'Returns', 'standard:return_order', true, returnsCount > 0));
+
+        // Feature-toggled activities
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-010')) {
+            activities.add(createActivity('stock_check', 'Distributor Stock', 'standard:product_item', true, stockCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-011')) {
+            activities.add(createActivity('competitor', 'Competitor', 'standard:account', true, competitorCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-004')) {
+            activities.add(createActivity('merchandising', 'Merchandising', 'standard:scan_card', true, merchandisingCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-005')) {
+            activities.add(createActivity('survey', 'Survey', 'standard:survey', true, surveyCompleted));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('SPM-001')) {
+            activities.add(createActivity('scheme', 'Scheme Info', 'standard:reward', true, false));
+        }
+        if (BPM_FeatureToggle_Util.isEnabled('OVE-012')) {
+            activities.add(createActivity('ticket', 'Ticket', 'standard:case', true, ticketLogged));
+        }
+
+        return activities;
     }
 
     /**
@@ -840,31 +910,62 @@ public without sharing class OVE_Visit_Service {
         }
     }
 
-    private static String saveVisitPhoto(String base64Data, String fileName) {
-        if (String.isBlank(base64Data)) return null;
-        try {
-            ContentVersion cv = new ContentVersion();
-            cv.Title = fileName;
-            cv.PathOnClient = fileName + '.jpg';
-            cv.VersionData = EncodingUtil.base64Decode(base64Data);
-            cv.IsMajorVersion = true;
-            insert cv;
-            cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1];
-            return '/sfc/servlet.shepherd/document/download/' + cv.ContentDocumentId;
-        } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'Failed to save visit photo: ' + e.getMessage());
-            return null;
+    private static void calculateMustSellCompliance(Visit__c visit) {
+        Date today = Date.today();
+
+        // Get all must-sell products from active schemes
+        List<Scheme_Product__c> mustSellProducts = [
+            SELECT Id, Product_Ext__c
+            FROM Scheme_Product__c
+            WHERE Product_Classification__c = 'Must Sell'
+              AND Product_Ext__c != null
+              AND Scheme__r.Status__c = 'Active'
+              AND Scheme__r.Start_Date__c <= :today
+              AND Scheme__r.End_Date__c >= :today
+        ];
+
+        if (mustSellProducts.isEmpty()) {
+            visit.Must_Sell_Products_Required__c = 0;
+            visit.Must_Sell_Products_Ordered__c = 0;
+            visit.Must_Sell_Compliance__c = null;
+            return;
         }
+
+        Set<Id> mustSellProductIds = new Set<Id>();
+        for (Scheme_Product__c sp : mustSellProducts) {
+            mustSellProductIds.add(sp.Product_Ext__c);
+        }
+
+        // Get products ordered during this visit
+        Set<Id> orderedProductIds = new Set<Id>();
+        for (Order_Line_Item__c oli : [
+            SELECT Product_Ext__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__r.Visit__c = :visit.Id
+              AND Sales_Order__r.Status__c != 'Cancelled'
+              AND Product_Ext__c IN :mustSellProductIds
+        ]) {
+            orderedProductIds.add(oli.Product_Ext__c);
+        }
+
+        Integer required = mustSellProductIds.size();
+        Integer ordered = orderedProductIds.size();
+
+        visit.Must_Sell_Products_Required__c = required;
+        visit.Must_Sell_Products_Ordered__c = ordered;
+        visit.Must_Sell_Compliance__c = required > 0
+            ? (Decimal.valueOf(ordered) / Decimal.valueOf(required) * 100).setScale(2, RoundingMode.HALF_UP)
+            : null;
     }
 
-    private static Map<String, Object> createActivity(String id, String label, String icon, Boolean enabled) {
+    private static Map<String, Object> createActivity(String id, String label, String icon, Boolean enabled, Boolean completed) {
         Map<String, Object> activity = new Map<String, Object>();
         activity.put('id', id);
         activity.put('label', label);
         activity.put('icon', icon);
         activity.put('enabled', enabled);
-        activity.put('completed', false);
-        activity.put('cardClass', 'activity-card');
+        activity.put('completed', completed);
+        activity.put('cardClass', completed ? 'activity-card activity-done' : 'activity-card');
         return activity;
     }
 

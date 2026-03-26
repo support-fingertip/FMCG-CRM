@@ -47,7 +47,7 @@ public without sharing class MDM_TaxEngine_Service {
      * @description Calculates the GST tax for a given product moving between two
      *              states on a specified taxable amount.
      *
-     * @param productId  The Product__c record ID used to look up the applicable
+     * @param productId  The Product_Ext__c record ID used to look up the applicable
      *                   HSN code and tax rate.
      * @param fromState  The state of origin (seller/warehouse location).
      * @param toState    The destination state (buyer/delivery location).
@@ -104,7 +104,7 @@ public without sharing class MDM_TaxEngine_Service {
      * @description Bulk tax calculation for multiple product-amount pairs.
      *              Minimises SOQL queries by loading all tax configurations in one go.
      *
-     * @param productIds List of Product__c IDs (positionally aligned with amounts).
+     * @param productIds List of Product_Ext__c IDs (positionally aligned with amounts).
      * @param fromState  The state of origin.
      * @param toState    The destination state.
      * @param amounts    List of taxable amounts (positionally aligned with productIds).
@@ -189,15 +189,15 @@ public without sharing class MDM_TaxEngine_Service {
     /**
      * @description Retrieves the Tax_Configuration__c record applicable to the
      *              given product. Looks up by product ID first, then by HSN code.
-     * @param productId The Product__c ID to look up.
+     * @param productId The Product_Ext__c ID to look up.
      * @return The matching Tax_Configuration__c or null if not found.
      */
     private static Tax_Configuration__c getTaxConfiguration(Id productId) {
         List<Tax_Configuration__c> configs = [
-            SELECT Id, Tax_Rate__c, HSN_Code__c, Product__c,
+            SELECT Id, Tax_Rate__c, HSN_Code__c, Product_Ext__c,
                    CGST_Rate__c, SGST_Rate__c, IGST_Rate__c
             FROM Tax_Configuration__c
-            WHERE Product__c = :productId
+            WHERE Product_Ext__c = :productId
               AND Is_Active__c = true
             ORDER BY CreatedDate DESC
             LIMIT 1
@@ -213,7 +213,7 @@ public without sharing class MDM_TaxEngine_Service {
     /**
      * @description Bulk retrieves Tax_Configuration__c records for a set of
      *              product IDs.
-     * @param productIds The set of Product__c IDs to look up.
+     * @param productIds The set of Product_Ext__c IDs to look up.
      * @return Map of Product ID to its active Tax Configuration.
      */
     private static Map<Id, Tax_Configuration__c> getTaxConfigurationBulk(
@@ -222,16 +222,16 @@ public without sharing class MDM_TaxEngine_Service {
         Map<Id, Tax_Configuration__c> configMap = new Map<Id, Tax_Configuration__c>();
 
         for (Tax_Configuration__c config : [
-            SELECT Id, Tax_Rate__c, HSN_Code__c, Product__c,
+            SELECT Id, Tax_Rate__c, HSN_Code__c, Product_Ext__c,
                    CGST_Rate__c, SGST_Rate__c, IGST_Rate__c
             FROM Tax_Configuration__c
-            WHERE Product__c IN :productIds
+            WHERE Product_Ext__c IN :productIds
               AND Is_Active__c = true
             ORDER BY CreatedDate DESC
         ]) {
             // Keep only the most recent config per product
-            if (!configMap.containsKey(config.Product__c)) {
-                configMap.put(config.Product__c, config);
+            if (!configMap.containsKey(config.Product_Ext__c)) {
+                configMap.put(config.Product_Ext__c, config);
             }
         }
 

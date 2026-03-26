@@ -3,7 +3,7 @@
     <fullName>Survey_Type__c</fullName>
     <label>Survey Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

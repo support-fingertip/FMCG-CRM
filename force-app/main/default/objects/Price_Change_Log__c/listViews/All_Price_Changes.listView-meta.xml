@@ -4,7 +4,7 @@
     <label>All Price Changes</label>
     <filterScope>Everything</filterScope>
     <columns>NAME</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Old_Price__c</columns>
     <columns>New_Price__c</columns>
     <columns>Channel__c</columns>

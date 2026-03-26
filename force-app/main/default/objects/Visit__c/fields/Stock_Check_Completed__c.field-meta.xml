@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Stock_Check_Completed__c</fullName>
+    <label>Stock Check Completed</label>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>Indicates whether stock check was completed during this visit</description>
+</CustomField>

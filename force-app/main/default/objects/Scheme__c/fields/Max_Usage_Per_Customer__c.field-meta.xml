@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Max_Usage_Per_Customer__c</fullName>
+    <label>Max Usage Per Customer</label>
+    <description>Maximum number of times a single customer (account) can avail this scheme. Leave blank or 0 for unlimited usage.</description>
+    <inlineHelpText>Set the maximum number of times any customer can apply this scheme. Leave blank for unlimited.</inlineHelpText>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>0</scale>
+    <required>false</required>
+    <unique>false</unique>
+    <externalId>false</externalId>
+</CustomField>

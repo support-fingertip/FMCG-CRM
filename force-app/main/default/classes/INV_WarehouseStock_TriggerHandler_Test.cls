@@ -18,19 +18,19 @@ private class INV_WarehouseStock_TriggerHandler_Test {
         );
         insert warehouse;
 
-        Product2 product = new Product2(Name = 'Test Product', ProductCode = 'TP001', IsActive = true);
+        Product_Extension__c product = new Product_Extension__c(Name = 'Test Product', SKU_Code__c = 'TP001', Is_Active__c = true);
         insert product;
     }
 
     @isTest
     static void testCreateStockWithDefaults() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         Test.startTest();
         Warehouse_Stock__c stock = new Warehouse_Stock__c(
             Warehouse__c = wh.Id,
-            Product__c = product.Id
+            Product_Ext__c = product.Id
         );
         insert stock;
         Test.stopTest();
@@ -44,11 +44,11 @@ private class INV_WarehouseStock_TriggerHandler_Test {
     @isTest
     static void testDuplicateWarehouseProductBatchFails() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         Warehouse_Stock__c stock1 = new Warehouse_Stock__c(
             Warehouse__c = wh.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Batch_Number__c = 'BATCH001',
             Qty_On_Hand__c = 50
         );
@@ -57,7 +57,7 @@ private class INV_WarehouseStock_TriggerHandler_Test {
         Test.startTest();
         Warehouse_Stock__c stock2 = new Warehouse_Stock__c(
             Warehouse__c = wh.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Batch_Number__c = 'BATCH001',
             Qty_On_Hand__c = 25
         );
@@ -74,11 +74,11 @@ private class INV_WarehouseStock_TriggerHandler_Test {
     @isTest
     static void testDifferentBatchesAllowed() {
         Warehouse__c wh = [SELECT Id FROM Warehouse__c LIMIT 1];
-        Product2 product = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         Warehouse_Stock__c stock1 = new Warehouse_Stock__c(
             Warehouse__c = wh.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Batch_Number__c = 'BATCH001',
             Qty_On_Hand__c = 50
         );
@@ -87,7 +87,7 @@ private class INV_WarehouseStock_TriggerHandler_Test {
         Test.startTest();
         Warehouse_Stock__c stock2 = new Warehouse_Stock__c(
             Warehouse__c = wh.Id,
-            Product__c = product.Id,
+            Product_Ext__c = product.Id,
             Batch_Number__c = 'BATCH002',
             Qty_On_Hand__c = 25
         );
@@ -95,7 +95,7 @@ private class INV_WarehouseStock_TriggerHandler_Test {
         Test.stopTest();
 
         List<Warehouse_Stock__c> stocks = [
-            SELECT Id FROM Warehouse_Stock__c WHERE Warehouse__c = :wh.Id AND Product__c = :product.Id
+            SELECT Id FROM Warehouse_Stock__c WHERE Warehouse__c = :wh.Id AND Product_Ext__c = :product.Id
         ];
         System.assertEquals(2, stocks.size(), 'Should allow different batches');
     }

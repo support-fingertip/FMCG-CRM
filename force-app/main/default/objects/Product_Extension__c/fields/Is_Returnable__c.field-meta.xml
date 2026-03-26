@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Is_Returnable__c</fullName>
+    <label>Is Returnable</label>
+    <type>Checkbox</type>
+    <defaultValue>true</defaultValue>
+    <description>Indicates whether this product can be returned</description>
+</CustomField>

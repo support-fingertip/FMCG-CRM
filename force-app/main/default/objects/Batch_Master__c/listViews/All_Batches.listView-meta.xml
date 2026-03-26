@@ -3,7 +3,7 @@
     <fullName>All_Batches</fullName>
     <columns>NAME</columns>
     <columns>Batch_Number__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Manufacturing_Date__c</columns>
     <columns>Expiry_Date__c</columns>
     <columns>Shelf_Life_Remaining_Pct__c</columns>

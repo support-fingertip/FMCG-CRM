@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>UOM_Code__c</fullName>
+    <label>UOM Code</label>
+    <type>Text</type>
+    <length>10</length>
+    <required>false</required>
+    <unique>true</unique>
+    <externalId>true</externalId>
+    <caseSensitive>false</caseSensitive>
+    <description>Short code for the unit of measure (e.g., PCS, BOX, CS, KG, LTR)</description>
+</CustomField>

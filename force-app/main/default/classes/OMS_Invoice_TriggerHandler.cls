@@ -138,7 +138,7 @@ public class OMS_Invoice_TriggerHandler extends TriggerHandler {
 
         // Query invoice line items
         List<Invoice_Line__c> allLines = [
-            SELECT Id, Invoice__c, Product__c, Quantity__c, Batch_No__c
+            SELECT Id, Invoice__c, Product_Ext__c, Quantity__c, Batch_No__c
             FROM Invoice_Line__c
             WHERE Invoice__c IN :invoiceIds
         ];
@@ -162,9 +162,9 @@ public class OMS_Invoice_TriggerHandler extends TriggerHandler {
             List<INV_WarehouseStock_Service.StockLineItem> stockItems =
                 new List<INV_WarehouseStock_Service.StockLineItem>();
             for (Invoice_Line__c line : lines) {
-                if (line.Product__c != null && line.Quantity__c != null && line.Quantity__c > 0) {
+                if (line.Product_Ext__c != null && line.Quantity__c != null && line.Quantity__c > 0) {
                     stockItems.add(new INV_WarehouseStock_Service.StockLineItem(
-                        line.Product__c, line.Batch_No__c, line.Quantity__c
+                        line.Product_Ext__c, line.Batch_No__c, line.Quantity__c
                     ));
                 }
             }

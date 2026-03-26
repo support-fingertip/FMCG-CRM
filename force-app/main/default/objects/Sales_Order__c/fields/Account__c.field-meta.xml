@@ -6,6 +6,6 @@
     <referenceTo>Account</referenceTo>
     <relationshipLabel>Sales Orders</relationshipLabel>
     <relationshipName>Sales_Orders</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

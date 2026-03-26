@@ -1,14 +1,4 @@
 <template>
-    <!-- Back Navigation -->
-    <div class="va-back-nav">
-        <lightning-button
-            variant="base"
-            label="Back to Visits"
-            icon-name="utility:back"
-            onclick={handleGoBack}>
-        </lightning-button>
-    </div>
-
     <!-- Visit Header Card -->
     <lightning-card>
         <div class="va-header">
@@ -37,6 +27,14 @@
                             <span class="va-kpi-label">Check-In</span>
                         </div>
                         <div class="va-kpi">
+                            <span class="va-kpi-value">{checkOutTime}</span>
+                            <span class="va-kpi-label">Check-Out</span>
+                        </div>
+                        <div class="va-kpi">
+                            <span class="va-kpi-value">{durationDisplay}</span>
+                            <span class="va-kpi-label">Duration</span>
+                        </div>
+                        <div class="va-kpi">
                             <span class="va-kpi-value">{totalOrdersCount}</span>
                             <span class="va-kpi-label">Orders</span>
                         </div>
@@ -52,23 +50,41 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <template if:true={isActiveVisit}>
-                <div class="va-actions slds-m-top_small">
-                    <lightning-button variant="brand" label="New Order" icon-name="utility:cart" onclick={handleNewOrder} class="slds-m-right_x-small"></lightning-button>
-                    <lightning-button variant="neutral" label="Collect Payment" icon-name="utility:moneybag" onclick={handleNewCollection} class="slds-m-right_x-small"></lightning-button>
-                    <lightning-button variant="neutral" label="Return" icon-name="utility:undo" onclick={handleNewReturn} class="slds-m-right_x-small"></lightning-button>
-                    <lightning-button variant="destructive" label="Check Out" icon-name="utility:logout" onclick={handleCheckoutClick}></lightning-button>
+            <!-- Priority Sell Compliance -->
+            <template if:true={hasMustSellData}>
+                <div class="must-sell-compliance slds-m-top_small">
+                    <div class="compliance-header">
+                        <span class="compliance-title">Priority Sell Compliance</span>
+                        <span class={mustSellComplianceClass}>{mustSellComplianceFormatted}</span>
+                    </div>
+                    <div class="compliance-detail">{mustSellSummaryText}</div>
+                    <div class="compliance-bar">
+                        <div class="compliance-bar-fill" style={complianceBarStyle}></div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Productivity -->
+            <template if:true={isCompletedVisit}>
+                <div class="va-productivity slds-m-top_small">
+                    <template if:true={isProductiveVisit}>
+                        <span class="va-productive-badge va-productive-yes">Productive</span>
+                    </template>
+                    <template if:false={isProductiveVisit}>
+                        <span class="va-productive-badge va-productive-no">Non-Productive</span>
+                        <template if:true={nonProductiveReasonDisplay}>
+                            <span class="va-productive-reason"> &mdash; {nonProductiveReasonDisplay}</span>
+                        </template>
+                    </template>
                 </div>
             </template>
         </div>
     </lightning-card>
 
-    <!-- Activity Tabs -->
+    <!-- Summary Tabs -->
     <div class="va-content slds-m-top_small">
         <lightning-card>
             <div class="va-tabs">
-                <button class={activitiesTabClass} data-tab="activities" onclick={handleTabClick}>Activities</button>
                 <button class={ordersTabClass} data-tab="orders" onclick={handleTabClick}>
                     Orders
                     <template if:true={hasOrders}>
@@ -81,31 +97,17 @@
                         <span class="va-tab-count">{collections.length}</span>
                     </template>
                 </button>
-                <button class={returnsTabClass} data-tab="returns" onclick={handleTabClick}>Returns</button>
+                <button class={returnsTabClass} data-tab="returns" onclick={handleTabClick}>
+                    Returns
+                    <template if:true={hasReturns}>
+                        <span class="va-tab-count">{returns.length}</span>
+                    </template>
+                </button>
             </div>
-
-            <!-- Activities Tab -->
-            <template if:true={isActivitiesTab}>
-                <div class="va-tab-content">
-                    <div class="va-activity-grid">
-                        <template for:each={activities} for:item="act">
-                            <div class="va-activity-card" key={act.id} data-id={act.id} onclick={handleActivityClick}>
-                                <lightning-icon icon-name={act.icon} size="medium" class="va-act-icon"></lightning-icon>
-                                <span class="va-act-label">{act.label}</span>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </template>
 
             <!-- Orders Tab -->
             <template if:true={isOrdersTab}>
                 <div class="va-tab-content">
-                    <template if:true={isActiveVisit}>
-                        <div class="slds-m-bottom_small">
-                            <lightning-button variant="brand" label="New Order" icon-name="utility:add" onclick={handleNewOrder}></lightning-button>
-                        </div>
-                    </template>
                     <template if:true={hasOrders}>
                         <template for:each={orders} for:item="order">
                             <div class="va-record-row" key={order.Id} data-id={order.Id} data-object="Sales_Order__c" onclick={handleViewRecord}>
@@ -130,11 +132,6 @@
             <!-- Collections Tab -->
             <template if:true={isCollectionsTab}>
                 <div class="va-tab-content">
-                    <template if:true={isActiveVisit}>
-                        <div class="slds-m-bottom_small">
-                            <lightning-button variant="brand" label="Collect Payment" icon-name="utility:add" onclick={handleNewCollection}></lightning-button>
-                        </div>
-                    </template>
                     <template if:true={hasCollections}>
                         <template for:each={collections} for:item="coll">
                             <div class="va-record-row" key={coll.Id} data-id={coll.Id} data-object="Collection__c" onclick={handleViewRecord}>
@@ -159,90 +156,28 @@
             <!-- Returns Tab -->
             <template if:true={isReturnsTab}>
                 <div class="va-tab-content">
-                    <template if:true={isActiveVisit}>
-                        <div class="slds-m-bottom_small">
-                            <lightning-button variant="brand" label="Create Return" icon-name="utility:add" onclick={handleNewReturn}></lightning-button>
+                    <template if:true={hasReturns}>
+                        <template for:each={returns} for:item="ret">
+                            <div class="va-record-row" key={ret.Id} data-id={ret.Id} data-object="Return_Order__c" onclick={handleViewRecord}>
+                                <div class="va-record-info">
+                                    <span class="va-record-name">{ret.Name}</span>
+                                    <span class="va-record-detail">{ret.Status__c}</span>
+                                </div>
+                                <div class="va-record-amount">{ret.amountFormatted}</div>
+                                <lightning-icon icon-name="utility:chevronright" size="xx-small" class="va-record-chevron"></lightning-icon>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasReturns}>
+                        <div class="va-empty-tab">
+                            <lightning-icon icon-name="utility:undo" size="small" class="slds-m-bottom_small"></lightning-icon>
+                            <p>No returns recorded during this visit</p>
                         </div>
                     </template>
-                    <div class="va-empty-tab">
-                        <lightning-icon icon-name="utility:undo" size="small" class="slds-m-bottom_small"></lightning-icon>
-                        <p>Returns can be created from the button above</p>
-                    </div>
                 </div>
             </template>
         </lightning-card>
     </div>
-
-    <!-- Checkout Modal -->
-    <template if:true={isCheckoutModalOpen}>
-        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="checkout-heading" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-                <header class="slds-modal__header">
-                    <lightning-button-icon icon-name="utility:close" alternative-text="Close" variant="bare-inverse" class="slds-modal__close" onclick={handleCheckoutClose}></lightning-button-icon>
-                    <h2 id="checkout-heading" class="slds-text-heading_medium">Complete Visit</h2>
-                    <p class="slds-m-top_x-small slds-text-body_small slds-text-color_inverse-weak">
-                        Check out from {outletName}
-                    </p>
-                </header>
-                <div class="slds-modal__content slds-p-around_medium">
-                    <!-- Visit Summary -->
-                    <div class="checkout-summary slds-m-bottom_medium">
-                        <div class="checkout-stat">
-                            <span class="checkout-stat-label">Orders</span>
-                            <span class="checkout-stat-value">{totalOrdersCount}</span>
-                        </div>
-                        <div class="checkout-stat">
-                            <span class="checkout-stat-label">Order Value</span>
-                            <span class="checkout-stat-value">{orderValue}</span>
-                        </div>
-                        <div class="checkout-stat">
-                            <span class="checkout-stat-label">Collections</span>
-                            <span class="checkout-stat-value">{collectionAmount}</span>
-                        </div>
-                    </div>
-
-                    <!-- Productive Toggle -->
-                    <lightning-input
-                        type="toggle"
-                        label="Was this a productive visit?"
-                        checked={isProductive}
-                        onchange={handleProductiveChange}
-                        message-toggle-active="Yes"
-                        message-toggle-inactive="No"
-                        class="slds-m-bottom_small">
-                    </lightning-input>
-
-                    <!-- Non-Productive Reason -->
-                    <template if:false={isProductive}>
-                        <lightning-combobox
-                            name="nonProductiveReason"
-                            label="Reason"
-                            value={nonProductiveReason}
-                            placeholder="Select reason..."
-                            options={nonProductiveReasonOptions}
-                            onchange={handleNonProductiveReasonChange}
-                            required
-                            class="slds-m-bottom_small">
-                        </lightning-combobox>
-                    </template>
-
-                    <!-- Notes -->
-                    <lightning-textarea
-                        label="Visit Notes"
-                        value={checkoutNotes}
-                        onchange={handleCheckoutNotesChange}
-                        placeholder="Any observations or notes..."
-                        max-length="1000">
-                    </lightning-textarea>
-                </div>
-                <footer class="slds-modal__footer">
-                    <lightning-button variant="neutral" label="Cancel" onclick={handleCheckoutClose} class="slds-m-right_x-small"></lightning-button>
-                    <lightning-button variant="brand" label="Complete Visit" icon-name="utility:check" onclick={handleCheckoutConfirm} disabled={isCheckoutDisabled}></lightning-button>
-                </footer>
-            </div>
-        </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </template>
 
     <!-- Loading -->
     <template if:true={isLoading}>

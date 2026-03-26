@@ -92,7 +92,7 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
         Map<Id, Invoice_Line__c> invoiceLineMap = new Map<Id, Invoice_Line__c>();
         if (!invoiceLineIds.isEmpty()) {
             invoiceLineMap = new Map<Id, Invoice_Line__c>([
-                SELECT Id, Quantity__c, Product__c
+                SELECT Id, Quantity__c, Product_Ext__c
                 FROM Invoice_Line__c
                 WHERE Id IN :invoiceLineIds
             ]);
@@ -251,10 +251,10 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
         Map<Id, Invoice_Line__c> invoiceLineMap = new Map<Id, Invoice_Line__c>();
         if (!invoiceLineIds.isEmpty()) {
             invoiceLineMap = new Map<Id, Invoice_Line__c>([
-                SELECT Id, Product__c
+                SELECT Id, Product_Ext__c
                 FROM Invoice_Line__c
                 WHERE Id IN :invoiceLineIds
-                  AND Product__c != null
+                  AND Product_Ext__c != null
             ]);
         }
 
@@ -278,10 +278,10 @@ public class OMS_ReturnOrder_TriggerHandler extends TriggerHandler {
                 continue;
             }
             Invoice_Line__c line = invoiceLineMap.get(ret.Invoice_Line__c);
-            if (line == null || line.Product__c == null) {
+            if (line == null || line.Product_Ext__c == null) {
                 continue;
             }
-            Id productId = line.Product__c;
+            Id productId = line.Product_Ext__c;
 
             Id warehouseId = inv.Warehouse__c;
             if (!itemsByWarehouse.containsKey(warehouseId)) {

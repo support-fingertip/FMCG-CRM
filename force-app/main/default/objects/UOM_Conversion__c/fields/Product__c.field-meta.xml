@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Product__c</fullName>
+    <label>Product</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>Product_Extension__c</referenceTo>
+    <relationshipLabel>UOM Conversions</relationshipLabel>
+    <relationshipName>UOM_Conversions</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Optional product-specific conversion. If blank, this is a global/default conversion.</description>
+</CustomField>

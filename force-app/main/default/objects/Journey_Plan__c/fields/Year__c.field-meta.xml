@@ -4,5 +4,5 @@
     <label>Year</label>
     <type>Text</type>
     <length>4</length>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

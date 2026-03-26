@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Assigned_To__c</fullName>
+    <label>Assigned To</label>
+    <type>Lookup</type>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Tickets Assigned</relationshipLabel>
+    <relationshipName>Tickets_Assigned</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>User assigned to resolve this ticket</description>
+</CustomField>

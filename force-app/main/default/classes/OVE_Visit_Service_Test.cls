@@ -54,7 +54,7 @@ private class OVE_Visit_Service_Test {
         );
         order.Total_Gross_Amount__c = 10000;
         order.Total_Net_Amount__c = 10000;
-        order.Status__c = 'Confirmed';
+        order.Status__c = 'Submitted';
         insert order;
 
         // Invoice for outstanding balance test
@@ -314,8 +314,11 @@ private class OVE_Visit_Service_Test {
      */
     @isTest
     static void testGetVisitActivities() {
+        Visit__c visit = [SELECT Id FROM Visit__c
+                          WHERE Account__r.Name = 'OVE Geo Outlet' LIMIT 1];
+
         Test.startTest();
-        List<Map<String, Object>> activities = OVE_Visit_Service.getVisitActivities();
+        List<Map<String, Object>> activities = OVE_Visit_Service.getVisitActivities(visit.Id);
         Test.stopTest();
 
         System.assertNotEquals(null, activities, 'Activities list should not be null');

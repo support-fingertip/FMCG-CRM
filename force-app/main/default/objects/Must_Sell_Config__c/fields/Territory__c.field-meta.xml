@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Territory__c</fullName>
+    <label>Territory</label>
+    <description>When set, this config applies only to accounts in this territory. Leave blank for all territories.</description>
+    <type>Lookup</type>
+    <referenceTo>Territory_Master__c</referenceTo>
+    <relationshipLabel>Priority Sell Configs</relationshipLabel>
+    <relationshipName>Must_Sell_Configs</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Secondary_UOM__c</fullName>
+    <label>Secondary UOM</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>UOM__c</referenceTo>
+    <relationshipLabel>Products (Secondary UOM)</relationshipLabel>
+    <relationshipName>Products_Secondary</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The secondary/alternate unit of measure for this product (e.g., Case when base is Piece)</description>
+</CustomField>

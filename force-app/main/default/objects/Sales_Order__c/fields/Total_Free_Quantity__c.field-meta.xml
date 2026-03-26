@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Total_Free_Quantity__c</fullName>
+    <label>Total Free Quantity</label>
+    <description>Total free product quantity from schemes on this order</description>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+</CustomField>

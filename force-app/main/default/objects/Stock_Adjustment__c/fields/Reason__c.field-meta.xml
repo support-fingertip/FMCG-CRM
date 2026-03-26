@@ -3,5 +3,5 @@
     <fullName>Reason__c</fullName>
     <label>Reason</label>
     <type>TextArea</type>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

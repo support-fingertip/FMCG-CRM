@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Reward_Points__c</fullName>
+    <label>Reward Points</label>
+    <description>Reward points earned from scheme on this line item</description>
+    <type>Number</type>
+    <precision>10</precision>
+    <scale>0</scale>
+    <required>false</required>
+    <defaultValue>0</defaultValue>
+</CustomField>

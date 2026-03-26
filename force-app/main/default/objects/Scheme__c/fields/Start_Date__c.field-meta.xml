@@ -3,5 +3,5 @@
     <fullName>Start_Date__c</fullName>
     <label>Start Date</label>
     <type>Date</type>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

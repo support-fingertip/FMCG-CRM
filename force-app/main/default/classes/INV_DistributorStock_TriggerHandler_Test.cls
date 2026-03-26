@@ -16,10 +16,10 @@ private class INV_DistributorStock_TriggerHandler_Test {
         insert testAccount;
 
         // Create test Product
-        Product2 testProduct = new Product2(
+        Product_Extension__c testProduct = new Product_Extension__c(
             Name = 'Test FMCG Product',
-            ProductCode = 'TST-001',
-            IsActive = true
+            SKU_Code__c = 'TST-001',
+            Is_Active__c = true
         );
         insert testProduct;
     }
@@ -27,12 +27,12 @@ private class INV_DistributorStock_TriggerHandler_Test {
     @isTest
     static void testClosingStockCalculation() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
-        Product2 prod = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         Test.startTest();
         Distributor_Stock__c stock = new Distributor_Stock__c(
             Account__c = acc.Id,
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Stock_Date__c = Date.today(),
             Opening_Stock__c = 100,
             Received_Qty__c = 50,
@@ -51,11 +51,11 @@ private class INV_DistributorStock_TriggerHandler_Test {
     @isTest
     static void testClosingStockRecalculationOnUpdate() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
-        Product2 prod = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         Distributor_Stock__c stock = new Distributor_Stock__c(
             Account__c = acc.Id,
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Stock_Date__c = Date.today(),
             Opening_Stock__c = 100,
             Received_Qty__c = 50,
@@ -78,12 +78,12 @@ private class INV_DistributorStock_TriggerHandler_Test {
     @isTest
     static void testUnmarkPreviousCurrentEntries() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
-        Product2 prod = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         // Create first current entry
         Distributor_Stock__c stock1 = new Distributor_Stock__c(
             Account__c = acc.Id,
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Stock_Date__c = Date.today().addDays(-1),
             Opening_Stock__c = 50,
             Is_Current__c = true
@@ -94,7 +94,7 @@ private class INV_DistributorStock_TriggerHandler_Test {
         // Create second current entry for same Account+Product
         Distributor_Stock__c stock2 = new Distributor_Stock__c(
             Account__c = acc.Id,
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Stock_Date__c = Date.today(),
             Opening_Stock__c = 60,
             Is_Current__c = true
@@ -112,12 +112,12 @@ private class INV_DistributorStock_TriggerHandler_Test {
     @isTest
     static void testClosingStockWithNullQuantities() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
-        Product2 prod = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         Test.startTest();
         Distributor_Stock__c stock = new Distributor_Stock__c(
             Account__c = acc.Id,
-            Product__c = prod.Id,
+            Product_Ext__c = prod.Id,
             Stock_Date__c = Date.today(),
             Opening_Stock__c = 100
             // All other qty fields left null/default
@@ -132,13 +132,13 @@ private class INV_DistributorStock_TriggerHandler_Test {
     @isTest
     static void testBulkInsert() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
-        Product2 prod = [SELECT Id FROM Product2 LIMIT 1];
+        Product_Extension__c prod = [SELECT Id FROM Product_Extension__c LIMIT 1];
 
         List<Distributor_Stock__c> stockList = new List<Distributor_Stock__c>();
         for (Integer i = 0; i < 200; i++) {
             stockList.add(new Distributor_Stock__c(
                 Account__c = acc.Id,
-                Product__c = prod.Id,
+                Product_Ext__c = prod.Id,
                 Stock_Date__c = Date.today().addDays(-i),
                 Opening_Stock__c = 100 + i,
                 Received_Qty__c = 50,

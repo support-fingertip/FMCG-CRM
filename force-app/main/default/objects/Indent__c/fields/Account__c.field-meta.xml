@@ -6,6 +6,6 @@
     <referenceTo>Account</referenceTo>
     <relationshipLabel>Indents</relationshipLabel>
     <relationshipName>Indents</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

@@ -6,6 +6,6 @@
     <referenceTo>Survey__c</referenceTo>
     <relationshipLabel>Survey Responses</relationshipLabel>
     <relationshipName>Survey_Responses</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

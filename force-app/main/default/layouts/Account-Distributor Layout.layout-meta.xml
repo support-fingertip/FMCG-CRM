@@ -243,7 +243,7 @@
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Closing_Stock__c</fields>
         <fields>Stock_Date__c</fields>
         <fields>Batch_No__c</fields>

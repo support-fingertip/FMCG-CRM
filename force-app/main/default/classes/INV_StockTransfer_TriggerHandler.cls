@@ -88,7 +88,7 @@ public class INV_StockTransfer_TriggerHandler extends TriggerHandler {
         for (Stock_Transfer__c t : transfers) transferIds.add(t.Id);
 
         List<Stock_Transfer_Line__c> lines = [
-            SELECT Id, Stock_Transfer__c, Product__c, Batch_Number__c, Approved_Qty__c
+            SELECT Id, Stock_Transfer__c, Product_Ext__c, Batch_Number__c, Approved_Qty__c
             FROM Stock_Transfer_Line__c
             WHERE Stock_Transfer__c IN :transferIds
         ];
@@ -109,9 +109,9 @@ public class INV_StockTransfer_TriggerHandler extends TriggerHandler {
                 new List<INV_WarehouseStock_Service.StockLineItem>();
             for (Stock_Transfer_Line__c line : tLines) {
                 Decimal qty = line.Approved_Qty__c != null ? line.Approved_Qty__c : 0;
-                if (qty > 0 && line.Product__c != null) {
+                if (qty > 0 && line.Product_Ext__c != null) {
                     items.add(new INV_WarehouseStock_Service.StockLineItem(
-                        line.Product__c, line.Batch_Number__c, qty
+                        line.Product_Ext__c, line.Batch_Number__c, qty
                     ));
                 }
             }
@@ -129,7 +129,7 @@ public class INV_StockTransfer_TriggerHandler extends TriggerHandler {
         for (Stock_Transfer__c t : transfers) transferIds.add(t.Id);
 
         List<Stock_Transfer_Line__c> lines = [
-            SELECT Id, Stock_Transfer__c, Product__c, Batch_Number__c,
+            SELECT Id, Stock_Transfer__c, Product_Ext__c, Batch_Number__c,
                    Approved_Qty__c, Received_Qty__c
             FROM Stock_Transfer_Line__c
             WHERE Stock_Transfer__c IN :transferIds
@@ -153,9 +153,9 @@ public class INV_StockTransfer_TriggerHandler extends TriggerHandler {
                 Decimal qty = isDeduct
                     ? (line.Approved_Qty__c != null ? line.Approved_Qty__c : 0)
                     : (line.Received_Qty__c != null ? line.Received_Qty__c : 0);
-                if (qty > 0 && line.Product__c != null) {
+                if (qty > 0 && line.Product_Ext__c != null) {
                     items.add(new INV_WarehouseStock_Service.StockLineItem(
-                        line.Product__c, line.Batch_Number__c, qty
+                        line.Product_Ext__c, line.Batch_Number__c, qty
                     ));
                 }
             }

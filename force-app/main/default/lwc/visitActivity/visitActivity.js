@@ -1,28 +1,29 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import { NavigationMixin } from 'lightning/navigation';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
-import completeVisit from '@salesforce/apex/VisitCheckInController.completeVisit';
 import getVisitCompletionSummary from '@salesforce/apex/VisitCheckInController.getVisitCompletionSummary';
-import getVisitActivities from '@salesforce/apex/VisitCheckInController.getVisitActivities';
 
 // Visit fields
 import VISIT_STATUS from '@salesforce/schema/Visit__c.Visit_Status__c';
-import ACCOUNT_ID from '@salesforce/schema/Visit__c.Account__c';
 import ACCOUNT_NAME from '@salesforce/schema/Visit__c.Account__r.Name';
 import BEAT_NAME from '@salesforce/schema/Visit__c.Beat__r.Name';
 import CHECK_IN_TIME from '@salesforce/schema/Visit__c.Check_In_Time__c';
+import CHECK_OUT_TIME from '@salesforce/schema/Visit__c.Check_Out_Time__c';
 import VISIT_SEQUENCE from '@salesforce/schema/Visit__c.Visit_Sequence__c';
 import ORDER_VALUE from '@salesforce/schema/Visit__c.Order_Value__c';
 import COLLECTION_AMOUNT from '@salesforce/schema/Visit__c.Collection_Amount__c';
 import TOTAL_ORDERS_COUNT from '@salesforce/schema/Visit__c.Total_Orders_Count__c';
 import IS_AD_HOC from '@salesforce/schema/Visit__c.Is_Ad_Hoc__c';
+import IS_PRODUCTIVE from '@salesforce/schema/Visit__c.Is_Productive__c';
+import NON_PRODUCTIVE_REASON from '@salesforce/schema/Visit__c.Non_Productive_Reason__c';
+import DURATION_MINUTES from '@salesforce/schema/Visit__c.Duration_Minutes__c';
 
 const VISIT_FIELDS = [
-    VISIT_STATUS, ACCOUNT_ID, ACCOUNT_NAME, BEAT_NAME,
-    CHECK_IN_TIME, VISIT_SEQUENCE, ORDER_VALUE,
-    COLLECTION_AMOUNT, TOTAL_ORDERS_COUNT, IS_AD_HOC
+    VISIT_STATUS, ACCOUNT_NAME, BEAT_NAME,
+    CHECK_IN_TIME, CHECK_OUT_TIME, VISIT_SEQUENCE, ORDER_VALUE,
+    COLLECTION_AMOUNT, TOTAL_ORDERS_COUNT, IS_AD_HOC,
+    IS_PRODUCTIVE, NON_PRODUCTIVE_REASON, DURATION_MINUTES
 ];
 
 const INR_FORMATTER = new Intl.NumberFormat('en-IN', {
@@ -35,16 +36,14 @@ const INR_FORMATTER = new Intl.NumberFormat('en-IN', {
 export default class VisitActivity extends NavigationMixin(LightningElement) {
     @api recordId;
 
-    @track activeTab = 'activities';
-    @track activities = [];
+    @track activeTab = 'orders';
     @track orders = [];
     @track collections = [];
+    @track returns = [];
     @track isLoading = false;
-    @track isCheckoutModalOpen = false;
-    @track checkoutNotes = '';
-    @track isProductive = true;
-    @track nonProductiveReason = '';
-    @track isProcessing = false;
+    @track mustSellCompliance = null;
+    @track mustSellOrdered = 0;
+    @track mustSellRequired = 0;
 
     visitRecord = null;
 
@@ -60,10 +59,8 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
 
     async _loadSummary() {
         try {
-            const [summary, activityList] = await Promise.all([
-                getVisitCompletionSummary({ visitId: this.recordId }),
-                getVisitActivities()
-            ]);
+            this.isLoading = true;
+            const summary = await getVisitCompletionSummary({ visitId: this.recordId });
 
             if (summary) {
                 this.orders = (summary.orders || []).map(o => ({
@@ -74,22 +71,24 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
                     ...c,
                     amountFormatted: INR_FORMATTER.format(c.Amount__c || 0)
                 }));
-            }
-
-            if (activityList) {
-                this.activities = activityList.filter(a => a.enabled !== false);
+                this.returns = (summary.returns || []).map(r => ({
+                    ...r,
+                    amountFormatted: INR_FORMATTER.format(r.Total_Return_Amount__c || 0)
+                }));
+                this.mustSellCompliance = summary.mustSellCompliance;
+                this.mustSellOrdered = summary.mustSellOrdered || 0;
+                this.mustSellRequired = summary.mustSellRequired || 0;
             }
         } catch (err) {
             console.error('Error loading visit summary:', err);
+        } finally {
+            this.isLoading = false;
         }
     }
 
     // ----- Getters for visit data -----
     get outletName() {
         return this.visitRecord ? getFieldValue(this.visitRecord, ACCOUNT_NAME) : '';
-    }
-    get accountId() {
-        return this.visitRecord ? getFieldValue(this.visitRecord, ACCOUNT_ID) : null;
     }
     get beatName() {
         return this.visitRecord ? getFieldValue(this.visitRecord, BEAT_NAME) : '';
@@ -99,12 +98,11 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
     }
     get checkInTime() {
         const t = this.visitRecord ? getFieldValue(this.visitRecord, CHECK_IN_TIME) : null;
-        if (!t) return '--';
-        try {
-            return new Date(t).toLocaleTimeString('en-IN', {
-                hour: '2-digit', minute: '2-digit', hour12: true
-            });
-        } catch (e) { return '--'; }
+        return this._fmtTime(t);
+    }
+    get checkOutTime() {
+        const t = this.visitRecord ? getFieldValue(this.visitRecord, CHECK_OUT_TIME) : null;
+        return this._fmtTime(t);
     }
     get visitSequence() {
         return this.visitRecord ? getFieldValue(this.visitRecord, VISIT_SEQUENCE) : '';
@@ -129,6 +127,19 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
     get isCompletedVisit() {
         return this.visitStatus === 'Completed';
     }
+    get isProductiveVisit() {
+        return this.visitRecord ? getFieldValue(this.visitRecord, IS_PRODUCTIVE) : false;
+    }
+    get nonProductiveReasonDisplay() {
+        return this.visitRecord ? getFieldValue(this.visitRecord, NON_PRODUCTIVE_REASON) : '';
+    }
+    get durationDisplay() {
+        const mins = this.visitRecord ? getFieldValue(this.visitRecord, DURATION_MINUTES) : null;
+        if (!mins && mins !== 0) return '--';
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
     get statusBadgeClass() {
         if (this.isActiveVisit) return 'status-badge status-active';
         if (this.isCompletedVisit) return 'status-badge status-completed';
@@ -136,32 +147,42 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
     }
 
     // ----- Tab management -----
-    get isActivitiesTab() { return this.activeTab === 'activities'; }
     get isOrdersTab() { return this.activeTab === 'orders'; }
     get isCollectionsTab() { return this.activeTab === 'collections'; }
     get isReturnsTab() { return this.activeTab === 'returns'; }
 
-    get activitiesTabClass() { return 'va-tab' + (this.isActivitiesTab ? ' va-tab-selected' : ''); }
     get ordersTabClass() { return 'va-tab' + (this.isOrdersTab ? ' va-tab-selected' : ''); }
     get collectionsTabClass() { return 'va-tab' + (this.isCollectionsTab ? ' va-tab-selected' : ''); }
     get returnsTabClass() { return 'va-tab' + (this.isReturnsTab ? ' va-tab-selected' : ''); }
 
     get hasOrders() { return this.orders.length > 0; }
     get hasCollections() { return this.collections.length > 0; }
+    get hasReturns() { return this.returns.length > 0; }
 
-    get nonProductiveReasonOptions() {
-        return [
-            { label: 'Shop Closed', value: 'Shop Closed' },
-            { label: 'Owner Not Available', value: 'Owner Not Available' },
-            { label: 'No Demand', value: 'No Demand' },
-            { label: 'Credit Limit Exceeded', value: 'Credit Limit Exceeded' },
-            { label: 'Stock Available', value: 'Stock Available' },
-            { label: 'Other', value: 'Other' }
-        ];
+    // ----- Must Sell compliance -----
+    get hasMustSellData() {
+        return this.mustSellRequired > 0;
     }
 
-    get isCheckoutDisabled() {
-        return this.isProcessing || (!this.isProductive && !this.nonProductiveReason);
+    get mustSellComplianceFormatted() {
+        if (this.mustSellCompliance == null) return '0%';
+        return Math.round(this.mustSellCompliance) + '%';
+    }
+
+    get mustSellSummaryText() {
+        return this.mustSellOrdered + '/' + this.mustSellRequired + ' priority sell products ordered';
+    }
+
+    get complianceBarStyle() {
+        const pct = Math.min(this.mustSellCompliance || 0, 100);
+        const color = pct >= 100 ? '#2e844a' : (pct >= 50 ? '#dd7a01' : '#ea001e');
+        return 'width:' + pct + '%;background:' + color;
+    }
+
+    get mustSellComplianceClass() {
+        if (this.mustSellCompliance >= 100) return 'compliance-badge compliance-green';
+        if (this.mustSellCompliance >= 50) return 'compliance-badge compliance-yellow';
+        return 'compliance-badge compliance-red';
     }
 
     // ----- Tab click -----
@@ -169,80 +190,7 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
         this.activeTab = event.currentTarget.dataset.tab;
     }
 
-    // ----- Activity Actions -----
-    handleActivityClick(event) {
-        const activityId = event.currentTarget.dataset.id;
-        const activity = this.activities.find(a => a.id === activityId);
-        if (!activity || !this.accountId) return;
-
-        switch (activityId) {
-            case 'order':
-                this._navigateToTab('orders');
-                break;
-            case 'collection':
-                this._navigateToTab('collections');
-                break;
-            case 'returns':
-                this._navigateToTab('returns');
-                break;
-            default:
-                // For other activities like Merchandising, Survey - navigate to account
-                this[NavigationMixin.Navigate]({
-                    type: 'standard__recordPage',
-                    attributes: {
-                        recordId: this.accountId,
-                        objectApiName: 'Account',
-                        actionName: 'view'
-                    }
-                });
-                break;
-        }
-    }
-
-    _navigateToTab(tabName) {
-        this.activeTab = tabName;
-    }
-
-    // ----- Navigation Actions -----
-    handleNewOrder() {
-        this[NavigationMixin.Navigate]({
-            type: 'standard__objectPage',
-            attributes: {
-                objectApiName: 'Sales_Order__c',
-                actionName: 'new'
-            },
-            state: {
-                defaultFieldValues: 'Account__c=' + this.accountId + ',Visit__c=' + this.recordId
-            }
-        });
-    }
-
-    handleNewCollection() {
-        this[NavigationMixin.Navigate]({
-            type: 'standard__objectPage',
-            attributes: {
-                objectApiName: 'Collection__c',
-                actionName: 'new'
-            },
-            state: {
-                defaultFieldValues: 'Account__c=' + this.accountId + ',Visit__c=' + this.recordId
-            }
-        });
-    }
-
-    handleNewReturn() {
-        this[NavigationMixin.Navigate]({
-            type: 'standard__objectPage',
-            attributes: {
-                objectApiName: 'Return_Order__c',
-                actionName: 'new'
-            },
-            state: {
-                defaultFieldValues: 'Account__c=' + this.accountId + ',Visit__c=' + this.recordId
-            }
-        });
-    }
-
+    // ----- View record (navigate to record detail) -----
     handleViewRecord(event) {
         const recId = event.currentTarget.dataset.id;
         const objApi = event.currentTarget.dataset.object;
@@ -258,81 +206,12 @@ export default class VisitActivity extends NavigationMixin(LightningElement) {
         }
     }
 
-    // ----- Checkout -----
-    handleCheckoutClick() {
-        this.isCheckoutModalOpen = true;
-        this.checkoutNotes = '';
-        this.isProductive = true;
-        this.nonProductiveReason = '';
-    }
-
-    handleCheckoutClose() {
-        this.isCheckoutModalOpen = false;
-    }
-
-    handleProductiveChange(event) {
-        this.isProductive = event.target.checked;
-        if (this.isProductive) {
-            this.nonProductiveReason = '';
-        }
-    }
-
-    handleNonProductiveReasonChange(event) {
-        this.nonProductiveReason = event.detail.value;
-    }
-
-    handleCheckoutNotesChange(event) {
-        this.checkoutNotes = event.detail.value;
-    }
-
-    async handleCheckoutConfirm() {
-        this.isProcessing = true;
+    _fmtTime(dt) {
+        if (!dt) return '--';
         try {
-            let position = { latitude: 0, longitude: 0, accuracy: 0 };
-            if (navigator.geolocation) {
-                position = await new Promise((resolve) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => resolve({
-                            latitude: pos.coords.latitude,
-                            longitude: pos.coords.longitude,
-                            accuracy: pos.coords.accuracy
-                        }),
-                        () => resolve({ latitude: 0, longitude: 0, accuracy: 0 }),
-                        { enableHighAccuracy: true, timeout: 10000 }
-                    );
-                });
-            }
-
-            const checkoutData = {
-                visitId: this.recordId,
-                latitude: position.latitude,
-                longitude: position.longitude,
-                accuracy: position.accuracy,
-                isProductive: this.isProductive,
-                nonProductiveReason: this.nonProductiveReason,
-                notes: this.checkoutNotes
-            };
-
-            await completeVisit({ visitJson: JSON.stringify(checkoutData) });
-            this.showToast('Success', 'Visit completed successfully.', 'success');
-            this.isCheckoutModalOpen = false;
-
-            // Refresh the page
-            // eslint-disable-next-line no-restricted-globals
-            setTimeout(() => { location.reload(); }, 500);
-        } catch (error) {
-            const msg = error.body ? error.body.message : error.message || 'Unknown error';
-            this.showToast('Error', 'Checkout failed: ' + msg, 'error');
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    handleGoBack() {
-        window.history.back();
-    }
-
-    showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+            return new Date(dt).toLocaleTimeString('en-IN', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        } catch (e) { return '--'; }
     }
 }

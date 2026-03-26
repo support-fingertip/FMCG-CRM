@@ -15,6 +15,26 @@ import refreshVisitSummary from '@salesforce/apex/VisitManagerController.refresh
 import searchOutletsApex from '@salesforce/apex/VisitManagerController.searchOutlets';
 import searchEmployeesApex from '@salesforce/apex/VisitManagerController.searchEmployees';
 import getOutletSummaryApex from '@salesforce/apex/VisitManagerController.getOutletSummary';
+import getVisitActivitiesApex from '@salesforce/apex/VisitManagerController.getVisitActivities';
+
+// ── VISIT ACTIVITY IMPORTS ──
+import getDistributorStock from '@salesforce/apex/OVE_StockCheckController.getDistributorStock';
+import getProductsForStockCheck from '@salesforce/apex/OVE_StockCheckController.getProductsForStockCheck';
+import saveStockEntries from '@salesforce/apex/OVE_StockCheckController.saveStockEntries';
+import getCompetitorEntriesForVisit from '@salesforce/apex/OVE_CompetitorActivityController.getCompetitorEntriesForVisit';
+import getCompetitorMaster from '@salesforce/apex/OVE_CompetitorActivityController.getCompetitorMaster';
+import saveCompetitorEntry from '@salesforce/apex/OVE_CompetitorActivityController.saveCompetitorEntry';
+import deleteCompetitorEntry from '@salesforce/apex/OVE_CompetitorActivityController.deleteCompetitorEntry';
+import getMerchandisingForVisit from '@salesforce/apex/OVE_MerchandisingController.getMerchandisingForVisit';
+import saveMerchandising from '@salesforce/apex/OVE_MerchandisingController.saveMerchandising';
+import getApplicableSurveys from '@salesforce/apex/OVE_SurveyController.getApplicableSurveys';
+import getSurveyWithQuestions from '@salesforce/apex/OVE_SurveyController.getSurveyWithQuestions';
+import submitSurveyResponse from '@salesforce/apex/OVE_SurveyController.submitSurveyResponse';
+import getSurveyResponsesForVisit from '@salesforce/apex/OVE_SurveyController.getSurveyResponsesForVisit';
+import uploadSurveyPhoto from '@salesforce/apex/OVE_SurveyController.uploadSurveyPhoto';
+import getActiveSchemes from '@salesforce/apex/OVE_SchemeInfoController.getActiveSchemes';
+import getTicketsForVisit from '@salesforce/apex/OVE_TicketController.getTicketsForVisit';
+import createTicket from '@salesforce/apex/OVE_TicketController.createTicket';
 
 // ── SCREEN STATES ──
 const SCREEN = {
@@ -23,6 +43,7 @@ const SCREEN = {
     BEAT_SELECT: 'beat_select',
     VISIT_BOARD: 'visit_board',
     VISIT_ACTIVE: 'visit_active',
+    VISIT_ACTIVITY: 'visit_activity',
     VISIT_DETAIL: 'visit_detail'
 };
 
@@ -97,6 +118,7 @@ export default class VisitManager extends LightningElement {
     @track detailVisit = null;
     @track detailVisitSummary = {};
     @track detailVisitTab = 'orders';
+    @track detailSurveyResponses = [];
 
     // ── AD-HOC ──
     @track showAdHocModal = false;
@@ -122,6 +144,40 @@ export default class VisitManager extends LightningElement {
     @track nonProductiveReason = '';
     @track visitNotes = '';
     @track checklistItems = [];
+
+    // ── VISIT ACTIVITY (inline forms) ──
+    @track activeActivityId = null;
+    // Stock Check
+    @track stockCheckLines = [];
+    @track stockProductSearch = '';
+    @track stockProductResults = [];
+    @track stockIsLoading = false;
+    // Competitor
+    @track competitorEntries = [];
+    @track competitorCompanies = [];
+    @track competitorFilteredCompanies = [];
+    @track competitorShowSuggestions = false;
+    @track competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProductId: null, ownProductName: '', notes: '' };
+    @track competitorIsLoading = false;
+    @track competitorProductSearch = '';
+    @track competitorProductResults = [];
+    @track competitorShowProductSearch = false;
+    // Merchandising
+    @track merchandisingRecord = { ownShelfShare: null, competitorShelfShare: null, planogramCompliant: false, posmPresent: false, posmCondition: '', notes: '' };
+    @track merchandisingIsLoading = false;
+    // Survey
+    @track applicableSurveys = [];
+    @track selectedSurvey = null;
+    @track surveyQuestions = [];
+    @track surveyAnswers = {};
+    @track surveyIsLoading = false;
+    // Scheme
+    @track activeSchemesList = [];
+    @track schemeIsLoading = false;
+    // Ticket
+    @track visitTickets = [];
+    @track ticketForm = { category: '', priority: 'Medium', subject: '', description: '' };
+    @track ticketIsLoading = false;
 
     // ── DAY END ──
     @track showEndDayModal = false;
@@ -220,7 +276,29 @@ export default class VisitManager extends LightningElement {
     get isBeatSelectScreen() { return this.currentScreen === SCREEN.BEAT_SELECT; }
     get isVisitBoardScreen() { return this.currentScreen === SCREEN.VISIT_BOARD; }
     get isVisitActiveScreen() { return this.currentScreen === SCREEN.VISIT_ACTIVE; }
+    get isVisitActivityScreen() { return this.currentScreen === SCREEN.VISIT_ACTIVITY; }
     get isVisitDetailScreen() { return this.currentScreen === SCREEN.VISIT_DETAIL; }
+
+    // ── Activity type getters ──
+    get isStockCheckActivity() { return this.activeActivityId === 'stock_check'; }
+    get isCompetitorActivity() { return this.activeActivityId === 'competitor'; }
+    get isMerchandisingActivity() { return this.activeActivityId === 'merchandising'; }
+    get isSurveyActivity() { return this.activeActivityId === 'survey'; }
+    get isSchemeActivity() { return this.activeActivityId === 'scheme'; }
+    get isTicketActivity() { return this.activeActivityId === 'ticket'; }
+    get isOrderActivity() { return this.activeActivityId === 'order'; }
+    get isCollectionActivity() { return this.activeActivityId === 'collection'; }
+    get isReturnsActivity() { return this.activeActivityId === 'returns'; }
+    get activeActivityTitle() {
+        const titles = {
+            stock_check: 'Distributor Stock', competitor: 'Competitor Activity', merchandising: 'Merchandising Audit',
+            survey: 'Survey / Feedback', scheme: 'Scheme Info', ticket: 'Ticket / Complaint',
+            order: 'Order Entry', collection: 'Collection', returns: 'Returns'
+        };
+        return titles[this.activeActivityId] || 'Activity';
+    }
+    get activeAccountId() { return this.activeVisit ? this.activeVisit.Account__c : null; }
+    get activeVisitId() { return this.activeVisit ? this.activeVisit.Id : null; }
 
     // ═══════════════════════════════════════════════════
     // CLOCK & TIME
@@ -636,7 +714,8 @@ export default class VisitManager extends LightningElement {
         const accountId = e.currentTarget.dataset.accountId;
         const beatId = e.currentTarget.dataset.beatId;
         const jpdayId = e.currentTarget.dataset.jpdayId;
-        const existingVisitId = e.currentTarget.dataset.id || null;
+        const rawId = e.currentTarget.dataset.id || null;
+        const existingVisitId = (rawId && rawId.startsWith('planned_')) ? null : rawId;
 
         if (!accountId) { this._toast('Error', 'No outlet found.', 'error'); return; }
 
@@ -692,9 +771,10 @@ export default class VisitManager extends LightningElement {
 
     async _loadActivitiesData() {
         try {
-            const acts = await getInitialContext();
-            if (acts && acts.visitActivities) {
-                this.visitActivities = this._processActivities(acts.visitActivities);
+            const visitId = this.activeVisitId || null;
+            const activities = await getVisitActivitiesApex({ visitId });
+            if (activities && activities.length > 0) {
+                this.visitActivities = this._processActivities(activities);
             }
         } catch (e) {
             this.visitActivities = [
@@ -760,6 +840,27 @@ export default class VisitManager extends LightningElement {
     get activeOrderValue() { return INR.format(this.activeVisitSummary.totalOrderValue || 0); }
     get activeCollectionAmount() { return INR.format(this.activeVisitSummary.totalCollection || 0); }
     get activeReturnsCount() { return this.activeVisitSummary.returnsCount || 0; }
+    get activeMustSellCompliance() { return this.activeVisitSummary.mustSellCompliance; }
+    get activeMustSellOrdered() { return this.activeVisitSummary.mustSellOrdered || 0; }
+    get activeMustSellRequired() { return this.activeVisitSummary.mustSellRequired || 0; }
+    get hasActiveMustSellData() { return this.activeMustSellRequired > 0; }
+    get activeMustSellComplianceFormatted() {
+        if (this.activeMustSellCompliance == null) return '0%';
+        return Math.round(this.activeMustSellCompliance) + '%';
+    }
+    get activeMustSellSummaryText() {
+        return this.activeMustSellOrdered + '/' + this.activeMustSellRequired + ' must-sell products ordered';
+    }
+    get activeMustSellBarStyle() {
+        const pct = Math.min(this.activeMustSellCompliance || 0, 100);
+        const color = pct >= 100 ? '#2e844a' : (pct >= 50 ? '#dd7a01' : '#ea001e');
+        return 'width:' + pct + '%;background:' + color;
+    }
+    get activeMustSellBadgeClass() {
+        if (this.activeMustSellCompliance >= 100) return 'vm-compliance-badge vm-compliance-green';
+        if (this.activeMustSellCompliance >= 50) return 'vm-compliance-badge vm-compliance-yellow';
+        return 'vm-compliance-badge vm-compliance-red';
+    }
     get activeOrders() {
         return (this.activeVisitSummary.orders || []).map(o => ({
             ...o,
@@ -805,15 +906,539 @@ export default class VisitManager extends LightningElement {
 
     handleActiveVisitTab(e) { this.activeVisitTab = e.currentTarget.dataset.tab; }
 
-    handleToggleActivity(e) {
+    handleActivityClick(e) {
         const id = e.currentTarget.dataset.id;
-        this.visitActivities = this.visitActivities.map(a => {
-            if (a.id === id) {
-                const completed = !a.completed;
-                return { ...a, completed, cardClass: completed ? 'va-act-card va-act-done' : 'va-act-card' };
+        this.activeActivityId = id;
+        this.currentScreen = SCREEN.VISIT_ACTIVITY;
+        this._loadActivityData(id);
+    }
+
+    handleActivityBack() {
+        this.activeActivityId = null;
+        this.currentScreen = SCREEN.VISIT_ACTIVE;
+        this.handleRefreshVisitSummary();
+        this._loadActivitiesData();
+    }
+
+    handleActivityFormSuccess() {
+        this._toast('Success', 'Activity completed successfully.', 'success');
+        this.handleActivityBack();
+    }
+
+    async _loadActivityData(activityId) {
+        try {
+            switch (activityId) {
+                case 'stock_check': await this._loadStockCheckData(); break;
+                case 'competitor': await this._loadCompetitorData(); break;
+                case 'merchandising': await this._loadMerchandisingData(); break;
+                case 'survey': await this._loadSurveyData(); break;
+                case 'scheme': await this._loadSchemeData(); break;
+                case 'ticket': await this._loadTicketData(); break;
+                default: break;
             }
-            return a;
+        } catch (err) {
+            console.error('Error loading activity data:', err);
+        }
+    }
+
+    // ── Stock Check ──
+    async _loadStockCheckData() {
+        this.stockIsLoading = true;
+        this.stockProductSearch = '';
+        this.stockProductResults = [];
+        try {
+            const stock = await getDistributorStock({ accountId: this.activeAccountId });
+            this.stockCheckLines = (stock || []).map((s, idx) => ({
+                ...s, lineKey: s.Id || ('new-' + idx),
+                productName: s.Product_Ext__r ? s.Product_Ext__r.Name : '',
+                opening: s.Opening_Stock__c || 0, received: s.Received_Qty__c || 0,
+                sold: s.Sold_Qty__c || 0, closing: s.Closing_Stock__c || 0,
+                damaged: s.Damaged_Qty__c || 0, batch: s.Batch_No__c || '',
+                expiry: s.Expiry_Date__c || null
+            }));
+        } catch (e) { this.stockCheckLines = []; }
+        this.stockIsLoading = false;
+    }
+
+    handleStockProductSearch(e) {
+        const term = e.target.value;
+        this.stockProductSearch = term;
+        clearTimeout(this._stockSearchTimer);
+        if (term.length < 2) { this.stockProductResults = []; return; }
+        this._stockSearchTimer = setTimeout(async () => {
+            try {
+                const results = await getProductsForStockCheck({ searchTerm: term });
+                this.stockProductResults = results || [];
+            } catch (err) { this.stockProductResults = []; }
+        }, 300);
+    }
+
+    handleStockProductAdd(e) {
+        const productId = e.currentTarget.dataset.id;
+        const product = this.stockProductResults.find(p => p.Id === productId);
+        if (!product) return;
+        if (this.stockCheckLines.some(l => l.Product_Ext__c === productId)) {
+            this._toast('Info', 'Product already added.', 'info'); return;
+        }
+        this.stockCheckLines = [...this.stockCheckLines, {
+            lineKey: 'new-' + Date.now(), Product_Ext__c: productId,
+            productName: product.Name, opening: 0, received: 0,
+            sold: 0, closing: 0, damaged: 0, batch: '', expiry: null
+        }];
+        this.stockProductResults = [];
+        this.stockProductSearch = '';
+    }
+
+    handleStockQuantityChange(e) {
+        const field = e.target.dataset.field;
+        const key = e.target.dataset.key;
+        const numericFields = ['opening', 'received', 'sold', 'damaged'];
+        const val = numericFields.includes(field) ? (parseFloat(e.target.value) || 0) : e.target.value;
+        this.stockCheckLines = this.stockCheckLines.map(l => {
+            if (l.lineKey === key) {
+                const updated = { ...l, [field]: val };
+                updated.closing = (updated.opening || 0) + (updated.received || 0) - (updated.sold || 0) - (updated.damaged || 0);
+                return updated;
+            }
+            return l;
         });
+    }
+
+    handleStockLineRemove(e) {
+        const key = e.currentTarget.dataset.key;
+        this.stockCheckLines = this.stockCheckLines.filter(l => l.lineKey !== key);
+    }
+
+    async handleStockCheckSave() {
+        if (this.stockCheckLines.length === 0) {
+            this._toast('Warning', 'Please add at least one product.', 'warning'); return;
+        }
+        this.stockIsLoading = true;
+        try {
+            const entries = this.stockCheckLines.map(l => ({
+                id: l.Id || null, productId: l.Product_Ext__c,
+                opening: l.opening, received: l.received, sold: l.sold,
+                closing: l.closing, damaged: l.damaged,
+                batch: l.batch, expiry: l.expiry
+            }));
+            await saveStockEntries({
+                stockJson: JSON.stringify(entries),
+                visitId: this.activeVisitId, accountId: this.activeAccountId
+            });
+            this._toast('Success', 'Distributor stock saved.', 'success');
+            this.handleActivityBack();
+        } catch (err) {
+            this._toast('Error', this._err(err), 'error');
+        }
+        this.stockIsLoading = false;
+    }
+
+    // ── Competitor Activity ──
+    async _loadCompetitorData() {
+        this.competitorIsLoading = true;
+        try {
+            const [entries, companies] = await Promise.all([
+                getCompetitorEntriesForVisit({ visitId: this.activeVisitId }),
+                getCompetitorMaster()
+            ]);
+            this.competitorEntries = entries || [];
+            this.competitorCompanies = (companies || []).map(c => ({ label: c, value: c }));
+        } catch (e) { this.competitorEntries = []; this.competitorCompanies = []; }
+        this.competitorIsLoading = false;
+        this.competitorForm = { competitorCompany: '', competitorSKU: '', competitorPrice: null, ownProductId: null, ownProductName: '', notes: '' };
+        this.competitorProductSearch = '';
+        this.competitorProductResults = [];
+        this.competitorShowProductSearch = false;
+    }
+
+    handleCompetitorFormChange(e) {
+        const field = e.target.dataset.field;
+        const val = e.target.value;
+        this.competitorForm = { ...this.competitorForm, [field]: val };
+        if (field === 'competitorCompany') {
+            if (val && val.length > 0 && this.competitorCompanies.length > 0) {
+                const search = val.toLowerCase();
+                this.competitorFilteredCompanies = this.competitorCompanies.filter(c => c.label.toLowerCase().includes(search));
+                this.competitorShowSuggestions = this.competitorFilteredCompanies.length > 0;
+            } else {
+                this.competitorShowSuggestions = false;
+                this.competitorFilteredCompanies = [];
+            }
+        }
+    }
+
+    handleCompetitorCompanyFocus() {
+        if (this.competitorCompanies.length > 0) {
+            this.competitorFilteredCompanies = this.competitorCompanies;
+            this.competitorShowSuggestions = true;
+        }
+    }
+
+    handleCompetitorCompanyBlur() {
+        // Delay to allow click on suggestion
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        setTimeout(() => { this.competitorShowSuggestions = false; }, 250);
+    }
+
+    handleCompetitorSuggestionClick(e) {
+        const company = e.currentTarget.dataset.value;
+        this.competitorForm = { ...this.competitorForm, competitorCompany: company };
+        this.competitorShowSuggestions = false;
+    }
+
+    async handleCompetitorProductSearchChange(e) {
+        const term = e.target.value;
+        this.competitorProductSearch = term;
+        if (term && term.length >= 2) {
+            try {
+                const results = await getProductsForStockCheck({ searchTerm: term });
+                this.competitorProductResults = results || [];
+                this.competitorShowProductSearch = this.competitorProductResults.length > 0;
+            } catch (err) {
+                this.competitorProductResults = [];
+                this.competitorShowProductSearch = false;
+            }
+        } else {
+            this.competitorProductResults = [];
+            this.competitorShowProductSearch = false;
+        }
+    }
+
+    handleCompetitorProductSelect(e) {
+        const productId = e.currentTarget.dataset.id;
+        const productName = e.currentTarget.dataset.name;
+        this.competitorForm = { ...this.competitorForm, ownProductId: productId, ownProductName: productName };
+        this.competitorProductSearch = '';
+        this.competitorProductResults = [];
+        this.competitorShowProductSearch = false;
+    }
+
+    handleCompetitorProductClear() {
+        this.competitorForm = { ...this.competitorForm, ownProductId: null, ownProductName: '' };
+        this.competitorProductSearch = '';
+    }
+
+    async handleCompetitorSave() {
+        if (!this.competitorForm.competitorCompany) {
+            this._toast('Warning', 'Please enter competitor company.', 'warning'); return;
+        }
+        this.competitorIsLoading = true;
+        try {
+            const entryData = {
+                visitId: this.activeVisitId, accountId: this.activeAccountId,
+                competitorCompany: this.competitorForm.competitorCompany,
+                competitorSKU: this.competitorForm.competitorSKU,
+                competitorPrice: this.competitorForm.competitorPrice ? parseFloat(this.competitorForm.competitorPrice) : null,
+                ownProductId: this.competitorForm.ownProductId,
+                notes: this.competitorForm.notes
+            };
+            await saveCompetitorEntry({ entryJson: JSON.stringify(entryData) });
+            this._toast('Success', 'Competitor entry saved.', 'success');
+            await this._loadCompetitorData();
+        } catch (err) {
+            this._toast('Error', this._err(err), 'error');
+        }
+        this.competitorIsLoading = false;
+    }
+
+    async handleCompetitorDelete(e) {
+        const entryId = e.currentTarget.dataset.id;
+        this.competitorIsLoading = true;
+        try {
+            await deleteCompetitorEntry({ entryId });
+            this._toast('Success', 'Entry removed.', 'success');
+            await this._loadCompetitorData();
+        } catch (err) { this._toast('Error', this._err(err), 'error'); }
+        this.competitorIsLoading = false;
+    }
+
+    // ── Merchandising Audit ──
+    async _loadMerchandisingData() {
+        this.merchandisingIsLoading = true;
+        try {
+            const merch = await getMerchandisingForVisit({ visitId: this.activeVisitId });
+            if (merch) {
+                this.merchandisingRecord = {
+                    id: merch.Id,
+                    ownShelfShare: merch.Own_Shelf_Share__c, competitorShelfShare: merch.Competitor_Shelf_Share__c,
+                    planogramCompliant: merch.Planogram_Compliant__c || false,
+                    posmPresent: merch.POSM_Present__c || false, posmCondition: merch.POSM_Condition__c || '',
+                    notes: merch.Notes__c || ''
+                };
+            } else {
+                this.merchandisingRecord = { ownShelfShare: null, competitorShelfShare: null, planogramCompliant: false, posmPresent: false, posmCondition: '', notes: '' };
+            }
+        } catch (e) {
+            this.merchandisingRecord = { ownShelfShare: null, competitorShelfShare: null, planogramCompliant: false, posmPresent: false, posmCondition: '', notes: '' };
+        }
+        this.merchandisingIsLoading = false;
+    }
+
+    handleMerchandisingChange(e) {
+        const field = e.target.dataset.field;
+        let value = e.target.type === 'toggle' || e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        this.merchandisingRecord = { ...this.merchandisingRecord, [field]: value };
+    }
+
+    async handleMerchandisingSave() {
+        this.merchandisingIsLoading = true;
+        try {
+            const data = {
+                id: this.merchandisingRecord.id || null,
+                visitId: this.activeVisitId, accountId: this.activeAccountId,
+                ownShelfShare: this.merchandisingRecord.ownShelfShare ? parseFloat(this.merchandisingRecord.ownShelfShare) : null,
+                competitorShelfShare: this.merchandisingRecord.competitorShelfShare ? parseFloat(this.merchandisingRecord.competitorShelfShare) : null,
+                planogramCompliant: this.merchandisingRecord.planogramCompliant,
+                posmPresent: this.merchandisingRecord.posmPresent,
+                posmCondition: this.merchandisingRecord.posmCondition,
+                notes: this.merchandisingRecord.notes
+            };
+            await saveMerchandising({ merchandisingJson: JSON.stringify(data) });
+            this._toast('Success', 'Merchandising audit saved.', 'success');
+            this.handleActivityBack();
+        } catch (err) {
+            this._toast('Error', this._err(err), 'error');
+        }
+        this.merchandisingIsLoading = false;
+    }
+
+    // ── Survey / Feedback ──
+    async _loadSurveyData() {
+        this.surveyIsLoading = true;
+        this.selectedSurvey = null;
+        this.surveyQuestions = [];
+        this.surveyAnswers = {};
+        try {
+            const surveys = await getApplicableSurveys({ accountId: this.activeAccountId });
+            this.applicableSurveys = (surveys || []).map(s => ({ label: s.Name, value: s.Id, ...s }));
+            if (this.applicableSurveys.length === 1) {
+                await this._selectSurvey(this.applicableSurveys[0].Id);
+            }
+        } catch (e) { this.applicableSurveys = []; }
+        this.surveyIsLoading = false;
+    }
+
+    async handleSurveySelect(e) {
+        const surveyId = e.detail.value;
+        await this._selectSurvey(surveyId);
+    }
+
+    async _selectSurvey(surveyId) {
+        this.surveyIsLoading = true;
+        try {
+            const result = await getSurveyWithQuestions({ surveyId });
+            this.selectedSurvey = result.survey;
+            this.surveyQuestions = (result.questions || []).map(q => ({
+                ...q,
+                isText: q.Question_Type__c === 'Text',
+                isNumber: q.Question_Type__c === 'Number',
+                isRating: q.Question_Type__c === 'Rating',
+                isSingleChoice: q.Question_Type__c === 'Single Choice',
+                isMultipleChoice: q.Question_Type__c === 'Multiple Choice',
+                isPhoto: q.Question_Type__c === 'Photo',
+                isDate: q.Question_Type__c === 'Date',
+                options: this._parseOptions(q.Options__c),
+                selectedValue: '',
+                selectedValues: [],
+                ratingOptions: [1, 2, 3, 4, 5].map(n => ({ value: n, label: '' + n, cls: 'vm-star' }))
+            }));
+            this.surveyAnswers = {};
+        } catch (e) { this.surveyQuestions = []; }
+        this.surveyIsLoading = false;
+    }
+
+    handleAnswerChange(e) {
+        const qId = e.target.dataset.questionId || e.currentTarget.dataset.questionId;
+        const type = e.target.dataset.type || e.currentTarget.dataset.type;
+        let value = e.target.value;
+        if (type === 'rating') value = parseInt(e.currentTarget.dataset.value, 10);
+        if (type === 'Multiple Choice') value = e.detail.value;
+        this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type, value } };
+        if (type === 'rating' || type === 'Single Choice' || type === 'Multiple Choice') {
+            this.surveyQuestions = this.surveyQuestions.map(q => {
+                if (q.Id !== qId) return q;
+                const updated = { ...q };
+                if (type === 'rating') {
+                    updated.ratingOptions = q.ratingOptions.map(r => ({
+                        ...r, cls: r.value <= value ? 'vm-star vm-star-filled' : 'vm-star'
+                    }));
+                } else if (type === 'Single Choice') {
+                    updated.selectedValue = value;
+                } else if (type === 'Multiple Choice') {
+                    updated.selectedValues = value;
+                }
+                return updated;
+            });
+        }
+    }
+
+    handleSurveyPhotoUpload(e) {
+        const qId = e.target.dataset.questionId;
+        this._processPhoto(e, async (base64, preview) => {
+            // Show uploading state and preview
+            this.surveyQuestions = this.surveyQuestions.map(q =>
+                q.Id === qId ? { ...q, photoUploading: true, photoPreview: preview } : q
+            );
+            try {
+                const fileName = 'SurveyPhoto_' + qId + '_' + Date.now();
+                const contentVersionId = await uploadSurveyPhoto({ base64Data: base64, fileName });
+                this.surveyAnswers = { ...this.surveyAnswers, [qId]: { type: 'Photo', value: contentVersionId } };
+                this.surveyQuestions = this.surveyQuestions.map(q =>
+                    q.Id === qId ? { ...q, photoUploading: false } : q
+                );
+            } catch (err) {
+                this._toast('Error', 'Failed to upload photo.', 'error');
+                this.surveyQuestions = this.surveyQuestions.map(q =>
+                    q.Id === qId ? { ...q, photoUploading: false, photoPreview: null } : q
+                );
+            }
+        });
+    }
+
+    async handleSurveySubmit() {
+        // Validate required questions
+        const unanswered = this.surveyQuestions
+            .filter(q => q.Is_Required__c)
+            .filter(q => {
+                const ans = this.surveyAnswers[q.Id];
+                if (!ans) return true;
+                const v = ans.value;
+                if (v == null || v === '') return true;
+                if (Array.isArray(v) && v.length === 0) return true;
+                return false;
+            });
+        if (unanswered.length > 0) {
+            this._toast('Required', 'Please answer all mandatory questions marked with *.', 'error');
+            return;
+        }
+
+        this.surveyIsLoading = true;
+        try {
+            const answers = Object.entries(this.surveyAnswers).map(([qId, ans]) => ({
+                questionId: qId,
+                answerText: (ans.type === 'Text' || ans.type === 'Date') ? ans.value : null,
+                answerChoice: (ans.type === 'Single Choice' || ans.type === 'Multiple Choice') ? (Array.isArray(ans.value) ? ans.value.join(';') : ans.value) : null,
+                answerNumber: ans.type === 'Number' ? parseFloat(ans.value) : null,
+                ratingValue: ans.type === 'rating' ? ans.value : null,
+                photoContentVersionId: ans.type === 'Photo' ? ans.value : null
+            }));
+            const responseData = {
+                visitId: this.activeVisitId, accountId: this.activeAccountId,
+                surveyId: this.selectedSurvey.Id, answers
+            };
+            await submitSurveyResponse({ responseJson: JSON.stringify(responseData) });
+            this._toast('Success', 'Survey submitted.', 'success');
+            this.handleActivityBack();
+        } catch (err) {
+            this._toast('Error', this._err(err), 'error');
+        }
+        this.surveyIsLoading = false;
+    }
+
+    get surveyOptions() {
+        return this.applicableSurveys.map(s => ({ label: s.label, value: s.value }));
+    }
+
+    get hasSurveyQuestions() { return this.surveyQuestions.length > 0; }
+    get hasMultipleSurveys() { return this.applicableSurveys.length > 1; }
+
+    _parseOptions(optionsRaw) {
+        if (!optionsRaw) return [];
+        const trimmed = optionsRaw.trim();
+        // Support JSON array format: ["A","B"] or [{"label":"A","value":"a"}]
+        if (trimmed.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                return parsed.map(item =>
+                    typeof item === 'string'
+                        ? { label: item, value: item }
+                        : { label: item.label || item.value, value: item.value || item.label }
+                ).filter(o => o.value);
+            } catch (e) { /* fall through to semicolon split */ }
+        }
+        // Semicolon-separated format: "Yes;No;Partially"
+        return trimmed.split(';').map(o => o.trim()).filter(o => o).map(o => ({ label: o, value: o }));
+    }
+
+    // ── Scheme Info ──
+    async _loadSchemeData() {
+        this.schemeIsLoading = true;
+        try {
+            this.activeSchemesList = await getActiveSchemes({ accountId: this.activeAccountId }) || [];
+        } catch (e) {
+            this.activeSchemesList = [];
+            this._toast('Error', 'Failed to load schemes: ' + this._err(e), 'error');
+        }
+        this.schemeIsLoading = false;
+    }
+
+    get hasActiveSchemes() { return this.activeSchemesList.length > 0; }
+
+    // ── Ticket / Complaint ──
+    async _loadTicketData() {
+        this.ticketIsLoading = true;
+        try {
+            this.visitTickets = await getTicketsForVisit({ visitId: this.activeVisitId }) || [];
+        } catch (e) { this.visitTickets = []; }
+        this.ticketIsLoading = false;
+        this.ticketForm = { category: '', priority: 'Medium', subject: '', description: '' };
+    }
+
+    handleTicketFormChange(e) {
+        const field = e.target.dataset.field;
+        this.ticketForm = { ...this.ticketForm, [field]: e.target.value };
+    }
+
+    async handleTicketSave() {
+        if (!this.ticketForm.subject) {
+            this._toast('Warning', 'Please enter a subject.', 'warning'); return;
+        }
+        this.ticketIsLoading = true;
+        try {
+            const data = {
+                visitId: this.activeVisitId, accountId: this.activeAccountId,
+                category: this.ticketForm.category, priority: this.ticketForm.priority,
+                subject: this.ticketForm.subject, description: this.ticketForm.description
+            };
+            await createTicket({ ticketJson: JSON.stringify(data) });
+            this._toast('Success', 'Ticket created.', 'success');
+            await this._loadTicketData();
+        } catch (err) {
+            this._toast('Error', this._err(err), 'error');
+        }
+        this.ticketIsLoading = false;
+    }
+
+    get hasVisitTickets() { return this.visitTickets.length > 0; }
+
+    get ticketCategoryOptions() {
+        return [
+            { label: 'Product Quality', value: 'Product Quality' },
+            { label: 'Delivery Issue', value: 'Delivery Issue' },
+            { label: 'Pricing Dispute', value: 'Pricing Dispute' },
+            { label: 'Service Request', value: 'Service Request' },
+            { label: 'Scheme Claim', value: 'Scheme Claim' },
+            { label: 'Other', value: 'Other' }
+        ];
+    }
+
+    get ticketPriorityOptions() {
+        return [
+            { label: 'Low', value: 'Low' },
+            { label: 'Medium', value: 'Medium' },
+            { label: 'High', value: 'High' },
+            { label: 'Critical', value: 'Critical' }
+        ];
+    }
+
+    get posmConditionOptions() {
+        return [
+            { label: 'Good', value: 'Good' },
+            { label: 'Average', value: 'Average' },
+            { label: 'Poor', value: 'Poor' },
+            { label: 'Damaged', value: 'Damaged' },
+            { label: 'Missing', value: 'Missing' }
+        ];
     }
 
     async handleRefreshVisitSummary() {
@@ -842,12 +1467,25 @@ export default class VisitManager extends LightningElement {
 
         this.detailVisit = visit;
         this.detailVisitSummary = {};
+        this.detailSurveyResponses = [];
         this.detailVisitTab = 'orders';
         this.currentScreen = SCREEN.VISIT_DETAIL;
 
         try {
             this.isProcessing = true;
-            this.detailVisitSummary = await refreshVisitSummary({ visitId }) || {};
+            const [summary, surveyResp] = await Promise.all([
+                refreshVisitSummary({ visitId }),
+                getSurveyResponsesForVisit({ visitId }).catch(() => [])
+            ]);
+            this.detailVisitSummary = summary || {};
+            this.detailSurveyResponses = (surveyResp || []).map(r => ({
+                ...r,
+                responseDateFmt: r.responseDate ? new Date(r.responseDate).toLocaleDateString() : '',
+                answers: (r.answers || []).map(a => ({
+                    ...a,
+                    ratingStars: a.isRating ? this._buildRatingStars(a.ratingValue) : []
+                }))
+            }));
         } catch (err) {
             this._toast('Error', 'Failed to load visit details.', 'error');
         } finally {
@@ -858,6 +1496,7 @@ export default class VisitManager extends LightningElement {
     handleBackToBoardFromDetail() {
         this.detailVisit = null;
         this.detailVisitSummary = {};
+        this.detailSurveyResponses = [];
         this.currentScreen = SCREEN.VISIT_BOARD;
     }
 
@@ -909,14 +1548,25 @@ export default class VisitManager extends LightningElement {
     get hasDetailOrders() { return this.detailOrders.length > 0; }
     get hasDetailCollections() { return this.detailCollections.length > 0; }
     get hasDetailReturns() { return this.detailReturns.length > 0; }
+    get hasDetailSurveyResponses() { return this.detailSurveyResponses.length > 0; }
 
     // Detail tabs
     get isDetailOrdersTab() { return this.detailVisitTab === 'orders'; }
     get isDetailCollectionsTab() { return this.detailVisitTab === 'collections'; }
     get isDetailReturnsTab() { return this.detailVisitTab === 'returns'; }
+    get isDetailSurveysTab() { return this.detailVisitTab === 'surveys'; }
     get detailOrdersTabCls() { return 'vm-tab' + (this.isDetailOrdersTab ? ' vm-tab-active' : ''); }
     get detailCollectionsTabCls() { return 'vm-tab' + (this.isDetailCollectionsTab ? ' vm-tab-active' : ''); }
     get detailReturnsTabCls() { return 'vm-tab' + (this.isDetailReturnsTab ? ' vm-tab-active' : ''); }
+    get detailSurveysTabCls() { return 'vm-tab' + (this.isDetailSurveysTab ? ' vm-tab-active' : ''); }
+
+    _buildRatingStars(value) {
+        const v = value ? parseInt(value, 10) : 0;
+        return [1, 2, 3, 4, 5].map(n => ({
+            value: n,
+            cls: n <= v ? 'vm-star vm-star-filled' : 'vm-star'
+        }));
+    }
 
     // ═══════════════════════════════════════════════════
     // CHECKOUT
@@ -944,7 +1594,7 @@ export default class VisitManager extends LightningElement {
 
     handleCheckoutClick() {
         this.checklistItems = [
-            { id: 'stock', label: 'Was stock check completed?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
+            { id: 'stock', label: 'Was distributor stock captured?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
             { id: 'display', label: 'Was product display verified?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
             { id: 'feedback', label: 'Was retailer feedback captured?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' },
             { id: 'scheme', label: 'Was scheme communication done?', answer: null, yesClass: 'vm-yn-btn', noClass: 'vm-yn-btn' }

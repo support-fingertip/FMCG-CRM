@@ -3,7 +3,7 @@
     <fullName>Band__c</fullName>
     <label>Band</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

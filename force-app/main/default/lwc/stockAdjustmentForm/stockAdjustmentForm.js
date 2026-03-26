@@ -5,7 +5,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { createRecord } from 'lightning/uiRecordApi';
 import STOCK_ADJUSTMENT_OBJECT from '@salesforce/schema/Stock_Adjustment__c';
 import WAREHOUSE_FIELD from '@salesforce/schema/Stock_Adjustment__c.Warehouse__c';
-import PRODUCT_FIELD from '@salesforce/schema/Stock_Adjustment__c.Product__c';
+import PRODUCT_FIELD from '@salesforce/schema/Stock_Adjustment__c.Product_Ext__c';
 import BATCH_FIELD from '@salesforce/schema/Stock_Adjustment__c.Batch_Number__c';
 import ADJ_TYPE_FIELD from '@salesforce/schema/Stock_Adjustment__c.Adjustment_Type__c';
 import SYSTEM_QTY_FIELD from '@salesforce/schema/Stock_Adjustment__c.System_Qty__c';

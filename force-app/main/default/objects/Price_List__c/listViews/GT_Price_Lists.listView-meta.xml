@@ -2,7 +2,11 @@
 <ListView xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>GT_Price_Lists</fullName>
     <columns>NAME</columns>
-    <columns>Product__c</columns>
+    <columns>Priority__c</columns>
+    <columns>Product_Ext__c</columns>
+    <columns>Customer__c</columns>
+    <columns>Category__c</columns>
+    <columns>Territory__c</columns>
     <columns>Unit_Price__c</columns>
     <columns>Price_Type__c</columns>
     <columns>Region__c</columns>

@@ -17,7 +17,7 @@ public with sharing class InvoicePDFController {
                           Account__r.ShippingState, Account__r.ShippingPostalCode
                    FROM Invoice__c WHERE Id = :invoice.Id];
 
-        List<Invoice_Line__c> lines = [SELECT Id, Product__r.Name, HSN_SAC_Code__c,
+        List<Invoice_Line__c> lines = [SELECT Id, Product_Ext__r.Name, HSN_SAC_Code__c,
                                               Quantity__c, Unit_Price__c, Discount__c,
                                               CGST__c, SGST__c, IGST__c, Tax_Amount__c, Line_Total__c,
                                               Batch_No__c, Expiry_Date__c

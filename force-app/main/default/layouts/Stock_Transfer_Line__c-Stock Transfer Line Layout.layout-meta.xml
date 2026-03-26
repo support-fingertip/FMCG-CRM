@@ -16,7 +16,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>Product__c</field>
+                <field>Product_Ext__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -76,7 +76,7 @@
         <style>CustomLinks</style>
     </layoutSections>
     <miniLayout>
-        <fields>Product__c</fields>
+        <fields>Product_Ext__c</fields>
         <fields>Requested_Qty__c</fields>
         <fields>Approved_Qty__c</fields>
         <fields>Received_Qty__c</fields>

@@ -3,7 +3,7 @@
     <fullName>Type__c</fullName>
     <label>Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>From_UOM__c</fullName>
+    <label>From UOM</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>UOM__c</referenceTo>
+    <relationshipLabel>Conversions (From)</relationshipLabel>
+    <relationshipName>Conversions_From</relationshipName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description>The source unit of measure for this conversion</description>
+</CustomField>

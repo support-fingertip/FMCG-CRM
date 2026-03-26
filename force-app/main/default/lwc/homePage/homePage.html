@@ -1,0 +1,608 @@
+<template>
+    <!-- ═══════════════════════════════════════════════
+         LOADING STATE
+         ═══════════════════════════════════════════════ -->
+    <template if:true={isLoading}>
+        <div class="hp-loading">
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            <p class="hp-loading-text">Loading Home Page...</p>
+        </div>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════
+         MAIN CONTENT
+         ═══════════════════════════════════════════════ -->
+    <template if:false={isLoading}>
+        <!-- HEADER -->
+        <div class="hp-header">
+            <div class="hp-header-left">
+                <lightning-icon icon-name="standard:home" size="small"></lightning-icon>
+                <div class="hp-header-text">
+                    <h1 class="hp-header-title">Field Sales CRM</h1>
+                    <span class="hp-header-date">{currentTime}</span>
+                </div>
+            </div>
+            <div class="hp-header-right">
+                <button class="hp-refresh-btn" onclick={handleRefresh} title="Refresh">
+                    <lightning-icon icon-name="utility:refresh" size="xx-small" variant="inverse"></lightning-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB NAVIGATION -->
+        <nav class="hp-tab-bar">
+            <template for:each={tabItems} for:item="tab">
+                <button key={tab.key}
+                        class={tab.cssClass}
+                        data-tab={tab.key}
+                        onclick={handleTabClick}>
+                    <lightning-icon icon-name={tab.icon} size="xx-small"></lightning-icon>
+                    <span class="hp-tab-label">{tab.label}</span>
+                </button>
+            </template>
+        </nav>
+
+        <!-- TAB CONTENT AREA -->
+        <div class="hp-content">
+
+            <!-- ═══════ DASHBOARD TAB ═══════ -->
+            <template if:true={isDashboard}>
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Today's Overview</h2>
+
+                    <!-- Summary Cards Row -->
+                    <div class="hp-stat-grid">
+                        <!-- Attendance Card -->
+                        <div class="hp-stat-card hp-card-blue" data-target="Visit_Manager" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:log_a_call" size="small"></lightning-icon>
+                                <span class={attendanceBadgeClass}>{data.attendanceStatus}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Day Status</span>
+                            </div>
+                        </div>
+
+                        <!-- Visit Progress Card -->
+                        <div class="hp-stat-card hp-card-green" data-target="Visit_Manager" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:visit" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.completedVisitCount}/{data.todayVisitCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Visits Completed</span>
+                                <div class="hp-progress-bar">
+                                    <div class="hp-progress-fill hp-fill-green" style={visitProgressStyle}></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Orders -->
+                        <div class="hp-stat-card hp-card-orange" data-object="Sales_Order__c" onclick={navigateToObject}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:orders" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.pendingOrderCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Pending Orders</span>
+                            </div>
+                        </div>
+
+                        <!-- Pending Collections -->
+                        <div class="hp-stat-card hp-card-purple" data-object="Collection__c" onclick={navigateToObject}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:currency" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.pendingCollectionCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Pending Collections</span>
+                            </div>
+                        </div>
+
+                        <!-- Open Tickets -->
+                        <div class="hp-stat-card hp-card-red" data-object="Ticket__c" onclick={navigateToObject}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:case" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.openTicketCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Open Tickets</span>
+                            </div>
+                        </div>
+
+                        <!-- Active Schemes -->
+                        <div class="hp-stat-card hp-card-teal" data-target="Scheme_Manager" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:reward" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.activeSchemeCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Active Schemes</span>
+                            </div>
+                        </div>
+
+                        <!-- Pending Returns -->
+                        <div class="hp-stat-card hp-card-orange" data-object="Return_Order__c" onclick={navigateToObject}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="standard:return_order" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.pendingReturnCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Pending Returns</span>
+                            </div>
+                        </div>
+
+                        <!-- Low Stock Alerts -->
+                        <div class="hp-stat-card hp-card-red" data-target="Stock_Dashboard" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="utility:warning" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.lowStockAlertCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Low Stock Alerts</span>
+                            </div>
+                        </div>
+
+                        <!-- Near Expiry Batches -->
+                        <div class="hp-stat-card hp-card-orange" data-target="Product_Management_Hub" onclick={navigateTo}>
+                            <div class="hp-stat-header">
+                                <lightning-icon icon-name="utility:clock" size="small"></lightning-icon>
+                                <span class="hp-stat-number">{data.nearExpiryBatchCount}</span>
+                            </div>
+                            <div class="hp-stat-body">
+                                <span class="hp-stat-label">Near Expiry Batches</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Quick Actions</h2>
+                    <div class="hp-quick-grid">
+                        <div class="hp-quick-card" data-target="Visit_Manager" onclick={navigateTo}>
+                            <div class="hp-quick-icon hp-icon-blue">
+                                <lightning-icon icon-name="utility:checkin" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">Start Day</span>
+                        </div>
+                        <div class="hp-quick-card" data-target="Visit_Manager" onclick={navigateTo}>
+                            <div class="hp-quick-icon hp-icon-green">
+                                <lightning-icon icon-name="utility:location" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">Visit Board</span>
+                        </div>
+                        <div class="hp-quick-card" data-target="Beat_Manager" onclick={navigateTo}>
+                            <div class="hp-quick-icon hp-icon-orange">
+                                <lightning-icon icon-name="utility:routing_offline" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">Beat Plan</span>
+                        </div>
+                        <div class="hp-quick-card" data-object="Sales_Order__c" onclick={navigateToObject}>
+                            <div class="hp-quick-icon hp-icon-purple">
+                                <lightning-icon icon-name="utility:cart" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">New Order</span>
+                        </div>
+                        <div class="hp-quick-card" data-object="Collection__c" onclick={navigateToObject}>
+                            <div class="hp-quick-icon hp-icon-teal">
+                                <lightning-icon icon-name="utility:money" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">Collections</span>
+                        </div>
+                        <div class="hp-quick-card" data-target="Product_Catalog" onclick={navigateTo}>
+                            <div class="hp-quick-icon hp-icon-red">
+                                <lightning-icon icon-name="utility:product_consumed" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">Catalog</span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ═══════ FIELD OPS TAB ═══════ -->
+            <template if:true={isFieldOps}>
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Visit & Field Operations</h2>
+                    <div class="hp-nav-grid">
+                        <div class="hp-nav-card" data-target="Visit_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:visit" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Visit Manager</h3>
+                                <p class="hp-nav-desc">Day start/end, visit check-in/out, and activity tracking</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Beat_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:shift" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Beat Manager</h3>
+                                <p class="hp-nav-desc">Create and manage beats, assign outlets to beats</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Beat_Calendar" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-green">
+                                <lightning-icon icon-name="standard:event" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Beat Plan Calendar</h3>
+                                <p class="hp-nav-desc">Weekly and monthly beat planning calendar view</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Team_Visit_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-purple">
+                                <lightning-icon icon-name="standard:dashboard" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Team Visit Dashboard</h3>
+                                <p class="hp-nav-desc">Monitor team visit performance and coverage</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Visit__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-teal">
+                                <lightning-icon icon-name="standard:record" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Visit Records</h3>
+                                <p class="hp-nav-desc">Browse and search all visit records</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Journey_Plan__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:travel_mode" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Journey Plans</h3>
+                                <p class="hp-nav-desc">View and manage journey plan assignments</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ═══════ SALES TAB ═══════ -->
+            <template if:true={isSales}>
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Sales & Orders</h2>
+                    <div class="hp-nav-grid">
+                        <div class="hp-nav-card" data-object="Sales_Order__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:orders" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Sales Orders</h3>
+                                <p class="hp-nav-desc">View and manage sales orders</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Collection__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-green">
+                                <lightning-icon icon-name="standard:currency" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Collections</h3>
+                                <p class="hp-nav-desc">Payment collection tracking and management</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Return_Order__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-red">
+                                <lightning-icon icon-name="standard:return_order" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Return Orders</h3>
+                                <p class="hp-nav-desc">Process and track product returns</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Invoice__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:contract" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Invoices</h3>
+                                <p class="hp-nav-desc">View invoices and billing records</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Scheme_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-purple">
+                                <lightning-icon icon-name="standard:reward" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Scheme Manager</h3>
+                                <p class="hp-nav-desc">Trade schemes, discounts, and promotions</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="standard-Account" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-teal">
+                                <lightning-icon icon-name="standard:account" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Accounts / Outlets</h3>
+                                <p class="hp-nav-desc">Customer accounts and outlet management</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Competitor__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:competitive" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Competitors</h3>
+                                <p class="hp-nav-desc">Competitor tracking and intelligence</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Target__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-green">
+                                <lightning-icon icon-name="standard:goals" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Targets</h3>
+                                <p class="hp-nav-desc">Sales targets and achievement tracking</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ═══════ INVENTORY TAB ═══════ -->
+            <template if:true={isInventory}>
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Inventory & Products</h2>
+                    <div class="hp-nav-grid">
+                        <div class="hp-nav-card" data-target="Stock_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:product_item" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Stock Dashboard</h3>
+                                <p class="hp-nav-desc">Stock levels, low-stock alerts, and expiry tracking</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Warehouse_Stock_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-green">
+                                <lightning-icon icon-name="standard:location" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Warehouse Dashboard</h3>
+                                <p class="hp-nav-desc">Warehouse-wise inventory management</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Product_Catalog" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-purple">
+                                <lightning-icon icon-name="standard:product" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Product Catalog</h3>
+                                <p class="hp-nav-desc">Browse and search product listings</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Product_Management_Hub" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:product_workspace" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Product Management Hub</h3>
+                                <p class="hp-nav-desc">Products, pricing, categories, UOM, and conversions</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Stock_Transfer__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-teal">
+                                <lightning-icon icon-name="standard:asset_action" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Stock Transfers</h3>
+                                <p class="hp-nav-desc">Inter-location stock transfer records</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Product_Management_Hub" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-red">
+                                <lightning-icon icon-name="standard:data_transforms" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">UOM & Conversions</h3>
+                                <p class="hp-nav-desc">UOM master and conversion rules (in Product Hub)</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ═══════ HR & EXPENSE TAB ═══════ -->
+            <template if:true={isHr}>
+                <div class="hp-section">
+                    <h2 class="hp-section-title">HR, Attendance & Expenses</h2>
+                    <div class="hp-nav-grid">
+                        <div class="hp-nav-card" data-target="Employee_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:people" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Employee Manager</h3>
+                                <p class="hp-nav-desc">Employee records and profile management</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Team_Attendance_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-green">
+                                <lightning-icon icon-name="standard:date_input" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Team Attendance</h3>
+                                <p class="hp-nav-desc">Team attendance tracking and reports</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Leave_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:time_off" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Leave Manager</h3>
+                                <p class="hp-nav-desc">Apply for leave and view leave balance</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Leave_Approval" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-purple">
+                                <lightning-icon icon-name="standard:approval" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Leave Approval</h3>
+                                <p class="hp-nav-desc">Approve or reject team leave requests</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Holiday_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-teal">
+                                <lightning-icon icon-name="standard:today" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Holiday Manager</h3>
+                                <p class="hp-nav-desc">Holiday calendar and configuration</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Expense_Manager" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-red">
+                                <lightning-icon icon-name="standard:expense" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Expense Manager</h3>
+                                <p class="hp-nav-desc">Submit and track expense claims</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Expense_Eligibility_Admin" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:settings" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Expense Eligibility</h3>
+                                <p class="hp-nav-desc">Configure expense eligibility rules</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ═══════ ADMIN TAB ═══════ -->
+            <template if:true={isAdmin}>
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Administration & Configuration</h2>
+                    <div class="hp-nav-grid">
+                        <div class="hp-nav-card" data-target="FSCRM_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:dashboard" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">CRM Dashboard</h3>
+                                <p class="hp-nav-desc">Overall CRM analytics and KPI reports</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Territory_Master__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-green">
+                                <lightning-icon icon-name="standard:address" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Territory Master</h3>
+                                <p class="hp-nav-desc">Territory hierarchy and assignments</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Channel_Partner__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:partners" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Channel Partners</h3>
+                                <p class="hp-nav-desc">Distributor and partner management</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Survey__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-purple">
+                                <lightning-icon icon-name="standard:survey" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Surveys</h3>
+                                <p class="hp-nav-desc">Survey templates and responses</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Merchandising__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-teal">
+                                <lightning-icon icon-name="standard:retail_store" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Merchandising</h3>
+                                <p class="hp-nav-desc">Visual merchandising records and audits</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Warehouse__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-red">
+                                <lightning-icon icon-name="standard:location" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Warehouses</h3>
+                                <p class="hp-nav-desc">Warehouse master records</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+        </div>
+    </template>
+</template>

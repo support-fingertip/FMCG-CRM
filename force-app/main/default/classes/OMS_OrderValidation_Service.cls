@@ -115,7 +115,7 @@ public without sharing class OMS_OrderValidation_Service {
             FROM Sales_Order__c
             WHERE Account__c IN :accountIds
               AND Order_Date__c IN :orderDates
-              AND Order_Status__c NOT IN ('Cancelled', 'Rejected')
+              AND Status__c NOT IN ('Cancelled', 'Rejected')
             ORDER BY CreatedDate DESC
         ]) {
             String key = buildDuplicateKey(

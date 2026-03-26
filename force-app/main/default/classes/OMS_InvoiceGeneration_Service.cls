@@ -31,7 +31,7 @@ public without sharing class OMS_InvoiceGeneration_Service {
                    Shipping_State__c, Warehouse_State__c, Warehouse__c,
                    Shipping_Address__c, Billing_Address__c,
                    Payment_Terms__c,
-                   (SELECT Id, Product__c, Quantity__c, Unit_Price__c,
+                   (SELECT Id, Product_Ext__c, Quantity__c, Unit_Price__c,
                            Line_Amount__c, Discount_Amount__c, Discount_Percent__c,
                            Net_Amount__c, CGST__c, SGST__c, IGST__c,
                            Tax_Amount__c, Tax_Rate__c, Total_Amount__c,
@@ -39,7 +39,7 @@ public without sharing class OMS_InvoiceGeneration_Service {
                     FROM Order_Line_Items__r)
             FROM Sales_Order__c
             WHERE Id IN :orderIds
-              AND Order_Status__c = 'Approved'
+              AND Status__c = 'Approved'
         ];
 
         if (orders.isEmpty()) {
@@ -118,7 +118,7 @@ public without sharing class OMS_InvoiceGeneration_Service {
             for (Order_Line_Item__c orderLine : order.Order_Line_Items__r) {
                 Invoice_Line__c invoiceLine = new Invoice_Line__c(
                     Invoice__c          = invoice.Id,
-                    Product__c          = orderLine.Product__c,
+                    Product_Ext__c          = orderLine.Product_Ext__c,
                     Quantity__c         = orderLine.Quantity__c,
                     Unit_Price__c       = orderLine.Unit_Price__c,
                     Line_Amount__c      = orderLine.Line_Amount__c,

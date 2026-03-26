@@ -3,5 +3,5 @@
     <fullName>Effective_From__c</fullName>
     <label>Effective From</label>
     <type>Date</type>
-    <required>true</required>
+    <required>false</required>
 </CustomField>

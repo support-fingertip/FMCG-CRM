@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Visit__c</fullName>
+    <label>Visit</label>
+    <type>Lookup</type>
+    <referenceTo>Visit__c</referenceTo>
+    <relationshipLabel>Competitor Entries</relationshipLabel>
+    <relationshipName>Competitor_Entries</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Visit during which this competitor entry was captured</description>
+</CustomField>

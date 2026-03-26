@@ -4,7 +4,7 @@
     <label>OMS - Invoice Generation</label>
     <description>Record-triggered flow that generates an invoice and invoice line items when a sales order is approved</description>
     <processType>AutoLaunchedFlow</processType>
-    <status>Active</status>
+    <status>Draft</status>
     <interviewLabel>Invoice Generation {!$Flow.CurrentDateTime}</interviewLabel>
     <assignments>
         <name>Assign_Invoice_Line</name>
@@ -135,7 +135,7 @@
         <inputAssignments>
             <field>Status__c</field>
             <value>
-                <stringValue>Pending</stringValue>
+                <stringValue>Draft</stringValue>
             </value>
         </inputAssignments>
         <storeOutputAutomatically>true</storeOutputAutomatically>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Sub_Category__c</fullName>
+    <label>Sub Category</label>
+    <type>Lookup</type>
+    <referenceTo>Product_Category__c</referenceTo>
+    <relationshipLabel>Products (Sub Category)</relationshipLabel>
+    <relationshipName>Products_Sub_Category</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Product sub-category classification</description>
+</CustomField>

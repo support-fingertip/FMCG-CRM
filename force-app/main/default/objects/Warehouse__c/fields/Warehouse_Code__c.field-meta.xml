@@ -4,7 +4,7 @@
     <label>Warehouse Code</label>
     <type>Text</type>
     <length>20</length>
-    <required>true</required>
+    <required>false</required>
     <unique>true</unique>
     <externalId>true</externalId>
     <caseSensitive>false</caseSensitive>

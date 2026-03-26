@@ -10,7 +10,7 @@ for (Company_Hierarchy__c ch : [SELECT Id, Code__c FROM Company_Hierarchy__c WHE
 List<Warehouse__c> warehouses = new List<Warehouse__c>{
     new Warehouse__c(
         Name = 'Central Warehouse Mumbai',
-        Warehouse_Code__c = 'WH-CEN-MUM',
+        Warehouse_Code__c = 'WHCENMUM',
         Warehouse_Type__c = 'Central',
         Address__c = 'Plot 45, MIDC Bhiwandi',
         City__c = 'Mumbai',
@@ -22,7 +22,7 @@ List<Warehouse__c> warehouses = new List<Warehouse__c>{
     ),
     new Warehouse__c(
         Name = 'Regional Warehouse Delhi',
-        Warehouse_Code__c = 'WH-REG-DEL',
+        Warehouse_Code__c = 'WHREGDEL',
         Warehouse_Type__c = 'Regional',
         Address__c = 'Sector 63, Noida',
         City__c = 'New Delhi',
@@ -34,7 +34,7 @@ List<Warehouse__c> warehouses = new List<Warehouse__c>{
     ),
     new Warehouse__c(
         Name = 'Regional Warehouse Bengaluru',
-        Warehouse_Code__c = 'WH-REG-BLR',
+        Warehouse_Code__c = 'WHREGBLR',
         Warehouse_Type__c = 'Regional',
         Address__c = 'Peenya Industrial Area Phase 2',
         City__c = 'Bengaluru',
@@ -46,7 +46,7 @@ List<Warehouse__c> warehouses = new List<Warehouse__c>{
     ),
     new Warehouse__c(
         Name = 'Depot Kolkata',
-        Warehouse_Code__c = 'WH-DEP-KOL',
+        Warehouse_Code__c = 'WHDEPKOL',
         Warehouse_Type__c = 'Depot',
         Address__c = 'Howrah Industrial Park',
         City__c = 'Kolkata',
@@ -58,7 +58,7 @@ List<Warehouse__c> warehouses = new List<Warehouse__c>{
     ),
     new Warehouse__c(
         Name = 'C&F Ahmedabad',
-        Warehouse_Code__c = 'WH-CF-AHM',
+        Warehouse_Code__c = 'WHCFAHM',
         Warehouse_Type__c = 'C&F',
         Address__c = 'Sanand GIDC',
         City__c = 'Ahmedabad',

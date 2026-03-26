@@ -36,29 +36,11 @@ private class MDM_ProductCatalogController_Test {
         );
         insert brandA;
 
-        // Create products
-        List<Product2> products = new List<Product2>();
+        // Create products (Product_Extension__c)
+        List<Product_Extension__c> products = new List<Product_Extension__c>();
         for (Integer i = 1; i <= 5; i++) {
-            products.add(new Product2(
+            products.add(new Product_Extension__c(
                 Name = 'Test Product ' + i,
-                ProductCode = 'TP-' + String.valueOf(i).leftPad(3, '0'),
-                IsActive = true,
-                Family = 'Beverages'
-            ));
-        }
-        products.add(new Product2(
-            Name = 'Inactive Product',
-            ProductCode = 'TP-INACTIVE',
-            IsActive = false
-        ));
-        insert products;
-
-        // Create product extensions
-        List<Product_Extension__c> extensions = new List<Product_Extension__c>();
-        for (Integer i = 0; i < 5; i++) {
-            extensions.add(new Product_Extension__c(
-                Name = products[i].Name + ' Ext',
-                Product__c = products[i].Id,
                 Product_Category__c = brandA.Id,
                 Barcode_EAN__c = '1234567890123',
                 HSN_SAC_Code__c = '22011010',
@@ -69,14 +51,18 @@ private class MDM_ProductCatalogController_Test {
                 Is_Active__c = true
             ));
         }
-        insert extensions;
+        products.add(new Product_Extension__c(
+            Name = 'Inactive Product',
+            Is_Active__c = false
+        ));
+        insert products;
 
         // Create price list entries
         List<Price_List__c> prices = new List<Price_List__c>();
         for (Integer i = 0; i < 5; i++) {
             prices.add(new Price_List__c(
                 Name = products[i].Name + ' MRP',
-                Product__c = products[i].Id,
+                Product_Ext__c = products[i].Id,
                 Unit_Price__c = 100 + (i * 10),
                 Price_Type__c = 'MRP',
                 Channel__c = 'GT',
@@ -92,7 +78,7 @@ private class MDM_ProductCatalogController_Test {
 
         Distributor_Stock__c stock = new Distributor_Stock__c(
             Account__c = testAcc.Id,
-            Product__c = products[0].Id,
+            Product_Ext__c = products[0].Id,
             Stock_Date__c = Date.today(),
             Opening_Stock__c = 100,
             Received_Qty__c = 50,
@@ -105,7 +91,7 @@ private class MDM_ProductCatalogController_Test {
         Batch_Master__c batch = new Batch_Master__c(
             Name = 'BATCH-001',
             Batch_Number__c = 'B-2024-001',
-            Product__c = products[0].Id,
+            Product_Ext__c = products[0].Id,
             Manufacturing_Date__c = Date.today().addDays(-90),
             Expiry_Date__c = Date.today().addDays(270),
             Status__c = 'Active',
@@ -180,7 +166,7 @@ private class MDM_ProductCatalogController_Test {
 
     @isTest
     static void testGetProductPricing() {
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP-001' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Name = 'Test Product 1' LIMIT 1];
 
         Test.startTest();
         List<Price_List__c> prices = MDM_ProductCatalogController.getProductPricing(product.Id);
@@ -191,7 +177,7 @@ private class MDM_ProductCatalogController_Test {
 
     @isTest
     static void testGetProductDetail() {
-        Product2 product = [SELECT Id FROM Product2 WHERE ProductCode = 'TP-001' LIMIT 1];
+        Product_Extension__c product = [SELECT Id FROM Product_Extension__c WHERE Name = 'Test Product 1' LIMIT 1];
 
         Test.startTest();
         MDM_ProductCatalogController.ProductDetailWrapper detail =

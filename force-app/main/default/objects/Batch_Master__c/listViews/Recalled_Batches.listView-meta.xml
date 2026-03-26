@@ -3,7 +3,7 @@
     <fullName>Recalled_Batches</fullName>
     <columns>NAME</columns>
     <columns>Batch_Number__c</columns>
-    <columns>Product__c</columns>
+    <columns>Product_Ext__c</columns>
     <columns>Manufacturing_Date__c</columns>
     <columns>Expiry_Date__c</columns>
     <columns>Quantity_Manufactured__c</columns>

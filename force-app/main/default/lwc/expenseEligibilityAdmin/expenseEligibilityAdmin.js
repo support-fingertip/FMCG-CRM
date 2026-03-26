@@ -512,7 +512,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
             if (this.rateSlabs.length > 0 || this.deletedSlabIds.length > 0) {
                 const slabsToSave = this.rateSlabs.map(s => ({
                     ...s,
-                    Eligibility_Rule__c: savedRule.Id
+                    Expense_Eligibility__c: savedRule.Id
                 }));
                 await saveRateSlabs({
                     eligibilityId: savedRule.Id,

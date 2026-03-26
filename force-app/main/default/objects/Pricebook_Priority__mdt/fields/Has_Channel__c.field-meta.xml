@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Has_Channel__c</fullName>
+    <label>Has Channel</label>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>Whether this priority level requires a Channel to be specified on the price list entry.</description>
+</CustomField>

@@ -358,8 +358,8 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
             const result = await getStockLevels({ accountId: this.recordId });
             this.stockItems = (result || []).map(item => ({
                 id: item.Id,
-                productName: item.Product__r ? item.Product__r.Name : 'N/A',
-                sku: item.Product__r ? item.Product__r.ProductCode : '',
+                productName: item.Product_Ext__r ? item.Product_Ext__r.Name : 'N/A',
+                sku: item.Product_Ext__r ? item.Product_Ext__r.SKU_Code__c : '',
                 closingStock: item.Closing_Stock__c || 0,
                 openingStock: item.Opening_Stock__c || 0,
                 receivedQty: item.Received_Qty__c || 0,

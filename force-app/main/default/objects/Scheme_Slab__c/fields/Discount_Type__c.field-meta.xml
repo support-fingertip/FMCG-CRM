@@ -3,7 +3,7 @@
     <fullName>Discount_Type__c</fullName>
     <label>Discount Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>
@@ -22,6 +22,16 @@
                 <fullName>Free Product</fullName>
                 <default>false</default>
                 <label>Free Product</label>
+            </value>
+            <value>
+                <fullName>Price Discount</fullName>
+                <default>false</default>
+                <label>Price Discount</label>
+            </value>
+            <value>
+                <fullName>Reward Points</fullName>
+                <default>false</default>
+                <label>Reward Points</label>
             </value>
         </valueSetDefinition>
     </valueSet>

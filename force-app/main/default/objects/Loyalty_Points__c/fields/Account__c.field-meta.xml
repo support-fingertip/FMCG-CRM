@@ -6,6 +6,6 @@
     <referenceTo>Account</referenceTo>
     <relationshipLabel>Loyalty Points</relationshipLabel>
     <relationshipName>Loyalty_Points</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

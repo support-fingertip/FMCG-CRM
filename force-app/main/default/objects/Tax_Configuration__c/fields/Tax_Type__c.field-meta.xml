@@ -3,7 +3,7 @@
     <fullName>Tax_Type__c</fullName>
     <label>Tax Type</label>
     <type>Picklist</type>
-    <required>true</required>
+    <required>false</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

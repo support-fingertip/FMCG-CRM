@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Scheme_Category__c</fullName>
+    <label>Scheme Category</label>
+    <description>Category of the applied scheme benefit</description>
+    <type>Text</type>
+    <length>100</length>
+    <required>false</required>
+</CustomField>

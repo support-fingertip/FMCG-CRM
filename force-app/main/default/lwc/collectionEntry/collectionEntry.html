@@ -244,6 +244,16 @@
 
                     <!-- Action Buttons -->
                     <div class="slds-m-top_medium slds-grid slds-grid_align-center slds-gutters">
+                        <template if:true={isEmbedded}>
+                            <div class="slds-col">
+                                <lightning-button
+                                    variant="neutral"
+                                    label="Cancel"
+                                    icon-name="utility:back"
+                                    onclick={handleCancel}>
+                                </lightning-button>
+                            </div>
+                        </template>
                         <div class="slds-col">
                             <lightning-button
                                 variant="brand"

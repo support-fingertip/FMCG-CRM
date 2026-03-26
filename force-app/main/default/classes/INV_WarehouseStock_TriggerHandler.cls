@@ -34,7 +34,7 @@ public class INV_WarehouseStock_TriggerHandler extends TriggerHandler {
 
         for (Warehouse_Stock__c rec : records) {
             warehouseIds.add(rec.Warehouse__c);
-            productIds.add(rec.Product__c);
+            productIds.add(rec.Product_Ext__c);
             String key = buildKey(rec);
             Integer count = keyCount.containsKey(key) ? keyCount.get(key) : 0;
             keyCount.put(key, count + 1);
@@ -56,10 +56,10 @@ public class INV_WarehouseStock_TriggerHandler extends TriggerHandler {
 
         Map<String, Id> existingKeys = new Map<String, Id>();
         for (Warehouse_Stock__c existing : [
-            SELECT Id, Warehouse__c, Product__c, Batch_Number__c
+            SELECT Id, Warehouse__c, Product_Ext__c, Batch_Number__c
             FROM Warehouse_Stock__c
             WHERE Warehouse__c IN :warehouseIds
-              AND Product__c IN :productIds
+              AND Product_Ext__c IN :productIds
               AND Id NOT IN :currentIds
         ]) {
             existingKeys.put(buildKey(existing), existing.Id);
@@ -75,6 +75,6 @@ public class INV_WarehouseStock_TriggerHandler extends TriggerHandler {
 
     private String buildKey(Warehouse_Stock__c rec) {
         String batch = String.isNotBlank(rec.Batch_Number__c) ? rec.Batch_Number__c : '';
-        return String.valueOf(rec.Warehouse__c) + '|' + String.valueOf(rec.Product__c) + '|' + batch;
+        return String.valueOf(rec.Warehouse__c) + '|' + String.valueOf(rec.Product_Ext__c) + '|' + batch;
     }
 }

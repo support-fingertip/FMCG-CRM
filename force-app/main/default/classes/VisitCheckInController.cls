@@ -131,7 +131,7 @@ public with sharing class VisitCheckInController {
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getVisitActivities() {
         try {
-            return OVE_Visit_Service.getVisitActivities();
+            return OVE_Visit_Service.getVisitActivities(null);
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

@@ -20,18 +20,17 @@ public class TestDataFactory {
         return acc;
     }
 
-    public static Product2 createProduct(String name, String code) {
-        Product2 prod = new Product2(
+    public static Product_Extension__c createProduct(String name, String code) {
+        Product_Extension__c prod = new Product_Extension__c(
             Name = name,
-            ProductCode = code,
-            IsActive = true,
-            Description = 'Test product ' + name
+            SKU_Code__c = code,
+            Is_Active__c = true
         );
         return prod;
     }
 
-    public static List<Product2> createAndInsertProducts(Integer count) {
-        List<Product2> products = new List<Product2>();
+    public static List<Product_Extension__c> createAndInsertProducts(Integer count) {
+        List<Product_Extension__c> products = new List<Product_Extension__c>();
         for (Integer i = 0; i < count; i++) {
             products.add(createProduct('Test Product ' + i, 'TP-' + String.valueOf(i).leftPad(4, '0')));
         }
@@ -127,7 +126,7 @@ public class TestDataFactory {
     public static Order_Line_Item__c createOrderLineItem(Id orderId, Id productId, Decimal qty, Decimal price) {
         Order_Line_Item__c li = new Order_Line_Item__c(
             Sales_Order__c = orderId,
-            Product__c = productId,
+            Product_Ext__c = productId,
             Quantity__c = qty,
             Unit_Price__c = price,
             Line_Total__c = qty * price,
@@ -163,11 +162,16 @@ public class TestDataFactory {
         return col;
     }
 
-    public static Scheme__c createScheme(String name, String code, String type) {
+    public static Scheme__c createScheme(String name, String code, String schemeType) {
+        return createScheme(name, code, 'Free Products', schemeType);
+    }
+
+    public static Scheme__c createScheme(String name, String code, String category, String schemeType) {
         Scheme__c scheme = new Scheme__c(
             Name = name,
             Scheme_Code__c = code,
-            Scheme_Type__c = type,
+            Scheme_Category__c = category,
+            Scheme_Type__c = schemeType,
             Start_Date__c = Date.today().addDays(-10),
             End_Date__c = Date.today().addDays(30),
             Status__c = 'Active',
@@ -189,6 +193,22 @@ public class TestDataFactory {
             Status__c = 'Active'
         );
         return target;
+    }
+
+    public static Must_Sell_Config__c createMustSellConfig(Id productId, String classification,
+            Decimal minQty, Id territoryId, String channel, String customerType) {
+        Must_Sell_Config__c config = new Must_Sell_Config__c(
+            Product_Ext__c = productId,
+            Classification__c = classification,
+            Min_Qty__c = minQty,
+            Territory__c = territoryId,
+            Channel__c = channel,
+            Customer_Type__c = customerType,
+            Start_Date__c = Date.today().addDays(-10),
+            End_Date__c = Date.today().addDays(30),
+            Is_Active__c = true
+        );
+        return config;
     }
 
     public static Return_Order__c createReturnOrder(Id accountId, Id invoiceId, Id userId) {
