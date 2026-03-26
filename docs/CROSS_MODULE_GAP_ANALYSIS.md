@@ -58,23 +58,12 @@ However, **12 cross-module integration gaps** remain that affect the connection 
 
 ---
 
-### GAP-02: Scheme Engine Does Not Use UOM-Converted Base Quantity
+### ~~GAP-02: Scheme Engine Does Not Use UOM-Converted Base Quantity~~ - RESOLVED
 
-**Severity:** HIGH
+**Severity:** N/A - NOT A GAP
 **Modules:** Schemes (12) ↔ UOM (9) ↔ Orders (13)
 
-**Current state:**
-- `UOM_Conversion_Service` correctly converts quantities and populates `Base_Quantity__c` on `Order_Line_Item__c`
-- `OMS_OrderPricing_Service` uses `Base_Quantity__c` for pricing when available
-
-**What's missing:**
-- `SPM_SchemeEngine_Service.cls` has zero references to `Base_Quantity__c`
-- Scheme slab evaluation uses raw `Quantity__c` regardless of UOM
-- Same order placed in Cases (qty=1) vs Pieces (qty=12) may trigger different scheme tiers
-
-**Impact:** Inconsistent scheme application depending on the UOM chosen at order entry.
-
-**Fix:** Update `SPM_SchemeEngine_Service` to use `Base_Quantity__c` (falling back to `Quantity__c`) for all slab evaluations.
+**Verified:** `SPM_SchemeEngine_Service` (line 984-997) correctly converts line item quantities to the scheme's `Base_UOM__c` using `UOM_Conversion_Service.convert()` before slab evaluation. This ensures consistent scheme application regardless of the order UOM chosen.
 
 ---
 
@@ -297,7 +286,7 @@ These cross-module integrations are **fully functional**:
 |----------|-----|--------|--------|
 | P1 | GAP-01: Must-Sell enforcement | Medium | High - core feature not enforcing |
 | P1 | GAP-04: Stock availability ignores expiry | Medium | High - expired stock fulfillment risk |
-| P2 | GAP-02: Scheme engine UOM mismatch | Low | High - inconsistent scheme application |
+| ~~P2~~ | ~~GAP-02: Scheme engine UOM mismatch~~ | - | RESOLVED - UOM conversion confirmed in scheme engine |
 | P2 | GAP-03: Warehouse_Stock batch text field | Low | Medium - no referential integrity |
 | P2 | GAP-05: Invoice missing batch info | Low | Medium - batch traceability gap |
 | P3 | GAP-06: Price_Type/Min_Qty not used | Medium | Medium - bulk pricing not working |
