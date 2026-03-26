@@ -286,7 +286,7 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
 
         // Get account details for customer type and territory
         Map<Id, Account> accountMap = new Map<Id, Account>([
-            SELECT Id, Customer_Type__c, Territory__c
+            SELECT Id, RecordType.DeveloperName, Territory__c
             FROM Account WHERE Id IN :accountIds
         ]);
 
@@ -329,7 +329,7 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
             Account acct = accountMap.get(outletId);
             if (acct == null) continue;
 
-            String customerType = acct.Customer_Type__c != null ? acct.Customer_Type__c : '';
+            String customerType = getCustomerTypeFromRecordType(acct);
             Id territoryId = acct.Territory__c;
 
             // Find applicable must-sell products for this outlet
@@ -383,5 +383,23 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
             // Fall back to default
         }
         return DEFAULT_GEOFENCE_RADIUS;
+    }
+
+    private static String getCustomerTypeFromRecordType(Account acct) {
+        if (acct.RecordType == null || String.isBlank(acct.RecordType.DeveloperName)) {
+            return '';
+        }
+        Map<String, String> recordTypeToCustomerType = new Map<String, String>{
+            'Retailer' => 'Retailer',
+            'Distributor' => 'Distributor',
+            'Super_Stockist' => 'Super Stockist',
+            'Modern_Trade' => 'Modern Trade',
+            'Grocery' => 'Grocery',
+            'Medical' => 'Medical',
+            'Hardware' => 'Hardware',
+            'General_Store' => 'General Store'
+        };
+        String result = recordTypeToCustomerType.get(acct.RecordType.DeveloperName);
+        return result != null ? result : acct.RecordType.DeveloperName;
     }
 }
