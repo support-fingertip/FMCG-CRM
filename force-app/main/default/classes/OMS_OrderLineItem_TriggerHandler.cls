@@ -15,6 +15,7 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
      */
     protected override void beforeInsert() {
         List<Order_Line_Item__c> newRecords = (List<Order_Line_Item__c>) Trigger.new;
+        validateMinOrderQuantity(newRecords);
         OMS_OrderPricing_Service.calculateLineItemPricing(newRecords);
         OMS_OrderPricing_Service.applySchemes(newRecords);
         OMS_OrderPricing_Service.calculateTax(newRecords);
@@ -42,6 +43,7 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
         }
 
         if (!pricingChanged.isEmpty()) {
+            validateMinOrderQuantity(pricingChanged);
             OMS_OrderPricing_Service.calculateLineItemPricing(pricingChanged);
             OMS_OrderPricing_Service.applySchemes(pricingChanged);
             OMS_OrderPricing_Service.calculateTax(pricingChanged);
@@ -82,6 +84,46 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * @description Validates that order line item quantities meet the product's
+     *              Minimum Order Quantity (MOQ). Adds errors for items below MOQ.
+     * @param lineItems The line items to validate.
+     */
+    private void validateMinOrderQuantity(List<Order_Line_Item__c> lineItems) {
+        Set<Id> productIds = new Set<Id>();
+        for (Order_Line_Item__c item : lineItems) {
+            if (item.Product_Ext__c != null) {
+                productIds.add(item.Product_Ext__c);
+            }
+        }
+
+        if (productIds.isEmpty()) return;
+
+        Map<Id, Product_Extension__c> productMap = new Map<Id, Product_Extension__c>([
+            SELECT Id, Name, Min_Order_Qty__c
+            FROM Product_Extension__c
+            WHERE Id IN :productIds
+              AND Min_Order_Qty__c != null
+              AND Min_Order_Qty__c > 0
+        ]);
+
+        if (productMap.isEmpty()) return;
+
+        for (Order_Line_Item__c item : lineItems) {
+            if (item.Product_Ext__c == null || item.Quantity__c == null) continue;
+
+            Product_Extension__c product = productMap.get(item.Product_Ext__c);
+            if (product != null && item.Quantity__c < product.Min_Order_Qty__c) {
+                item.Quantity__c.addError(
+                    'Quantity (' + item.Quantity__c.setScale(0) +
+                    ') is below the minimum order quantity (' +
+                    product.Min_Order_Qty__c.setScale(0) +
+                    ') for product ' + product.Name + '.'
+                );
+            }
+        }
+    }
 
     /**
      * @description Recalculates and updates the parent Sales_Order__c header totals

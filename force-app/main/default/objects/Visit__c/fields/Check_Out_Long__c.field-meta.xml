@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Check_Out_Long__c</fullName>
-    <label>Check Out Longitude</label>
+    <label>[Deprecated] Check Out Longitude</label>
+    <description>DEPRECATED: Use Check_Out_Longitude__c instead if available, or create one. This field is retained for backward compatibility. Migrate references to the canonical field.</description>
     <type>Number</type>
     <precision>10</precision>
     <scale>7</scale>

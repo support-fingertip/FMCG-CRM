@@ -74,6 +74,7 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
 
         if (!completedVisits.isEmpty()) {
             updateProductiveCallCounts(completedVisits);
+            calculateMustSellCompliance(completedVisits);
         }
         if (!skippedVisits.isEmpty()) {
             updateDayAttendanceTotals(skippedVisits);
@@ -261,6 +262,111 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
             TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
             update updates;
             TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+        }
+    }
+
+    /**
+     * @description Calculates must-sell compliance for completed visits by checking
+     *              which must-sell products were ordered during the visit. Updates
+     *              Must_Sell_Products_Required__c, Must_Sell_Products_Ordered__c,
+     *              and Must_Sell_Compliance__c on the Visit records.
+     */
+    private void calculateMustSellCompliance(List<Visit__c> completedVisits) {
+        Set<Id> visitIds = new Set<Id>();
+        Set<Id> accountIds = new Set<Id>();
+        Set<Id> territoryIds = new Set<Id>();
+
+        for (Visit__c visit : completedVisits) {
+            visitIds.add(visit.Id);
+            Id outletId = visit.Outlet__c != null ? visit.Outlet__c : visit.Account__c;
+            if (outletId != null) accountIds.add(outletId);
+        }
+
+        if (accountIds.isEmpty()) return;
+
+        // Get account details for customer type and territory
+        Map<Id, Account> accountMap = new Map<Id, Account>([
+            SELECT Id, Customer_Type__c, Territory__c
+            FROM Account WHERE Id IN :accountIds
+        ]);
+
+        for (Account acct : accountMap.values()) {
+            if (acct.Territory__c != null) territoryIds.add(acct.Territory__c);
+        }
+
+        // Get active must-sell configs
+        Date today = Date.today();
+        List<Must_Sell_Config__c> configs = [
+            SELECT Id, Product_Ext__c, Territory__c, Channel__c, Customer_Type__c
+            FROM Must_Sell_Config__c
+            WHERE Is_Active__c = true
+              AND (Start_Date__c = null OR Start_Date__c <= :today)
+              AND (End_Date__c = null OR End_Date__c >= :today)
+        ];
+
+        if (configs.isEmpty()) return;
+
+        // Get orders created during these visits (linked via Account + Visit Date)
+        Map<Id, Set<Id>> orderedProductsByVisit = new Map<Id, Set<Id>>();
+        for (Order_Line_Item__c li : [
+            SELECT Sales_Order__c, Sales_Order__r.Account__c, Product_Ext__c,
+                   Sales_Order__r.Visit__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__r.Visit__c IN :visitIds
+              AND Product_Ext__c != null
+        ]) {
+            Id vId = li.Sales_Order__r.Visit__c;
+            if (!orderedProductsByVisit.containsKey(vId)) {
+                orderedProductsByVisit.put(vId, new Set<Id>());
+            }
+            orderedProductsByVisit.get(vId).add(li.Product_Ext__c);
+        }
+
+        // Calculate compliance per visit
+        List<Visit__c> visitsToUpdate = new List<Visit__c>();
+        for (Visit__c visit : completedVisits) {
+            Id outletId = visit.Outlet__c != null ? visit.Outlet__c : visit.Account__c;
+            Account acct = accountMap.get(outletId);
+            if (acct == null) continue;
+
+            String customerType = acct.Customer_Type__c != null ? acct.Customer_Type__c : '';
+            Id territoryId = acct.Territory__c;
+
+            // Find applicable must-sell products for this outlet
+            Set<Id> requiredProducts = new Set<Id>();
+            for (Must_Sell_Config__c config : configs) {
+                if (config.Territory__c != null && config.Territory__c != territoryId) continue;
+                if (String.isNotBlank(config.Customer_Type__c) && config.Customer_Type__c != customerType) continue;
+                requiredProducts.add(config.Product_Ext__c);
+            }
+
+            if (requiredProducts.isEmpty()) continue;
+
+            Set<Id> ordered = orderedProductsByVisit.containsKey(visit.Id)
+                ? orderedProductsByVisit.get(visit.Id) : new Set<Id>();
+
+            Integer required = requiredProducts.size();
+            Integer fulfilled = 0;
+            for (Id prodId : requiredProducts) {
+                if (ordered.contains(prodId)) fulfilled++;
+            }
+
+            Decimal compliance = required > 0
+                ? (Decimal.valueOf(fulfilled) / Decimal.valueOf(required) * 100).setScale(1, RoundingMode.HALF_UP)
+                : 100;
+
+            visitsToUpdate.add(new Visit__c(
+                Id = visit.Id,
+                Must_Sell_Products_Required__c = required,
+                Must_Sell_Products_Ordered__c = fulfilled,
+                Must_Sell_Compliance__c = compliance
+            ));
+        }
+
+        if (!visitsToUpdate.isEmpty()) {
+            TriggerHandler.bypass('OVE_Visit_TriggerHandler');
+            update visitsToUpdate;
+            TriggerHandler.clearBypass('OVE_Visit_TriggerHandler');
         }
     }
 

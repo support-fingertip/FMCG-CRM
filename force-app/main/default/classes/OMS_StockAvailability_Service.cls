@@ -40,13 +40,14 @@ public with sharing class OMS_StockAvailability_Service {
 
         if (productIds.isEmpty() || warehouseIds.isEmpty()) return shortages;
 
-        // Get current stock levels
+        // Get current stock levels (exclude expired batches)
         Map<String, Decimal> stockMap = new Map<String, Decimal>();
         for (Warehouse_Stock__c ws : [
             SELECT Product_Ext__c, Warehouse__c, Qty_On_Hand__c, Qty_Reserved__c
             FROM Warehouse_Stock__c
             WHERE Product_Ext__c IN :productIds
               AND Warehouse__c IN :warehouseIds
+              AND (Expiry_Date__c = null OR Expiry_Date__c > TODAY)
         ]) {
             String key = ws.Warehouse__c + '|' + ws.Product_Ext__c;
             Decimal available = (ws.Qty_On_Hand__c != null ? ws.Qty_On_Hand__c : 0)

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Check_In_Long__c</fullName>
-    <label>Check In Longitude</label>
+    <label>[Deprecated] Check In Longitude</label>
+    <description>DEPRECATED: Use Check_In_Longitude__c instead. This field is retained for backward compatibility with legacy integrations. Migrate references to Check_In_Longitude__c.</description>
     <type>Number</type>
     <precision>10</precision>
     <scale>7</scale>

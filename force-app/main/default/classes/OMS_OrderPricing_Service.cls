@@ -70,7 +70,8 @@ public without sharing class OMS_OrderPricing_Service {
         List<Price_List__c> priceLists = [
             SELECT Id, Product_Ext__c, Region__c, Channel__c,
                    Customer__c, Category__c, Territory__c, Priority__c,
-                   Unit_Price__c, Effective_From__c, Effective_To__c
+                   Unit_Price__c, Effective_From__c, Effective_To__c,
+                   Price_Type__c, Min_Qty__c
             FROM Price_List__c
             WHERE Product_Ext__c IN :productIds
               AND Is_Active__c = true
@@ -108,8 +109,9 @@ public without sharing class OMS_OrderPricing_Service {
                 Id categoryId = (product != null) ? product.Product_Category__c : null;
 
                 List<Price_List__c> productPrices = pricesByProduct.get(item.Product_Ext__c);
+                Decimal orderQty = item.Quantity__c != null ? item.Quantity__c : 0;
                 unitPrice = resolvePriceByPriority(
-                    productPrices, accountId, categoryId, territoryId, channel
+                    productPrices, accountId, categoryId, territoryId, channel, orderQty
                 );
                 item.Unit_Price__c = unitPrice;
             }
@@ -310,6 +312,7 @@ public without sharing class OMS_OrderPricing_Service {
      * @param categoryId    The product category
      * @param territoryId   The territory from the order
      * @param channel       The channel from the order
+     * @param orderQuantity The order quantity for Min_Qty filtering
      * @return The resolved unit price, or 0 if no match found
      */
     private static Decimal resolvePriceByPriority(
@@ -317,7 +320,8 @@ public without sharing class OMS_OrderPricing_Service {
         Id accountId,
         Id categoryId,
         Id territoryId,
-        String channel
+        String channel,
+        Decimal orderQuantity
     ) {
         if (productPrices == null || productPrices.isEmpty()) {
             return 0;
@@ -350,6 +354,13 @@ public without sharing class OMS_OrderPricing_Service {
             // Channel dimension: if price list has channel, order must match
             if (matches && String.isNotBlank(pl.Channel__c)) {
                 if (String.isBlank(channel) || pl.Channel__c != channel) {
+                    matches = false;
+                }
+            }
+
+            // Min Qty: if price list has minimum quantity, order quantity must meet it
+            if (matches && pl.Min_Qty__c != null && pl.Min_Qty__c > 0) {
+                if (orderQuantity < pl.Min_Qty__c) {
                     matches = false;
                 }
             }

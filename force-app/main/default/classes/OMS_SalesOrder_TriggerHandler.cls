@@ -51,6 +51,18 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
         Map<Id, Sales_Order__c> oldMap = (Map<Id, Sales_Order__c>) Trigger.oldMap;
         validateStatusTransitions(newRecords, oldMap);
 
+        // Validate must-sell compliance when submitting orders
+        List<Sales_Order__c> submittedOrders = new List<Sales_Order__c>();
+        for (Sales_Order__c rec : newRecords) {
+            Sales_Order__c oldRec = oldMap.get(rec.Id);
+            if (rec.Status__c == 'Submitted' && oldRec.Status__c != 'Submitted') {
+                submittedOrders.add(rec);
+            }
+        }
+        if (!submittedOrders.isEmpty()) {
+            OMS_OrderValidation_Service.validateMustSellCompliance(submittedOrders);
+        }
+
         // Re-validate credit limit if order value increased
         List<Sales_Order__c> valueIncreased = new List<Sales_Order__c>();
         for (Sales_Order__c rec : newRecords) {
