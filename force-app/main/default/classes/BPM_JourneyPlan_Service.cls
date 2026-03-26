@@ -812,7 +812,8 @@ public without sharing class BPM_JourneyPlan_Service {
         }
 
         if (frequency == 'Bi-Weekly') {
-            return dayOfMonth <= 14;
+            // Include beats in alternating weeks: week 1 (days 1-7) and week 3 (days 15-21)
+            return (dayOfMonth >= 1 && dayOfMonth <= 7) || (dayOfMonth >= 15 && dayOfMonth <= 21);
         }
 
         if (frequency == 'Monthly') {

@@ -125,9 +125,24 @@ public without sharing class OMS_OrderPricing_Service {
             // Calculate net amount (after line-level discount)
             Decimal discountPercent = item.Discount_Percent__c != null
                 ? item.Discount_Percent__c : 0;
-            Decimal discountAmount = (lineAmount * discountPercent / 100)
-                .setScale(2, RoundingMode.HALF_UP);
-            item.Discount_Amount__c = discountAmount;
+            Decimal discountAmount;
+            if (discountPercent > 0) {
+                // Calculate from percentage
+                discountAmount = (lineAmount * discountPercent / 100)
+                    .setScale(2, RoundingMode.HALF_UP);
+                item.Discount_Amount__c = discountAmount;
+            } else if (item.Discount_Amount__c != null && item.Discount_Amount__c > 0) {
+                // Preserve pre-set discount amount (e.g., from controller/LWC)
+                discountAmount = item.Discount_Amount__c;
+                // Back-calculate the percentage for consistency
+                if (lineAmount > 0) {
+                    item.Discount_Percent__c = (discountAmount / lineAmount * 100)
+                        .setScale(2, RoundingMode.HALF_UP);
+                }
+            } else {
+                discountAmount = 0;
+                item.Discount_Amount__c = 0;
+            }
             item.Net_Amount__c = (lineAmount - discountAmount).setScale(2, RoundingMode.HALF_UP);
         }
     }
@@ -233,7 +248,10 @@ public without sharing class OMS_OrderPricing_Service {
                 continue;
             }
 
-            Decimal taxableAmount = item.Net_Amount__c != null ? item.Net_Amount__c : 0;
+            // Taxable amount = Net Amount (after line discount) - Scheme Discount
+            Decimal netAmount = item.Net_Amount__c != null ? item.Net_Amount__c : 0;
+            Decimal schemeDisc = item.Scheme_Discount__c != null ? item.Scheme_Discount__c : 0;
+            Decimal taxableAmount = netAmount - schemeDisc;
             if (taxableAmount <= 0) {
                 continue;
             }
@@ -346,6 +364,8 @@ public without sharing class OMS_OrderPricing_Service {
 
     /**
      * @description Applies scheme results (discounts, free goods) to line items.
+     *              Uses lineItemDiscounts map when available for targeted application,
+     *              otherwise falls back to applying discount to the first qualifying item.
      */
     private static void applySchemeResults(
         List<Order_Line_Item__c> lineItems,
@@ -356,12 +376,38 @@ public without sharing class OMS_OrderPricing_Service {
         }
 
         for (SPM_SchemeEngine_Service.SchemeResult scheme : schemes) {
-            for (Order_Line_Item__c item : lineItems) {
-                if (scheme.discountAmount != null && scheme.discountAmount > 0) {
-                    Decimal currentDiscount = item.Scheme_Discount__c != null
-                        ? item.Scheme_Discount__c : 0;
-                    item.Scheme_Discount__c = currentDiscount + scheme.discountAmount;
-                    item.Scheme__c = scheme.schemeId;
+            // Use per-line-item discount map if available (preferred)
+            if (scheme.lineItemDiscounts != null && !scheme.lineItemDiscounts.isEmpty()) {
+                for (Order_Line_Item__c item : lineItems) {
+                    if (scheme.lineItemDiscounts.containsKey(item.Id)) {
+                        Decimal itemDiscount = scheme.lineItemDiscounts.get(item.Id);
+                        Decimal currentDiscount = item.Scheme_Discount__c != null
+                            ? item.Scheme_Discount__c : 0;
+                        item.Scheme_Discount__c = currentDiscount + itemDiscount;
+                        item.Scheme__c = scheme.schemeId;
+                        item.Scheme_Applied__c = scheme.schemeId;
+                        item.Scheme_Category__c = scheme.schemeCategory;
+                    }
+                }
+            } else if (scheme.discountAmount != null && scheme.discountAmount > 0) {
+                // Fallback: apply total discount proportionally across all line items
+                Decimal totalLineAmount = 0;
+                for (Order_Line_Item__c item : lineItems) {
+                    totalLineAmount += (item.Net_Amount__c != null ? item.Net_Amount__c : 0);
+                }
+                if (totalLineAmount > 0) {
+                    for (Order_Line_Item__c item : lineItems) {
+                        Decimal itemNetAmount = item.Net_Amount__c != null ? item.Net_Amount__c : 0;
+                        Decimal proportion = itemNetAmount / totalLineAmount;
+                        Decimal itemDiscount = (scheme.discountAmount * proportion)
+                            .setScale(2, RoundingMode.HALF_UP);
+                        Decimal currentDiscount = item.Scheme_Discount__c != null
+                            ? item.Scheme_Discount__c : 0;
+                        item.Scheme_Discount__c = currentDiscount + itemDiscount;
+                        item.Scheme__c = scheme.schemeId;
+                        item.Scheme_Applied__c = scheme.schemeId;
+                        item.Scheme_Category__c = scheme.schemeCategory;
+                    }
                 }
             }
         }

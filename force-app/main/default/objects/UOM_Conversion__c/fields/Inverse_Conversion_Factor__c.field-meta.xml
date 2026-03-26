@@ -4,7 +4,7 @@
     <label>Inverse Conversion Factor</label>
     <type>Number</type>
     <precision>18</precision>
-    <scale>4</scale>
+    <scale>6</scale>
     <required>false</required>
     <unique>false</unique>
     <externalId>false</externalId>

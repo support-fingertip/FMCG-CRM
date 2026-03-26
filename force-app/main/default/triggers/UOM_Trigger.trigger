@@ -2,7 +2,14 @@
  * @description Single trigger for UOM__c. Prevents deactivation of UOMs
  *              that are referenced in active UOM_Conversion__c records.
  */
-trigger UOM_Trigger on UOM__c (before update) {
+trigger UOM_Trigger on UOM__c (before update, after insert, after update, after delete) {
+    // Clear UOM conversion cache on any UOM change to prevent stale data
+    if (Trigger.isAfter) {
+        UOM_Conversion_Service.clearCache();
+        return;
+    }
+
+    // Before update logic: prevent deactivation of referenced UOMs
     Set<Id> deactivatingIds = new Set<Id>();
     for (UOM__c rec : Trigger.new) {
         UOM__c oldRec = Trigger.oldMap.get(rec.Id);

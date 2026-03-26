@@ -687,20 +687,39 @@ public with sharing class OrderEntryController {
 
     private static void updateOrderTotals(Id orderId) {
         AggregateResult[] results = [
-            SELECT SUM(Line_Total__c) totalAmount, SUM(Tax_Amount__c) totalTax,
-                   SUM(Discount_Amount__c) totalDiscount, COUNT(Id) totalItems
+            SELECT SUM(Line_Total__c) totalAmount, SUM(Line_Amount__c) lineAmount,
+                   SUM(Tax_Amount__c) totalTax,
+                   SUM(Discount_Amount__c) totalDiscount,
+                   SUM(Scheme_Discount__c) totalSchemeDiscount,
+                   SUM(Total_Amount__c) totalNet,
+                   SUM(Free_Quantity__c) totalFreeQty,
+                   SUM(Reward_Points__c) totalRewardPts,
+                   COUNT(Id) totalItems
             FROM Order_Line_Item__c WHERE Sales_Order__c = :orderId
         ];
         if (!results.isEmpty()) {
             Sales_Order__c order = new Sales_Order__c(Id = orderId);
-            order.Total_Gross_Amount__c = (Decimal)results[0].get('totalAmount');
-            order.Total_Tax__c = (Decimal)results[0].get('totalTax');
-            order.Total_Discount__c = (Decimal)results[0].get('totalDiscount');
+            Decimal lineAmount = results[0].get('lineAmount') != null ? (Decimal)results[0].get('lineAmount') : 0;
+            Decimal totalAmount = results[0].get('totalAmount') != null ? (Decimal)results[0].get('totalAmount') : 0;
+            Decimal tax = results[0].get('totalTax') != null ? (Decimal)results[0].get('totalTax') : 0;
+            Decimal disc = results[0].get('totalDiscount') != null ? (Decimal)results[0].get('totalDiscount') : 0;
+            Decimal schemeDisc = results[0].get('totalSchemeDiscount') != null ? (Decimal)results[0].get('totalSchemeDiscount') : 0;
+            Decimal totalNet = results[0].get('totalNet') != null ? (Decimal)results[0].get('totalNet') : 0;
+            Decimal freeQty = results[0].get('totalFreeQty') != null ? (Decimal)results[0].get('totalFreeQty') : 0;
+            Decimal rewardPts = results[0].get('totalRewardPts') != null ? (Decimal)results[0].get('totalRewardPts') : 0;
+
+            // Align with trigger handler field mappings
+            order.Total_Amount__c = lineAmount;
+            order.Total_Gross_Amount__c = totalAmount > 0 ? totalAmount : lineAmount;
+            order.Total_Tax__c = tax;
+            order.Total_Discount__c = disc;
+            order.Discount_Amount__c = disc + schemeDisc;
+            order.Scheme_Discount__c = schemeDisc;
+            order.Total_Net_Amount__c = totalNet > 0 ? totalNet : (lineAmount - disc - schemeDisc + tax);
+            order.Net_Amount__c = totalNet > 0 ? totalNet : (lineAmount - disc - schemeDisc + tax);
             order.Total_Items__c = (Integer)results[0].get('totalItems');
-            Decimal gross = order.Total_Gross_Amount__c != null ? order.Total_Gross_Amount__c : 0;
-            Decimal tax = order.Total_Tax__c != null ? order.Total_Tax__c : 0;
-            Decimal disc = order.Total_Discount__c != null ? order.Total_Discount__c : 0;
-            order.Total_Net_Amount__c = gross + tax - disc;
+            order.Total_Free_Quantity__c = freeQty;
+            order.Total_Reward_Points__c = rewardPts.intValue();
             update order;
         }
     }
