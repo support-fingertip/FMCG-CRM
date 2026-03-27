@@ -246,6 +246,7 @@ export default class TamCriteriaBuilder extends LightningElement {
         getCriteria({ criteriaId: id })
             .then(res => {
                 this.selectedCriteria = { ...res };
+                if (this.selectedCriteria.Category__c == null) this.selectedCriteria.Category__c = '';
                 this.currentView = 'detail';
             })
             .catch(() => {
@@ -429,6 +430,8 @@ export default class TamCriteriaBuilder extends LightningElement {
             .then(res => {
                 this.criteria = { ...res };
                 if (!this.criteria.Operator__c) this.criteria.Operator__c = 'SUM';
+                // Normalize null to empty string for combobox matching
+                if (this.criteria.Category__c == null) this.criteria.Category__c = '';
 
                 // Parse filters but DON'T assign to this.filters yet
                 if (this.criteria.Filters__c) {
