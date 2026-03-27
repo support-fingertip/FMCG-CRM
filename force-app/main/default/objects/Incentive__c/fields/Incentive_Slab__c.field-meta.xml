@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Incentive_Slab__c</fullName>
-    <label>Incentive Slab</label>
-    <type>Lookup</type>
-    <referenceTo>Incentive_Slab__c</referenceTo>
-    <relationshipLabel>Incentives</relationshipLabel>
-    <relationshipName>Incentives</relationshipName>
+    <label>Incentive Slab (Legacy)</label>
+    <type>Text</type>
+    <length>100</length>
     <required>false</required>
-    <deleteConstraint>SetNull</deleteConstraint>
-    <description>The incentive slab that was matched for this calculation.</description>
+    <unique>false</unique>
+    <description>Legacy text field. Use Incentive_Slab_Ref__c lookup instead.</description>
 </CustomField>

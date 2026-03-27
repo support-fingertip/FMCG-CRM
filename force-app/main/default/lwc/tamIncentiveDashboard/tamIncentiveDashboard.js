@@ -95,7 +95,7 @@ export default class TamIncentiveDashboard extends LightningElement {
             selected: this.selectedIds.has(inc.Id),
             salespersonName: inc.Salesperson__r?.Name || '—',
             criteriaName: inc.Target_Criteria__r?.Name || '—',
-            slabName: inc.Incentive_Slab__r?.Name || '—',
+            slabName: inc.Incentive_Slab_Ref__r?.Name || '—',
             achievementPercent: inc.Achievement_Percent__c != null ? Math.round(inc.Achievement_Percent__c) : 0,
             calculatedAmount: inc.Calculated_Amount__c || 0,
             finalAmount: inc.Final_Amount__c || inc.Calculated_Amount__c || 0,
@@ -205,17 +205,17 @@ export default class TamIncentiveDashboard extends LightningElement {
     get canMarkPaid() { return this.detail.Status__c === 'Approved'; }
 
     get detailStatusClass() { return this._getStatusClass(this.detail.Status__c); }
-    get detailSlabName() { return this.detail.Incentive_Slab__r?.Name || '—'; }
+    get detailSlabName() { return this.detail.Incentive_Slab_Ref__r?.Name || '—'; }
     get detailApprovedBy() { return this.detail.Approved_By__r?.Name || '—'; }
 
     get detailSlabRange() {
-        const slab = this.detail.Incentive_Slab__r;
+        const slab = this.detail.Incentive_Slab_Ref__r;
         if (!slab) return '—';
         return `${slab.Min_Percent__c}% – ${slab.Max_Percent__c}%`;
     }
 
     get detailPayoutRule() {
-        const slab = this.detail.Incentive_Slab__r;
+        const slab = this.detail.Incentive_Slab_Ref__r;
         if (!slab) return '—';
         return slab.Payout_Type__c === 'Percentage'
             ? `${slab.Payout_Value__c}% of target`

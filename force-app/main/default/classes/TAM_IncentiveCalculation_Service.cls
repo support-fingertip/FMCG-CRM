@@ -82,7 +82,7 @@ public with sharing class TAM_IncentiveCalculation_Service {
 
             inc.Target_Actual__c = ta.Id;
             inc.Achievement_Percent__c = achievementPercent.setScale(2, RoundingMode.HALF_UP);
-            inc.Incentive_Slab__c = matchedSlab.Id;
+            inc.Incentive_Slab_Ref__c = matchedSlab.Id;
             inc.Multiplier__c = matchedSlab.Multiplier__c;
             inc.Base_Amount__c = targetValue;
             inc.Calculated_Amount__c = payout.setScale(2, RoundingMode.HALF_UP);

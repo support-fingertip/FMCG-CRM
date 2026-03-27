@@ -233,7 +233,12 @@
         <enabled>false</enabled>
     </classAccesses>
     <custom>true</custom>
-            <fieldPermissions>
+                <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive__c.Incentive_Slab_Ref__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+<fieldPermissions>
         <editable>false</editable>
         <field>Incentive__c.Base_Amount__c</field>
         <readable>true</readable>

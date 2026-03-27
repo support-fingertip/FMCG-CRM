@@ -55,9 +55,9 @@ public with sharing class TAM_IncentiveDashboard_Controller {
                    Target_Actual__c, Target_Actual__r.Name,
                    Target_Criteria__c, Target_Criteria__r.Name,
                    Target_Period__c, Target_Period__r.Name,
-                   Incentive_Slab__c, Incentive_Slab__r.Name,
-                   Incentive_Slab__r.Payout_Type__c, Incentive_Slab__r.Payout_Value__c,
-                   Incentive_Slab__r.Min_Percent__c, Incentive_Slab__r.Max_Percent__c,
+                   Incentive_Slab_Ref__c, Incentive_Slab_Ref__r.Name,
+                   Incentive_Slab_Ref__r.Payout_Type__c, Incentive_Slab_Ref__r.Payout_Value__c,
+                   Incentive_Slab_Ref__r.Min_Percent__c, Incentive_Slab_Ref__r.Max_Percent__c,
                    Achievement_Percent__c, Multiplier__c,
                    Base_Amount__c, Calculated_Amount__c, Final_Amount__c,
                    Status__c, Approved_By__c, Approved_By__r.Name,
@@ -130,7 +130,7 @@ public with sharing class TAM_IncentiveDashboard_Controller {
         String q = 'SELECT Id, Name, Salesperson__c, Salesperson__r.Name, ' +
             'Target_Criteria__c, Target_Criteria__r.Name, ' +
             'Target_Period__c, Target_Period__r.Name, ' +
-            'Incentive_Slab__c, Incentive_Slab__r.Name, ' +
+            'Incentive_Slab_Ref__c, Incentive_Slab_Ref__r.Name, ' +
             'Achievement_Percent__c, Multiplier__c, ' +
             'Base_Amount__c, Calculated_Amount__c, Final_Amount__c, ' +
             'Status__c, Payment_Date__c, Approval_Date__c ' +

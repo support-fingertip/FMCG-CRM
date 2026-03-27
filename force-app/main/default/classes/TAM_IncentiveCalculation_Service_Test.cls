@@ -84,10 +84,10 @@ private class TAM_IncentiveCalculation_Service_Test {
         System.assertEquals('Calculated', inc.Status__c, 'Status should be Calculated');
         System.assert(inc.Achievement_Percent__c > 0, 'Achievement % should be set');
         System.assert(inc.Calculated_Amount__c > 0, 'Payout should be > 0');
-        System.assertNotEquals(null, inc.Incentive_Slab__c, 'Slab should be matched');
+        System.assertNotEquals(null, inc.Incentive_Slab_Ref__c, 'Slab should be matched');
 
         // 85% achievement should match criteria-specific "Revenue Bonus" slab (Fixed 5000)
-        Incentive_Slab__c matched = [SELECT Name FROM Incentive_Slab__c WHERE Id = :inc.Incentive_Slab__c];
+        Incentive_Slab__c matched = [SELECT Name FROM Incentive_Slab__c WHERE Id = :inc.Incentive_Slab_Ref__c];
         System.assertEquals('Revenue Bonus', matched.Name, 'Should match criteria-specific slab first');
         System.assertEquals(5000, inc.Calculated_Amount__c, 'Fixed payout should be 5000 * 1.0');
     }

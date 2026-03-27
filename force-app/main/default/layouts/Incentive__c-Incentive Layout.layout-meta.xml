@@ -55,7 +55,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Incentive_Slab__c</field>
+                <field>Incentive_Slab_Ref__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
