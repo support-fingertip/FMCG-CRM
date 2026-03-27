@@ -1346,17 +1346,18 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         if (scheme.Scheme_Slabs__r && scheme.Scheme_Slabs__r.length > 0) {
             const slab = this.findApplicableSlab(effectiveQty, 0, scheme);
             if (slab && slab.Discount_Type__c === 'Free Product' && slab.Free_Quantity__c) {
-                // For repeating slabs: calculate how many sets of the buy qty fit
-                const slabMinQty = slab.Min_Quantity__c || slab.Min_Value__c || 0;
-                if (slabMinQty > 0) {
-                    return Math.floor(effectiveQty / slabMinQty) * slab.Free_Quantity__c;
+                // "Buy X Get Y Free" repeating pattern:
+                // The buy qty (divisor) comes from scheme header Min_Quantity__c,
+                // or the first slab's Min_Quantity__c as fallback.
+                // The matched slab's Free_Quantity__c is the free qty per set.
+                const buyQty = scheme.Min_Quantity__c
+                    || (scheme.Scheme_Slabs__r[0] && scheme.Scheme_Slabs__r[0].Min_Quantity__c)
+                    || 0;
+                if (buyQty > 0 && effectiveQty >= buyQty) {
+                    return Math.floor(effectiveQty / buyQty) * slab.Free_Quantity__c;
                 }
-                // Fall back to scheme-level Min_Quantity__c
-                const schemeMinQty = scheme.Min_Quantity__c || 0;
-                if (schemeMinQty > 0) {
-                    return Math.floor(effectiveQty / schemeMinQty) * slab.Free_Quantity__c;
-                }
-                return slab.Free_Quantity__c;
+                // Non-repeating: slab directly specifies total free qty for this range
+                return effectiveQty >= (slab.Min_Quantity__c || 0) ? slab.Free_Quantity__c : 0;
             }
             return 0;
         }
@@ -1478,6 +1479,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     findApplicableSlab(qty, amount, scheme) {
         if (!scheme.Scheme_Slabs__r || scheme.Scheme_Slabs__r.length === 0) return null;
 
+        // Slabs are ordered ASC by Min_Quantity/Min_Value.
+        // For tiered slabs (with Max boundaries), only one slab matches.
+        // For open-ended slabs (no Max), return the highest matching slab.
         let matchedSlab = null;
         for (const slab of scheme.Scheme_Slabs__r) {
             if (slab.Slab_Type__c === 'Quantity') {
