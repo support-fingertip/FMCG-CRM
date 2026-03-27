@@ -1,146 +1,146 @@
 /**
  * @description Controller for the Achievement Dashboard LWC component.
- *              Provides targets vs achievements, leaderboard ranking, territory
- *              drill-down, and aggregated KPI summaries for FMCG sales performance.
+ *              Provides targets vs achievements, leaderboard ranking, and
+ *              territory drill-down using the dynamic Target_Actual__c model.
+ *
+ *              Replaces the legacy Target__c-based implementation with
+ *              criteria-driven Target_Actual__c + Target_Criteria__c data.
  *
  * @author  SFA Development Team
  * @date    2024
  */
 public with sharing class AchievementDashboardController {
 
-    // ── Get Targets and Achievements ────────────────────────────────────────────
+    // ── Get Targets and Achievements (Aggregated) ─────────────────────────────
 
     /**
-     * @description Retrieves target records with achievement values for a user
-     *              in a given month/year.
-     * @param userId The Salesperson (User) Id.
-     * @param month  The month (e.g. 'January' or '01').
-     * @param year   The four-digit year string.
-     * @return List of Target__c records with their Target_Line__c achievements.
+     * @description Retrieves aggregated target and achievement values for a user
+     *              in a given period, grouped by Target_Criteria__c name.
+     *              Returns a single map with keys like Revenue_Target__c, Revenue_Actual__c, etc.
+     * @param userId The User Id.
+     * @param period The period type ('Monthly' or 'Quarterly').
+     * @param year   The four-digit year integer.
+     * @return Map of aggregated KPI metric names to their values.
      */
     @AuraEnabled(cacheable=true)
-    public static List<Target__c> getTargetsAndAchievements(Id userId, String month, String year) {
-        return [
-            SELECT Id, Name, Target_Type__c, Month__c, Year__c,
-                   Salesperson__c, Salesperson__r.Name,
-                   Territory__c, Territory__r.Name,
-                   Target_Value__c, Achievement_Value__c, Achievement_Percent__c,
-                   Status__c,
-                   (SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name,
-                           Product_Category__c, Product_Category__r.Name,
-                           Target_Qty__c, Achievement_Qty__c,
-                           Target_Value__c, Achievement_Value__c,
-                           Achievement_Percent__c
-                    FROM Target_Lines__r
-                    ORDER BY Product_Ext__r.Name)
-            FROM Target__c
-            WHERE Salesperson__c = :userId
-            AND Month__c = :month
-            AND Year__c = :year
-            ORDER BY Target_Type__c
-        ];
-    }
+    public static Map<String, Object> getTargetsAndAchievements(Id userId, String period, Integer year) {
+        Map<String, Object> result = new Map<String, Object>();
 
-    // ── Get Leaderboard ─────────────────────────────────────────────────────────
-
-    /**
-     * @description Retrieves a leaderboard of top performers for a given period
-     *              and target type, ranked by achievement percentage.
-     * @param month      The month.
-     * @param year       The year.
-     * @param targetType The type of target (e.g. 'Revenue', 'Volume', 'Collection').
-     * @return List of Target__c records sorted by achievement, limited to top 20.
-     */
-    @AuraEnabled(cacheable=true)
-    public static List<Target__c> getLeaderboard(String month, String year, String targetType) {
-        String query = 'SELECT Id, Salesperson__c, Salesperson__r.Name, ' +
-                       'Salesperson__r.SmallPhotoUrl, ' +
-                       'Territory__c, Territory__r.Name, ' +
-                       'Target_Value__c, Achievement_Value__c, Achievement_Percent__c ' +
-                       'FROM Target__c ' +
-                       'WHERE Month__c = :month AND Year__c = :year';
-
-        if (String.isNotBlank(targetType)) {
-            query += ' AND Target_Type__c = :targetType';
+        // Derive date range
+        Date startDate;
+        Date endDate;
+        if (period == 'Quarterly') {
+            Integer currentMonth = Date.today().month();
+            Integer quarterStart = ((currentMonth - 1) / 3) * 3 + 1;
+            startDate = Date.newInstance(year, quarterStart, 1);
+            endDate = startDate.addMonths(3).addDays(-1);
+        } else {
+            // Monthly — use current month
+            Integer currentMonth = Date.today().month();
+            startDate = Date.newInstance(year, currentMonth, 1);
+            endDate = startDate.addMonths(1).addDays(-1);
         }
 
-        query += ' AND Achievement_Percent__c != null ' +
-                 'ORDER BY Achievement_Percent__c DESC ' +
-                 'LIMIT 20';
+        // Query target actuals for the user within the period
+        List<Target_Actual__c> actuals = [
+            SELECT Id, Target_Value__c, Achievement_Value__c,
+                   Target_Criteria__c, Target_Criteria__r.Name
+            FROM Target_Actual__c
+            WHERE User__c = :userId
+            AND Target_Period__r.Start_Date__c >= :startDate
+            AND Target_Period__r.End_Date__c <= :endDate
+            AND Target_Criteria__r.Active__c = true
+        ];
 
-        return Database.query(query);
+        // Aggregate by criteria name
+        Map<String, Decimal> targetMap = new Map<String, Decimal>();
+        Map<String, Decimal> achievementMap = new Map<String, Decimal>();
+
+        for (Target_Actual__c ta : actuals) {
+            String criteriaName = ta.Target_Criteria__r.Name;
+            if (String.isBlank(criteriaName)) continue;
+
+            // Normalize name for key (e.g., "Revenue Target" → "Revenue")
+            String key = criteriaName.trim();
+
+            Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
+            Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
+
+            targetMap.put(key, (targetMap.containsKey(key) ? targetMap.get(key) : 0) + tv);
+            achievementMap.put(key, (achievementMap.containsKey(key) ? achievementMap.get(key) : 0) + av);
+        }
+
+        // Map to expected LWC field names
+        result.put('Revenue_Target__c', targetMap.get('Revenue') != null ? targetMap.get('Revenue') : 0);
+        result.put('Revenue_Actual__c', achievementMap.get('Revenue') != null ? achievementMap.get('Revenue') : 0);
+        result.put('Volume_Target__c', targetMap.get('Volume') != null ? targetMap.get('Volume') : 0);
+        result.put('Volume_Actual__c', achievementMap.get('Volume') != null ? achievementMap.get('Volume') : 0);
+        result.put('Collection_Target__c', targetMap.get('Collection') != null ? targetMap.get('Collection') : 0);
+        result.put('Collection_Actual__c', achievementMap.get('Collection') != null ? achievementMap.get('Collection') : 0);
+        result.put('Coverage_Target__c', targetMap.get('Coverage') != null ? targetMap.get('Coverage') : 0);
+        result.put('Coverage_Actual__c', achievementMap.get('Coverage') != null ? achievementMap.get('Coverage') : 0);
+        result.put('New_Outlet_Target__c', targetMap.get('New Outlets') != null ? targetMap.get('New Outlets') : 0);
+        result.put('New_Outlet_Actual__c', achievementMap.get('New Outlets') != null ? achievementMap.get('New Outlets') : 0);
+
+        return result;
     }
 
-    // ── Get Territory Drill-Down ────────────────────────────────────────────────
+    // ── Get Leaderboard ───────────────────────────────────────────────────────
 
     /**
-     * @description Retrieves a territory-level breakdown of targets and achievements,
-     *              useful for managers drilling down into their team's performance.
-     * @param parentTerritoryId The parent Territory_Master__c Id.
-     * @param month The month.
-     * @param year  The year.
-     * @return List of aggregated territory-level performance records.
+     * @description Retrieves a leaderboard of top performers for a given period,
+     *              ranked by revenue achievement percentage.
+     * @param period The period type ('Monthly' or 'Quarterly').
+     * @param year   The four-digit year integer.
+     * @return List of maps representing top performers.
      */
     @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getDrillDown(Id parentTerritoryId, String month, String year) {
+    public static List<Map<String, Object>> getLeaderboard(String period, Integer year) {
         List<Map<String, Object>> results = new List<Map<String, Object>>();
 
-        // Get child territories
-        List<Territory_Master__c> childTerritories = [
-            SELECT Id, Name, Territory_Code__c
-            FROM Territory_Master__c
-            WHERE Id = :parentTerritoryId
-            AND Is_Active__c = true
-            ORDER BY Name
-        ];
-
-        Set<Id> territoryIds = new Set<Id>();
-        Map<Id, Territory_Master__c> territoryMap = new Map<Id, Territory_Master__c>();
-        for (Territory_Master__c t : childTerritories) {
-            territoryIds.add(t.Id);
-            territoryMap.put(t.Id, t);
+        Date startDate;
+        Date endDate;
+        if (period == 'Quarterly') {
+            Integer currentMonth = Date.today().month();
+            Integer quarterStart = ((currentMonth - 1) / 3) * 3 + 1;
+            startDate = Date.newInstance(year, quarterStart, 1);
+            endDate = startDate.addMonths(3).addDays(-1);
+        } else {
+            Integer currentMonth = Date.today().month();
+            startDate = Date.newInstance(year, currentMonth, 1);
+            endDate = startDate.addMonths(1).addDays(-1);
         }
 
-        if (territoryIds.isEmpty()) {
-            return results;
-        }
-
-        // Aggregate targets by territory
+        // Get revenue criteria targets grouped by user
         List<AggregateResult> aggResults = [
-            SELECT Territory__c territoryId,
-                   Target_Type__c targetType,
+            SELECT User__c userId,
+                   User__r.Name userName,
                    SUM(Target_Value__c) totalTarget,
-                   SUM(Achievement_Value__c) totalAchievement,
-                   COUNT(Id) targetCount
-            FROM Target__c
-            WHERE Territory__c IN :territoryIds
-            AND Month__c = :month
-            AND Year__c = :year
-            GROUP BY Territory__c, Target_Type__c
-            ORDER BY Territory__c
+                   SUM(Achievement_Value__c) totalAchievement
+            FROM Target_Actual__c
+            WHERE Target_Period__r.Start_Date__c >= :startDate
+            AND Target_Period__r.End_Date__c <= :endDate
+            AND Target_Criteria__r.Active__c = true
+            AND Target_Criteria__r.Name = 'Revenue'
+            GROUP BY User__c, User__r.Name
+            ORDER BY SUM(Achievement_Value__c) DESC
+            LIMIT 20
         ];
 
         for (AggregateResult ar : aggResults) {
             Map<String, Object> row = new Map<String, Object>();
-            Id territoryId = (Id)ar.get('territoryId');
-            Territory_Master__c territory = territoryMap.get(territoryId);
+            row.put('Id', (Id) ar.get('userId'));
+            row.put('User_Name__c', (String) ar.get('userName'));
+            row.put('Name', (String) ar.get('userName'));
 
-            row.put('territoryId', territoryId);
-            row.put('territoryName', territory != null ? territory.Name : '');
-            row.put('territoryCode', territory != null ? territory.Territory_Code__c : '');
-            row.put('targetType', (String)ar.get('targetType'));
-
-            Decimal totalTarget = (Decimal)ar.get('totalTarget');
-            Decimal totalAchievement = (Decimal)ar.get('totalAchievement');
+            Decimal totalTarget = (Decimal) ar.get('totalTarget');
+            Decimal totalAchievement = (Decimal) ar.get('totalAchievement');
             totalTarget = totalTarget != null ? totalTarget : 0;
             totalAchievement = totalAchievement != null ? totalAchievement : 0;
 
-            row.put('totalTarget', totalTarget);
-            row.put('totalAchievement', totalAchievement);
-            row.put('achievementPercent', totalTarget > 0
-                ? (totalAchievement / totalTarget * 100).setScale(2, RoundingMode.HALF_UP)
-                : 0);
-            row.put('targetCount', (Integer)ar.get('targetCount'));
+            row.put('Revenue_Target__c', totalTarget);
+            row.put('Revenue_Actual__c', totalAchievement);
+            row.put('Territory__c', '');
 
             results.add(row);
         }
@@ -148,164 +148,86 @@ public with sharing class AchievementDashboardController {
         return results;
     }
 
-    // ── Get KPI Summary ─────────────────────────────────────────────────────────
+    // ── Get Drill-Down ────────────────────────────────────────────────────────
 
     /**
-     * @description Retrieves aggregated KPI metrics for a user in a given month/year.
-     *              Includes revenue achievement, volume, collection, visit metrics, etc.
-     * @param userId The Salesperson (User) Id.
-     * @param month  The month.
-     * @param year   The year.
-     * @return Map of KPI metric names to their computed values.
+     * @description Retrieves a user-level breakdown of targets and achievements
+     *              for the subordinates of a given user (manager view).
+     * @param userId The manager's User Id.
+     * @param period The period type.
+     * @param year   The four-digit year integer.
+     * @return List of maps with per-user target/achievement breakdowns.
      */
     @AuraEnabled(cacheable=true)
-    public static Map<String, Object> getKPISummary(Id userId, String month, String year) {
-        Map<String, Object> kpis = new Map<String, Object>();
+    public static List<Map<String, Object>> getDrillDown(Id userId, String period, Integer year) {
+        List<Map<String, Object>> results = new List<Map<String, Object>>();
 
-        // Target-based KPIs
-        List<Target__c> targets = [
-            SELECT Id, Target_Type__c, Target_Value__c, Achievement_Value__c, Achievement_Percent__c
-            FROM Target__c
-            WHERE Salesperson__c = :userId
-            AND Month__c = :month
-            AND Year__c = :year
+        Date startDate;
+        Date endDate;
+        if (period == 'Quarterly') {
+            Integer currentMonth = Date.today().month();
+            Integer quarterStart = ((currentMonth - 1) / 3) * 3 + 1;
+            startDate = Date.newInstance(year, quarterStart, 1);
+            endDate = startDate.addMonths(3).addDays(-1);
+        } else {
+            Integer currentMonth = Date.today().month();
+            startDate = Date.newInstance(year, currentMonth, 1);
+            endDate = startDate.addMonths(1).addDays(-1);
+        }
+
+        // Get subordinate users
+        Set<Id> subordinateIds = TAM_RoleHierarchy_Service.getRoleSubordinateUsers(userId);
+
+        if (subordinateIds.isEmpty()) return results;
+
+        // Get all target actuals for subordinates
+        List<Target_Actual__c> allActuals = [
+            SELECT Id, User__c, User__r.Name,
+                   Target_Value__c, Achievement_Value__c,
+                   Target_Criteria__c, Target_Criteria__r.Name
+            FROM Target_Actual__c
+            WHERE User__c IN :subordinateIds
+            AND Target_Period__r.Start_Date__c >= :startDate
+            AND Target_Period__r.End_Date__c <= :endDate
+            AND Target_Criteria__r.Active__c = true
         ];
 
-        Decimal revenueTarget = 0;
-        Decimal revenueAchievement = 0;
-        Decimal collectionTarget = 0;
-        Decimal collectionAchievement = 0;
-        Decimal volumeTarget = 0;
-        Decimal volumeAchievement = 0;
+        // Group by user, then by criteria name
+        Map<Id, Map<String, Object>> userDataMap = new Map<Id, Map<String, Object>>();
 
-        for (Target__c t : targets) {
-            Decimal tv = t.Target_Value__c != null ? t.Target_Value__c : 0;
-            Decimal av = t.Achievement_Value__c != null ? t.Achievement_Value__c : 0;
-            if (t.Target_Type__c == 'Revenue') {
-                revenueTarget += tv;
-                revenueAchievement += av;
-            } else if (t.Target_Type__c == 'Collection') {
-                collectionTarget += tv;
-                collectionAchievement += av;
-            } else if (t.Target_Type__c == 'Volume') {
-                volumeTarget += tv;
-                volumeAchievement += av;
+        for (Target_Actual__c ta : allActuals) {
+            if (!userDataMap.containsKey(ta.User__c)) {
+                Map<String, Object> userData = new Map<String, Object>();
+                userData.put('Id', ta.User__c);
+                userData.put('Name', ta.User__r.Name);
+                userData.put('Is_Territory__c', false);
+                userData.put('Revenue_Target__c', 0);
+                userData.put('Revenue_Actual__c', 0);
+                userData.put('Volume_Actual__c', 0);
+                userData.put('Collection_Actual__c', 0);
+                userData.put('Coverage_Percent__c', 0);
+                userDataMap.put(ta.User__c, userData);
+            }
+
+            Map<String, Object> userData = userDataMap.get(ta.User__c);
+            String criteriaName = ta.Target_Criteria__r.Name;
+            Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
+            Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
+
+            if (criteriaName == 'Revenue') {
+                userData.put('Revenue_Target__c', (Decimal) userData.get('Revenue_Target__c') + tv);
+                userData.put('Revenue_Actual__c', (Decimal) userData.get('Revenue_Actual__c') + av);
+            } else if (criteriaName == 'Volume') {
+                userData.put('Volume_Actual__c', (Decimal) userData.get('Volume_Actual__c') + av);
+            } else if (criteriaName == 'Collection') {
+                userData.put('Collection_Actual__c', (Decimal) userData.get('Collection_Actual__c') + av);
+            } else if (criteriaName == 'Coverage') {
+                Decimal coverageTarget = tv > 0 ? tv : 1;
+                userData.put('Coverage_Percent__c', (av / coverageTarget * 100).setScale(1, RoundingMode.HALF_UP));
             }
         }
 
-        kpis.put('revenueTarget', revenueTarget);
-        kpis.put('revenueAchievement', revenueAchievement);
-        kpis.put('revenuePercent', revenueTarget > 0
-            ? (revenueAchievement / revenueTarget * 100).setScale(2, RoundingMode.HALF_UP) : 0);
-        kpis.put('collectionTarget', collectionTarget);
-        kpis.put('collectionAchievement', collectionAchievement);
-        kpis.put('collectionPercent', collectionTarget > 0
-            ? (collectionAchievement / collectionTarget * 100).setScale(2, RoundingMode.HALF_UP) : 0);
-        kpis.put('volumeTarget', volumeTarget);
-        kpis.put('volumeAchievement', volumeAchievement);
-        kpis.put('volumePercent', volumeTarget > 0
-            ? (volumeAchievement / volumeTarget * 100).setScale(2, RoundingMode.HALF_UP) : 0);
-
-        // Derive date range from month/year for visit and order queries
-        Date startDate = deriveStartDate(month, year);
-        Date endDate = startDate.addMonths(1).addDays(-1);
-
-        // Visit KPIs
-        AggregateResult[] visitAgg = [
-            SELECT COUNT(Id) totalVisits
-            FROM Visit__c
-            WHERE Salesperson__c = :userId
-            AND Visit_Date__c >= :startDate
-            AND Visit_Date__c <= :endDate
-            AND Visit_Status__c = 'Completed'
-        ];
-        Integer totalVisits = visitAgg.isEmpty() ? 0 : (Integer)visitAgg[0].get('totalVisits');
-        kpis.put('totalVisits', totalVisits);
-
-        Integer productiveVisits = [
-            SELECT COUNT()
-            FROM Visit__c
-            WHERE Salesperson__c = :userId
-            AND Visit_Date__c >= :startDate
-            AND Visit_Date__c <= :endDate
-            AND Visit_Status__c = 'Completed'
-            AND Is_Productive__c = true
-        ];
-        kpis.put('productiveVisits', productiveVisits);
-        kpis.put('strikeRate', totalVisits > 0
-            ? (Decimal.valueOf(productiveVisits) / Decimal.valueOf(totalVisits) * 100).setScale(2, RoundingMode.HALF_UP)
-            : 0);
-
-        // Order KPIs
-        AggregateResult[] orderAgg = [
-            SELECT COUNT(Id) totalOrders, SUM(Total_Net_Amount__c) totalOrderValue
-            FROM Sales_Order__c
-            WHERE Salesperson__c = :userId
-            AND Order_Date__c >= :startDate
-            AND Order_Date__c <= :endDate
-            AND Status__c NOT IN ('Cancelled', 'Rejected')
-        ];
-        if (!orderAgg.isEmpty()) {
-            kpis.put('totalOrders', (Integer)orderAgg[0].get('totalOrders'));
-            Decimal ov = (Decimal)orderAgg[0].get('totalOrderValue');
-            kpis.put('totalOrderValue', ov != null ? ov : 0);
-        } else {
-            kpis.put('totalOrders', 0);
-            kpis.put('totalOrderValue', 0);
-        }
-
-        // Lines per call (average order lines per visit)
-        Integer totalOrderCount = (Integer)kpis.get('totalOrders');
-        kpis.put('linesPerCall', totalVisits > 0
-            ? (Decimal.valueOf(totalOrderCount) / Decimal.valueOf(totalVisits)).setScale(2, RoundingMode.HALF_UP)
-            : 0);
-
-        // Attendance days
-        Integer attendanceDays = [
-            SELECT COUNT()
-            FROM Day_Attendance__c
-            WHERE Salesperson__c = :userId
-            AND Attendance_Date__c >= :startDate
-            AND Attendance_Date__c <= :endDate
-            AND Status__c IN ('Started', 'Completed')
-        ];
-        kpis.put('attendanceDays', attendanceDays);
-
-        return kpis;
-    }
-
-    // ── Private Helper: Derive Start Date ───────────────────────────────────────
-
-    /**
-     * @description Converts month name/number + year into a Date representing the
-     *              first day of that month.
-     */
-    private static Date deriveStartDate(String month, String year) {
-        Map<String, Integer> monthMap = new Map<String, Integer>{
-            'January' => 1, 'February' => 2, 'March' => 3,
-            'April' => 4, 'May' => 5, 'June' => 6,
-            'July' => 7, 'August' => 8, 'September' => 9,
-            'October' => 10, 'November' => 11, 'December' => 12
-        };
-
-        Integer monthNum;
-        if (monthMap.containsKey(month)) {
-            monthNum = monthMap.get(month);
-        } else {
-            try {
-                monthNum = Integer.valueOf(month);
-            } catch (Exception e) {
-                monthNum = Date.today().month();
-            }
-        }
-
-        Integer yearNum;
-        try {
-            yearNum = Integer.valueOf(year);
-        } catch (Exception e) {
-            yearNum = Date.today().year();
-        }
-
-        return Date.newInstance(yearNum, monthNum, 1);
+        results.addAll(userDataMap.values());
+        return results;
     }
 }

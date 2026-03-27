@@ -404,4 +404,48 @@ public class TestDataFactory {
         );
         return acc;
     }
+
+    // ── TAM Module Helpers ────────────────────────────────────────────────────
+
+    /**
+     * @description Creates a Target_Criteria__c record (unsaved).
+     */
+    public static Target_Criteria__c createTargetCriteria(String name, String objectName,
+            String operator, String field, String dateField, String userField) {
+        return new Target_Criteria__c(
+            Name = name,
+            Object__c = objectName,
+            Operator__c = operator,
+            Field__c = field,
+            Date_Field__c = dateField,
+            User_Field__c = userField,
+            Active__c = true
+        );
+    }
+
+    /**
+     * @description Creates a Target_Period__c record (unsaved).
+     */
+    public static Target_Period__c createTargetPeriod(String name, Date startDate, Date endDate, String periodType) {
+        return new Target_Period__c(
+            Name = name,
+            Start_Date__c = startDate,
+            End_Date__c = endDate,
+            Type__c = periodType,
+            Is_Active__c = true
+        );
+    }
+
+    /**
+     * @description Creates a Target_Actual__c record (unsaved).
+     */
+    public static Target_Actual__c createTargetActual(Id criteriaId, Id periodId, Id userId, Decimal targetValue) {
+        return new Target_Actual__c(
+            Target_Criteria__c = criteriaId,
+            Target_Period__c = periodId,
+            User__c = userId,
+            Target_Value__c = targetValue,
+            Achievement_Value__c = 0
+        );
+    }
 }
