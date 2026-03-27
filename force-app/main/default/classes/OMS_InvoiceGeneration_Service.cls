@@ -35,7 +35,9 @@ public without sharing class OMS_InvoiceGeneration_Service {
                            Line_Amount__c, Discount_Amount__c, Discount_Percent__c,
                            Net_Amount__c, CGST__c, SGST__c, IGST__c,
                            Tax_Amount__c, Tax_Rate__c, Total_Amount__c,
-                           Scheme__c, Scheme_Discount__c, UOM__c
+                           Scheme__c, Scheme_Discount__c, UOM__c,
+                           Batch_Master__c, Batch_Master__r.Batch_Number__c,
+                           Batch_Master__r.Expiry_Date__c
                     FROM Order_Line_Items__r)
             FROM Sales_Order__c
             WHERE Id IN :orderIds
@@ -133,7 +135,9 @@ public without sharing class OMS_InvoiceGeneration_Service {
                     Total_Amount__c     = orderLine.Total_Amount__c,
                     Line_Number__c      = lineNumber,
                     UOM__c              = orderLine.UOM__c,
-                    Order_Line_Item__c  = orderLine.Id
+                    Order_Line_Item__c  = orderLine.Id,
+                    Batch_No__c         = orderLine.Batch_Master__r.Batch_Number__c,
+                    Expiry_Date__c      = orderLine.Batch_Master__r.Expiry_Date__c
                 );
                 lineItemsToInsert.add(invoiceLine);
                 lineNumber++;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Batch_Master__c</fullName>
+    <label>Batch Master</label>
+    <type>Lookup</type>
+    <referenceTo>Batch_Master__c</referenceTo>
+    <relationshipName>Warehouse_Stocks</relationshipName>
+    <relationshipLabel>Warehouse Stocks</relationshipLabel>
+    <required>false</required>
+    <description>Lookup to Batch Master for proper relational integrity. Links warehouse stock to batch records for expiry tracking and FEFO picking.</description>
+</CustomField>

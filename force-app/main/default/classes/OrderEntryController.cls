@@ -85,7 +85,7 @@ public with sharing class OrderEntryController {
                 : (p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c);
             r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
             r.BaseUOMCode = (p.Base_UOM__c != null && p.Base_UOM__r.UOM_Code__c != null)
-                ? p.Base_UOM__r.UOM_Code__c : 'PC';
+                ? p.Base_UOM__r.UOM_Code__c : 'PCS';
             r.BaseUOMId = p.Base_UOM__c;
             r.BaseUOMName = (p.Base_UOM__c != null && p.Base_UOM__r.Name != null)
                 ? p.Base_UOM__r.Name : 'Piece';
@@ -143,6 +143,15 @@ public with sharing class OrderEntryController {
             order.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
             order.Total_Tax__c = toDecimal(payload.get('totalTax'));
             order.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
+
+            // Set territory from account
+            if (order.Account__c != null) {
+                List<Account> accts = [SELECT Territory__c FROM Account WHERE Id = :order.Account__c LIMIT 1];
+                if (!accts.isEmpty() && accts[0].Territory__c != null) {
+                    order.Territory__c = accts[0].Territory__c;
+                }
+            }
+
             // Set warehouse if selected
             if (payload.get('warehouseId') != null) {
                 order.Warehouse__c = (String) payload.get('warehouseId');
@@ -201,7 +210,7 @@ public with sharing class OrderEntryController {
                     }
 
                     // Get base UOM code for the product
-                    String baseUomCode = 'PC';
+                    String baseUomCode = 'PCS';
                     if (productId != null && productUOMMap.containsKey(productId)) {
                         Product_Extension__c pe = productUOMMap.get(productId);
                         if (pe.Base_UOM__c != null && String.isNotBlank(pe.Base_UOM__r.UOM_Code__c)) {
@@ -293,8 +302,12 @@ public with sharing class OrderEntryController {
     @AuraEnabled(cacheable=true)
     public static Sales_Order__c getLastOrder(Id accountId) {
         List<Sales_Order__c> orders = [
-            SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c,
-                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Quantity__c, Unit_Price__c, Line_Total__c, UOM__c
+            SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c, Net_Amount__c,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                           Product_Ext__r.Base_UOM__c, Product_Ext__r.Base_UOM__r.UOM_Code__c,
+                           Quantity__c, Base_Quantity__c, Unit_Price__c, Line_Total__c,
+                           UOM__c, Order_UOM__c, Base_UOM__c, Conversion_Factor__c,
+                           Free_Quantity__c, Discount_Amount__c, Tax_Rate__c, Tax_Amount__c, Total_Amount__c
                     FROM Order_Line_Items__r ORDER BY CreatedDate)
             FROM Sales_Order__c
             WHERE Account__c = :accountId
@@ -316,10 +329,12 @@ public with sharing class OrderEntryController {
                    Min_Value__c, Max_Value__c, Product_Ext__c, Product_Category__c,
                    Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
                    Is_Stackable__c, Priority__c,
-                   (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
+                   (SELECT Id, Slab_Type__c, Min_Quantity__c, Max_Quantity__c,
+                           Min_Value__c, Max_Value__c,
                            Discount_Type__c, Discount_Value__c, Discount_Percent__c,
-                           Discount_Amount__c, Free_Product_Ext__c, Free_Quantity__c
-                    FROM Scheme_Slabs__r ORDER BY Min_Value__c),
+                           Discount_Amount__c, Free_Product_Ext__c, Free_Quantity__c,
+                           Price_Discount__c, Reward_Points__c
+                    FROM Scheme_Slabs__r WHERE Is_Active__c = true ORDER BY Min_Quantity__c ASC, Min_Value__c ASC),
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c,
                            Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r)
@@ -408,7 +423,7 @@ public with sharing class OrderEntryController {
             item.put('classification', cfg.Classification__c);
             item.put('configId', cfg.Id);
             item.put('uom', cfg.Product_Ext__r.Unit_of_Measure__c != null ? cfg.Product_Ext__r.Unit_of_Measure__c : 'Piece');
-            item.put('baseUOMCode', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PC');
+            item.put('baseUOMCode', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PCS');
             item.put('baseUOMName', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.Name != null) ? cfg.Product_Ext__r.Base_UOM__r.Name : 'Piece');
             item.put('secondaryUOMCode', (cfg.Product_Ext__r.Secondary_UOM__c != null && cfg.Product_Ext__r.Secondary_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Secondary_UOM__r.UOM_Code__c : null);
             item.put('secondaryUOMName', (cfg.Product_Ext__r.Secondary_UOM__c != null && cfg.Product_Ext__r.Secondary_UOM__r.Name != null) ? cfg.Product_Ext__r.Secondary_UOM__r.Name : null);
@@ -455,7 +470,7 @@ public with sharing class OrderEntryController {
                 item.put('schemeId', scheme.Id);
                 item.put('classification', sp.Product_Classification__c);
                 item.put('uom', sp.Product_Ext__r.Unit_of_Measure__c != null ? sp.Product_Ext__r.Unit_of_Measure__c : 'Piece');
-                item.put('baseUOMCode', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PC');
+                item.put('baseUOMCode', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PCS');
                 item.put('baseUOMName', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.Name != null) ? sp.Product_Ext__r.Base_UOM__r.Name : 'Piece');
                 item.put('secondaryUOMCode', (sp.Product_Ext__r.Secondary_UOM__c != null && sp.Product_Ext__r.Secondary_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Secondary_UOM__r.UOM_Code__c : null);
                 item.put('secondaryUOMName', (sp.Product_Ext__r.Secondary_UOM__c != null && sp.Product_Ext__r.Secondary_UOM__r.Name != null) ? sp.Product_Ext__r.Secondary_UOM__r.Name : null);
@@ -671,7 +686,7 @@ public with sharing class OrderEntryController {
         r.GST_Rate = p.GST_Rate__c;
         r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
         r.BaseUOMCode = (p.Base_UOM__c != null && p.Base_UOM__r.UOM_Code__c != null)
-            ? p.Base_UOM__r.UOM_Code__c : 'PC';
+            ? p.Base_UOM__r.UOM_Code__c : 'PCS';
         r.BaseUOMId = p.Base_UOM__c;
         r.BaseUOMName = (p.Base_UOM__c != null && p.Base_UOM__r.Name != null)
             ? p.Base_UOM__r.Name : 'Piece';

@@ -25,6 +25,7 @@ public without sharing class INV_WarehouseStock_Service {
             FROM Warehouse_Stock__c
             WHERE Warehouse__c = :warehouseId
               AND Product_Ext__c IN :productIds
+              AND (Expiry_Date__c = null OR Expiry_Date__c > TODAY)
         ]) {
             Decimal onHand = stock.Qty_On_Hand__c != null ? stock.Qty_On_Hand__c : 0;
             Decimal reserved = stock.Qty_Reserved__c != null ? stock.Qty_Reserved__c : 0;
@@ -296,6 +297,7 @@ public without sharing class INV_WarehouseStock_Service {
                     Warehouse__c = warehouseId,
                     Product_Ext__c = item.productId,
                     Batch_Number__c = item.batchNumber,
+                    Batch_Master__c = item.batchMasterId,
                     Qty_On_Hand__c = 0,
                     Qty_Reserved__c = 0,
                     Qty_Damaged__c = 0
@@ -404,6 +406,7 @@ public without sharing class INV_WarehouseStock_Service {
     public class StockLineItem {
         @AuraEnabled public Id productId;
         @AuraEnabled public String batchNumber;
+        @AuraEnabled public Id batchMasterId;
         @AuraEnabled public Decimal quantity;
 
         public StockLineItem() {}
@@ -411,6 +414,13 @@ public without sharing class INV_WarehouseStock_Service {
         public StockLineItem(Id productId, String batchNumber, Decimal quantity) {
             this.productId = productId;
             this.batchNumber = batchNumber;
+            this.quantity = quantity;
+        }
+
+        public StockLineItem(Id productId, String batchNumber, Id batchMasterId, Decimal quantity) {
+            this.productId = productId;
+            this.batchNumber = batchNumber;
+            this.batchMasterId = batchMasterId;
             this.quantity = quantity;
         }
     }

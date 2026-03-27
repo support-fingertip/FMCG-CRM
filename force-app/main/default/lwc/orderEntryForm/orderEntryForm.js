@@ -243,9 +243,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             return this.uomOptionsData;
         }
         return [
-            { label: 'Piece (PC)', value: 'PC' },
+            { label: 'Piece (PCS)', value: 'PCS' },
             { label: 'Case (CS)', value: 'CS' },
-            { label: 'Box (BX)', value: 'BX' },
+            { label: 'Box (BOX)', value: 'BOX' },
             { label: 'Kilogram (KG)', value: 'KG' },
             { label: 'Litre (LTR)', value: 'LTR' }
         ];
@@ -266,22 +266,24 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     mapPicklistToCode(picklistValue) {
-        if (!picklistValue) return 'PC';
+        if (!picklistValue) return 'PCS';
         const mapping = {
-            'Pieces': 'PC', 'Cases': 'CS', 'Boxes': 'BX',
-            'Kg': 'KG', 'Liters': 'LTR', 'Piece': 'PC',
-            'Box': 'BX', 'Case': 'CS', 'Litre': 'LTR',
-            'Dozen': 'DZ', 'Pack': 'PK'
+            'Pieces': 'PCS', 'Cases': 'CS', 'Boxes': 'BOX',
+            'Kg': 'KG', 'Liters': 'LTR', 'Piece': 'PCS',
+            'Box': 'BOX', 'Case': 'CS', 'Litre': 'LTR',
+            'Dozen': 'DZ', 'Pack': 'PK', 'Gram': 'GRM',
+            'Millilitre': 'ML', 'Kilogram': 'KG'
         };
-        return mapping[picklistValue] || 'PC';
+        return mapping[picklistValue] || 'PCS';
     }
 
     mapCodeToPicklist(uomCode) {
         if (!uomCode) return 'Pieces';
         const mapping = {
-            'PC': 'Pieces', 'CS': 'Cases', 'BX': 'Boxes',
-            'KG': 'Kg', 'LTR': 'Liters', 'DZ': 'Pieces',
-            'PK': 'Pieces', 'G': 'Kg', 'ML': 'Liters'
+            'PCS': 'Pieces', 'PC': 'Pieces', 'CS': 'Cases',
+            'BOX': 'Boxes', 'BX': 'Boxes', 'KG': 'Kg',
+            'LTR': 'Liters', 'DZ': 'Pieces', 'PK': 'Pieces',
+            'GRM': 'Kg', 'G': 'Kg', 'ML': 'Liters'
         };
         return mapping[uomCode] || 'Pieces';
     }
@@ -291,7 +293,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const addedCodes = new Set();
 
         // 1. Add product's base UOM first (always the default)
-        const baseCode = product.BaseUOMCode || product.baseUOMCode || 'PC';
+        const baseCode = product.BaseUOMCode || product.baseUOMCode || 'PCS';
         const baseName = product.BaseUOMName || product.baseUOMName || 'Piece';
         options.push({ label: baseName + ' (' + baseCode + ')', value: baseCode });
         addedCodes.add(baseCode);
@@ -471,8 +473,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             }
         }
         const codeNameMap = {
-            'PC': 'Piece', 'CS': 'Case', 'BX': 'Box', 'KG': 'Kilogram',
-            'LTR': 'Litre', 'DZ': 'Dozen', 'PK': 'Pack', 'G': 'Gram', 'ML': 'Millilitre'
+            'PCS': 'Piece', 'PC': 'Piece', 'CS': 'Case', 'BOX': 'Box', 'BX': 'Box',
+            'KG': 'Kilogram', 'LTR': 'Litre', 'DZ': 'Dozen', 'PK': 'Pack',
+            'GRM': 'Gram', 'G': 'Gram', 'ML': 'Millilitre'
         };
         return codeNameMap[code] || code;
     }
@@ -484,10 +487,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.accountChannel = getFieldValue(data, 'Account.Channel__c') || 'General Trade';
             this.accountClass = getFieldValue(data, 'Account.Outlet_Class__c') || 'B';
             this.selectedAccountId = this.recordId;
-            this.loadLastOrder();
-            this.loadSchemes();
-            this.loadMustSellProducts();
-            this.loadTopSellingProducts();
+            this.initializeOrderData();
         } else if (error) {
             this.showToast('Error', 'Failed to load account details', 'error');
         }
@@ -496,10 +496,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     connectedCallback() {
         if (!this.recordId && this.accountId) {
             this.selectedAccountId = this.accountId;
-            this.loadLastOrder();
-            this.loadSchemes();
-            this.loadMustSellProducts();
-            this.loadTopSellingProducts();
+            this.initializeOrderData();
         }
     }
 
@@ -507,11 +504,19 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.selectedAccountId = event.detail.recordId;
         if (this.selectedAccountId) {
             this.loadAccountDetails();
-            this.loadLastOrder();
-            this.loadSchemes();
-            this.loadMustSellProducts();
-            this.loadTopSellingProducts();
+            this.initializeOrderData();
         }
+    }
+
+    /**
+     * Coordinates loading of order data ensuring schemes are loaded
+     * before top-selling and must-sell products that depend on them.
+     */
+    async initializeOrderData() {
+        this.loadLastOrder();
+        await this.loadSchemes();
+        this.loadMustSellProducts();
+        this.loadTopSellingProducts();
     }
 
     loadAccountDetails() {
@@ -617,8 +622,14 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const rate = product.unitPrice || product.mrp || 0;
             const grossAmount = qty * rate;
             const taxRate = product.gstRate || 18;
-            const taxAmount = grossAmount * (taxRate / 100);
-            const totalAmount = grossAmount + taxAmount;
+
+            // Find applicable scheme for must-sell product
+            const scheme = this.findApplicableScheme({ id: product.productId, Id: product.productId });
+            const freeQty = scheme ? this.calculateFreeQty(qty, scheme) : 0;
+            const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, qty, scheme) : 0;
+            const taxableAmount = grossAmount - discountAmount;
+            const taxAmount = taxableAmount * (taxRate / 100);
+            const totalAmount = taxableAmount + taxAmount;
 
             const newItem = {
                 id: 'LINE_' + this.lineIdCounter,
@@ -635,15 +646,15 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 rate: rate,
                 rateFormatted: this.formatCurrency(rate),
                 quantity: qty,
-                freeQty: 0,
-                schemeName: product.schemeName || '',
-                schemeId: product.schemeId || null,
+                freeQty: freeQty,
+                schemeName: scheme ? scheme.Name : '',
+                schemeId: scheme ? scheme.Id : null,
                 classification: 'Must Sell',
                 classificationBadgeClass: this.getClassificationBadgeClass('Must Sell'),
                 taxRate: taxRate,
                 grossAmount: grossAmount,
-                discountAmount: 0,
-                discountFormatted: this.formatCurrency(0),
+                discountAmount: discountAmount,
+                discountFormatted: this.formatCurrency(discountAmount),
                 taxAmount: taxAmount,
                 taxFormatted: this.formatCurrency(taxAmount),
                 totalAmount: totalAmount,
@@ -688,7 +699,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     unitPrice: product.Unit_Price || 0,
                     taxRate: product.GST_Rate || 18,
                     productUOM: product.UOM || 'Piece',
-                    baseUOMCode: product.BaseUOMCode || 'PC',
+                    baseUOMCode: product.BaseUOMCode || 'PCS',
                     baseUOMName: product.BaseUOMName || 'Piece',
                     secondaryUOMCode: product.SecondaryUOMCode,
                     orderingUOMs: product.OrderingUOMs,
@@ -732,7 +743,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const taxAmount = taxableAmount * (product.taxRate / 100);
         const totalAmount = taxableAmount + taxAmount;
 
-        const baseUOMCode = product.baseUOMCode || 'PC';
+        const baseUOMCode = product.baseUOMCode || 'PCS';
         const defaultUOMCode = baseUOMCode;
         const defaultUOM = this.mapCodeToPicklist(defaultUOMCode);
         const uomOptions = product.productUOMOptions || this.buildProductUOMOptions(product);
@@ -960,7 +971,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
                 // Build per-product UOM options
                 const productUOMOpts = this.buildProductUOMOptions(product);
-                const baseCode = product.BaseUOMCode || 'PC';
+                const baseCode = product.BaseUOMCode || 'PCS';
                 this.productUOMOptionsMap = {
                     ...this.productUOMOptionsMap,
                     [product.Id]: productUOMOpts
@@ -1066,7 +1077,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const fsMatch = this.focusedSellProducts.find(p => p.productId === product.id);
             const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
 
-            const baseUOMCode = product.baseUOMCode || 'PC';
+            const baseUOMCode = product.baseUOMCode || 'PCS';
             const defaultUOMCode = baseUOMCode;
             const defaultUOM = this.mapCodeToPicklist(defaultUOMCode);
             const uomOptions = this.buildProductUOMOptions(product);
@@ -1142,7 +1153,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         // Compute base quantity using the stored conversion factor
         const convFactor = item.conversionFactor || 1;
         const baseQty = newQty * convFactor;
-        const baseUOMCode = item.baseUOMCode || 'PC';
+        const baseUOMCode = item.baseUOMCode || 'PCS';
         const uomCode = item.uomCode || baseUOMCode;
         const baseQtyLabel = (uomCode !== baseUOMCode && newQty > 0)
             ? '= ' + baseQty + ' ' + baseUOMCode : '';
@@ -1176,7 +1187,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         if (!item) return;
 
         const newUOMPicklist = this.mapCodeToPicklist(newUOMCode);
-        const baseUOMCode = item.baseUOMCode || 'PC';
+        const baseUOMCode = item.baseUOMCode || 'PCS';
 
         // Get conversion factor for the new UOM
         let convFactor = 1;
@@ -1218,12 +1229,30 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     recalculateLineItem(item) {
-        const scheme = this.schemes.find(s => s.Id === item.schemeId);
-        const freeQty = scheme ? this.calculateFreeQty(item.quantity, scheme, item) : item.freeQty;
-        const grossAmount = item.quantity * item.rate;
+        let scheme = this.schemes.find(s => s.Id === item.schemeId);
+        // If no scheme found by ID, try to find one by product matching
+        if (!scheme && item.productId) {
+            scheme = this.findApplicableScheme({ id: item.productId, Id: item.productId });
+            if (scheme) {
+                item = { ...item, schemeId: scheme.Id, schemeName: scheme.Name };
+            }
+        }
+
+        // Always recompute base quantity from entered qty and conversion factor
+        const convFactor = item.conversionFactor || 1;
+        const baseQuantity = item.quantity * convFactor;
+        const baseUOMCode = item.baseUOMCode || 'PCS';
+        const uomCode = item.uomCode || baseUOMCode;
+        const baseQuantityLabel = (uomCode !== baseUOMCode && item.quantity > 0)
+            ? '= ' + baseQuantity + ' ' + baseUOMCode : '';
+
+        const freeQty = scheme ? this.calculateFreeQty(item.quantity, scheme, { ...item, baseQuantity }) : 0;
+
+        // Unit price is per base UOM, so pricing must use base quantity
+        const grossAmount = baseQuantity * item.rate;
 
         // Use base quantity for scheme discount calculation (UOM-aware)
-        const effectiveQtyForScheme = scheme ? this.convertQtyForScheme(item.quantity, item, scheme) : item.quantity;
+        const effectiveQtyForScheme = scheme ? this.convertQtyForScheme(item.quantity, { ...item, baseQuantity }, scheme) : baseQuantity;
         const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, effectiveQtyForScheme, scheme) : 0;
 
         const taxableAmount = grossAmount - discountAmount;
@@ -1232,6 +1261,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         return {
             ...item,
+            baseQuantity: baseQuantity,
+            baseQuantityLabel: baseQuantityLabel,
             freeQty: freeQty,
             grossAmount: grossAmount,
             discountAmount: discountAmount,
@@ -1339,19 +1370,18 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         if (scheme.Scheme_Slabs__r && scheme.Scheme_Slabs__r.length > 0) {
             const slab = this.findApplicableSlab(effectiveQty, 0, scheme);
             if (slab && slab.Discount_Type__c === 'Free Product' && slab.Free_Quantity__c) {
-                // For repeating slabs: calculate how many sets of the buy qty fit
-                const slabMinQty = slab.Min_Quantity__c || 0;
-                if (slabMinQty > 0) {
-                    return Math.floor(effectiveQty / slabMinQty) * slab.Free_Quantity__c;
-                }
+                // Slab gives a flat free quantity for the matched tier
+                // (matches server-side applySlabBenefit which assigns slab.Free_Quantity__c directly)
                 return slab.Free_Quantity__c;
             }
-            return 0;
+            // If slabs exist but no slab matched (qty below first slab threshold),
+            // fall through to scheme-level logic below
         }
 
-        // Scheme-level free products
+        // Scheme-level free products: repeating "Buy X Get Y Free" pattern
         if (scheme.Scheme_Category__c === 'Free Products') {
-            // Determine the "buy X" divisor: prefer Scheme_Products min qty, fall back to scheme header
+            // Determine the "buy X" divisor: prefer Scheme_Products buy product min qty,
+            // then scheme header Min_Quantity__c
             let buyQty = scheme.Min_Quantity__c || 0;
             if (scheme.Scheme_Products__r && scheme.Scheme_Products__r.length > 0) {
                 const buyProduct = scheme.Scheme_Products__r.find(
@@ -1379,8 +1409,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         // Get scheme base UOM code
         const schemeBaseUOM = scheme.Base_UOM__r?.UOM_Code__c || null;
-        const lineUOMCode = lineItem.uomCode || lineItem.baseUOMCode || 'PC';
-        const productBaseUOMCode = lineItem.baseUOMCode || 'PC';
+        const lineUOMCode = lineItem.uomCode || lineItem.baseUOMCode || 'PCS';
+        const productBaseUOMCode = lineItem.baseUOMCode || 'PCS';
 
         // If scheme has a base UOM, convert to it
         if (schemeBaseUOM) {
@@ -1466,20 +1496,26 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     findApplicableSlab(qty, amount, scheme) {
         if (!scheme.Scheme_Slabs__r || scheme.Scheme_Slabs__r.length === 0) return null;
 
+        // Slabs are ordered ASC by Min_Quantity/Min_Value.
+        // For tiered slabs (with Max boundaries), only one slab matches.
+        // For open-ended slabs (no Max), return the highest matching slab.
+        let matchedSlab = null;
         for (const slab of scheme.Scheme_Slabs__r) {
-            let compareValue;
             if (slab.Slab_Type__c === 'Quantity') {
-                compareValue = qty || 0;
+                const compareQty = qty || 0;
+                const minQ = slab.Min_Quantity__c != null ? slab.Min_Quantity__c : slab.Min_Value__c;
+                const maxQ = slab.Max_Quantity__c != null ? slab.Max_Quantity__c : slab.Max_Value__c;
+                const meetsMin = minQ == null || compareQty >= minQ;
+                const meetsMax = maxQ == null || compareQty <= maxQ;
+                if (meetsMin && meetsMax) matchedSlab = slab;
             } else {
-                compareValue = amount || 0;
+                const compareVal = amount || 0;
+                const meetsMin = slab.Min_Value__c == null || compareVal >= slab.Min_Value__c;
+                const meetsMax = slab.Max_Value__c == null || compareVal <= slab.Max_Value__c;
+                if (meetsMin && meetsMax) matchedSlab = slab;
             }
-
-            const meetsMin = slab.Min_Value__c == null || compareValue >= slab.Min_Value__c;
-            const meetsMax = slab.Max_Value__c == null || compareValue <= slab.Max_Value__c;
-
-            if (meetsMin && meetsMax) return slab;
         }
-        return null;
+        return matchedSlab;
     }
 
     calculateSlabDiscount(amount, slab, scheme) {
@@ -1516,35 +1552,59 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 this.lineIdCounter++;
                 const reorderUOM = lastItem.UOM__c || 'Pieces';
                 const reorderUOMCode = this.mapPicklistToCode(reorderUOM);
-                // Build full UOM options; use cached map if available, else build with base UOM + master UOMs
+
+                // Use the product's actual base UOM, not the order UOM
+                const productBaseUOMCode = lastItem.Product_Ext__r?.Base_UOM__r?.UOM_Code__c || reorderUOMCode;
+                const convFactor = lastItem.Conversion_Factor__c || 1;
+                const enteredQty = lastItem.Quantity__c || 0;
+                const baseQty = lastItem.Base_Quantity__c || (enteredQty * convFactor);
+                const baseQtyLabel = (reorderUOMCode !== productBaseUOMCode && enteredQty > 0)
+                    ? '= ' + baseQty + ' ' + productBaseUOMCode : '';
+
+                // Build full UOM options; use cached map if available
                 const reorderUOMOptions = this.productUOMOptionsMap[lastItem.Product_Ext__c]
-                    || this.buildProductUOMOptions({ BaseUOMCode: reorderUOMCode, BaseUOMName: this.getUOMNameByCode(reorderUOMCode) });
+                    || this.buildProductUOMOptions({ BaseUOMCode: productBaseUOMCode, BaseUOMName: this.getUOMNameByCode(productBaseUOMCode) });
+                this.productUOMOptionsMap = { ...this.productUOMOptionsMap, [lastItem.Product_Ext__c]: reorderUOMOptions };
+
+                // Pricing uses base quantity since unit price is per base UOM
+                const rate = lastItem.Unit_Price__c || 0;
+                const grossAmount = baseQty * rate;
+
+                // Find applicable scheme for recalculation
+                const scheme = this.findApplicableScheme({ id: lastItem.Product_Ext__c, Id: lastItem.Product_Ext__c });
+                const freeQty = scheme ? this.calculateFreeQty(enteredQty, scheme, { baseQuantity: baseQty, baseUOMCode: productBaseUOMCode, uomCode: reorderUOMCode, conversionFactor: convFactor }) : (lastItem.Free_Quantity__c || 0);
+                const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, baseQty, scheme) : (lastItem.Discount_Amount__c || 0);
+                const taxRate = lastItem.Tax_Rate__c || 18;
+                const taxableAmount = grossAmount - discountAmount;
+                const taxAmount = taxableAmount * (taxRate / 100);
+                const totalAmount = taxableAmount + taxAmount;
+
                 const newItem = {
                     id: 'LINE_' + this.lineIdCounter,
                     productId: lastItem.Product_Ext__c,
-                    productName: lastItem.Product_Name__c || lastItem.Product_Ext__r?.Name || 'Product',
-                    sku: lastItem.SKU__c || 'N/A',
+                    productName: lastItem.Product_Ext__r?.Name || 'Product',
+                    sku: lastItem.Product_Ext__r?.SKU_Code__c || 'N/A',
                     uom: reorderUOM,
                     uomCode: reorderUOMCode,
-                    baseUOMCode: reorderUOMCode,
-                    conversionFactor: 1,
-                    baseQuantity: lastItem.Quantity__c || 0,
-                    baseQuantityLabel: '',
+                    baseUOMCode: productBaseUOMCode,
+                    conversionFactor: convFactor,
+                    baseQuantity: baseQty,
+                    baseQuantityLabel: baseQtyLabel,
                     productUOMOptions: reorderUOMOptions,
-                    rate: lastItem.Unit_Price__c || 0,
-                    rateFormatted: this.formatCurrency(lastItem.Unit_Price__c || 0),
-                    quantity: lastItem.Quantity__c || 0,
-                    freeQty: lastItem.Free_Qty__c || 0,
-                    schemeName: '',
-                    schemeId: null,
-                    taxRate: lastItem.Tax_Rate__c || 18,
-                    grossAmount: (lastItem.Quantity__c || 0) * (lastItem.Unit_Price__c || 0),
-                    discountAmount: lastItem.Discount_Amount__c || 0,
-                    discountFormatted: this.formatCurrency(lastItem.Discount_Amount__c || 0),
-                    taxAmount: lastItem.Tax_Amount__c || 0,
-                    taxFormatted: this.formatCurrency(lastItem.Tax_Amount__c || 0),
-                    totalAmount: lastItem.Total_Amount__c || 0,
-                    totalFormatted: this.formatCurrency(lastItem.Total_Amount__c || 0),
+                    rate: rate,
+                    rateFormatted: this.formatCurrency(rate),
+                    quantity: enteredQty,
+                    freeQty: freeQty,
+                    schemeName: scheme ? scheme.Name : '',
+                    schemeId: scheme ? scheme.Id : null,
+                    taxRate: taxRate,
+                    grossAmount: grossAmount,
+                    discountAmount: discountAmount,
+                    discountFormatted: this.formatCurrency(discountAmount),
+                    taxAmount: taxAmount,
+                    taxFormatted: this.formatCurrency(taxAmount),
+                    totalAmount: totalAmount,
+                    totalFormatted: this.formatCurrency(totalAmount),
                     serialNumber: this.lineItems.length + 1,
                     rowClass: 'oef-reorder-row'
                 };
@@ -1720,7 +1780,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 rate: item.rate,
                 uom: item.uom || 'Pieces',
                 uomCode: item.uomCode || this.mapPicklistToCode(item.uom || 'Pieces'),
-                baseUOMCode: item.baseUOMCode || 'PC',
+                baseUOMCode: item.baseUOMCode || 'PCS',
                 grossAmount: item.grossAmount,
                 discountAmount: item.discountAmount,
                 taxRate: item.taxRate,

@@ -170,6 +170,110 @@ public without sharing class OMS_OrderValidation_Service {
         }
     }
 
+    /**
+     * @description Validates that each sales order includes all mandatory must-sell
+     *              products configured for the order's territory, channel, and
+     *              customer type. Adds a warning-level error to orders missing
+     *              required products when the order transitions to 'Submitted'.
+     *
+     * @param orders The list of Sales_Order__c records to validate.
+     */
+    public static void validateMustSellCompliance(List<Sales_Order__c> orders) {
+        // Collect account/territory/channel info from orders
+        Set<Id> orderIds = new Set<Id>();
+        Set<Id> accountIds = new Set<Id>();
+        Set<Id> territoryIds = new Set<Id>();
+        Set<String> channels = new Set<String>();
+
+        for (Sales_Order__c order : orders) {
+            orderIds.add(order.Id);
+            if (order.Account__c != null) accountIds.add(order.Account__c);
+            if (order.Territory__c != null) territoryIds.add(order.Territory__c);
+            if (String.isNotBlank(order.Channel__c)) channels.add(order.Channel__c);
+        }
+
+        if (orderIds.isEmpty()) return;
+
+        // Query account details for customer type
+        Map<Id, Account> accountMap = new Map<Id, Account>();
+        if (!accountIds.isEmpty()) {
+            accountMap = new Map<Id, Account>([
+                SELECT Id, RecordType.DeveloperName
+                FROM Account
+                WHERE Id IN :accountIds
+            ]);
+        }
+
+        // Query active must-sell configurations matching the order dimensions
+        Date today = Date.today();
+        List<Must_Sell_Config__c> configs = [
+            SELECT Id, Product_Ext__c, Product_Ext__r.Name, Territory__c,
+                   Channel__c, Customer_Type__c
+            FROM Must_Sell_Config__c
+            WHERE Is_Active__c = true
+              AND (Start_Date__c = null OR Start_Date__c <= :today)
+              AND (End_Date__c = null OR End_Date__c >= :today)
+              AND (Territory__c IN :territoryIds OR Territory__c = null)
+              AND (Channel__c IN :channels OR Channel__c = null)
+        ];
+
+        if (configs.isEmpty()) return;
+
+        // Query order line items to see which products are already in each order
+        Map<Id, Set<Id>> productsByOrder = new Map<Id, Set<Id>>();
+        for (Order_Line_Item__c li : [
+            SELECT Sales_Order__c, Product_Ext__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c IN :orderIds
+              AND Product_Ext__c != null
+        ]) {
+            if (!productsByOrder.containsKey(li.Sales_Order__c)) {
+                productsByOrder.put(li.Sales_Order__c, new Set<Id>());
+            }
+            productsByOrder.get(li.Sales_Order__c).add(li.Product_Ext__c);
+        }
+
+        // Validate each order against applicable must-sell configs
+        for (Sales_Order__c order : orders) {
+            Set<Id> orderedProducts = productsByOrder.containsKey(order.Id)
+                ? productsByOrder.get(order.Id) : new Set<Id>();
+
+            Account acct = accountMap.get(order.Account__c);
+            String customerType = (acct != null) ? getCustomerTypeFromRecordType(acct) : '';
+
+            List<String> missingProducts = new List<String>();
+
+            for (Must_Sell_Config__c config : configs) {
+                // Match territory
+                if (config.Territory__c != null && config.Territory__c != order.Territory__c) {
+                    continue;
+                }
+                // Match channel
+                if (String.isNotBlank(config.Channel__c) && config.Channel__c != order.Channel__c) {
+                    continue;
+                }
+                // Match customer type
+                if (String.isNotBlank(config.Customer_Type__c)
+                    && config.Customer_Type__c != customerType) {
+                    continue;
+                }
+
+                // Check if product is in the order
+                if (!orderedProducts.contains(config.Product_Ext__c)) {
+                    missingProducts.add(config.Product_Ext__r.Name);
+                }
+            }
+
+            if (!missingProducts.isEmpty()) {
+                order.addError(
+                    'Must-sell products missing from order: ' +
+                    String.join(missingProducts, ', ') +
+                    '. Please add these products before submitting.'
+                );
+            }
+        }
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
@@ -203,5 +307,23 @@ public without sharing class OMS_OrderValidation_Service {
             // Custom metadata may not exist; fall back to default
         }
         return 0; // Default: no minimum
+    }
+
+    private static String getCustomerTypeFromRecordType(Account acct) {
+        if (acct.RecordType == null || String.isBlank(acct.RecordType.DeveloperName)) {
+            return '';
+        }
+        Map<String, String> recordTypeToCustomerType = new Map<String, String>{
+            'Retailer' => 'Retailer',
+            'Distributor' => 'Distributor',
+            'Super_Stockist' => 'Super Stockist',
+            'Modern_Trade' => 'Modern Trade',
+            'Grocery' => 'Grocery',
+            'Medical' => 'Medical',
+            'Hardware' => 'Hardware',
+            'General_Store' => 'General Store'
+        };
+        String result = recordTypeToCustomerType.get(acct.RecordType.DeveloperName);
+        return result != null ? result : acct.RecordType.DeveloperName;
     }
 }

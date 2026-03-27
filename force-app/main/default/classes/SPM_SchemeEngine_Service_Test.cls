@@ -522,7 +522,7 @@ private class SPM_SchemeEngine_Service_Test {
         List<Product_Extension__c> prods = [SELECT Id, Base_UOM__c FROM Product_Extension__c ORDER BY Name LIMIT 5];
 
         // Create UOM records
-        UOM__c pieceUOM = new UOM__c(Name = 'Piece', UOM_Code__c = 'PC', Is_Active__c = true, Is_Base_Unit__c = true);
+        UOM__c pieceUOM = new UOM__c(Name = 'Piece', UOM_Code__c = 'PCS', Is_Active__c = true, Is_Base_Unit__c = true);
         UOM__c caseUOM = new UOM__c(Name = 'Case', UOM_Code__c = 'CS', Is_Active__c = true, Is_Base_Unit__c = false);
         insert new List<UOM__c>{ pieceUOM, caseUOM };
 
