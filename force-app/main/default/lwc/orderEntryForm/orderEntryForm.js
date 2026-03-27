@@ -1234,11 +1234,22 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 item = { ...item, schemeId: scheme.Id, schemeName: scheme.Name };
             }
         }
-        const freeQty = scheme ? this.calculateFreeQty(item.quantity, scheme, item) : 0;
-        const grossAmount = item.quantity * item.rate;
+
+        // Always recompute base quantity from entered qty and conversion factor
+        const convFactor = item.conversionFactor || 1;
+        const baseQuantity = item.quantity * convFactor;
+        const baseUOMCode = item.baseUOMCode || 'PC';
+        const uomCode = item.uomCode || baseUOMCode;
+        const baseQuantityLabel = (uomCode !== baseUOMCode && item.quantity > 0)
+            ? '= ' + baseQuantity + ' ' + baseUOMCode : '';
+
+        const freeQty = scheme ? this.calculateFreeQty(item.quantity, scheme, { ...item, baseQuantity }) : 0;
+
+        // Unit price is per base UOM, so pricing must use base quantity
+        const grossAmount = baseQuantity * item.rate;
 
         // Use base quantity for scheme discount calculation (UOM-aware)
-        const effectiveQtyForScheme = scheme ? this.convertQtyForScheme(item.quantity, item, scheme) : item.quantity;
+        const effectiveQtyForScheme = scheme ? this.convertQtyForScheme(item.quantity, { ...item, baseQuantity }, scheme) : baseQuantity;
         const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, effectiveQtyForScheme, scheme) : 0;
 
         const taxableAmount = grossAmount - discountAmount;
@@ -1247,6 +1258,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         return {
             ...item,
+            baseQuantity: baseQuantity,
+            baseQuantityLabel: baseQuantityLabel,
             freeQty: freeQty,
             grossAmount: grossAmount,
             discountAmount: discountAmount,
@@ -1536,35 +1549,59 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 this.lineIdCounter++;
                 const reorderUOM = lastItem.UOM__c || 'Pieces';
                 const reorderUOMCode = this.mapPicklistToCode(reorderUOM);
-                // Build full UOM options; use cached map if available, else build with base UOM + master UOMs
+
+                // Use the product's actual base UOM, not the order UOM
+                const productBaseUOMCode = lastItem.Product_Ext__r?.Base_UOM__r?.UOM_Code__c || reorderUOMCode;
+                const convFactor = lastItem.Conversion_Factor__c || 1;
+                const enteredQty = lastItem.Quantity__c || 0;
+                const baseQty = lastItem.Base_Quantity__c || (enteredQty * convFactor);
+                const baseQtyLabel = (reorderUOMCode !== productBaseUOMCode && enteredQty > 0)
+                    ? '= ' + baseQty + ' ' + productBaseUOMCode : '';
+
+                // Build full UOM options; use cached map if available
                 const reorderUOMOptions = this.productUOMOptionsMap[lastItem.Product_Ext__c]
-                    || this.buildProductUOMOptions({ BaseUOMCode: reorderUOMCode, BaseUOMName: this.getUOMNameByCode(reorderUOMCode) });
+                    || this.buildProductUOMOptions({ BaseUOMCode: productBaseUOMCode, BaseUOMName: this.getUOMNameByCode(productBaseUOMCode) });
+                this.productUOMOptionsMap = { ...this.productUOMOptionsMap, [lastItem.Product_Ext__c]: reorderUOMOptions };
+
+                // Pricing uses base quantity since unit price is per base UOM
+                const rate = lastItem.Unit_Price__c || 0;
+                const grossAmount = baseQty * rate;
+
+                // Find applicable scheme for recalculation
+                const scheme = this.findApplicableScheme({ id: lastItem.Product_Ext__c, Id: lastItem.Product_Ext__c });
+                const freeQty = scheme ? this.calculateFreeQty(enteredQty, scheme, { baseQuantity: baseQty, baseUOMCode: productBaseUOMCode, uomCode: reorderUOMCode, conversionFactor: convFactor }) : (lastItem.Free_Quantity__c || 0);
+                const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, baseQty, scheme) : (lastItem.Discount_Amount__c || 0);
+                const taxRate = lastItem.Tax_Rate__c || 18;
+                const taxableAmount = grossAmount - discountAmount;
+                const taxAmount = taxableAmount * (taxRate / 100);
+                const totalAmount = taxableAmount + taxAmount;
+
                 const newItem = {
                     id: 'LINE_' + this.lineIdCounter,
                     productId: lastItem.Product_Ext__c,
-                    productName: lastItem.Product_Name__c || lastItem.Product_Ext__r?.Name || 'Product',
-                    sku: lastItem.SKU__c || 'N/A',
+                    productName: lastItem.Product_Ext__r?.Name || 'Product',
+                    sku: lastItem.Product_Ext__r?.SKU_Code__c || 'N/A',
                     uom: reorderUOM,
                     uomCode: reorderUOMCode,
-                    baseUOMCode: reorderUOMCode,
-                    conversionFactor: 1,
-                    baseQuantity: lastItem.Quantity__c || 0,
-                    baseQuantityLabel: '',
+                    baseUOMCode: productBaseUOMCode,
+                    conversionFactor: convFactor,
+                    baseQuantity: baseQty,
+                    baseQuantityLabel: baseQtyLabel,
                     productUOMOptions: reorderUOMOptions,
-                    rate: lastItem.Unit_Price__c || 0,
-                    rateFormatted: this.formatCurrency(lastItem.Unit_Price__c || 0),
-                    quantity: lastItem.Quantity__c || 0,
-                    freeQty: lastItem.Free_Qty__c || 0,
-                    schemeName: '',
-                    schemeId: null,
-                    taxRate: lastItem.Tax_Rate__c || 18,
-                    grossAmount: (lastItem.Quantity__c || 0) * (lastItem.Unit_Price__c || 0),
-                    discountAmount: lastItem.Discount_Amount__c || 0,
-                    discountFormatted: this.formatCurrency(lastItem.Discount_Amount__c || 0),
-                    taxAmount: lastItem.Tax_Amount__c || 0,
-                    taxFormatted: this.formatCurrency(lastItem.Tax_Amount__c || 0),
-                    totalAmount: lastItem.Total_Amount__c || 0,
-                    totalFormatted: this.formatCurrency(lastItem.Total_Amount__c || 0),
+                    rate: rate,
+                    rateFormatted: this.formatCurrency(rate),
+                    quantity: enteredQty,
+                    freeQty: freeQty,
+                    schemeName: scheme ? scheme.Name : '',
+                    schemeId: scheme ? scheme.Id : null,
+                    taxRate: taxRate,
+                    grossAmount: grossAmount,
+                    discountAmount: discountAmount,
+                    discountFormatted: this.formatCurrency(discountAmount),
+                    taxAmount: taxAmount,
+                    taxFormatted: this.formatCurrency(taxAmount),
+                    totalAmount: totalAmount,
+                    totalFormatted: this.formatCurrency(totalAmount),
                     serialNumber: this.lineItems.length + 1,
                     rowClass: 'oef-reorder-row'
                 };

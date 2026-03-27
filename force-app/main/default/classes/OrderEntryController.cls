@@ -293,8 +293,12 @@ public with sharing class OrderEntryController {
     @AuraEnabled(cacheable=true)
     public static Sales_Order__c getLastOrder(Id accountId) {
         List<Sales_Order__c> orders = [
-            SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c,
-                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Quantity__c, Unit_Price__c, Line_Total__c, UOM__c
+            SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c, Net_Amount__c,
+                   (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                           Product_Ext__r.Base_UOM__c, Product_Ext__r.Base_UOM__r.UOM_Code__c,
+                           Quantity__c, Base_Quantity__c, Unit_Price__c, Line_Total__c,
+                           UOM__c, Order_UOM__c, Base_UOM__c, Conversion_Factor__c,
+                           Free_Quantity__c, Discount_Amount__c, Tax_Rate__c, Tax_Amount__c, Total_Amount__c
                     FROM Order_Line_Items__r ORDER BY CreatedDate)
             FROM Sales_Order__c
             WHERE Account__c = :accountId
