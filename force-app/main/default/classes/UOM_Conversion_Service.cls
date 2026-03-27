@@ -364,8 +364,8 @@ public with sharing class UOM_Conversion_Service {
         }
         if (options.isEmpty()) {
             Map<String, Object> fallback = new Map<String, Object>();
-            fallback.put('label', 'Pieces (PC)');
-            fallback.put('value', 'PC');
+            fallback.put('label', 'Piece (PCS)');
+            fallback.put('value', 'PCS');
             fallback.put('uomId', null);
             fallback.put('isBase', true);
             options.add(fallback);

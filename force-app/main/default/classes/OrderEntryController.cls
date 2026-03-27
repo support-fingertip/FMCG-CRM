@@ -85,7 +85,7 @@ public with sharing class OrderEntryController {
                 : (p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c);
             r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
             r.BaseUOMCode = (p.Base_UOM__c != null && p.Base_UOM__r.UOM_Code__c != null)
-                ? p.Base_UOM__r.UOM_Code__c : 'PC';
+                ? p.Base_UOM__r.UOM_Code__c : 'PCS';
             r.BaseUOMId = p.Base_UOM__c;
             r.BaseUOMName = (p.Base_UOM__c != null && p.Base_UOM__r.Name != null)
                 ? p.Base_UOM__r.Name : 'Piece';
@@ -201,7 +201,7 @@ public with sharing class OrderEntryController {
                     }
 
                     // Get base UOM code for the product
-                    String baseUomCode = 'PC';
+                    String baseUomCode = 'PCS';
                     if (productId != null && productUOMMap.containsKey(productId)) {
                         Product_Extension__c pe = productUOMMap.get(productId);
                         if (pe.Base_UOM__c != null && String.isNotBlank(pe.Base_UOM__r.UOM_Code__c)) {
@@ -414,7 +414,7 @@ public with sharing class OrderEntryController {
             item.put('classification', cfg.Classification__c);
             item.put('configId', cfg.Id);
             item.put('uom', cfg.Product_Ext__r.Unit_of_Measure__c != null ? cfg.Product_Ext__r.Unit_of_Measure__c : 'Piece');
-            item.put('baseUOMCode', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PC');
+            item.put('baseUOMCode', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PCS');
             item.put('baseUOMName', (cfg.Product_Ext__r.Base_UOM__c != null && cfg.Product_Ext__r.Base_UOM__r.Name != null) ? cfg.Product_Ext__r.Base_UOM__r.Name : 'Piece');
             item.put('secondaryUOMCode', (cfg.Product_Ext__r.Secondary_UOM__c != null && cfg.Product_Ext__r.Secondary_UOM__r.UOM_Code__c != null) ? cfg.Product_Ext__r.Secondary_UOM__r.UOM_Code__c : null);
             item.put('secondaryUOMName', (cfg.Product_Ext__r.Secondary_UOM__c != null && cfg.Product_Ext__r.Secondary_UOM__r.Name != null) ? cfg.Product_Ext__r.Secondary_UOM__r.Name : null);
@@ -461,7 +461,7 @@ public with sharing class OrderEntryController {
                 item.put('schemeId', scheme.Id);
                 item.put('classification', sp.Product_Classification__c);
                 item.put('uom', sp.Product_Ext__r.Unit_of_Measure__c != null ? sp.Product_Ext__r.Unit_of_Measure__c : 'Piece');
-                item.put('baseUOMCode', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PC');
+                item.put('baseUOMCode', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PCS');
                 item.put('baseUOMName', (sp.Product_Ext__r.Base_UOM__c != null && sp.Product_Ext__r.Base_UOM__r.Name != null) ? sp.Product_Ext__r.Base_UOM__r.Name : 'Piece');
                 item.put('secondaryUOMCode', (sp.Product_Ext__r.Secondary_UOM__c != null && sp.Product_Ext__r.Secondary_UOM__r.UOM_Code__c != null) ? sp.Product_Ext__r.Secondary_UOM__r.UOM_Code__c : null);
                 item.put('secondaryUOMName', (sp.Product_Ext__r.Secondary_UOM__c != null && sp.Product_Ext__r.Secondary_UOM__r.Name != null) ? sp.Product_Ext__r.Secondary_UOM__r.Name : null);
@@ -677,7 +677,7 @@ public with sharing class OrderEntryController {
         r.GST_Rate = p.GST_Rate__c;
         r.UOM = p.Unit_of_Measure__c != null ? p.Unit_of_Measure__c : 'Piece';
         r.BaseUOMCode = (p.Base_UOM__c != null && p.Base_UOM__r.UOM_Code__c != null)
-            ? p.Base_UOM__r.UOM_Code__c : 'PC';
+            ? p.Base_UOM__r.UOM_Code__c : 'PCS';
         r.BaseUOMId = p.Base_UOM__c;
         r.BaseUOMName = (p.Base_UOM__c != null && p.Base_UOM__r.Name != null)
             ? p.Base_UOM__r.Name : 'Piece';

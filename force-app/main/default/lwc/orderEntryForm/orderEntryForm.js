@@ -243,9 +243,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             return this.uomOptionsData;
         }
         return [
-            { label: 'Piece (PC)', value: 'PC' },
+            { label: 'Piece (PCS)', value: 'PCS' },
             { label: 'Case (CS)', value: 'CS' },
-            { label: 'Box (BX)', value: 'BX' },
+            { label: 'Box (BOX)', value: 'BOX' },
             { label: 'Kilogram (KG)', value: 'KG' },
             { label: 'Litre (LTR)', value: 'LTR' }
         ];
@@ -699,7 +699,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     unitPrice: product.Unit_Price || 0,
                     taxRate: product.GST_Rate || 18,
                     productUOM: product.UOM || 'Piece',
-                    baseUOMCode: product.BaseUOMCode || 'PC',
+                    baseUOMCode: product.BaseUOMCode || 'PCS',
                     baseUOMName: product.BaseUOMName || 'Piece',
                     secondaryUOMCode: product.SecondaryUOMCode,
                     orderingUOMs: product.OrderingUOMs,
@@ -743,7 +743,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const taxAmount = taxableAmount * (product.taxRate / 100);
         const totalAmount = taxableAmount + taxAmount;
 
-        const baseUOMCode = product.baseUOMCode || 'PC';
+        const baseUOMCode = product.baseUOMCode || 'PCS';
         const defaultUOMCode = baseUOMCode;
         const defaultUOM = this.mapCodeToPicklist(defaultUOMCode);
         const uomOptions = product.productUOMOptions || this.buildProductUOMOptions(product);
@@ -971,7 +971,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
                 // Build per-product UOM options
                 const productUOMOpts = this.buildProductUOMOptions(product);
-                const baseCode = product.BaseUOMCode || 'PC';
+                const baseCode = product.BaseUOMCode || 'PCS';
                 this.productUOMOptionsMap = {
                     ...this.productUOMOptionsMap,
                     [product.Id]: productUOMOpts
@@ -1077,7 +1077,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const fsMatch = this.focusedSellProducts.find(p => p.productId === product.id);
             const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
 
-            const baseUOMCode = product.baseUOMCode || 'PC';
+            const baseUOMCode = product.baseUOMCode || 'PCS';
             const defaultUOMCode = baseUOMCode;
             const defaultUOM = this.mapCodeToPicklist(defaultUOMCode);
             const uomOptions = this.buildProductUOMOptions(product);
@@ -1153,7 +1153,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         // Compute base quantity using the stored conversion factor
         const convFactor = item.conversionFactor || 1;
         const baseQty = newQty * convFactor;
-        const baseUOMCode = item.baseUOMCode || 'PC';
+        const baseUOMCode = item.baseUOMCode || 'PCS';
         const uomCode = item.uomCode || baseUOMCode;
         const baseQtyLabel = (uomCode !== baseUOMCode && newQty > 0)
             ? '= ' + baseQty + ' ' + baseUOMCode : '';
@@ -1187,7 +1187,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         if (!item) return;
 
         const newUOMPicklist = this.mapCodeToPicklist(newUOMCode);
-        const baseUOMCode = item.baseUOMCode || 'PC';
+        const baseUOMCode = item.baseUOMCode || 'PCS';
 
         // Get conversion factor for the new UOM
         let convFactor = 1;
@@ -1241,7 +1241,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         // Always recompute base quantity from entered qty and conversion factor
         const convFactor = item.conversionFactor || 1;
         const baseQuantity = item.quantity * convFactor;
-        const baseUOMCode = item.baseUOMCode || 'PC';
+        const baseUOMCode = item.baseUOMCode || 'PCS';
         const uomCode = item.uomCode || baseUOMCode;
         const baseQuantityLabel = (uomCode !== baseUOMCode && item.quantity > 0)
             ? '= ' + baseQuantity + ' ' + baseUOMCode : '';
@@ -1409,8 +1409,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
         // Get scheme base UOM code
         const schemeBaseUOM = scheme.Base_UOM__r?.UOM_Code__c || null;
-        const lineUOMCode = lineItem.uomCode || lineItem.baseUOMCode || 'PC';
-        const productBaseUOMCode = lineItem.baseUOMCode || 'PC';
+        const lineUOMCode = lineItem.uomCode || lineItem.baseUOMCode || 'PCS';
+        const productBaseUOMCode = lineItem.baseUOMCode || 'PCS';
 
         // If scheme has a base UOM, convert to it
         if (schemeBaseUOM) {
@@ -1780,7 +1780,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 rate: item.rate,
                 uom: item.uom || 'Pieces',
                 uomCode: item.uomCode || this.mapPicklistToCode(item.uom || 'Pieces'),
-                baseUOMCode: item.baseUOMCode || 'PC',
+                baseUOMCode: item.baseUOMCode || 'PCS',
                 grossAmount: item.grossAmount,
                 discountAmount: item.discountAmount,
                 taxRate: item.taxRate,
