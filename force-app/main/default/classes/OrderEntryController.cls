@@ -316,10 +316,12 @@ public with sharing class OrderEntryController {
                    Min_Value__c, Max_Value__c, Product_Ext__c, Product_Category__c,
                    Invoice_Qty_Threshold__c, Invoice_Qty_UOM__c, Invoice_Val_Threshold__c,
                    Is_Stackable__c, Priority__c,
-                   (SELECT Id, Slab_Type__c, Min_Value__c, Max_Value__c,
+                   (SELECT Id, Slab_Type__c, Min_Quantity__c, Max_Quantity__c,
+                           Min_Value__c, Max_Value__c,
                            Discount_Type__c, Discount_Value__c, Discount_Percent__c,
-                           Discount_Amount__c, Free_Product_Ext__c, Free_Quantity__c
-                    FROM Scheme_Slabs__r ORDER BY Min_Value__c),
+                           Discount_Amount__c, Free_Product_Ext__c, Free_Quantity__c,
+                           Price_Discount__c, Reward_Points__c
+                    FROM Scheme_Slabs__r WHERE Is_Active__c = true ORDER BY Min_Quantity__c ASC, Min_Value__c ASC),
                    (SELECT Id, Product_Ext__c, Product_Ext__r.Name, Is_Buy_Product__c, Is_Get_Product__c,
                            Min_Quantity__c, Product_Classification__c
                     FROM Scheme_Products__r)

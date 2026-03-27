@@ -1347,9 +1347,14 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const slab = this.findApplicableSlab(effectiveQty, 0, scheme);
             if (slab && slab.Discount_Type__c === 'Free Product' && slab.Free_Quantity__c) {
                 // For repeating slabs: calculate how many sets of the buy qty fit
-                const slabMinQty = slab.Min_Quantity__c || 0;
+                const slabMinQty = slab.Min_Quantity__c || slab.Min_Value__c || 0;
                 if (slabMinQty > 0) {
                     return Math.floor(effectiveQty / slabMinQty) * slab.Free_Quantity__c;
+                }
+                // Fall back to scheme-level Min_Quantity__c
+                const schemeMinQty = scheme.Min_Quantity__c || 0;
+                if (schemeMinQty > 0) {
+                    return Math.floor(effectiveQty / schemeMinQty) * slab.Free_Quantity__c;
                 }
                 return slab.Free_Quantity__c;
             }
@@ -1473,20 +1478,23 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     findApplicableSlab(qty, amount, scheme) {
         if (!scheme.Scheme_Slabs__r || scheme.Scheme_Slabs__r.length === 0) return null;
 
+        let matchedSlab = null;
         for (const slab of scheme.Scheme_Slabs__r) {
-            let compareValue;
             if (slab.Slab_Type__c === 'Quantity') {
-                compareValue = qty || 0;
+                const compareQty = qty || 0;
+                const minQ = slab.Min_Quantity__c != null ? slab.Min_Quantity__c : slab.Min_Value__c;
+                const maxQ = slab.Max_Quantity__c != null ? slab.Max_Quantity__c : slab.Max_Value__c;
+                const meetsMin = minQ == null || compareQty >= minQ;
+                const meetsMax = maxQ == null || compareQty <= maxQ;
+                if (meetsMin && meetsMax) matchedSlab = slab;
             } else {
-                compareValue = amount || 0;
+                const compareVal = amount || 0;
+                const meetsMin = slab.Min_Value__c == null || compareVal >= slab.Min_Value__c;
+                const meetsMax = slab.Max_Value__c == null || compareVal <= slab.Max_Value__c;
+                if (meetsMin && meetsMax) matchedSlab = slab;
             }
-
-            const meetsMin = slab.Min_Value__c == null || compareValue >= slab.Min_Value__c;
-            const meetsMax = slab.Max_Value__c == null || compareValue <= slab.Max_Value__c;
-
-            if (meetsMin && meetsMax) return slab;
         }
-        return null;
+        return matchedSlab;
     }
 
     calculateSlabDiscount(amount, slab, scheme) {
