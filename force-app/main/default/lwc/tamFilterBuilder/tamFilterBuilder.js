@@ -19,20 +19,84 @@ export default class TamFilterBuilder extends LightningElement {
         return this.filters;
     }
     set value(val) {
-        if (val && Array.isArray(val)) {
-            this.filters = JSON.parse(JSON.stringify(val));
+        if (val && Array.isArray(val) && val.length > 0) {
+            // Deep clone to avoid mutation
+            const cloned = JSON.parse(JSON.stringify(val));
 
-            // IMPORTANT: keep filterCounter ahead of existing max id
+            // Restore UI state for each filter
+            this.filters = cloned.map(f => {
+                const type = f.type || 'String';
+
+                // Restore operator options from type
+                f.operatorOptions = this._getOperatorsForType(type);
+
+                // Restore picklist options from fieldsMetadata
+                f.picklistOptions = [];
+                if (this.fieldsMetadata && this.fieldsMetadata.length) {
+                    const meta = this.fieldsMetadata.find(m => m.apiName === f.field);
+                    if (meta && meta.picklistValues && meta.picklistValues.length) {
+                        f.picklistOptions = meta.picklistValues.map(v => ({ label: v, value: v }));
+                    }
+                    // Restore field search text
+                    f.fieldSearchText = meta
+                        ? `${meta.label} (${meta.apiName})`
+                        : (f.field || '');
+                } else {
+                    f.fieldSearchText = f.field || '';
+                }
+
+                f.showFieldDropdown = false;
+                f.filteredFieldOptions = [];
+
+                // Restore value UI flags
+                f.showValue = !!f.field;
+                f.isNumber = (type === 'Number' || type === 'Currency' || type === 'Percent');
+                f.isString = (type === 'String' || type === 'Id');
+                f.isDate = (type === 'Date' || type === 'DateTime');
+                f.isBoolean = (type === 'Boolean');
+                f.isMultiPicklist = (type === 'MultiPicklist');
+                f.isPicklist = false;
+                f.isMultiValue = false;
+
+                if (type === 'Picklist') {
+                    if (f.operator === 'IN' || f.operator === 'NOT IN') {
+                        f.isMultiPicklist = true;
+                        f.isMultiValue = true;
+                    } else {
+                        f.isPicklist = true;
+                    }
+                }
+
+                // For non-picklist IN/NOT IN
+                if (type !== 'Picklist' && (f.operator === 'IN' || f.operator === 'NOT IN')) {
+                    f.isMultiValue = true;
+                }
+
+                // Restore valueArray for multi-picklist
+                if (f.isMultiPicklist && Array.isArray(f.value)) {
+                    f.valueArray = f.value;
+                } else {
+                    f.valueArray = [];
+                }
+
+                return f;
+            });
+
+            // Keep filterCounter ahead of existing max id
             const maxId = this.filters.reduce((max, f) => {
                 const num = Number(f.id);
                 return isNaN(num) ? max : Math.max(max, num);
             }, 0);
-
             this.filterCounter = maxId + 1;
         } else {
             this.filters = [];
             this.filterCounter = 1;
         }
+    }
+
+    // Shared operator lookup (used by both setter and selectField)
+    _getOperatorsForType(type) {
+        return this.getOperatorsForType(type);
     }
 
 
@@ -52,16 +116,6 @@ export default class TamFilterBuilder extends LightningElement {
             default: return 'utility:link';
         }
     }
-
-    /*@api
-    get cleanFilters() {
-        return this.filters.map(f => ({
-            field: f.field,
-            operator: f.operator,
-            value: f.isMultiPicklist || f.isMultiValue ? f.value : f.value
-        }));
-    }*/
-
 
     // Add new filter row
     addFilter() {
@@ -151,19 +205,11 @@ export default class TamFilterBuilder extends LightningElement {
         const id = Number(event.currentTarget.dataset.id);
         const api = event.currentTarget.dataset.value;
 
-        console.log('SELECTED FIELD:', api, 'for filter', id);
-
         const filter = this.filters.find(f => f.id === id);
-        if (!filter) {
-            console.error('Filter not found for id:', id);
-            return;
-        }
+        if (!filter) return;
 
         const meta = this.fieldsMetadata.find(m => m.apiName === api);
-        if (!meta) {
-            console.error('Metadata not found for API:', api);
-            return;
-        }
+        if (!meta) return;
 
         // Assign selected field
         filter.field = api;
@@ -190,8 +236,6 @@ export default class TamFilterBuilder extends LightningElement {
         this.initValueUI(filter, meta.type);
 
         this.dispatch();
-
-        console.log('Filter After Select:', JSON.stringify(filter));
     }
 
 
@@ -307,32 +351,6 @@ export default class TamFilterBuilder extends LightningElement {
         // default fallback – treat as string
         filter.isString = true;
     }
-
-    /*  // Setup value UI flags based on type
-     initValueUI(filter, type) {
-         filter.showValue = true;
- 
-         filter.isNumber = (type === 'Number' || type === 'Currency' || type === 'Percent');
-         filter.isString = (type === 'String' || type === 'Id');
-         filter.isDate = (type === 'Date' || type === 'DateTime');
-         //filter.isPicklist = (type === 'Picklist');
-         filter.isMultiPicklist = (type === 'MultiPicklist');
-         if (type === 'Picklist') {
- 
-             if (filter.operator === 'IN' || filter.operator === 'NOT IN') {
-                 filter.isPicklist = false;      // disable single-select UI
-                 filter.isMultiPicklist = true;  // use dual listbox UI
-                 filter.showValue = true;
-             } else {
-                 filter.isPicklist = true;       // normal picklist UI
-                 filter.isMultiPicklist = false;
-                 filter.showValue = true;
-             }
-         }
- 
-         // IN / NOT IN will control isMultiValue in operator handler
-         //filter.isMultiValue = false;
-     } */
 
     handleOperatorChange(event) {
         const id = Number(event.target.dataset.id);

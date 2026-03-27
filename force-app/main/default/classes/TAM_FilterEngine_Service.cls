@@ -26,19 +26,25 @@ public class TAM_FilterEngine_Service {
 
         // If no logic, join using AND
         if (String.isBlank(logicString)) {
-            return ' AND (' + String.join(idToCondition.values(), ' AND ') + ')';
+            return String.join(idToCondition.values(), ' AND ');
         }
 
-        // Replace IDs in logic string
+        // Replace IDs in logic string — process in DESCENDING order
+        // to avoid replacing "1" inside "12"
+        List<Integer> sortedIds = new List<Integer>(idToCondition.keySet());
+        sortedIds.sort();
+
         String resolvedLogic = logicString;
-        for (Integer id : idToCondition.keySet()) {
+        // Process from highest to lowest
+        for (Integer i = sortedIds.size() - 1; i >= 0; i--) {
+            Integer id = sortedIds[i];
             resolvedLogic = resolvedLogic.replace(String.valueOf(id), idToCondition.get(id));
         }
 
-        return ' AND (' + resolvedLogic + ')';
+        return '(' + resolvedLogic + ')';
     }
 
-    // UNTYPED JSON PARSER (supports any data types)
+    // UNTYPED JSON PARSER
     public static FilterDefinition parseFilters(String jsonFilters) {
         FilterDefinition def = new FilterDefinition();
         def.filters = new List<FilterRow>();
@@ -80,66 +86,90 @@ public class TAM_FilterEngine_Service {
             }
         }
 
-        // Dispatch by type
+        // Handle IN / NOT IN for any type that has a list value
+        if ((f.operator == 'IN' || f.operator == 'NOT IN') && f.value instanceof List<Object>) {
+            List<Object> vals = (List<Object>) f.value;
+            List<String> quoted = new List<String>();
+
+            for (Object v : vals) {
+                String sv = String.valueOf(v);
+                // Numbers don't need quotes
+                if (f.type == 'Number' || f.type == 'Currency' || f.type == 'Percent') {
+                    quoted.add(sv);
+                } else {
+                    quoted.add('\'' + String.escapeSingleQuotes(sv) + '\'');
+                }
+            }
+
+            return '(' + f.field + ' ' + f.operator + ' (' +
+                String.join(quoted, ',') + '))';
+        }
+
+        // String types
         if (f.type == 'String') {
+            if (f.operator == 'LIKE' || f.operator == 'NOT LIKE') {
+                return '(' + f.field + ' ' + f.operator + ' \'%' +
+                    String.escapeSingleQuotes(String.valueOf(f.value)) + '%\')';
+            }
             return '(' + f.field + ' ' + f.operator + ' \'' +
-                String.escapeSingleQuotes((String) f.value) + '\')';
+                String.escapeSingleQuotes(String.valueOf(f.value)) + '\')';
         }
 
-        if (f.type == 'LikeString') {
-            return '(' + f.field + ' ' + f.operator + ' \'%' +
-                String.escapeSingleQuotes((String) f.value) + '%\')';
-        }
-
-        if (f.type == 'Number' || f.type == 'Currency') {
+        // Number / Currency / Percent (scalar)
+        if (f.type == 'Number' || f.type == 'Currency' || f.type == 'Percent') {
             return '(' + f.field + ' ' + f.operator + ' ' +
                 String.valueOf(f.value) + ')';
         }
 
+        // Boolean — JSON deserialize returns String "true"/"false", not Boolean
         if (f.type == 'Boolean') {
-            return '(' + f.field + ' ' + f.operator + ' ' +
-                ((Boolean) f.value ? 'TRUE' : 'FALSE') + ')';
+            String boolStr = String.valueOf(f.value).toLowerCase();
+            return '(' + f.field + ' = ' +
+                (boolStr == 'true' ? 'TRUE' : 'FALSE') + ')';
         }
 
+        // Date — use SOQL date literal format YYYY-MM-DD
         if (f.type == 'Date') {
-            Date d = Date.valueOf((String) f.value);
-            return '(' + f.field + ' ' + f.operator + ' ' + d.format() + ')';
+            String dateStr = String.valueOf(f.value);
+            // Validate it parses, then use ISO format
+            Date d = Date.valueOf(dateStr);
+            String isoDate = String.valueOf(d.year()) + '-' +
+                String.valueOf(d.month()).leftPad(2, '0') + '-' +
+                String.valueOf(d.day()).leftPad(2, '0');
+            return '(' + f.field + ' ' + f.operator + ' ' + isoDate + ')';
         }
 
+        // DateTime — use SOQL datetime literal format
         if (f.type == 'DateTime') {
-            Datetime dt = Datetime.valueOf((String) f.value);
-            return '(' + f.field + ' ' + f.operator + ' ' + dt.format() + ')';
+            String dtStr = String.valueOf(f.value);
+            Datetime dt = Datetime.valueOf(dtStr);
+            return '(' + f.field + ' ' + f.operator + ' ' +
+                dt.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + ')';
         }
 
-        if (f.type == 'Picklist' && f.operator != 'IN' && f.operator != 'NOT IN') {
+        // Picklist (scalar = / !=)
+        if (f.type == 'Picklist') {
             return '(' + f.field + ' ' + f.operator + ' \'' +
-                String.escapeSingleQuotes((String) f.value) + '\')';
+                String.escapeSingleQuotes(String.valueOf(f.value)) + '\')';
         }
 
-        if (f.type == 'Picklist' && (f.operator == 'IN' || f.operator == 'NOT IN')) {
-            List<Object> vals = (List<Object>) f.value;
-            List<String> quoted = new List<String>();
-
-            for (Object v : vals) {
-                quoted.add('\'' + String.escapeSingleQuotes((String) v) + '\'');
+        // MultiPicklist (INCLUDES / EXCLUDES)
+        if (f.type == 'PicklistMulti' || f.type == 'MultiPicklist') {
+            if (f.value instanceof List<Object>) {
+                List<Object> vals = (List<Object>) f.value;
+                List<String> quoted = new List<String>();
+                for (Object v : vals) {
+                    quoted.add('\'' + String.escapeSingleQuotes(String.valueOf(v)) + '\'');
+                }
+                return '(' + f.field + ' ' + f.operator + ' (' +
+                    String.join(quoted, ',') + '))';
             }
-
-            return '(' + f.field + ' ' + f.operator + ' (' +
-                String.join(quoted, ',') + '))';
+            return '(' + f.field + ' ' + f.operator + ' (\'' +
+                String.escapeSingleQuotes(String.valueOf(f.value)) + '\'))';
         }
 
-        if (f.type == 'PicklistMulti') {
-            List<Object> vals = (List<Object>) f.value;
-            List<String> quoted = new List<String>();
-
-            for (Object v : vals) {
-                quoted.add('\'' + String.escapeSingleQuotes((String) v) + '\'');
-            }
-
-            return '(' + f.field + ' ' + f.operator + ' (' +
-                String.join(quoted, ',') + '))';
-        }
-
-        throw new AuraHandledException('Unsupported filter type: ' + f.type);
+        // Fallback: treat as string
+        return '(' + f.field + ' ' + f.operator + ' \'' +
+            String.escapeSingleQuotes(String.valueOf(f.value)) + '\')';
     }
 }

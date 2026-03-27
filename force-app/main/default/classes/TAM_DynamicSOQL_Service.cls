@@ -18,12 +18,13 @@ public class TAM_DynamicSOQL_Service {
 
     public static String buildSOQL(Context ctx) {
 
-        // 1) WHERE from date range + JSON filters
+        // 1) Build WHERE segments
         List<String> whereSegments = new List<String>();
 
         whereSegments.add(ctx.dateField + ' >= :startDate');
         whereSegments.add(ctx.dateField + ' <= :endDate');
 
+        // JSON filters — buildWhereClause now returns clean condition without leading AND
         String whereFilters =
             TAM_FilterEngine_Service.buildWhereClause(ctx.filtersJson, ctx.logic);
         if (!String.isBlank(whereFilters)) {
