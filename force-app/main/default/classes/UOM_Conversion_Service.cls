@@ -61,17 +61,18 @@ public with sharing class UOM_Conversion_Service {
         query += ' ORDER BY Product__c NULLS LAST';
 
         for (UOM_Conversion__c c : Database.query(query)) {
-            // Product-specific key
             if (c.Product__c != null) {
+                // Product-specific key
                 String prodKey = c.From_UOM__c + '|' + c.To_UOM__c + '|' + c.Product__c;
                 if (!conversionCache.containsKey(prodKey)) {
                     conversionCache.put(prodKey, c.Conversion_Factor__c);
                 }
-            }
-            // Global key (no product)
-            String globalKey = c.From_UOM__c + '|' + c.To_UOM__c + '|';
-            if (!conversionCache.containsKey(globalKey)) {
-                conversionCache.put(globalKey, c.Conversion_Factor__c);
+            } else {
+                // Global key (only from records with no product)
+                String globalKey = c.From_UOM__c + '|' + c.To_UOM__c + '|';
+                if (!conversionCache.containsKey(globalKey)) {
+                    conversionCache.put(globalKey, c.Conversion_Factor__c);
+                }
             }
         }
     }
@@ -306,21 +307,24 @@ public with sharing class UOM_Conversion_Service {
      * @description Maps Order_Line_Item__c.UOM__c picklist values to UOM codes.
      */
     public static String mapPicklistToCode(String picklistValue) {
-        if (String.isBlank(picklistValue)) return 'PC';
+        if (String.isBlank(picklistValue)) return 'PCS';
         Map<String, String> mapping = new Map<String, String>{
-            'Pieces' => 'PC',
+            'Pieces' => 'PCS',
             'Cases' => 'CS',
-            'Boxes' => 'BX',
+            'Boxes' => 'BOX',
             'Kg' => 'KG',
             'Liters' => 'LTR',
-            'Piece' => 'PC',
-            'Box' => 'BX',
+            'Piece' => 'PCS',
+            'Box' => 'BOX',
             'Case' => 'CS',
             'Litre' => 'LTR',
             'Dozen' => 'DZ',
-            'Pack' => 'PK'
+            'Pack' => 'PK',
+            'Gram' => 'GRM',
+            'Millilitre' => 'ML',
+            'Kilogram' => 'KG'
         };
-        return mapping.containsKey(picklistValue) ? mapping.get(picklistValue) : 'PC';
+        return mapping.containsKey(picklistValue) ? mapping.get(picklistValue) : 'PCS';
     }
 
     /**
@@ -329,13 +333,16 @@ public with sharing class UOM_Conversion_Service {
     public static String mapCodeToPicklist(String uomCode) {
         if (String.isBlank(uomCode)) return 'Pieces';
         Map<String, String> mapping = new Map<String, String>{
+            'PCS' => 'Pieces',
             'PC' => 'Pieces',
             'CS' => 'Cases',
+            'BOX' => 'Boxes',
             'BX' => 'Boxes',
             'KG' => 'Kg',
             'LTR' => 'Liters',
             'DZ' => 'Pieces',
             'PK' => 'Pieces',
+            'GRM' => 'Kg',
             'G' => 'Kg',
             'ML' => 'Liters'
         };

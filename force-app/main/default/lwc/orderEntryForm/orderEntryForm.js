@@ -266,22 +266,24 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     mapPicklistToCode(picklistValue) {
-        if (!picklistValue) return 'PC';
+        if (!picklistValue) return 'PCS';
         const mapping = {
-            'Pieces': 'PC', 'Cases': 'CS', 'Boxes': 'BX',
-            'Kg': 'KG', 'Liters': 'LTR', 'Piece': 'PC',
-            'Box': 'BX', 'Case': 'CS', 'Litre': 'LTR',
-            'Dozen': 'DZ', 'Pack': 'PK'
+            'Pieces': 'PCS', 'Cases': 'CS', 'Boxes': 'BOX',
+            'Kg': 'KG', 'Liters': 'LTR', 'Piece': 'PCS',
+            'Box': 'BOX', 'Case': 'CS', 'Litre': 'LTR',
+            'Dozen': 'DZ', 'Pack': 'PK', 'Gram': 'GRM',
+            'Millilitre': 'ML', 'Kilogram': 'KG'
         };
-        return mapping[picklistValue] || 'PC';
+        return mapping[picklistValue] || 'PCS';
     }
 
     mapCodeToPicklist(uomCode) {
         if (!uomCode) return 'Pieces';
         const mapping = {
-            'PC': 'Pieces', 'CS': 'Cases', 'BX': 'Boxes',
-            'KG': 'Kg', 'LTR': 'Liters', 'DZ': 'Pieces',
-            'PK': 'Pieces', 'G': 'Kg', 'ML': 'Liters'
+            'PCS': 'Pieces', 'PC': 'Pieces', 'CS': 'Cases',
+            'BOX': 'Boxes', 'BX': 'Boxes', 'KG': 'Kg',
+            'LTR': 'Liters', 'DZ': 'Pieces', 'PK': 'Pieces',
+            'GRM': 'Kg', 'G': 'Kg', 'ML': 'Liters'
         };
         return mapping[uomCode] || 'Pieces';
     }
@@ -291,7 +293,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         const addedCodes = new Set();
 
         // 1. Add product's base UOM first (always the default)
-        const baseCode = product.BaseUOMCode || product.baseUOMCode || 'PC';
+        const baseCode = product.BaseUOMCode || product.baseUOMCode || 'PCS';
         const baseName = product.BaseUOMName || product.baseUOMName || 'Piece';
         options.push({ label: baseName + ' (' + baseCode + ')', value: baseCode });
         addedCodes.add(baseCode);
@@ -471,8 +473,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             }
         }
         const codeNameMap = {
-            'PC': 'Piece', 'CS': 'Case', 'BX': 'Box', 'KG': 'Kilogram',
-            'LTR': 'Litre', 'DZ': 'Dozen', 'PK': 'Pack', 'G': 'Gram', 'ML': 'Millilitre'
+            'PCS': 'Piece', 'PC': 'Piece', 'CS': 'Case', 'BOX': 'Box', 'BX': 'Box',
+            'KG': 'Kilogram', 'LTR': 'Litre', 'DZ': 'Dozen', 'PK': 'Pack',
+            'GRM': 'Gram', 'G': 'Gram', 'ML': 'Millilitre'
         };
         return codeNameMap[code] || code;
     }
