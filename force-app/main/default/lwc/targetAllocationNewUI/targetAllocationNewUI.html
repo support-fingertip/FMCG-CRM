@@ -1,0 +1,327 @@
+<template>
+    <div class="mainHome">
+        <!-- When page is loading -->
+        <template lwc:if={isLoading}>
+            <c-on-loading-screen></c-on-loading-screen>
+        </template>
+        <!-- When page loaded -->
+        <template lwc:else>
+            <div class="screen">
+                <div class="navbar">
+                    <!-- Left-aligned icon & text -->
+                    <div class="navbar-left">
+                        <img src={targetPlanIcon} width="35" height="35">
+                        <span class="header"><b>Performance Target</b></span>
+                    </div>
+
+                    <!-- Right-aligned refresh icon -->
+                    <div class="navbar-right">
+                        <i class="material-icons screen-bar-nav-icon" onclick={fetchAllData}>
+                            <lightning-icon icon-name="utility:refresh" size="small"
+                                alternative-text="Refresh"></lightning-icon>
+                        </i>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <div class={comboboxContainerClass}>
+                        <!--Period-->
+                        <lightning-combobox label="Select Period" value={selectedPeriod} data-id="period"
+                            options={periodOptions} required dropdown-alignment="top"
+                            message-when-value-missing="Select Period" onchange={getTargetVsActualData}
+                            disabled={isDisabled}>
+                        </lightning-combobox>
+                        <!--User-->
+                        <lightning-combobox label="Select User" value={selectedUser} data-id="selectedUser"
+                            options={userOptions} required dropdown-alignment="top"
+                            message-when-value-missing="Select User" onchange={userChangeHandler} disabled={isDisabled}>
+                        </lightning-combobox>
+                        <!--Distribute Button-->
+                        <div class="slds-grid slds-gutters" style="margin-top: 18px;">
+                            <div class="slds-col">
+                                <h4 class="nav-title menu-close" onclick={openModal}>Distribute</h4>
+                            </div>
+                        </div>
+                        <!--Admin Target Button-->
+                        <template lwc:if={showAddTarget}>
+                            <div class="slds-grid slds-gutters" style="margin-top: 18px;">
+                                <div class="slds-col">
+                                    <h4 class="nav-title menu-close" onclick={openAdmintargetPopup}>Add Target</h4>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <!--Current Target Table-->
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Target Name</th>
+                                    <th colspan="3">Target</th>
+                                    <th colspan="3">Actual</th>
+                                    <th colspan="3">Incentives</th>
+                                </tr>
+                                <tr>
+                                    <th>Individual</th>
+                                    <th>Team</th>
+                                    <th>Total</th>
+                                    <th>Individual</th>
+                                    <th>Team</th>
+                                    <th>Total</th>
+                                    <th>A. Percent</th>
+                                    <th>W.A. Percent</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template lwc:if={currentTargetExisted}>
+                                    <template for:each={curTargets} for:item="t" for:index="index">
+                                        <tr key={t.Id}>
+                                            <td style="width:250px;"><b>{t.Target_Criteria__r.Name}</b></td>
+                                            <td style="width:107.14px;">{t.Target_Value__c}</td>
+                                            <td style="width:107.14px;">{t.Teams_Target__c}</td>
+                                            <td style="width:107.14px;">{t.Target_Value__c}</td>
+                                            <td style="width:107.14px;">{t.Achievement_Value__c}</td>
+                                            <td style="width:107.14px;">{t.Teams_Achievement__c}</td>
+                                            <td style="width:107.14px;">{t.Achievement_Value__c}</td>
+                                            <td style="width:107.14px;">0</td>
+                                            <td style="width:107.14px;">0</td>
+                                            <td style="width:107.14px;">0</td>
+                                        </tr>
+                                    </template>
+                                </template>
+                                <template lwc:else>
+                                    <tr>
+                                        <td colspan="10">
+                                            <div class="slds-truncate" style="text-align:center">
+                                                <span style="color:red;padding:10px;font-size:large">No records
+                                                    found!</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!--Distribute Targets-->
+                <template lwc:if={openDistrbutionTable}>
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class={containerClass}>
+                            <template lwc:if={isDesktop}>
+                                <template if:false={showUpload}>
+                                    <button
+                                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                                        onclick={closeModal}>
+                                        <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                                        <span class="slds-assistive-text">Close</span>
+                                    </button>
+                                </template>
+                            </template>
+                            <!-- Modal/Popup Header -->
+                            <header class="slds-modal__header">
+                                <div class="slds-grid slds-gutters">
+                                    <template if:false={isDesktop}>
+                                        <div class="slds-col  slds-clearfix">
+                                            <div class="slds-float_right">
+                                                <lightning-button variant="base" label="Cancel" onclick={closeModal}
+                                                    class="slds-m-left_x-small"></lightning-button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div class="slds-col slds-align_absolute-center">
+                                        <h1 id="modal-heading-02"
+                                            class="slds-modal__title slds-hyphenate small-modal-title" tabindex="-1">
+                                            Distribute Targets</h1>
+                                    </div>
+                                    <template if:false={isDesktop}>
+                                        <div class="slds-col  slds-clearfix">
+                                            <div class="slds-float_left">
+                                                <lightning-button variant="base" label="Save" onclick={saveData}
+                                                    class="slds-m-left_x-small"></lightning-button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </header>
+                            <!--Body-->
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <template lwc:if={subordinateUsersExisted}>
+                                    <div class="table-container" style="margin-top: 0px;">
+                                        <table class="target-table">
+                                            <thead>
+                                                <tr style="height: 10px;">
+                                                    <th class="equal-width">Executive / Target Criteria</th>
+                                                    <template for:each={targetCriteriaColumns} for:item="targetCriteria">
+                                                        <th class="equal-width" key={targetCriteria.Id}>{targetCriteria.Name}
+                                                        </th>
+                                                    </template>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template for:each={targetCriteriaArray} for:item="executive">
+                                                    <tr key={executive.id} style="height: 10px;">
+                                                        <td><b>{executive.name}</b></td>
+                                                        <template for:each={executive.targets} for:item="targetItem">
+                                                            <td key={targetItem.Target_Criteria__c}
+                                                                style="padding: 5px;text-align:left">
+                                                                <lightning-input type="number" variant="label-hidden"
+                                                                    onchange={handleInputChange}
+                                                                    message-when-range-overflow={targetItem.Message}
+                                                                    message-when-range-underflow={targetItem.Message}
+                                                                    min={targetItem.Min_Value__c}
+                                                                    max={targetItem.Max_Value__c}
+                                                                    data-targetid={targetItem.Id}
+                                                                    data-targetcriteria={targetItem.Target_Criteria__c}
+                                                                    data-userid={executive.id}
+                                                                    value={targetItem.Target_Value__c}>
+                                                                </lightning-input>
+                                                            </td>
+                                                        </template>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="slds-truncate" style="text-align:center">
+                                        <span style="color:red;padding:10px;font-size:large">No records found!</span>
+                                    </div>
+                                </template>
+                            </div>
+                            <!-- Modal Footer -->
+                            <template lwc:if={isDesktop}>
+                                <footer class="slds-modal__footer">
+                                    <button class="slds-button slds-button_neutral slds-m-right_small"
+                                        onclick={closeModal}>Close</button>
+                                    <lightning-button variant="brand" label="Save" class="customButton"
+                                        onclick={saveData}></lightning-button>
+                                </footer>
+                            </template>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </template>
+
+                <!--Add Targets-->
+                <template lwc:if={adminTarget}>
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class={containerClass}>
+                            <template lwc:if={isDesktop}>
+                                <template if:false={showUpload}>
+                                    <button
+                                        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                                        onclick={closeAdminTarget}>
+                                        <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                                        <span class="slds-assistive-text">Close</span>
+                                    </button>
+                                </template>
+                            </template>
+                            <!-- Modal/Popup Header -->
+                            <header class="slds-modal__header">
+                                <div class="slds-grid slds-gutters">
+                                    <template if:false={isDesktop}>
+                                        <div class="slds-col  slds-clearfix">
+                                            <div class="slds-float_right">
+                                                <lightning-button variant="base" label="Cancel"
+                                                    onclick={closeAdminTarget}
+                                                    class="slds-m-left_x-small"></lightning-button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div class="slds-col slds-align_absolute-center">
+                                        <h1 id="modal-heading-03"
+                                            class="slds-modal__title slds-hyphenate small-modal-title" tabindex="-1">Add
+                                            Targets</h1>
+                                    </div>
+                                    <template if:false={isDesktop}>
+                                        <div class="slds-col  slds-clearfix">
+                                            <div class="slds-float_left">
+                                                <lightning-button variant="base" label="Save" onclick={saveAdminTarget}
+                                                    class="slds-m-left_x-small"></lightning-button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </header>
+                            <div class="slds-modal__content modalBody slds-p-around_medium" id="modal-content-id-2">
+                                <template lwc:if={isPopupLoading}>
+                                    <div class="slds-modal__content no-scroll" style="overflow: hidden; height: 200px;">
+                                        <c-on-loading-screen></c-on-loading-screen>
+                                    </div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="combobox-containerPopUp">
+                                        <!--Period-->
+                                        <lightning-combobox label="Select Period" value={selectedAdminPeriod}
+                                            data-id="period" options={currentPeriodOptions} required="true"
+                                            placeholder="Select Period" dropdown-alignment="top"
+                                            message-when-value-missing="Select Period"
+                                            onchange={addTargetPeriodChangeHandler} disabled={isDisabled}>
+                                        </lightning-combobox>
+                                        <!--User-->
+                                        <lightning-combobox label="Select User" value={selectedUser}
+                                            data-id="selectedUser" options={userOptions} required disabled="true"
+                                            dropdown-alignment="top" message-when-value-missing="Select User">
+                                        </lightning-combobox>
+                                    </div>
+                                    <div class="table-container">
+                                        <table class="target-table">
+                                            <thead>
+                                                <tr style="height: 10px;">
+                                                    <th>Target Name</th>
+                                                    <th>Target</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template lwc:if={userTargetsCriteriasExisted}>
+                                                    <template for:each={adminTargets} for:item="t" for:index="index">
+                                                        <tr key={t.Id} style="height: 10px;">
+                                                            <td><b>{t.Target_Criteria__r.Name}</b></td>
+                                                            <td style="padding:5px;text-align:left">
+                                                                <lightning-input type="number" variant="label-hidden"
+                                                                    value={t.Target_Value__c}
+                                                                    message-when-range-underflow={t.Message}
+                                                                    min={t.Min_Value__c} data-id={t.Id}
+                                                                    data-targetcriteria={t.Target_Criteria__c}
+                                                                    onchange={handleTargetChange}>
+                                                                </lightning-input>
+                                                            </td>
+                                                        </tr>
+                                                    </template>
+                                                </template>
+                                                <template lwc:else>
+                                                    <tr>
+                                                        <td colspan="2">
+                                                            <div class="slds-truncate" style="text-align:center">
+                                                                <span style="color:red;padding:10px;font-size:large">No
+                                                                    target criteria found!</span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+                            </div>
+                            <!-- Modal Footer -->
+                            <template lwc:if={isDesktop}>
+                                <footer class="slds-modal__footer">
+                                    <button class="slds-button slds-button_neutral slds-m-right_small"
+                                        onclick={closeAdminTarget}>Close</button>
+                                    <lightning-button variant="brand" label="Save" class="customButton"
+                                        onclick={saveAdminTarget}></lightning-button>
+                                </footer>
+                            </template>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </template>
+
+            </div>
+        </template>
+    </div>
+</template>

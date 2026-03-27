@@ -1,0 +1,312 @@
+.mainHome {
+    overflow: hidden;
+    background-color: rgb(199, 232, 241);
+}
+
+@media screen and (min-width: 768px) {
+    .mainHome {
+        margin: -0.75rem;
+    }
+}
+
+.screen {
+    display: flex;
+    flex-direction: column;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: rgb(199, 232, 241);
+}
+
+.custom-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.navbar {
+    margin-top: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgb(243, 243, 243);
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.slds-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+:host {
+    --slds-c-card-header-spacing-block-end: 0px;
+    --slds-c-card-header-spacing-block-start: 0px;
+}
+
+.icon-left {
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.header {
+    font-size: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.combobox-container {
+    display: grid;
+    grid-template-columns: 3fr 3fr 1fr 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.combobox-container-no-admin {
+    display: grid;
+    grid-template-columns: 3.5fr 3.5fr 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+@media screen and (max-width: 768px) {
+    .combobox-container {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .combobox-container-no-admin {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        align-items: center;
+    }
+}
+
+.no-records-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.no-records-box {
+    text-align: center;
+    border-radius: 5px;
+    background-color: #ffeded;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    min-width: 100%;
+    max-width: 100%;
+    color: red;
+    font-size: large;
+}
+
+.combobox-containerPopUp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+table {
+    margin-top: 10px;
+    border: 0.25px solid #808080;
+    border-collapse: separate;
+    border-left: 0;
+    border-radius: 4px;
+    border-spacing: 0px;
+}
+
+thead {
+    display: table-header-group;
+    vertical-align: middle;
+    border-color: inherit;
+    border-collapse: separate;
+    background-color: #4472c4;
+    color: white;
+}
+
+tr {
+    display: table-row;
+    vertical-align: inherit;
+    border-color: inherit;
+}
+
+th,
+td {
+    padding: 5px;
+    text-align: center;
+    vertical-align: center;
+    border-left: 0.25px solid #808080;
+    min-width: 50px;
+}
+
+td {
+    border-top: 0.25px solid #808080;
+}
+
+thead tr:first-child th:not(:first-child):not(.target-table th) {
+    border-bottom: 0.25px solid #808080;
+}
+
+thead:first-child tr:first-child th:first-child,
+tbody:first-child tr:first-child td:first-child {
+    border-radius: 4px 0 0 0;
+}
+
+thead:last-child tr:last-child th:first-child,
+tbody:last-child tr:last-child td:first-child {
+    border-radius: 0 0 0 4px;
+}
+
+.custommargin {
+    margin: 10px;
+    border-radius: 5px;
+}
+
+.nav-title {
+    color: #fff;
+    background-color: #4472c4;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.menu-open,
+.menu-close {
+    cursor: pointer;
+}
+
+.slds-modal__container {
+    width: 60% !important;
+    max-width: 90% !important;
+}
+
+@media screen and (max-width: 768px) {
+    .slds-modal__container {
+        width: 90% !important;
+        max-width: 90% !important;
+        margin: auto;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        position: absolute;
+    }
+}
+
+.fixed-table {
+    width: 100%;
+    border-collapse: separate;
+}
+
+.fixed-table th,
+.fixed-table td {
+    min-width: 100px;
+    text-align: center;
+    padding: 8px;
+    border: 0.25px solid #808080;
+}
+
+.fixed-table th {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.fixed-table thead:first-child tr:first-child th:first-child,
+.fixed-table tbody:first-child tr:first-child td:first-child {
+    border-radius: 4px 0 0 0;
+}
+
+.fixed-table thead:last-child tr:last-child th:first-child,
+.fixed-table tbody:last-child tr:last-child td:first-child {
+    border-radius: 0 0 0 4px;
+}
+
+.box-container2 {
+    height: 40px;
+    width: 100%;
+    background-color: #ffeded;
+    box-sizing: border-box;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.box-text {
+    color: black;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.header {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.dropdown {
+    display: flex;
+    flex-direction: column;
+    border-radius: 5px;
+    margin: 10px;
+    background-color: #fff;
+    padding-top: 15px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.customButton {
+    --sds-c-button-brand-color-background: #4472c4 !important;
+    --sds-c-button-brand-color-border: #4472c4 !important;
+    --sds-c-button-brand-color-background-hover: #4472c4 !important;
+    --sds-c-button-brand-color-border-hover: #4472c4 !important;
+    --sds-c-button-radius-border: 4px !important;
+}
+
+:host .customButton { 
+    border-radius: 4px !important;
+}
+ 
+.modalBody {
+    position: relative;
+}
+
+.no-scroll {
+    overflow-y: hidden !important;
+}

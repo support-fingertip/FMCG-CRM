@@ -1,0 +1,54 @@
+.filter-card {
+    border-radius: 6px;
+    border: 1px solid #d8dde6;
+    background: #ffffff;
+}
+
+.filter-card:hover {
+    border-color: #0176d3;
+    box-shadow: 0 2px 6px rgba(1, 118, 211, 0.2);
+}
+
+/* Search dropdown */
+.fbe-search-box {
+    position: relative;
+}
+
+.fbe-dropdown {
+    position: absolute;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #dce0e5;
+    border-radius: 4px;
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 20;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.fbe-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.fbe-option:hover {
+    background: #f4f6f9;
+}
+
+.fbe-icon {
+    color: #5f6ab1;
+}
+
+.fbe-option-label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.fbe-type {
+    font-size: 11px;
+    color: #7f8ea3;
+}

@@ -1,0 +1,280 @@
+<template>
+    <div class="tcb-container">
+        <!-- Header -->
+        <div class="tcb-header">
+            <lightning-icon icon-name="custom:custom63" size="medium"></lightning-icon>
+            <h1>Target Criteria Builder</h1>
+        </div>
+
+        <!-- Stepper -->
+        <div class="tcb-steps">
+            <div class={step1Class}>
+                <div class="tcb-step-circle circle1">1</div>
+                <div class="tcb-step-label">General</div>
+            </div>
+            <div class={step2Class}>
+                <div class="tcb-step-circle circle2">2</div>
+                <div class="tcb-step-label">Field Mapping</div>
+            </div>
+            <div class={step3Class}>
+                <div class="tcb-step-circle circle3">3</div>
+                <div class="tcb-step-label">Filters &amp; Logic</div>
+            </div>
+            <div class={step4Class}>
+                <div class="tcb-step-circle circle4">4</div>
+                <div class="tcb-step-label">Summary</div>
+            </div>
+        </div>
+
+        <div class="tcb-layout">
+            <!-- LEFT: Step content -->
+            <div class="tcb-left">
+                <!-- STEP 1: GENERAL SETTINGS -->
+                <template if:true={isStep1}>
+                    <section class="tcb-card general">
+                        <div class="tcb-card-header">
+                            <lightning-icon icon-name="utility:settings" size="x-small"></lightning-icon>
+                            <span>General Settings</span>
+                        </div>
+                        <div class="tcb-card-body">
+                            <div class="two-col">
+                                <lightning-input label="Criteria Name" data-field="Name" value={criteria.Name}
+                                    onchange={handleInput} required>
+                                </lightning-input>
+
+                                <!-- OBJECT SEARCH FIELD -->
+                                <div class="tcb-search-box">
+
+                                    <lightning-input type="text" label="Search Object"
+                                        placeholder="Search objects (Account, Opportunity, Lead...)"
+                                        value={objectSearchText} onchange={handleObjectSearch}
+                                        class="slds-m-bottom_x-small">
+                                    </lightning-input>
+
+                                    <template if:true={showObjectDropdown}>
+                                        <div class="tcb-dropdown">
+                                            <template for:each={filteredObjects} for:item="obj">
+                                                <div key={obj.api} class="tcb-option" data-api={obj.api}
+                                                    data-label={obj.label} onclick={selectObject}>
+
+                                                    <lightning-icon icon-name="utility:database"
+                                                        size="x-small"></lightning-icon>
+
+                                                    <div class="tcb-option-text">
+                                                        <div class="tcb-label">{obj.label}</div>
+                                                        <div class="tcb-api">({obj.api})</div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </template>
+
+                <!-- STEP 2: FIELD MAPPING -->
+                <template if:true={isStep2}>
+                    <section class="tcb-card mapping">
+                        <div class="tcb-card-header">
+                            <lightning-icon icon-name="utility:link" size="x-small"></lightning-icon>
+                            <span>Field Mapping</span>
+                        </div>
+                        <div class="tcb-card-body">
+                            <div class="two-col">
+                                <lightning-combobox label="Operator" data-field="Operator__c"
+                                    value={criteria.Operator__c} options={operatorOptions}
+                                    onchange={handleOperatorChange} required>
+                                </lightning-combobox>
+
+                                <lightning-combobox label="SUM Field" data-field="Field__c" disabled={isCount}
+                                    value={criteria.Field__c} options={numberFieldOptions} onchange={handleInput}>
+                                </lightning-combobox>
+
+                                <lightning-combobox label="Date Field" data-field="Date_Field__c"
+                                    value={criteria.Date_Field__c} options={dateFieldOptions} onchange={handleInput}
+                                    required>
+                                </lightning-combobox>
+
+                                <lightning-combobox label="User Field" data-field="User_Field__c"
+                                    value={criteria.User_Field__c} options={userFieldOptions} onchange={handleInput}
+                                    required>
+                                </lightning-combobox>
+                            </div>
+                            <p class="tcb-help-text">
+                                Operator, Date Field and User Field are mandatory.
+                                SUM Field is mandatory when Operator is SUM.
+                            </p>
+                        </div>
+                    </section>
+                </template>
+
+                <!-- STEP 3: FILTERS & LOGIC -->
+                <template if:true={isStep3}>
+                    <section class="tcb-card filters">
+                        <div class="tcb-card-header">
+                            <lightning-icon icon-name="utility:filterList" size="x-small"></lightning-icon>
+                            <span>Filters &amp; Filter Logic</span>
+                        </div>
+                        <div class="tcb-card-body">
+                            <p class="tcb-help-text">
+                                Add filters if you want to restrict which records are counted.
+                                If you add more than one filter, the logic between them will
+                                default to AND (1 AND 2 AND 3...).
+                            </p>
+
+                            <c-filter-builder fields-metadata={fieldsMetadata} value={filters}
+                                onfilterchange={handleFilterChange}>
+                            </c-filter-builder>
+
+
+                        </div>
+                    </section>
+
+                    <!-- LOGIC -->
+                    <section class="tcb-card logic">
+                        <div class="tcb-card-header" onclick={toggleLogic}>
+                            <lightning-icon icon-name="utility:formula" size="x-small"></lightning-icon>
+                            <span>Filter Logic</span>
+                            <lightning-icon icon-name={logicIcon} size="x-small"></lightning-icon>
+                        </div>
+
+                        <lightning-input label="Logic Expression (e.g. 1 AND (2 OR 3))" data-field="Filter_Logic__c"
+                            value={criteria.Filter_Logic__c} onchange={handleInput}>
+                        </lightning-input>
+
+                        <template if:true={logicError}>
+                            <div class="tcb-error">{logicError}</div>
+                        </template>
+                    </section>
+                </template>
+
+                <!-- STEP 4: SUMMARY -->
+                <template if:true={isStep4}>
+                    <section class="tcb-card json">
+                        <div class="tcb-card-header">
+                            <lightning-icon icon-name="utility:summary" size="x-small"></lightning-icon>
+                            <span>Summary</span>
+                        </div>
+                        <div class="tcb-card-body">
+                            <div class="tcb-summary-grid">
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">Criteria Name</span>
+                                    <span class="tcb-summary-value">{criteria.Name}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">Object</span>
+                                    <span class="tcb-summary-value">{selectedObjectLabel}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">Operator</span>
+                                    <span class="tcb-summary-value">{criteria.Operator__c}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">SUM Field</span>
+                                    <span class="tcb-summary-value">{selectedFieldLabel}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">Date Field</span>
+                                    <span class="tcb-summary-value">{selectedDateFieldLabel}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">User Field</span>
+                                    <span class="tcb-summary-value">{selectedUserFieldLabel}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">Total Filters</span>
+                                    <span class="tcb-summary-value">{filterCount}</span>
+                                </div>
+                                <div class="tcb-summary-row">
+                                    <span class="tcb-summary-label">Filter Logic</span>
+                                    <span class="tcb-summary-value">{criteria.Filter_Logic__c}</span>
+                                </div>
+                            </div>
+
+                            <lightning-accordion allow-multiple-sections-open class="slds-m-top_medium">
+                                <lightning-accordion-section label="Filter Details" name="filtersDetail">
+                                    <template if:true={hasFilters}>
+                                        <template for:each={filters} for:item="f">
+                                            <div key={f.id} class="tcb-filter-preview-row">
+                                                <span class="tcb-filter-preview-label">Filter {f.id}</span>
+                                                <span class="tcb-filter-preview-value">
+                                                    {f.field} {f.operator} {f.value}
+                                                </span>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:true={hasNoFilters}>
+                                        <p class="tcb-help-text">
+                                            No filters configured. All records will be considered.
+                                        </p>
+                                    </template>
+                                </lightning-accordion-section>
+
+                                <lightning-accordion-section label="Filters JSON" name="filtersJson">
+                                    <pre class="tcb-json-preview">{jsonFilters}</pre>
+                                </lightning-accordion-section>
+                            </lightning-accordion>
+                        </div>
+                    </section>
+                </template>
+            </div>
+
+            <!-- RIGHT: Always-on quick summary -->
+            <!-- <div class="tcb-right">
+                <div class="tcb-summary-card">
+                    <div class="tcb-summary-header">
+                        <lightning-icon icon-name="utility:info_alt" size="x-small"></lightning-icon>
+                        <span>Quick Summary</span>
+                    </div>
+                    <div class="tcb-summary-body">
+                        <p><strong>Step:</strong> {currentStepLabel}</p>
+                        <p><strong>Criteria:</strong> {criteria.Name}</p>
+                        <p><strong>Object:</strong> {selectedObjectLabel}</p>
+                        <p><strong>Operator:</strong> {criteria.Operator__c}</p>
+                        <p><strong>Date Field:</strong> {selectedDateFieldLabel}</p>
+                        <p><strong>User Field:</strong> {selectedUserFieldLabel}</p>
+                        <p><strong>Filters:</strong> {filterCount}</p>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+
+        <!-- FOOTER BUTTONS -->
+        <div class="tcb-footer">
+            <div class="tcb-footer-left">
+                <lightning-button label="Cancel" variant="neutral" onclick={handleCancel} disabled={isLoading}>
+                </lightning-button>
+            </div>
+
+            <div class="tcb-footer-right">
+                <template if:true={showPrevious}>
+                    <lightning-button label="Previous" onclick={handlePrevious} class="slds-m-right_small"
+                        disabled={isLoading}>
+                    </lightning-button>
+                </template>
+
+                <template if:true={showNext}>
+                    <lightning-button label="Next" variant="brand" onclick={handleNext} disabled={isNextDisabled}>
+                    </lightning-button>
+                </template>
+
+                <template if:true={showSaveButtons}>
+                    <lightning-button label="Save &amp; New" variant="brand-outline" onclick={handleSaveAndNew}
+                        disabled={isLoading}>
+                    </lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSave} disabled={isLoading}>
+                    </lightning-button>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <template if:true={isLoading}>
+        <div class="tcb-spinner-backdrop">
+            <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+        </div>
+    </template>
+</template>
