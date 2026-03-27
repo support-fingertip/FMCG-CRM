@@ -42,6 +42,45 @@ public with sharing class TAM_FieldMetadata_Service {
             results.add(info);
         }
 
+        // Add common relationship fields (parent.field) for Reference/Lookup fields
+        for (String name : fields.keySet()) {
+            Schema.DescribeFieldResult fd = fields.get(name).getDescribe();
+            if (fd.getType() != Schema.DisplayType.Reference) continue;
+
+            List<Schema.SObjectType> refs = fd.getReferenceTo();
+            if (refs.isEmpty()) continue;
+
+            Schema.DescribeSObjectResult parentDesc = refs[0].getDescribe();
+            String relationName = fd.getRelationshipName();
+            if (String.isBlank(relationName)) continue;
+
+            // Add key parent fields: Name, Id, and a few common ones
+            Map<String, Schema.SObjectField> parentFields = parentDesc.fields.getMap();
+            List<String> commonFields = new List<String>{ 'Name', 'Email', 'Phone', 'Title', 'Department', 'City', 'State', 'Country' };
+
+            for (String cf : commonFields) {
+                String cfLower = cf.toLowerCase();
+                if (!parentFields.containsKey(cfLower)) continue;
+
+                Schema.DescribeFieldResult pfd = parentFields.get(cfLower).getDescribe();
+                FieldInfo info = new FieldInfo();
+                info.apiName = relationName + '.' + pfd.getName();
+                info.label = parentDesc.getLabel() + ' > ' + pfd.getLabel();
+                info.type = getFieldType(pfd);
+                info.isUserField = false;
+
+                if (pfd.getType() == Schema.DisplayType.Picklist ||
+                    pfd.getType() == Schema.DisplayType.MultiPicklist) {
+                    info.picklistValues = new List<String>();
+                    for (Schema.PicklistEntry p : pfd.getPicklistValues()) {
+                        info.picklistValues.add(p.getValue());
+                    }
+                }
+
+                results.add(info);
+            }
+        }
+
         results.sort();
         return results;
     }

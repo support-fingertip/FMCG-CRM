@@ -6,6 +6,9 @@ import getCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.getCrite
 import saveCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.saveCriteria';
 import deleteCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.deleteCriteria';
 import getLinkedTargetCount from '@salesforce/apex/TAM_TargetCriteria_Controller.getLinkedTargetCount';
+import toggleActive from '@salesforce/apex/TAM_TargetCriteria_Controller.toggleActive';
+import cloneCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.cloneCriteria';
+import previewCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.previewCriteria';
 import FilterLogicValidator from 'c/tamFilterLogicValidator';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -145,6 +148,103 @@ export default class TamCriteriaBuilder extends LightningElement {
         this.deleteTargetId = this.selectedCriteria.Id;
         this.deleteTargetName = this.selectedCriteria.Name;
         this._fetchLinkedCountAndShowConfirm();
+    }
+
+    // ===== TOGGLE ACTIVE =====
+    handleToggleActive(event) {
+        event.stopPropagation();
+        const id = event.currentTarget.dataset.id;
+        const item = this.criteriaList.find(c => c.Id === id);
+        if (!item) return;
+
+        const newState = !item.Active__c;
+        toggleActive({ criteriaId: id, isActive: newState })
+            .then(() => {
+                this.showToast('Success', `Criteria ${newState ? 'activated' : 'deactivated'}`, 'success');
+                this.loadCriteriaList();
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Failed to update', 'error');
+            });
+    }
+
+    // ===== CLONE =====
+    handleClone() {
+        this.isLoading = true;
+        cloneCriteria({ criteriaId: this.selectedCriteria.Id })
+            .then(result => {
+                this.showToast('Success', `Cloned as "${result.Name}"`, 'success');
+                this.selectedCriteria = { ...result };
+                this.loadCriteriaList();
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Failed to clone', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    // ===== PREVIEW =====
+    @track previewResult = null;
+    @track showPreview = false;
+
+    handlePreview() {
+        if (!this.criteria.Id) {
+            this.showToast('Info', 'Save the criteria first to run a preview', 'info');
+            return;
+        }
+        this.isLoading = true;
+        previewCriteria({ criteriaId: this.criteria.Id })
+            .then(result => {
+                this.previewResult = result;
+                this.showPreview = true;
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Preview failed', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handlePreviewFromDetail() {
+        this.isLoading = true;
+        previewCriteria({ criteriaId: this.selectedCriteria.Id })
+            .then(result => {
+                this.previewResult = result;
+                this.showPreview = true;
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Preview failed', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleClosePreview() {
+        this.showPreview = false;
+        this.previewResult = null;
+    }
+
+    get previewRows() {
+        if (!this.previewResult || !this.previewResult.data) return [];
+        return this.previewResult.data;
+    }
+
+    get previewHasRows() {
+        return this.previewRows.length > 0;
+    }
+
+    get previewQuery() {
+        return this.previewResult ? this.previewResult.query : '';
+    }
+
+    get previewPeriod() {
+        return this.previewResult ? this.previewResult.period : '';
+    }
+
+    get previewIsSuccess() {
+        return this.previewResult ? this.previewResult.success : false;
+    }
+
+    get previewError() {
+        return this.previewResult ? this.previewResult.error : '';
     }
 
     // Fetch linked target count before showing delete confirmation

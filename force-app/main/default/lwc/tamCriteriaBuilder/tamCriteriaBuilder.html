@@ -63,6 +63,11 @@
                                         </template>
                                     </td>
                                     <td class="tcb-actions" onclick={stopPropagation}>
+                                        <lightning-button-icon icon-name={item.Active__c ? 'utility:toggle_on' : 'utility:toggle_off'}
+                                            variant={item.Active__c ? 'brand' : 'border-filled'}
+                                            alternative-text="Toggle Active" data-id={item.Id}
+                                            onclick={handleToggleActive}
+                                            class="slds-m-right_xx-small"></lightning-button-icon>
                                         <lightning-button-icon icon-name="utility:edit" variant="border-filled"
                                             alternative-text="Edit" data-id={item.Id} onclick={handleEdit}
                                             class="slds-m-right_xx-small"></lightning-button-icon>
@@ -105,6 +110,10 @@
                     </template>
                 </div>
                 <div class="tcb-detail-actions">
+                    <lightning-button label="Preview" variant="neutral" icon-name="utility:preview"
+                        onclick={handlePreviewFromDetail} class="slds-m-right_small"></lightning-button>
+                    <lightning-button label="Clone" variant="neutral" icon-name="utility:copy"
+                        onclick={handleClone} class="slds-m-right_small"></lightning-button>
                     <lightning-button label="Edit" variant="neutral" icon-name="utility:edit"
                         onclick={handleEditFromDetail} class="slds-m-right_small"></lightning-button>
                     <lightning-button label="Delete" variant="destructive-text" icon-name="utility:delete"
@@ -379,6 +388,11 @@
                             disabled={isNextDisabled}></lightning-button>
                     </template>
                     <template if:true={showSaveButtons}>
+                        <template if:true={criteria.Id}>
+                            <lightning-button label="Run Preview" variant="neutral" icon-name="utility:preview"
+                                onclick={handlePreview} disabled={isLoading}
+                                class="slds-m-right_small"></lightning-button>
+                        </template>
                         <lightning-button label="Save &amp; New" variant="brand-outline" onclick={handleSaveAndNew}
                             disabled={isLoading} class="slds-m-right_small"></lightning-button>
                         <lightning-button label="Save" variant="brand" onclick={handleSave}
@@ -386,6 +400,66 @@
                     </template>
                 </div>
             </div>
+        </template>
+
+        <!-- ═══════ PREVIEW MODAL ═══════ -->
+        <template if:true={showPreview}>
+            <section class="slds-modal slds-fade-in-open slds-modal_medium" role="dialog">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
+                            class="slds-modal__close" onclick={handleClosePreview}></lightning-button-icon>
+                        <h2 class="slds-modal__title">Query Preview</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <div class="slds-m-bottom_small">
+                            <span class="tcb-detail-label">Period: </span>
+                            <span class="tcb-detail-value">{previewPeriod}</span>
+                        </div>
+
+                        <pre class="tcb-query-preview slds-m-bottom_medium">{previewQuery}</pre>
+
+                        <template if:true={previewIsSuccess}>
+                            <template if:true={previewHasRows}>
+                                <h3 class="slds-text-heading_small slds-m-bottom_small">
+                                    Sample Results ({previewResult.rowCount} rows)
+                                </h3>
+                                <table class="tcb-table">
+                                    <thead>
+                                        <tr>
+                                            <th>User / Owner ID</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={previewRows} for:item="row">
+                                            <tr key={row.userId}>
+                                                <td>{row.userId}</td>
+                                                <td><strong>{row.value}</strong></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </template>
+                            <template if:false={previewHasRows}>
+                                <div class="slds-text-color_weak slds-text-align_center slds-p-around_medium">
+                                    No results found for the current period. This is expected if no matching records exist yet.
+                                </div>
+                            </template>
+                        </template>
+
+                        <template if:false={previewIsSuccess}>
+                            <div class="tcb-error slds-m-top_small">
+                                Query Error: {previewError}
+                            </div>
+                        </template>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Close" onclick={handleClosePreview}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
 
         <!-- ═══════ DELETE CONFIRMATION ═══════ -->
