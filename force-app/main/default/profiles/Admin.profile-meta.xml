@@ -547,7 +547,57 @@
         <enabled>true</enabled>
         <name>Tax_Rule__mdt</name>
     </customMetadataTypeAccesses>
+        <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Description__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Effective_From__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Effective_To__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Max_Percent__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Min_Percent__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Multiplier__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Payout_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Payout_Value__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Sort_Order__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Incentive_Slab__c.Target_Criteria__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+<fieldPermissions>
         <editable>true</editable>
         <field>Account.Active__c</field>
         <readable>true</readable>
@@ -5043,7 +5093,10 @@
         <enabled>true</enabled>
         <flow>SPM_Scheme_Auto_Deactivation</flow>
     </flowAccesses>
-    <layoutAssignments>
+        <layoutAssignments>
+        <layout>Incentive_Slab__c-Incentive Slab Layout</layout>
+    </layoutAssignments>
+<layoutAssignments>
         <layout>Account-Retailer Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
@@ -5746,7 +5799,16 @@
     <layoutAssignments>
         <layout>WorkStepTemplate-Work Step Template Layout</layout>
     </layoutAssignments>
-    <objectPermissions>
+        <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Incentive_Slab__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+<objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
         <allowEdit>true</allowEdit>
