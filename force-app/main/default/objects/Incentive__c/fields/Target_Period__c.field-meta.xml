@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Incentive_Slab__c</fullName>
-    <label>Incentive Slab</label>
+    <fullName>Target_Period__c</fullName>
+    <label>Target Period</label>
     <type>Lookup</type>
-    <referenceTo>Incentive_Slab__c</referenceTo>
+    <referenceTo>Target_Period__c</referenceTo>
     <relationshipLabel>Incentives</relationshipLabel>
     <relationshipName>Incentives</relationshipName>
     <required>false</required>
     <deleteConstraint>SetNull</deleteConstraint>
-    <description>The incentive slab that was matched for this calculation.</description>
+    <description>The period this incentive calculation applies to.</description>
 </CustomField>

@@ -217,7 +217,32 @@
         <enabled>false</enabled>
     </classAccesses>
     <custom>true</custom>
-        <fieldPermissions>
+            <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive__c.Base_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive__c.Notes__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive__c.Target_Actual__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive__c.Target_Criteria__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive__c.Target_Period__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+<fieldPermissions>
         <editable>false</editable>
         <field>Incentive_Slab__c.Description__c</field>
         <readable>true</readable>
