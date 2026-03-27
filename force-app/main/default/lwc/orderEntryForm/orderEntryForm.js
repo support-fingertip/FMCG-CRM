@@ -484,10 +484,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             this.accountChannel = getFieldValue(data, 'Account.Channel__c') || 'General Trade';
             this.accountClass = getFieldValue(data, 'Account.Outlet_Class__c') || 'B';
             this.selectedAccountId = this.recordId;
-            this.loadLastOrder();
-            this.loadSchemes();
-            this.loadMustSellProducts();
-            this.loadTopSellingProducts();
+            this.initializeOrderData();
         } else if (error) {
             this.showToast('Error', 'Failed to load account details', 'error');
         }
@@ -496,10 +493,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     connectedCallback() {
         if (!this.recordId && this.accountId) {
             this.selectedAccountId = this.accountId;
-            this.loadLastOrder();
-            this.loadSchemes();
-            this.loadMustSellProducts();
-            this.loadTopSellingProducts();
+            this.initializeOrderData();
         }
     }
 
@@ -507,11 +501,19 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.selectedAccountId = event.detail.recordId;
         if (this.selectedAccountId) {
             this.loadAccountDetails();
-            this.loadLastOrder();
-            this.loadSchemes();
-            this.loadMustSellProducts();
-            this.loadTopSellingProducts();
+            this.initializeOrderData();
         }
+    }
+
+    /**
+     * Coordinates loading of order data ensuring schemes are loaded
+     * before top-selling and must-sell products that depend on them.
+     */
+    async initializeOrderData() {
+        this.loadLastOrder();
+        await this.loadSchemes();
+        this.loadMustSellProducts();
+        this.loadTopSellingProducts();
     }
 
     loadAccountDetails() {
@@ -617,8 +619,14 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const rate = product.unitPrice || product.mrp || 0;
             const grossAmount = qty * rate;
             const taxRate = product.gstRate || 18;
-            const taxAmount = grossAmount * (taxRate / 100);
-            const totalAmount = grossAmount + taxAmount;
+
+            // Find applicable scheme for must-sell product
+            const scheme = this.findApplicableScheme({ id: product.productId, Id: product.productId });
+            const freeQty = scheme ? this.calculateFreeQty(qty, scheme) : 0;
+            const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, qty, scheme) : 0;
+            const taxableAmount = grossAmount - discountAmount;
+            const taxAmount = taxableAmount * (taxRate / 100);
+            const totalAmount = taxableAmount + taxAmount;
 
             const newItem = {
                 id: 'LINE_' + this.lineIdCounter,
@@ -635,15 +643,15 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 rate: rate,
                 rateFormatted: this.formatCurrency(rate),
                 quantity: qty,
-                freeQty: 0,
-                schemeName: product.schemeName || '',
-                schemeId: product.schemeId || null,
+                freeQty: freeQty,
+                schemeName: scheme ? scheme.Name : '',
+                schemeId: scheme ? scheme.Id : null,
                 classification: 'Must Sell',
                 classificationBadgeClass: this.getClassificationBadgeClass('Must Sell'),
                 taxRate: taxRate,
                 grossAmount: grossAmount,
-                discountAmount: 0,
-                discountFormatted: this.formatCurrency(0),
+                discountAmount: discountAmount,
+                discountFormatted: this.formatCurrency(discountAmount),
                 taxAmount: taxAmount,
                 taxFormatted: this.formatCurrency(taxAmount),
                 totalAmount: totalAmount,
