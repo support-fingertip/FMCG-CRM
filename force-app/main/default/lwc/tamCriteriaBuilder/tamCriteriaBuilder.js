@@ -516,7 +516,19 @@ export default class TamCriteriaBuilder extends LightningElement {
 
     get showPrevious() { return this.currentStep > 1; }
     get showNext() { return this.currentStep < 4; }
-    get showSaveButtons() { return this.currentStep === 4; }
+
+    // Save is available on every step but disabled if required fields are missing
+    get isSaveDisabled() {
+        if (this.isLoading) return true;
+        // Step 1 fields are always required
+        if (!this.criteria.Name || !this.criteria.Object__c) return true;
+        // Step 2 fields are required
+        if (!this.criteria.Operator__c) return true;
+        if (this.criteria.Operator__c === 'SUM' && !this.criteria.Field__c) return true;
+        if (!this.criteria.Date_Field__c) return true;
+        if (!this.criteria.User_Field__c) return true;
+        return false;
+    }
 
     get isNextDisabled() {
         if (this.currentStep === 1) return !this.criteria.Name || !this.criteria.Object__c;
@@ -639,8 +651,18 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     // ===== SAVE =====
-    handleSave() { this.doSave(false); }
-    handleSaveAndNew() { this.doSave(true); }
+    handleSave() {
+        // Validate filter logic before saving from any step
+        if (this.filters.length > 0 && this.criteria.Filter_Logic__c) {
+            const filterIds = this.filters.map(f => f.id);
+            const result = FilterLogicValidator.validate(this.criteria.Filter_Logic__c, filterIds);
+            if (!result.valid) {
+                this.showToast('Validation Error', 'Filter Logic: ' + result.message, 'error');
+                return;
+            }
+        }
+        this.doSave(false);
+    }
 
     doSave(andNew) {
         this.isLoading = true;

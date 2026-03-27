@@ -443,19 +443,15 @@
                     </template>
                     <template if:true={showNext}>
                         <lightning-button label="Next" variant="brand" onclick={handleNext}
-                            disabled={isNextDisabled}></lightning-button>
+                            disabled={isNextDisabled} class="slds-m-right_small"></lightning-button>
                     </template>
-                    <template if:true={showSaveButtons}>
-                        <template if:true={criteria.Id}>
-                            <lightning-button label="Run Preview" variant="neutral" icon-name="utility:preview"
-                                onclick={handlePreview} disabled={isLoading}
-                                class="slds-m-right_small"></lightning-button>
-                        </template>
-                        <lightning-button label="Save &amp; New" variant="brand-outline" onclick={handleSaveAndNew}
-                            disabled={isLoading} class="slds-m-right_small"></lightning-button>
-                        <lightning-button label="Save" variant="brand" onclick={handleSave}
-                            disabled={isLoading}></lightning-button>
+                    <template if:true={criteria.Id}>
+                        <lightning-button label="Run Preview" variant="neutral" icon-name="utility:preview"
+                            onclick={handlePreview} disabled={isLoading}
+                            class="slds-m-right_small"></lightning-button>
                     </template>
+                    <lightning-button label="Save" variant="brand" icon-name="utility:save"
+                        onclick={handleSave} disabled={isSaveDisabled}></lightning-button>
                 </div>
             </div>
         </template>
