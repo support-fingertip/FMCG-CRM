@@ -4010,6 +4010,10 @@
         <name>WorkDotComUserPerm</name>
     </userPermissions>
     <tabVisibilities>
+        <tab>Target_Allocation</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Batch_Master__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>

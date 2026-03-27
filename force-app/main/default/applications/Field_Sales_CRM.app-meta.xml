@@ -35,6 +35,7 @@
     <tabs>Employee__c</tabs>
     <tabs>Leave_Request__c</tabs>
     <tabs>Target_Criteria_Manager</tabs>
+    <tabs>Target_Allocation</tabs>
     <tabs>Target_Actual__c</tabs>
     <tabs>Target_Period__c</tabs>
     <tabs>Scheme__c</tabs>

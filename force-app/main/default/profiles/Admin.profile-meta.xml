@@ -6571,7 +6571,11 @@
         <tab>Team_Visit_Dashboard</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
-    <tabVisibilities>
+        <tabVisibilities>
+        <tab>Target_Allocation</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+<tabVisibilities>
         <tab>Target_Actual__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
