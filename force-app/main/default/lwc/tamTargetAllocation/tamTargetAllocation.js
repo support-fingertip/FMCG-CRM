@@ -1,519 +1,463 @@
-import { LightningElement, track, wire, api } from 'lwc';
+import { LightningElement, track, wire } from 'lwc';
 import getData from '@salesforce/apex/TAM_TargetAllocation_Controller.getAllData';
 import getTargetActuals from '@salesforce/apex/TAM_TargetAllocation_Controller.getTargetActuals';
 import getUserTargetActuals from '@salesforce/apex/TAM_TargetAllocation_Controller.getUserTargets';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import saveTargets from '@salesforce/apex/TAM_TargetAllocation_Controller.saveTargets';
 import saveAdminTargetActuals from '@salesforce/apex/TAM_TargetAllocation_Controller.saveAdminTargets';
-import FORM_FACTOR from '@salesforce/client/formFactor';
+import saveInlineTarget from '@salesforce/apex/TAM_TargetAllocation_Controller.saveInlineTarget';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { CurrentPageReference } from 'lightning/navigation';
 
 export default class TamTargetAllocation extends LightningElement {
-    currentPageRef;
-    periodId;
-    executiveId;
 
+    // ===== URL PARAMS =====
     @wire(CurrentPageReference)
     wiredCurrentPageRef(result) {
-        if (result) {
-            this.currentPageRef = result;
-            this.extractParams();
+        if (result && result.state) {
+            const pid = result.state.c__periodId;
+            const eid = result.state.c__ExecutiveId;
+            if (pid) this._urlPeriodId = pid;
+            if (eid) this._urlExecutiveId = eid;
         }
     }
 
-    extractParams() {
-        if (this.currentPageRef && this.currentPageRef.state) {
-            this.periodId = this.currentPageRef.state.c__periodId;
-            this.executiveId = this.currentPageRef.state.c__ExecutiveId;
-        }
-    }
+    _urlPeriodId;
+    _urlExecutiveId;
 
-    isDisabled = false;
+    // ===== STATE =====
     selectedUser = '';
     selectedPeriod = '';
     selectedAdminPeriod = '';
     isLoading = false;
     isPopupLoading = false;
-    isDesktop = false;
-    isPhone = false;
+    isAdmin = false;
+
     @track userOptions = [];
     @track userList = [];
     @track periodOptions = [];
     @track currentPeriodOptions = [];
-    @track targetCriterias = [];
     @track targetList = [];
     @track curTargets = [];
-    @track adminTargets = [];
-    @track adminTargetItems = [];
-    userTargetsCriteriasExisted = false;
-    currentTargetExisted = false;
-    openDistrbutionTable = false;
-    @track subOrdinateUserList = [];
+
+    // Distribute modal
+    @track showDistributeModal = false;
+    @track distributionColumns = [];
+    @track distributionRows = [];
     @track uniqueTargetCriterias = [];
     @track targetCriteriasWithManagerMap = new Map();
-    @track userColumns = [];
-    @track targetCriteriaColumns = [];
-    @track targetCriteriaArray = [];
-    criteriaListSize = 0;
-    subordinateUsersExisted = false;
-    @track targetCriteriaMap = new Map();
-    @track isDropdownOpen = true;
-    containerClass;
-    adminTarget = false;
-    showAddTarget = false;
-    showDistibuteTarget = false;
-    initialTargetAssignmentProfile;
-    @track parentToTotalTargetValueMap = new Map();
-    @track parentwithtargetValueOfSubodinates = new Map();
+    @track parentSubordinateTotals = new Map();
 
+    // Add target modal
+    @track showAddTargetModal = false;
+    @track adminTargets = [];
+    @track targetCriterias = [];
+    @track parentToTotalTargetValueMap = new Map();
+
+    // Inline editing
+    @track editingTargetId = null;
+    @track editValue = null;
+
+    // ===== LIFECYCLE =====
     connectedCallback() {
-        this.isDesktop = FORM_FACTOR === 'Large' ? true : false;
-        this.isPhone = FORM_FACTOR === 'Small' ? true : false;
-        if (FORM_FACTOR === 'Medium') {
-            this.isDesktop = true;
-        }
-        this.containerClass = this.isDesktop ? 'slds-modal__container ' : 'mobilePopup';
         this.fetchAllData();
-        this.disablePullToRefresh();
     }
 
     fetchAllData() {
         this.isLoading = true;
         getData({})
-            .then((result) => {
-                console.log("Fetched Data:", JSON.stringify(result));
-
-                this.userOptions = this.populateOptions(result?.userList, 'Name', 'Id');
+            .then(result => {
+                this.userOptions = this._toOptions(result?.userList, 'Name', 'Id');
                 this.userList = result?.userList || [];
-
-                this.periodOptions = this.populateOptions(result?.periodsList, 'Name', 'Id');
-
-                const currentDate = new Date();
-
-                this.currentPeriodOptions = this.populateOptions(
-                    result?.periodsList?.filter(period => new Date(period.End_Date__c) >= currentDate),
-                    'Name',
-                    'Id'
-                );
+                this.periodOptions = this._toOptions(result?.periodsList, 'Name', 'Id');
+                this.currentPeriodOptions = this._toOptions(result?.currentPeriods, 'Name', 'Id');
 
                 this.selectedUser = result?.currentUserId || '';
                 this.selectedPeriod = result?.period || '';
                 this.selectedAdminPeriod = result?.period || '';
-                this.initialTargetAssignmentProfile = result?.initialTargetAssignmentProfile || '';
+                this.isAdmin = result?.isAdmin || false;
 
-                this.targetList = result?.targetItems || [];
-                this.setCurrentTarget();
-                this.getProfileName();
-                this.aggregateSubordinateTargets();
-                this.isLoading = false;
+                this.targetList = result?.targetActuals || [];
+                this._refreshCurrentTargets();
+                this._aggregateSubordinateTotals();
 
-                if (this.periodId != null && this.executiveId != null) {
-                    this.selectedPeriod = this.periodId;
-                    this.selectedUser = this.executiveId;
-                    this.setTargetVsActualData();
+                // Apply URL params if present
+                if (this._urlPeriodId) {
+                    this.selectedPeriod = this._urlPeriodId;
+                    this.selectedUser = this._urlExecutiveId || this.selectedUser;
+                    this._loadTargetActuals();
                 }
-            })
-            .catch((error) => {
-                this.isLoading = false;
-                console.error("Error fetching data:", error);
-
-                this.showToast(
-                    'Error',
-                    `Error fetching targets: ${error.body?.message || JSON.stringify(error)}`,
-                    'error'
-                );
-            });
-    }
-
-    setCurrentTarget() {
-        this.curTargets = this.targetList.filter(item => item.User__c === this.selectedUser);
-
-        this.uniqueTargetCriterias = this.curTargets.reduce((acc, t) => {
-            if (t.Target_Criteria__c && !acc.some(item => item.Id === t.Target_Criteria__c)) {
-                acc.push({ Id: t.Target_Criteria__c, Name: t.Target_Criteria__r?.Name || 'N/A' });
-            }
-            return acc;
-        }, []);
-
-        this.targetCriteriasWithManagerMap = new Map(
-            this.curTargets.map(target => [target.Target_Criteria__c, target])
-        );
-
-        this.currentTargetExisted = this.curTargets.length > 0;
-    }
-
-    getTargetVsActualData(event) {
-        this.selectedPeriod = event.target.value;
-        this.selectedAdminPeriod = event.target.value;
-        this.setTargetVsActualData();
-    }
-
-    setTargetVsActualData() {
-        this.isLoading = true;
-        getTargetActuals({
-            period: this.selectedPeriod,
-            userId: this.selectedUser
-        })
-            .then((result) => {
-                this.targetList = result;
-                this.setCurrentTarget();
-                this.aggregateSubordinateTargets();
-                this.isLoading = false;
-            })
-            .catch((error) => {
-                this.isLoading = false;
-                console.log('error' + JSON.stringify(error));
-                this.showToast(
-                    'Error',
-                    'Error fetching targets: ' + (error.body ? error.body.message : JSON.stringify(error)),
-                    'error'
-                );
-            });
-    }
-
-    getProfileName() {
-        let selectedUserObj = this.userList.find(user => user.Id === this.selectedUser);
-
-        if (selectedUserObj && selectedUserObj.Profile.Name === this.initialTargetAssignmentProfile) {
-            this.showAddTarget = true;
-        } else {
-            this.showAddTarget = false;
-        }
-    }
-
-    get comboboxContainerClass() {
-        return this.showAddTarget ? 'combobox-container' : 'combobox-container-no-admin';
-    }
-
-    userChangeHandler(event) {
-        this.selectedUser = event.target.value;
-        this.setCurrentTarget();
-        this.getProfileName();
-    }
-
-    openModal() {
-        this.resetAll();
-        this.openDistrbutionTable = true;
-        this.subordinateUsersExisted = false;
-
-        this.subOrdinateUserList = this.userList.filter(user => user.ManagerId === this.selectedUser);
-        console.log('Users:', JSON.stringify(this.subOrdinateUserList));
-
-        let targetListCopy = this.targetList.map(target => ({ ...target }));
-        let targetMap = new Map();
-        targetListCopy.forEach(target => {
-            let extId = target.User__c + target.Target_Criteria__c;
-            targetMap.set(extId, target);
-        });
-
-        let userTargetMap = new Map();
-
-        for (let user of this.subOrdinateUserList) {
-            let targetItems = [];
-            for (let targetCriteria of this.uniqueTargetCriterias) {
-                let extId = user.Id + targetCriteria.Id;
-                if (!targetMap.has(extId)) {
-                    let newTarget = this.addSubTargetItem(targetCriteria, user);
-                    targetItems.push(newTarget);
-                } else {
-                    targetItems.push(targetMap.get(extId));
-                }
-            }
-            userTargetMap.set(user.Id, { id: user.Id, name: user.Name, targets: targetItems });
-        }
-
-        this.targetCriteriaArray = Array.from(userTargetMap.values());
-        console.log('Target Criteria Array:', JSON.stringify(this.targetCriteriaArray));
-
-        this.targetCriteriaColumns = this.uniqueTargetCriterias.map(targetCriteria => ({
-            Id: targetCriteria.Id,
-            Name: targetCriteria.Name
-        }));
-        this.criteriaListSize = 1 + this.targetCriteriaColumns.length;
-        this.subordinateUsersExisted = this.subOrdinateUserList.length > 0 &&
-            this.targetCriteriaArray.some(item => item.targets && item.targets.length > 0);
-    }
-
-    addSubTargetItem(criteria, user) {
-        let newTarget = {
-            sobjectType: 'Target_Actual__c',
-            Target_Criteria__r: {
-                Id: criteria.Id,
-                Name: criteria.Name
-            },
-            Target_Criteria__c: criteria.Id,
-            Target_Value__c: '',
-            Achievement_Value__c: 0,
-            User__c: user.Id,
-            UserName: user.Name,
-            Parent_Target__c: this.targetCriteriasWithManagerMap.get(criteria.Id).Id
-        };
-        return newTarget;
-    }
-
-    handleInputChange(event) {
-        const targetCriteriaId = event.target.dataset.targetcriteria;
-        const executiveId = event.target.dataset.userid;
-        let newValue = event.target.value ? Number(event.target.value) : '';
-        const targetId = event.target.dataset.targetid;
-
-        let parentTarget = this.targetCriteriasWithManagerMap.get(targetCriteriaId);
-        if (!parentTarget) {
-            console.error("Parent target not found");
-            return;
-        }
-        let parentTargetValue = parentTarget.Target_Value__c || 0;
-
-        let totalSubordinateValueOfCurrentTargetUser = this.parentwithtargetValueOfSubodinates.get(targetId) || 0;
-
-        let totalSubordinateValue = 0;
-        let lastEnteredTarget = null;
-
-        for (let executive of this.targetCriteriaArray) {
-            for (let targetItem of executive.targets) {
-                if (targetItem.Target_Criteria__c === targetCriteriaId) {
-                    if (targetItem.User__c === executiveId) {
-                        lastEnteredTarget = targetItem;
-                    } else {
-                        totalSubordinateValue += Number(targetItem.Target_Value__c || 0);
-                    }
-                }
-            }
-        }
-
-        let newTotal = totalSubordinateValue + newValue;
-
-        if (newTotal > parentTargetValue) {
-            let allowedValue = parentTargetValue - totalSubordinateValue;
-            if (allowedValue < 0) allowedValue = 0;
-
-            if (lastEnteredTarget) {
-                lastEnteredTarget.Message = `Max value allowed: ${allowedValue}`
-                lastEnteredTarget.Max_Value__c = allowedValue;
-                lastEnteredTarget.Target_Value__c = newValue;
-            }
-        }
-        else if (newValue < totalSubordinateValueOfCurrentTargetUser) {
-            if (lastEnteredTarget) {
-                lastEnteredTarget.Message = `Min value allowed: ${totalSubordinateValueOfCurrentTargetUser}`
-                lastEnteredTarget.Min_Value__c = totalSubordinateValueOfCurrentTargetUser;
-                lastEnteredTarget.Target_Value__c = newValue;
-            }
-        }
-        else if (lastEnteredTarget) {
-            lastEnteredTarget.Target_Value__c = newValue;
-        }
-    }
-
-    saveData() {
-        this.isLoading = true;
-        const targetItems = this.targetCriteriaArray.map(targetCriteriaItem => targetCriteriaItem.targets).flat();
-        const targetList = targetItems;
-
-        const invalidTargets = targetList.filter(
-            target => (target.Target_Value__c < target.Min_Value__c || target.Target_Value__c > target.Max_Value__c)
-        );
-        if (invalidTargets.length > 0) {
-            this.isLoading = false;
-            this.showToast('Error', 'Target distribution initiated. Please enter the targets in allowed range', 'error');
-            return;
-        }
-        this.openDistrbutionTable = false;
-
-        const selectedPeriod = this.selectedPeriod;
-
-        console.log('TargetItems--->' + JSON.stringify(targetList));
-        console.log('selectedPeriod--->' + selectedPeriod);
-
-        saveTargets({ targetList: JSON.stringify(targetList), selctdperiod: selectedPeriod })
-            .then(result => {
-                this.targetList = result;
-                this.resetAll();
-                this.aggregateSubordinateTargets();
-                this.isLoading = false;
-                this.showToast('Success', 'Targets updated successfully.', 'success');
             })
             .catch(error => {
-                this.isLoading = false;
-                this.showToast('Error', 'There was an issue saving the targets.', 'error');
-            });
-    }
-
-    closeModal() {
-        this.openDistrbutionTable = false;
-        this.resetAll();
-    }
-
-    resetAll() {
-        this.targetCriteriaArray = [];
-        this.subOrdinateUserList = [];
-        this.targetCriteriaColumns = [];
-        this.targetCriteriaMap.clear();
-    }
-
-    openAdmintargetPopup() {
-        this.adminTarget = true;
-        this.getUserTargetActuals(this.selectedPeriod);
-    }
-
-    addTargetPeriodChangeHandler(event) {
-        this.selectedAdminPeriod = event.target.value;
-        this.getUserTargetActuals(this.selectedAdminPeriod);
-    }
-
-    getUserTargetActuals(period) {
-        this.isPopupLoading = true;
-        getUserTargetActuals({ period: period, userId: this.selectedUser })
-            .then((result) => {
-                console.log(JSON.stringify(result));
-                this.adminTargetItems = result?.targetItems || [];
-                this.targetCriterias = result?.targetCriterias || [];
-                this.userTargetsCriteriasExisted = this.targetCriterias.length > 0 ? true : false;
-                this.parentToTotalTargetValueMap = new Map(Object.entries(result?.parentToTotalTargetValueMap || {}));
-                this.addAdminTarget();
-                this.isPopupLoading = false;
+                this.showToast('Error', error?.body?.message || 'Failed to load data', 'error');
             })
-            .catch((error) => {
-                this.isLoading = false;
-                console.log('error' + JSON.stringify(error));
-                this.showToast(
-                    'Error',
-                    'Error fetching targets: ' + (error.body ? error.body.message : JSON.stringify(error)),
-                    'error'
+            .finally(() => { this.isLoading = false; });
+    }
+
+    // ===== GETTERS =====
+    get hasCurrentTargets() {
+        return this.curTargets && this.curTargets.length > 0;
+    }
+
+    get hasSubordinates() {
+        return this.distributionRows && this.distributionRows.length > 0 &&
+            this.distributionRows.some(r => r.targets && r.targets.length > 0);
+    }
+
+    get hasAdminTargets() {
+        return this.adminTargets && this.adminTargets.length > 0;
+    }
+
+    // Compute display values with achievement %, progress bars, totals
+    get computedTargets() {
+        return this.curTargets.map(t => {
+            const tv = t.Target_Value__c || 0;
+            const av = t.Achievement_Value__c || 0;
+            const ttv = t.Teams_Target__c || 0;
+            const tav = t.Teams_Achievement__c || 0;
+            const totalTarget = tv + ttv;
+            const totalAchievement = av + tav;
+            const pct = totalTarget > 0 ? Math.round((totalAchievement / totalTarget) * 100) : 0;
+            const clampedPct = Math.min(pct, 100);
+
+            let percentClass = 'ta-percent';
+            if (pct >= 100) percentClass += ' ta-percent-green';
+            else if (pct >= 70) percentClass += ' ta-percent-amber';
+            else percentClass += ' ta-percent-red';
+
+            return {
+                Id: t.Id,
+                criteriaName: t.Target_Criteria__r?.Name || '—',
+                targetValue: tv,
+                teamsTarget: ttv,
+                totalTarget: totalTarget,
+                achievementValue: av,
+                teamsAchievement: tav,
+                totalAchievement: totalAchievement,
+                achievementPercent: pct,
+                percentClass: percentClass,
+                progressStyle: `width: ${clampedPct}%`,
+                isEditing: this.editingTargetId === t.Id,
+                editValue: this.editingTargetId === t.Id ? this.editValue : tv
+            };
+        });
+    }
+
+    // ===== EVENT HANDLERS =====
+    handlePeriodChange(event) {
+        this.selectedPeriod = event.target.value;
+        this.selectedAdminPeriod = event.target.value;
+        this._loadTargetActuals();
+    }
+
+    handleUserChange(event) {
+        this.selectedUser = event.target.value;
+        this._refreshCurrentTargets();
+    }
+
+    // ===== INLINE EDITING =====
+    handleInlineEdit(event) {
+        const id = event.currentTarget.dataset.id;
+        const target = this.curTargets.find(t => t.Id === id);
+        this.editingTargetId = id;
+        this.editValue = target ? target.Target_Value__c : 0;
+        // Force re-render
+        this.curTargets = [...this.curTargets];
+    }
+
+    handleInlineChange(event) {
+        this.editValue = Number(event.target.value) || 0;
+    }
+
+    handleInlineSave() {
+        if (!this.editingTargetId) return;
+        const id = this.editingTargetId;
+        const val = this.editValue;
+        this.editingTargetId = null;
+        this.editValue = null;
+
+        // Optimistic update
+        this.curTargets = this.curTargets.map(t =>
+            t.Id === id ? { ...t, Target_Value__c: val } : t
+        );
+
+        saveInlineTarget({ targetId: id, targetValue: val })
+            .then(result => {
+                // Replace with server response
+                this.curTargets = this.curTargets.map(t =>
+                    t.Id === result.Id ? { ...result } : t
                 );
+                this.showToast('Success', 'Target updated', 'success');
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Failed to save', 'error');
+                this._loadTargetActuals(); // Reload on error
             });
     }
 
-    addAdminTarget() {
-        let targetListCopy = this.adminTargetItems.map(target => ({ ...target }));
+    // ===== DISTRIBUTE MODAL =====
+    openDistributeModal() {
+        this.showDistributeModal = true;
 
-        let adminTargets = targetListCopy.filter(target => target.User__c === this.selectedUser);
+        const subordinates = this.userList.filter(u => u.ManagerId === this.selectedUser);
 
-        let targetMap = new Map();
-        adminTargets.forEach(target => targetMap.set(target.Target_Criteria__c, target));
+        const targetListCopy = this.targetList.map(t => ({ ...t }));
+        const targetMap = new Map();
+        targetListCopy.forEach(t => {
+            targetMap.set(t.User__c + t.Target_Criteria__c, t);
+        });
 
-        let targetItems = [];
+        const rows = [];
+        for (const user of subordinates) {
+            const targets = [];
+            for (const criteria of this.uniqueTargetCriterias) {
+                const key = user.Id + criteria.Id;
+                if (targetMap.has(key)) {
+                    targets.push({ ...targetMap.get(key) });
+                } else {
+                    const parentTarget = this.targetCriteriasWithManagerMap.get(criteria.Id);
+                    targets.push({
+                        sobjectType: 'Target_Actual__c',
+                        Target_Criteria__r: { Id: criteria.Id, Name: criteria.Name },
+                        Target_Criteria__c: criteria.Id,
+                        Target_Value__c: '',
+                        Achievement_Value__c: 0,
+                        User__c: user.Id,
+                        Parent_Target__c: parentTarget ? parentTarget.Id : null
+                    });
+                }
+            }
+            rows.push({ id: user.Id, name: user.Name, targets: targets });
+        }
 
-        for (let targetCriteria of this.targetCriterias) {
-            let extId = targetCriteria.Id;
+        this.distributionRows = rows;
+        this.distributionColumns = this.uniqueTargetCriterias.map(c => ({ Id: c.Id, Name: c.Name }));
+    }
 
-            if (!targetMap.has(extId)) {
-                let newTarget = this.addAdminTargetItem(targetCriteria, this.selectedUser);
-                targetItems.push(newTarget);
-            } else {
-                targetItems.push(targetMap.get(extId));
+    closeDistributeModal() {
+        this.showDistributeModal = false;
+        this.distributionRows = [];
+        this.distributionColumns = [];
+    }
+
+    handleDistributeChange(event) {
+        const criteriaId = event.target.dataset.targetcriteria;
+        const userId = event.target.dataset.userid;
+        const newValue = Number(event.target.value) || 0;
+
+        const parentTarget = this.targetCriteriasWithManagerMap.get(criteriaId);
+        const parentTargetValue = parentTarget ? (parentTarget.Target_Value__c || 0) : 0;
+
+        // Calculate total across all subordinates for this criteria
+        let totalOthers = 0;
+        for (const row of this.distributionRows) {
+            for (const t of row.targets) {
+                if (t.Target_Criteria__c === criteriaId && row.id !== userId) {
+                    totalOthers += Number(t.Target_Value__c || 0);
+                }
             }
         }
 
-        this.adminTargets = targetItems;
+        const newTotal = totalOthers + newValue;
 
-        console.log('Updated adminTargets:', this.adminTargets);
+        // Update the row
+        this.distributionRows = this.distributionRows.map(row => ({
+            ...row,
+            targets: row.targets.map(t => {
+                if (t.Target_Criteria__c === criteriaId && row.id === userId) {
+                    const updated = { ...t, Target_Value__c: newValue };
+                    if (newTotal > parentTargetValue) {
+                        updated.Max_Value__c = parentTargetValue - totalOthers;
+                        updated.Message = `Max allowed: ${parentTargetValue - totalOthers}`;
+                    } else {
+                        updated.Max_Value__c = undefined;
+                        updated.Message = undefined;
+                    }
+                    return updated;
+                }
+                return t;
+            })
+        }));
     }
 
-    addAdminTargetItem(criteria, userId) {
-        return {
-            sobjectType: 'Target_Actual__c',
-            Target_Criteria__r: {
-                Id: criteria.Id,
-                Name: criteria.Name,
-            },
-            Target_Criteria__c: criteria.Id,
-            Target_Value__c: '',
-            Achievement_Value__c: '',
-            User__c: userId
-        };
-    }
-
-    closeAdminTarget() {
-        this.adminTarget = false;
-    }
-
-    handleTargetChange(event) {
-        let targetCriteria = event.target.dataset.targetcriteria;
-        let newValue = parseFloat(event.target.value) || '';
-        let targetItemId = event.target.dataset.id;
-
-        console.log('criteria:', targetCriteria, 'newValue:', newValue, 'targetItemId:', targetItemId);
-
-        let totalValue = this.parentToTotalTargetValueMap?.get(targetItemId) || 0;
-        console.log('totalValue:', totalValue);
-
-        if (newValue < totalValue) {
-            let targetItem = this.adminTargets.find(t => t.Id === targetItemId);
-            if (targetItem) {
-                targetItem.Min_Value__c = totalValue;
-                targetItem.Message = `Min value allowed: ${totalValue}.`;
-            }
-        }
-
-        this.adminTargets = this.adminTargets.map(t =>
-            t.Target_Criteria__c === targetCriteria ? { ...t, Target_Value__c: newValue } : t
+    saveDistribution() {
+        const allTargets = this.distributionRows.flatMap(row => row.targets);
+        const invalid = allTargets.filter(t =>
+            t.Max_Value__c !== undefined && t.Target_Value__c > t.Max_Value__c
         );
-    }
 
-    saveAdminTarget() {
-        const invalidTargets = this.adminTargets.filter(
-            target => target.Target_Value__c < target.Min_Value__c
-        );
-        if (invalidTargets.length > 0) {
-            this.isLoading = false;
-            this.showToast('Error', `Target distribution initiated. Please enter the targets greater than minimum allowed value.`, 'error');
+        if (invalid.length > 0) {
+            this.showToast('Error', 'Some targets exceed the allowed maximum', 'error');
             return;
         }
 
-        this.adminTarget = false;
         this.isLoading = true;
-        let filteredAdminTargets = this.adminTargets.filter(target => target.Target_Value__c > 0);
+        this.showDistributeModal = false;
+
+        saveTargets({ targetList: JSON.stringify(allTargets), selectedPeriod: this.selectedPeriod })
+            .then(result => {
+                this.targetList = result;
+                this._refreshCurrentTargets();
+                this._aggregateSubordinateTotals();
+                this.showToast('Success', 'Targets distributed successfully', 'success');
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Failed to save', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    // ===== ADD TARGET MODAL =====
+    openAddTargetModal() {
+        this.showAddTargetModal = true;
+        this._loadUserTargets(this.selectedAdminPeriod);
+    }
+
+    closeAddTargetModal() {
+        this.showAddTargetModal = false;
+        this.adminTargets = [];
+    }
+
+    handleAdminPeriodChange(event) {
+        this.selectedAdminPeriod = event.target.value;
+        this._loadUserTargets(this.selectedAdminPeriod);
+    }
+
+    handleAdminTargetChange(event) {
+        const criteriaId = event.target.dataset.targetcriteria;
+        const newValue = parseFloat(event.target.value) || 0;
+        const targetId = event.target.dataset.id;
+
+        const minValue = this.parentToTotalTargetValueMap.get(targetId) || 0;
+
+        this.adminTargets = this.adminTargets.map(t => {
+            if (t.Target_Criteria__c === criteriaId) {
+                const updated = { ...t, Target_Value__c: newValue };
+                if (newValue < minValue) {
+                    updated.Min_Value__c = minValue;
+                    updated.Message = `Min value allowed: ${minValue}`;
+                }
+                return updated;
+            }
+            return t;
+        });
+    }
+
+    saveAdminTargets() {
+        const invalid = this.adminTargets.filter(t =>
+            t.Min_Value__c && t.Target_Value__c < t.Min_Value__c
+        );
+        if (invalid.length > 0) {
+            this.showToast('Error', 'Some targets are below the minimum allowed value', 'error');
+            return;
+        }
+
+        this.isLoading = true;
+        this.showAddTargetModal = false;
+
+        const filtered = this.adminTargets.filter(t => t.Target_Value__c > 0);
 
         saveAdminTargetActuals({
-            targetItems: filteredAdminTargets,
+            targetActuals: filtered,
             selectedAdminPeriod: this.selectedAdminPeriod,
             selectedPeriod: this.selectedPeriod,
             userId: this.selectedUser
         })
             .then(result => {
                 this.targetList = result;
-                this.setCurrentTarget();
-                this.resetAll();
-                this.aggregateSubordinateTargets();
-                this.isLoading = false;
-                this.showToast('Success', 'Admin targets updated successfully', 'success');
+                this._refreshCurrentTargets();
+                this._aggregateSubordinateTotals();
+                this.showToast('Success', 'Targets saved successfully', 'success');
             })
             .catch(error => {
-                this.isLoading = false;
-                this.showToast('Error', 'There was an issue saving the targets.', 'error');
-            });
+                this.showToast('Error', error?.body?.message || 'Failed to save', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
     }
 
-    aggregateSubordinateTargets() {
-        this.parentwithtargetValueOfSubodinates = new Map();
+    // ===== PRIVATE HELPERS =====
+    _loadTargetActuals() {
+        this.isLoading = true;
+        getTargetActuals({ period: this.selectedPeriod, userId: this.selectedUser })
+            .then(result => {
+                this.targetList = result;
+                this._refreshCurrentTargets();
+                this._aggregateSubordinateTotals();
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Failed to load targets', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
 
-        this.targetList.forEach(target => {
-            if (target.Parent_Target__c) {
-                let currentTotal = this.parentwithtargetValueOfSubodinates.get(target.Parent_Target__c) || 0;
-                this.parentwithtargetValueOfSubodinates.set(target.Parent_Target__c, currentTotal + (target.Target_Value__c || 0));
+    _loadUserTargets(period) {
+        this.isPopupLoading = true;
+        getUserTargetActuals({ period: period, userId: this.selectedUser })
+            .then(result => {
+                this.targetCriterias = result?.targetCriterias || [];
+                const existingTargets = (result?.targetActuals || []).filter(t => t.User__c === this.selectedUser);
+                this.parentToTotalTargetValueMap = new Map(
+                    Object.entries(result?.parentToTotalTargetValueMap || {})
+                );
+
+                // Build admin targets: existing + new for missing criteria
+                const existingMap = new Map();
+                existingTargets.forEach(t => existingMap.set(t.Target_Criteria__c, t));
+
+                this.adminTargets = this.targetCriterias.map(c => {
+                    if (existingMap.has(c.Id)) {
+                        return { ...existingMap.get(c.Id) };
+                    }
+                    return {
+                        sobjectType: 'Target_Actual__c',
+                        Target_Criteria__r: { Id: c.Id, Name: c.Name },
+                        Target_Criteria__c: c.Id,
+                        Target_Value__c: '',
+                        Achievement_Value__c: 0,
+                        User__c: this.selectedUser
+                    };
+                });
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Failed to load', 'error');
+            })
+            .finally(() => { this.isPopupLoading = false; });
+    }
+
+    _refreshCurrentTargets() {
+        this.curTargets = this.targetList.filter(t => t.User__c === this.selectedUser);
+
+        this.uniqueTargetCriterias = [];
+        const seen = new Set();
+        for (const t of this.curTargets) {
+            if (t.Target_Criteria__c && !seen.has(t.Target_Criteria__c)) {
+                seen.add(t.Target_Criteria__c);
+                this.uniqueTargetCriterias.push({
+                    Id: t.Target_Criteria__c,
+                    Name: t.Target_Criteria__r?.Name || '—'
+                });
+            }
+        }
+
+        this.targetCriteriasWithManagerMap = new Map(
+            this.curTargets.map(t => [t.Target_Criteria__c, t])
+        );
+    }
+
+    _aggregateSubordinateTotals() {
+        this.parentSubordinateTotals = new Map();
+        this.targetList.forEach(t => {
+            if (t.Parent_Target__c) {
+                const current = this.parentSubordinateTotals.get(t.Parent_Target__c) || 0;
+                this.parentSubordinateTotals.set(t.Parent_Target__c, current + (t.Target_Value__c || 0));
             }
         });
-
-        console.log('Aggregated Map:', this.parentwithtargetValueOfSubodinates);
     }
 
-    populateOptions(dataList, labelField, valueField) {
-        return dataList?.map(item => ({
+    _toOptions(dataList, labelField, valueField) {
+        return (dataList || []).map(item => ({
             label: item[labelField],
             value: item[valueField]
-        })) || [];
-    }
-
-    disablePullToRefresh() {
-        const disableRefresh = new CustomEvent("updateScrollSettings", {
-            detail: {
-                isPullToRefreshEnabled: false
-            },
-            bubbles: true,
-            composed: true
-        });
-        this.dispatchEvent(disableRefresh);
+        }));
     }
 
     showToast(title, message, variant) {

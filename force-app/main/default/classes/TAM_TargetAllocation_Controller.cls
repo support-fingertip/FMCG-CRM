@@ -1,26 +1,16 @@
 public class TAM_TargetAllocation_Controller {
 
     public class DataBox {
-        @AuraEnabled
-        public List<User> userList;
-        @AuraEnabled
-        public List<Target_Period__c> periodsList;
-        @AuraEnabled
-        public List<Target_Period__c> currentPeriods;
-        @AuraEnabled
-        public String period;
-        @AuraEnabled
-        public String userProfileName;
-        @AuraEnabled
-        public List<Target_Criteria__c> targetCriterias;
-        @AuraEnabled
-        public String currentUserId;
-        @AuraEnabled
-        public List<Target_Actual__c> targetActuals;
-        @AuraEnabled
-        public String initialTargetAssignmentProfile;
-        @AuraEnabled
-        public Map<Id, Decimal> parentToTotalTargetValueMap;
+        @AuraEnabled public List<User> userList;
+        @AuraEnabled public List<Target_Period__c> periodsList;
+        @AuraEnabled public List<Target_Period__c> currentPeriods;
+        @AuraEnabled public String period;
+        @AuraEnabled public String userProfileName;
+        @AuraEnabled public List<Target_Criteria__c> targetCriterias;
+        @AuraEnabled public String currentUserId;
+        @AuraEnabled public List<Target_Actual__c> targetActuals;
+        @AuraEnabled public Boolean isAdmin;
+        @AuraEnabled public Map<Id, Decimal> parentToTotalTargetValueMap;
     }
 
     @AuraEnabled
@@ -37,6 +27,7 @@ public class TAM_TargetAllocation_Controller {
             ORDER BY Name
         ];
 
+        // Check if current user is in the hierarchy list
         Boolean isCurrentUserPresent = false;
         for (User u : dx.userList) {
             if (u.Id == UserInfo.getUserId()) {
@@ -46,43 +37,51 @@ public class TAM_TargetAllocation_Controller {
         }
         dx.currentUserId = isCurrentUserPresent ? UserInfo.getUserId() : '';
 
-        dx.periodsList = [SELECT Id, Name, Start_Date__c, End_Date__c FROM Target_Period__c ORDER BY CreatedDate DESC LIMIT 12];
+        // Determine admin status using Custom Permission or Profile
+        dx.isAdmin = FeatureManagement.checkPermission('TAM_Admin_Access')
+            || [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()
+                AND Profile.Name = 'System Administrator' LIMIT 1].size() > 0;
 
-        List<Target_Period__c> currentPeriodList = [SELECT Id FROM Target_Period__c WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY LIMIT 1];
+        dx.periodsList = [
+            SELECT Id, Name, Start_Date__c, End_Date__c
+            FROM Target_Period__c
+            ORDER BY Start_Date__c DESC
+            LIMIT 20
+        ];
+
+        // Find current active period
+        List<Target_Period__c> currentPeriodList = [
+            SELECT Id FROM Target_Period__c
+            WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+            LIMIT 1
+        ];
         dx.period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
 
         if (String.isNotBlank(dx.period)) {
-            dx.targetActuals = [
-                SELECT Id, Target_Period__c, Target_Value__c, Achievement_Value__c, Target_Criteria__c,
-                       Target_Criteria__r.Name, User__c, User__r.Name, Parent_Target__c,
-                       Teams_Target__c, Teams_Achievement__c, Pending_Target__c
-                FROM Target_Actual__c
-                WHERE Target_Criteria__r.Active__c = true
-                AND (Target_Period__c = :dx.period OR Parent_Target__r.Target_Period__c = :dx.period)
-                AND User__c IN :userIds
-                ORDER BY Target_Criteria__r.Name
-            ];
+            dx.targetActuals = queryTargetActuals(dx.period, userIds);
         } else {
             dx.targetActuals = new List<Target_Actual__c>();
         }
 
-        Datetime currentDatetime = System.now();
-        Integer currentYear = currentDatetime.year();
-        Integer currentMonth = System.today().month();
-        Date startYear = Date.newInstance(currentYear, currentMonth, 1);
-        if (currentMonth < 4) {
-            currentYear = currentYear - 1;
-        }
-        Date endYear = Date.newInstance(currentYear + 1, 3, 31);
+        // Current and future periods for admin target creation
+        dx.currentPeriods = [
+            SELECT Id, Name, Start_Date__c, End_Date__c
+            FROM Target_Period__c
+            WHERE End_Date__c >= TODAY
+            ORDER BY Start_Date__c
+        ];
 
-        dx.currentPeriods = [SELECT Id, Name FROM Target_Period__c WHERE Start_Date__c >= :startYear AND End_Date__c <= :endYear ORDER BY CreatedDate];
         return dx;
     }
 
     @AuraEnabled
     public static List<Target_Actual__c> getTargetActuals(String period, String userId) {
         if (String.isBlank(period)) {
-            List<Target_Period__c> currentPeriodList = [SELECT Id FROM Target_Period__c WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY LIMIT 1];
+            List<Target_Period__c> currentPeriodList = [
+                SELECT Id FROM Target_Period__c
+                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                LIMIT 1
+            ];
             period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
         }
         if (String.isBlank(period)) return new List<Target_Actual__c>();
@@ -90,37 +89,29 @@ public class TAM_TargetAllocation_Controller {
         String currentUserId = String.isNotBlank(userId) ? userId : UserInfo.getUserId();
         Set<ID> userIds = TAM_RoleHierarchy_Service.getRoleSubordinateUsers(currentUserId);
 
-        List<Target_Actual__c> items = [
-            SELECT Id, Target_Period__c, Target_Value__c, Achievement_Value__c, Target_Criteria__c,
-                   Target_Criteria__r.Name, User__c, User__r.Name, Parent_Target__c,
-                   Teams_Target__c, Teams_Achievement__c, Pending_Target__c
-            FROM Target_Actual__c
-            WHERE Target_Criteria__r.Active__c = true
-            AND (Target_Period__c = :period OR Parent_Target__r.Target_Period__c = :period)
-            AND User__c IN :userIds
-            ORDER BY Target_Criteria__r.Name
-        ];
-
-        return items;
+        return queryTargetActuals(period, userIds);
     }
 
     @AuraEnabled
     public static DataBox getUserTargets(String period, String userId) {
         DataBox dx = new DataBox();
         if (String.isBlank(period)) {
-            List<Target_Period__c> currentPeriodList = [SELECT Id FROM Target_Period__c WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY LIMIT 1];
+            List<Target_Period__c> currentPeriodList = [
+                SELECT Id FROM Target_Period__c
+                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                LIMIT 1
+            ];
             period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
         }
         if (String.isBlank(period)) return dx;
 
-        List<Target_Criteria__c> targetCriteriasList = [
-            SELECT Id, Name, Object__c, Field__c, Operator__c, Date_Field__c, User_Field__c
+        dx.targetCriterias = [
+            SELECT Id, Name, Object__c, Field__c, Operator__c, Date_Field__c, User_Field__c, Category__c
             FROM Target_Criteria__c
             WHERE Active__c = true
             ORDER BY Name
         ];
 
-        dx.targetCriterias = targetCriteriasList;
         dx.targetActuals = [
             SELECT Id, Target_Period__c, Target_Value__c, Achievement_Value__c, Target_Criteria__c,
                    Target_Criteria__r.Name, User__c, User__r.Name, Parent_Target__c,
@@ -132,13 +123,14 @@ public class TAM_TargetAllocation_Controller {
             ORDER BY Target_Criteria__r.Name
         ];
 
+        // Calculate subordinate totals per parent target
         if (!dx.targetActuals.isEmpty()) {
             List<Id> parentIds = new List<Id>();
             for (Target_Actual__c ta : dx.targetActuals) {
                 parentIds.add(ta.Id);
             }
 
-            Map<Id, Decimal> parentToTotalTargetValueMap = new Map<Id, Decimal>();
+            dx.parentToTotalTargetValueMap = new Map<Id, Decimal>();
 
             if (!parentIds.isEmpty()) {
                 AggregateResult[] groupedResults = [
@@ -151,10 +143,9 @@ public class TAM_TargetAllocation_Controller {
                 for (AggregateResult ar : groupedResults) {
                     Id parentId = (Id) ar.get('Parent_Target__c');
                     Decimal totalValue = (Decimal) ar.get('totalTargetValue');
-                    parentToTotalTargetValueMap.put(parentId, totalValue);
+                    dx.parentToTotalTargetValueMap.put(parentId, totalValue);
                 }
             }
-            dx.parentToTotalTargetValueMap = parentToTotalTargetValueMap;
         }
 
         return dx;
@@ -190,22 +181,11 @@ public class TAM_TargetAllocation_Controller {
             upsert itemsToUpdate;
         }
 
-        List<Target_Actual__c> items = [
-            SELECT Id, Target_Period__c, Target_Value__c, Achievement_Value__c, Target_Criteria__c,
-                   Target_Criteria__r.Name, User__c, User__r.Name, Parent_Target__c,
-                   Teams_Target__c, Teams_Achievement__c, Pending_Target__c
-            FROM Target_Actual__c
-            WHERE (Target_Period__c = :selectedPeriod OR Parent_Target__r.Target_Period__c = :selectedPeriod)
-            AND User__c IN :userIds
-            ORDER BY Target_Criteria__r.Name
-        ];
-
-        return items;
+        return queryTargetActuals(selectedPeriod, userIds);
     }
 
     @AuraEnabled
     public static List<Target_Actual__c> saveAdminTargets(List<Target_Actual__c> targetActuals, String selectedAdminPeriod, String selectedPeriod, String userId) {
-
         if (!targetActuals.isEmpty()) {
             for (Target_Actual__c ta : targetActuals) {
                 ta.Target_Period__c = selectedAdminPeriod;
@@ -218,18 +198,40 @@ public class TAM_TargetAllocation_Controller {
         }
 
         Set<ID> userIds = TAM_RoleHierarchy_Service.getRoleSubordinateUsers(UserInfo.getUserId());
+        return queryTargetActuals(selectedPeriod, userIds);
+    }
 
-        List<Target_Actual__c> items = [
+    // ===== INLINE EDIT: Save single target value =====
+    @AuraEnabled
+    public static Target_Actual__c saveInlineTarget(Id targetId, Decimal targetValue) {
+        Target_Actual__c ta = [
+            SELECT Id, Target_Value__c
+            FROM Target_Actual__c
+            WHERE Id = :targetId
+        ];
+        ta.Target_Value__c = targetValue;
+        update ta;
+
+        return [
+            SELECT Id, Target_Period__c, Target_Value__c, Achievement_Value__c, Target_Criteria__c,
+                   Target_Criteria__r.Name, User__c, User__r.Name, Parent_Target__c,
+                   Teams_Target__c, Teams_Achievement__c, Pending_Target__c
+            FROM Target_Actual__c
+            WHERE Id = :targetId
+        ];
+    }
+
+    // Shared query method
+    private static List<Target_Actual__c> queryTargetActuals(String period, Set<Id> userIds) {
+        return [
             SELECT Id, Target_Period__c, Target_Value__c, Achievement_Value__c, Target_Criteria__c,
                    Target_Criteria__r.Name, User__c, User__r.Name, Parent_Target__c,
                    Teams_Target__c, Teams_Achievement__c, Pending_Target__c
             FROM Target_Actual__c
             WHERE Target_Criteria__r.Active__c = true
-            AND (Target_Period__c = :selectedPeriod OR Parent_Target__r.Target_Period__c = :selectedPeriod)
+            AND (Target_Period__c = :period OR Parent_Target__r.Target_Period__c = :period)
             AND User__c IN :userIds
             ORDER BY Target_Criteria__r.Name
         ];
-
-        return items;
     }
 }
