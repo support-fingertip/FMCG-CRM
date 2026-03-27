@@ -94,11 +94,18 @@
                                         </template>
                                     </td>
                                     <td class="tcb-actions" onclick={stopPropagation}>
-                                        <lightning-button-icon icon-name={item.Active__c ? 'utility:toggle_on' : 'utility:toggle_off'}
-                                            variant={item.Active__c ? 'brand' : 'border-filled'}
-                                            alternative-text="Toggle Active" data-id={item.Id}
-                                            onclick={handleToggleActive}
-                                            class="slds-m-right_xx-small"></lightning-button-icon>
+                                        <template if:true={item.Active__c}>
+                                            <lightning-button-icon icon-name="utility:toggle_on"
+                                                variant="brand" alternative-text="Deactivate"
+                                                data-id={item.Id} onclick={handleToggleActive}
+                                                class="slds-m-right_xx-small"></lightning-button-icon>
+                                        </template>
+                                        <template if:false={item.Active__c}>
+                                            <lightning-button-icon icon-name="utility:toggle_off"
+                                                variant="border-filled" alternative-text="Activate"
+                                                data-id={item.Id} onclick={handleToggleActive}
+                                                class="slds-m-right_xx-small"></lightning-button-icon>
+                                        </template>
                                         <lightning-button-icon icon-name="utility:edit" variant="border-filled"
                                             alternative-text="Edit" data-id={item.Id} onclick={handleEdit}
                                             class="slds-m-right_xx-small"></lightning-button-icon>
