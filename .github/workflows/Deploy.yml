@@ -1,18 +1,19 @@
 name: Auto Deploy to Salesforce
 
 on:
+  push:
+    branches:
+      - claude/plan-target-actuals-incentives-oZffv
   workflow_dispatch:
     inputs:
       deployment_type:
-        description: 'Deployment Type'
+        description: "Deployment type"
         required: true
+        default: "changed-only"
         type: choice
         options:
           - changed-only
           - full-deployment
-        default: 'changed-only'
-    branches:
-      - main
 
 jobs:
   deploy:
