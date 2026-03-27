@@ -10,7 +10,19 @@
         <default>false</default>
         <visible>true</visible>
     </applicationVisibilities>
+        <classAccesses>
+        <apexClass>TAM_IncentiveCalculation_Batch</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <classAccesses>
+        <apexClass>TAM_IncentiveCalculation_Scheduler</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>TAM_IncentiveCalculation_Service</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+<classAccesses>
         <apexClass>AchievementDashboardController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
