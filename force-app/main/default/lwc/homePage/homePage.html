@@ -356,13 +356,35 @@
                             <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
                         </div>
 
-                        <div class="hp-nav-card" data-object="Target__c" onclick={navigateToObject}>
+                        <div class="hp-nav-card" data-object="Target_Actual__c" onclick={navigateToObject}>
                             <div class="hp-nav-icon hp-icon-green">
                                 <lightning-icon icon-name="standard:goals" size="medium"></lightning-icon>
                             </div>
                             <div class="hp-nav-info">
-                                <h3 class="hp-nav-title">Targets</h3>
-                                <p class="hp-nav-desc">Sales targets and achievement tracking</p>
+                                <h3 class="hp-nav-title">Target Actuals</h3>
+                                <p class="hp-nav-desc">Sales targets, actuals, and achievement tracking</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Target_Criteria__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:filter" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Target Criteria</h3>
+                                <p class="hp-nav-desc">Configure dynamic target criteria and filters</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-object="Target_Period__c" onclick={navigateToObject}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:date_input" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Target Periods</h3>
+                                <p class="hp-nav-desc">Monthly, quarterly, and yearly target periods</p>
                             </div>
                             <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
                         </div>
