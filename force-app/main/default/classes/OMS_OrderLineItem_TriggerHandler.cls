@@ -110,15 +110,48 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
 
         if (productMap.isEmpty()) return;
 
+        // Check for must-sell configs that override the product MOQ with a lower minimum
+        Map<Id, Decimal> mustSellMinQtyMap = new Map<Id, Decimal>();
+        for (Must_Sell_Config__c cfg : [
+            SELECT Product_Ext__c, Min_Qty__c
+            FROM Must_Sell_Config__c
+            WHERE Product_Ext__c IN :productIds
+              AND Is_Active__c = true
+              AND Start_Date__c <= TODAY
+              AND End_Date__c >= TODAY
+              AND Min_Qty__c != null
+        ]) {
+            // Use the lowest must-sell min qty if multiple configs exist
+            if (!mustSellMinQtyMap.containsKey(cfg.Product_Ext__c)
+                || cfg.Min_Qty__c < mustSellMinQtyMap.get(cfg.Product_Ext__c)) {
+                mustSellMinQtyMap.put(cfg.Product_Ext__c, cfg.Min_Qty__c);
+            }
+        }
+
         for (Order_Line_Item__c item : lineItems) {
             if (item.Product_Ext__c == null || item.Quantity__c == null) continue;
 
             Product_Extension__c product = productMap.get(item.Product_Ext__c);
-            if (product != null && item.Quantity__c < product.Min_Order_Qty__c) {
+            if (product == null) continue;
+
+            // Use base quantity for comparison (accounts for UOM conversion)
+            Decimal effectiveQty = (item.Base_Quantity__c != null && item.Base_Quantity__c > 0)
+                ? item.Base_Quantity__c : item.Quantity__c;
+
+            // Must-sell config min qty overrides product MOQ when lower
+            Decimal effectiveMOQ = product.Min_Order_Qty__c;
+            if (mustSellMinQtyMap.containsKey(item.Product_Ext__c)) {
+                Decimal mustSellMin = mustSellMinQtyMap.get(item.Product_Ext__c);
+                if (mustSellMin < effectiveMOQ) {
+                    effectiveMOQ = mustSellMin;
+                }
+            }
+
+            if (effectiveQty < effectiveMOQ) {
                 item.Quantity__c.addError(
-                    'Quantity (' + item.Quantity__c.setScale(0) +
+                    'Quantity (' + effectiveQty.setScale(0) +
                     ') is below the minimum order quantity (' +
-                    product.Min_Order_Qty__c.setScale(0) +
+                    effectiveMOQ.setScale(0) +
                     ') for product ' + product.Name + '.'
                 );
             }
