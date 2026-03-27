@@ -208,16 +208,20 @@ export default class TamCriteriaBuilder extends LightningElement {
         this.isLoading = true;
         this.resetForm();
 
+        // Store parsed filters temporarily — set on child AFTER metadata loads
+        let parsedFilters = [];
+
         getCriteria({ criteriaId: id })
             .then(res => {
                 this.criteria = { ...res };
                 if (!this.criteria.Operator__c) this.criteria.Operator__c = 'SUM';
 
+                // Parse filters but DON'T assign to this.filters yet
                 if (this.criteria.Filters__c) {
                     try {
                         const parsed = JSON.parse(this.criteria.Filters__c);
-                        this.filters = parsed.filters || [];
-                    } catch (e) { this.filters = []; }
+                        parsedFilters = parsed.filters || [];
+                    } catch (e) { parsedFilters = []; }
                 }
 
                 if (this.criteria.Object__c) {
@@ -228,7 +232,11 @@ export default class TamCriteriaBuilder extends LightningElement {
                     return this.loadFieldMetadata(this.criteria.Object__c);
                 }
             })
-            .then(() => { this.currentView = 'builder'; })
+            .then(() => {
+                // Now fieldsMetadata is loaded — safe to set filters on child
+                this.filters = parsedFilters;
+                this.currentView = 'builder';
+            })
             .catch(() => { this.showToast('Error', 'Failed to load criteria', 'error'); })
             .finally(() => { this.isLoading = false; });
     }

@@ -2,8 +2,24 @@ import { LightningElement, api, track } from 'lwc';
 
 export default class TamFilterBuilder extends LightningElement {
 
-    // From parent
-    @api fieldsMetadata = [];   // [{ apiName, label, type, picklistValues }]
+    // From parent — use getter/setter so we can re-process filters when metadata arrives
+    _fieldsMetadata = [];
+
+    @api
+    get fieldsMetadata() {
+        return this._fieldsMetadata;
+    }
+    set fieldsMetadata(val) {
+        this._fieldsMetadata = val || [];
+
+        // If filters are already loaded but were missing metadata, re-process them
+        if (this._fieldsMetadata.length > 0 && this.filters.length > 0 && this._needsMetadataRefresh) {
+            this._needsMetadataRefresh = false;
+            this._refreshFiltersWithMetadata();
+        }
+    }
+
+    _needsMetadataRefresh = false;
 
     @track filters = [];
     filterCounter = 1;
@@ -20,67 +36,10 @@ export default class TamFilterBuilder extends LightningElement {
     }
     set value(val) {
         if (val && Array.isArray(val) && val.length > 0) {
-            // Deep clone to avoid mutation
             const cloned = JSON.parse(JSON.stringify(val));
 
             // Restore UI state for each filter
-            this.filters = cloned.map(f => {
-                const type = f.type || 'String';
-
-                // Restore operator options from type
-                f.operatorOptions = this._getOperatorsForType(type);
-
-                // Restore picklist options from fieldsMetadata
-                f.picklistOptions = [];
-                if (this.fieldsMetadata && this.fieldsMetadata.length) {
-                    const meta = this.fieldsMetadata.find(m => m.apiName === f.field);
-                    if (meta && meta.picklistValues && meta.picklistValues.length) {
-                        f.picklistOptions = meta.picklistValues.map(v => ({ label: v, value: v }));
-                    }
-                    // Restore field search text
-                    f.fieldSearchText = meta
-                        ? `${meta.label} (${meta.apiName})`
-                        : (f.field || '');
-                } else {
-                    f.fieldSearchText = f.field || '';
-                }
-
-                f.showFieldDropdown = false;
-                f.filteredFieldOptions = [];
-
-                // Restore value UI flags
-                f.showValue = !!f.field;
-                f.isNumber = (type === 'Number' || type === 'Currency' || type === 'Percent');
-                f.isString = (type === 'String' || type === 'Id');
-                f.isDate = (type === 'Date' || type === 'DateTime');
-                f.isBoolean = (type === 'Boolean');
-                f.isMultiPicklist = (type === 'MultiPicklist');
-                f.isPicklist = false;
-                f.isMultiValue = false;
-
-                if (type === 'Picklist') {
-                    if (f.operator === 'IN' || f.operator === 'NOT IN') {
-                        f.isMultiPicklist = true;
-                        f.isMultiValue = true;
-                    } else {
-                        f.isPicklist = true;
-                    }
-                }
-
-                // For non-picklist IN/NOT IN
-                if (type !== 'Picklist' && (f.operator === 'IN' || f.operator === 'NOT IN')) {
-                    f.isMultiValue = true;
-                }
-
-                // Restore valueArray for multi-picklist
-                if (f.isMultiPicklist && Array.isArray(f.value)) {
-                    f.valueArray = f.value;
-                } else {
-                    f.valueArray = [];
-                }
-
-                return f;
-            });
+            this.filters = cloned.map(f => this._restoreFilterUI(f));
 
             // Keep filterCounter ahead of existing max id
             const maxId = this.filters.reduce((max, f) => {
@@ -88,15 +47,76 @@ export default class TamFilterBuilder extends LightningElement {
                 return isNaN(num) ? max : Math.max(max, num);
             }, 0);
             this.filterCounter = maxId + 1;
+
+            // If metadata isn't loaded yet, flag for refresh when it arrives
+            if (!this._fieldsMetadata || this._fieldsMetadata.length === 0) {
+                this._needsMetadataRefresh = true;
+            }
         } else {
             this.filters = [];
             this.filterCounter = 1;
         }
     }
 
-    // Shared operator lookup (used by both setter and selectField)
-    _getOperatorsForType(type) {
-        return this.getOperatorsForType(type);
+    // Re-process filters when metadata arrives late
+    _refreshFiltersWithMetadata() {
+        this.filters = this.filters.map(f => this._restoreFilterUI(f));
+    }
+
+    // Restore a single filter's UI state from its saved data
+    _restoreFilterUI(f) {
+        const type = f.type || 'String';
+
+        // Operator options
+        f.operatorOptions = this.getOperatorsForType(type);
+
+        // Picklist options + field label from metadata
+        f.picklistOptions = [];
+        if (this._fieldsMetadata && this._fieldsMetadata.length) {
+            const meta = this._fieldsMetadata.find(m => m.apiName === f.field);
+            if (meta && meta.picklistValues && meta.picklistValues.length) {
+                f.picklistOptions = meta.picklistValues.map(v => ({ label: v, value: v }));
+            }
+            f.fieldSearchText = meta
+                ? `${meta.label} (${meta.apiName})`
+                : (f.field || '');
+        } else {
+            f.fieldSearchText = f.field || '';
+        }
+
+        f.showFieldDropdown = false;
+        f.filteredFieldOptions = [];
+
+        // Value UI flags
+        f.showValue = !!f.field;
+        f.isNumber = (type === 'Number' || type === 'Currency' || type === 'Percent');
+        f.isString = (type === 'String' || type === 'Id');
+        f.isDate = (type === 'Date' || type === 'DateTime');
+        f.isBoolean = (type === 'Boolean');
+        f.isMultiPicklist = (type === 'MultiPicklist');
+        f.isPicklist = false;
+        f.isMultiValue = false;
+
+        if (type === 'Picklist') {
+            if (f.operator === 'IN' || f.operator === 'NOT IN') {
+                f.isMultiPicklist = true;
+                f.isMultiValue = true;
+            } else {
+                f.isPicklist = true;
+            }
+        }
+
+        if (type !== 'Picklist' && (f.operator === 'IN' || f.operator === 'NOT IN')) {
+            f.isMultiValue = true;
+        }
+
+        if (f.isMultiPicklist && Array.isArray(f.value)) {
+            f.valueArray = f.value;
+        } else {
+            f.valueArray = [];
+        }
+
+        return f;
     }
 
 
