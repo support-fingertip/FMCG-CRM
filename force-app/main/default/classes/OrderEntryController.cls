@@ -143,6 +143,15 @@ public with sharing class OrderEntryController {
             order.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
             order.Total_Tax__c = toDecimal(payload.get('totalTax'));
             order.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
+
+            // Set territory from account
+            if (order.Account__c != null) {
+                List<Account> accts = [SELECT Territory__c FROM Account WHERE Id = :order.Account__c LIMIT 1];
+                if (!accts.isEmpty() && accts[0].Territory__c != null) {
+                    order.Territory__c = accts[0].Territory__c;
+                }
+            }
+
             // Set warehouse if selected
             if (payload.get('warehouseId') != null) {
                 order.Warehouse__c = (String) payload.get('warehouseId');
