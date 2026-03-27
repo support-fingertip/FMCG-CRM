@@ -109,6 +109,7 @@ export default class TamCriteriaBuilder extends LightningElement {
     get inactiveCount() { return this.totalCount - this.activeCount; }
 
     get builderTitle() { return this.criteria.Id ? 'Edit Criteria' : 'New Criteria'; }
+    get isEditMode() { return !!this.criteria.Id; }
 
     // ===== CATEGORY FILTERS =====
     get categoryFilters() {

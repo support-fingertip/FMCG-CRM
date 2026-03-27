@@ -463,6 +463,12 @@
 .tcb-error { color: #c23934; font-weight: 600; margin-top: 10px; }
 .tcb-help-text { font-size: 11px; color: #6b6d70; margin-top: 4px; }
 
+.tcb-lock-hint {
+    color: #b0adab;
+    font-style: italic;
+    margin-top: 6px;
+}
+
 .tcb-spinner-backdrop {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;

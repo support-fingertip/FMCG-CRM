@@ -288,25 +288,36 @@
                             <lightning-combobox label="Category" data-field="Category__c"
                                 value={criteria.Category__c} options={categoryOptions}
                                 onchange={handleInput} placeholder="Select a category"></lightning-combobox>
-                            <div class="tcb-search-box">
-                                <lightning-input type="text" label="Search Object" placeholder="Search objects..."
-                                    value={objectSearchText} onchange={handleObjectSearch}></lightning-input>
-                                <template if:true={showObjectDropdown}>
-                                    <div class="tcb-dropdown">
-                                        <template for:each={filteredObjects} for:item="obj">
-                                            <div key={obj.api} class="tcb-option" data-api={obj.api}
-                                                data-label={obj.label} onclick={selectObject}>
-                                                <lightning-icon icon-name="utility:database"
-                                                    size="x-small"></lightning-icon>
-                                                <div class="tcb-option-text">
-                                                    <div class="tcb-label">{obj.label}</div>
-                                                    <div class="tcb-api">({obj.api})</div>
+                            <template if:true={isEditMode}>
+                                <div>
+                                    <lightning-input type="text" label="Object" value={objectSearchText}
+                                        disabled read-only></lightning-input>
+                                    <p class="tcb-help-text tcb-lock-hint">
+                                        Object cannot be changed after save. Clone this criteria to use a different object.
+                                    </p>
+                                </div>
+                            </template>
+                            <template if:false={isEditMode}>
+                                <div class="tcb-search-box">
+                                    <lightning-input type="text" label="Search Object" placeholder="Search objects..."
+                                        value={objectSearchText} onchange={handleObjectSearch}></lightning-input>
+                                    <template if:true={showObjectDropdown}>
+                                        <div class="tcb-dropdown">
+                                            <template for:each={filteredObjects} for:item="obj">
+                                                <div key={obj.api} class="tcb-option" data-api={obj.api}
+                                                    data-label={obj.label} onclick={selectObject}>
+                                                    <lightning-icon icon-name="utility:database"
+                                                        size="x-small"></lightning-icon>
+                                                    <div class="tcb-option-text">
+                                                        <div class="tcb-label">{obj.label}</div>
+                                                        <div class="tcb-api">({obj.api})</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </section>
