@@ -4130,10 +4130,6 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>Target__c</tab>
-        <visibility>DefaultOn</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
         <tab>Territory_Master__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>

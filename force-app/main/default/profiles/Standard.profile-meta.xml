@@ -6231,13 +6231,13 @@
         <tab>Target_Criteria__c</tab>
         <visibility>DefaultOff</visibility>
     </tabVisibilities>
-    <tabVisibilities>
+        <tabVisibilities>
+        <tab>Target_Criteria_Manager</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+<tabVisibilities>
         <tab>Target_Period__c</tab>
         <visibility>DefaultOff</visibility>
-    </tabVisibilities>
-    <tabVisibilities>
-        <tab>Target__c</tab>
-        <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
         <tab>Territory_Master__c</tab>

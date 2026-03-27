@@ -97,7 +97,24 @@ public with sharing class TAM_TargetCriteria_Controller {
     }
 
     // =====================
-    // 3. GET EXISTING CRITERIA
+    // 3. GET ALL CRITERIA (List view)
+    // =====================
+    @AuraEnabled(cacheable=false)
+    public static List<Target_Criteria__c> getAllCriteria() {
+        return [
+            SELECT Id, Name, Object__c, Operator__c, Field__c,
+                   Date_Field__c, User_Field__c,
+                   Filters__c, Filter_Logic__c,
+                   Active__c, Enable_Customer_Targets__c,
+                   CreatedDate, LastModifiedDate
+            FROM Target_Criteria__c
+            ORDER BY LastModifiedDate DESC
+            LIMIT 200
+        ];
+    }
+
+    // =====================
+    // 4. GET EXISTING CRITERIA
     // =====================
     @AuraEnabled(cacheable=true)
     public static Target_Criteria__c getCriteria(Id criteriaId) {
@@ -105,19 +122,28 @@ public with sharing class TAM_TargetCriteria_Controller {
             SELECT Id, Name, Object__c, Operator__c, Field__c,
                    Date_Field__c, User_Field__c,
                    Filters__c, Filter_Logic__c,
-                   Enable_Customer_Targets__c
+                   Enable_Customer_Targets__c, Active__c
             FROM Target_Criteria__c
             WHERE Id = :criteriaId
         ];
     }
 
     // =====================
-    // 4. SAVE CRITERIA
+    // 5. SAVE CRITERIA
     // =====================
     @AuraEnabled
     public static Target_Criteria__c saveCriteria(Target_Criteria__c criteria) {
         upsert criteria;
         return getCriteria(criteria.Id);
+    }
+
+    // =====================
+    // 6. DELETE CRITERIA
+    // =====================
+    @AuraEnabled
+    public static void deleteCriteria(Id criteriaId) {
+        Target_Criteria__c rec = [SELECT Id FROM Target_Criteria__c WHERE Id = :criteriaId LIMIT 1];
+        delete rec;
     }
 
     static Boolean isSystemObject(String apiName) {
