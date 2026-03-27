@@ -1346,25 +1346,18 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         if (scheme.Scheme_Slabs__r && scheme.Scheme_Slabs__r.length > 0) {
             const slab = this.findApplicableSlab(effectiveQty, 0, scheme);
             if (slab && slab.Discount_Type__c === 'Free Product' && slab.Free_Quantity__c) {
-                // "Buy X Get Y Free" repeating pattern:
-                // The buy qty (divisor) comes from scheme header Min_Quantity__c,
-                // or the first slab's Min_Quantity__c as fallback.
-                // The matched slab's Free_Quantity__c is the free qty per set.
-                const buyQty = scheme.Min_Quantity__c
-                    || (scheme.Scheme_Slabs__r[0] && scheme.Scheme_Slabs__r[0].Min_Quantity__c)
-                    || 0;
-                if (buyQty > 0 && effectiveQty >= buyQty) {
-                    return Math.floor(effectiveQty / buyQty) * slab.Free_Quantity__c;
-                }
-                // Non-repeating: slab directly specifies total free qty for this range
-                return effectiveQty >= (slab.Min_Quantity__c || 0) ? slab.Free_Quantity__c : 0;
+                // Slab gives a flat free quantity for the matched tier
+                // (matches server-side applySlabBenefit which assigns slab.Free_Quantity__c directly)
+                return slab.Free_Quantity__c;
             }
-            return 0;
+            // If slabs exist but no slab matched (qty below first slab threshold),
+            // fall through to scheme-level logic below
         }
 
-        // Scheme-level free products
+        // Scheme-level free products: repeating "Buy X Get Y Free" pattern
         if (scheme.Scheme_Category__c === 'Free Products') {
-            // Determine the "buy X" divisor: prefer Scheme_Products min qty, fall back to scheme header
+            // Determine the "buy X" divisor: prefer Scheme_Products buy product min qty,
+            // then scheme header Min_Quantity__c
             let buyQty = scheme.Min_Quantity__c || 0;
             if (scheme.Scheme_Products__r && scheme.Scheme_Products__r.length > 0) {
                 const buyProduct = scheme.Scheme_Products__r.find(
