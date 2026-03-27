@@ -1218,8 +1218,15 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     recalculateLineItem(item) {
-        const scheme = this.schemes.find(s => s.Id === item.schemeId);
-        const freeQty = scheme ? this.calculateFreeQty(item.quantity, scheme, item) : item.freeQty;
+        let scheme = this.schemes.find(s => s.Id === item.schemeId);
+        // If no scheme found by ID, try to find one by product matching
+        if (!scheme && item.productId) {
+            scheme = this.findApplicableScheme({ id: item.productId, Id: item.productId });
+            if (scheme) {
+                item = { ...item, schemeId: scheme.Id, schemeName: scheme.Name };
+            }
+        }
+        const freeQty = scheme ? this.calculateFreeQty(item.quantity, scheme, item) : 0;
         const grossAmount = item.quantity * item.rate;
 
         // Use base quantity for scheme discount calculation (UOM-aware)
