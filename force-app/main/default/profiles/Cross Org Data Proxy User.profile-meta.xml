@@ -3978,6 +3978,10 @@
         <name>UseWebLink</name>
     </userPermissions>
     <tabVisibilities>
+        <tab>Incentive_Dashboard</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Target_Allocation</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>

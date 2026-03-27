@@ -10,7 +10,11 @@
         <default>false</default>
         <visible>true</visible>
     </applicationVisibilities>
-        <classAccesses>
+            <classAccesses>
+        <apexClass>TAM_IncentiveDashboard_Controller</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+<classAccesses>
         <apexClass>TAM_IncentiveCalculation_Batch</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -6494,6 +6498,10 @@
         <recordType>Account.Super_Stockist</recordType>
         <visible>true</visible>
     </recordTypeVisibilities>
+    <tabVisibilities>
+        <tab>Incentive_Dashboard</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
     <tabVisibilities>
         <tab>Batch_Master__c</tab>
         <visibility>DefaultOn</visibility>

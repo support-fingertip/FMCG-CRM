@@ -1,0 +1,176 @@
+public with sharing class TAM_IncentiveDashboard_Controller {
+
+    public class DashboardData {
+        @AuraEnabled public List<Incentive__c> incentives;
+        @AuraEnabled public List<Target_Period__c> periods;
+        @AuraEnabled public Map<String, Object> summary;
+        @AuraEnabled public String currentPeriodId;
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static DashboardData getDashboardData() {
+        DashboardData dx = new DashboardData();
+
+        dx.periods = [
+            SELECT Id, Name, Start_Date__c, End_Date__c
+            FROM Target_Period__c
+            WHERE Is_Active__c = true
+            ORDER BY Start_Date__c DESC
+            LIMIT 20
+        ];
+
+        List<Target_Period__c> currentPeriods = [
+            SELECT Id FROM Target_Period__c
+            WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+            LIMIT 1
+        ];
+        dx.currentPeriodId = currentPeriods.isEmpty() ? '' : currentPeriods[0].Id;
+
+        if (String.isNotBlank(dx.currentPeriodId)) {
+            dx.incentives = queryIncentives(dx.currentPeriodId, null);
+            dx.summary = buildSummary(dx.incentives);
+        } else {
+            dx.incentives = new List<Incentive__c>();
+            dx.summary = buildSummary(dx.incentives);
+        }
+
+        return dx;
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static List<Incentive__c> getIncentives(String periodId, String status) {
+        return queryIncentives(periodId, status);
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Object> getIncentiveSummary(String periodId) {
+        List<Incentive__c> incentives = queryIncentives(periodId, null);
+        return buildSummary(incentives);
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static Incentive__c getIncentiveDetail(Id incentiveId) {
+        return [
+            SELECT Id, Name, Salesperson__c, Salesperson__r.Name,
+                   Target_Actual__c, Target_Actual__r.Name,
+                   Target_Criteria__c, Target_Criteria__r.Name,
+                   Target_Period__c, Target_Period__r.Name,
+                   Incentive_Slab__c, Incentive_Slab__r.Name,
+                   Incentive_Slab__r.Payout_Type__c, Incentive_Slab__r.Payout_Value__c,
+                   Incentive_Slab__r.Min_Percent__c, Incentive_Slab__r.Max_Percent__c,
+                   Achievement_Percent__c, Multiplier__c,
+                   Base_Amount__c, Calculated_Amount__c, Final_Amount__c,
+                   Status__c, Approved_By__c, Approved_By__r.Name,
+                   Approval_Date__c, Payment_Date__c, Notes__c,
+                   Period_Month__c, Period_Year__c,
+                   CreatedDate, LastModifiedDate
+            FROM Incentive__c
+            WHERE Id = :incentiveId
+        ];
+    }
+
+    @AuraEnabled
+    public static void runCalculation(String periodId) {
+        Database.executeBatch(new TAM_IncentiveCalculation_Batch(periodId), 50);
+    }
+
+    @AuraEnabled
+    public static void submitForApproval(List<Id> incentiveIds) {
+        List<Incentive__c> toUpdate = [
+            SELECT Id, Status__c FROM Incentive__c
+            WHERE Id IN :incentiveIds AND Status__c = 'Calculated'
+        ];
+        for (Incentive__c inc : toUpdate) {
+            inc.Status__c = 'Pending Approval';
+        }
+        update toUpdate;
+    }
+
+    @AuraEnabled
+    public static void approveIncentives(List<Id> incentiveIds) {
+        List<Incentive__c> toUpdate = [
+            SELECT Id, Status__c, Calculated_Amount__c FROM Incentive__c
+            WHERE Id IN :incentiveIds AND Status__c = 'Pending Approval'
+        ];
+        for (Incentive__c inc : toUpdate) {
+            inc.Status__c = 'Approved';
+            inc.Final_Amount__c = inc.Calculated_Amount__c;
+            inc.Approved_By__c = UserInfo.getUserId();
+            inc.Approval_Date__c = System.now();
+        }
+        update toUpdate;
+    }
+
+    @AuraEnabled
+    public static void rejectIncentives(List<Id> incentiveIds) {
+        List<Incentive__c> toUpdate = [
+            SELECT Id, Status__c FROM Incentive__c
+            WHERE Id IN :incentiveIds AND Status__c = 'Pending Approval'
+        ];
+        for (Incentive__c inc : toUpdate) {
+            inc.Status__c = 'Rejected';
+        }
+        update toUpdate;
+    }
+
+    @AuraEnabled
+    public static void markAsPaid(List<Id> incentiveIds, Date paymentDate) {
+        List<Incentive__c> toUpdate = [
+            SELECT Id, Status__c FROM Incentive__c
+            WHERE Id IN :incentiveIds AND Status__c = 'Approved'
+        ];
+        for (Incentive__c inc : toUpdate) {
+            inc.Status__c = 'Paid';
+            inc.Payment_Date__c = paymentDate;
+        }
+        update toUpdate;
+    }
+
+    private static List<Incentive__c> queryIncentives(String periodId, String status) {
+        String q = 'SELECT Id, Name, Salesperson__c, Salesperson__r.Name, ' +
+            'Target_Criteria__c, Target_Criteria__r.Name, ' +
+            'Target_Period__c, Target_Period__r.Name, ' +
+            'Incentive_Slab__c, Incentive_Slab__r.Name, ' +
+            'Achievement_Percent__c, Multiplier__c, ' +
+            'Base_Amount__c, Calculated_Amount__c, Final_Amount__c, ' +
+            'Status__c, Payment_Date__c, Approval_Date__c ' +
+            'FROM Incentive__c WHERE Target_Period__c = :periodId';
+
+        if (String.isNotBlank(status) && status != 'All') {
+            q += ' AND Status__c = :status';
+        }
+
+        q += ' ORDER BY Salesperson__r.Name, Target_Criteria__r.Name';
+
+        return Database.query(q);
+    }
+
+    private static Map<String, Object> buildSummary(List<Incentive__c> incentives) {
+        Map<String, Object> summary = new Map<String, Object>();
+        Integer total = 0, calculated = 0, pending = 0, approved = 0, rejected = 0, paid = 0;
+        Decimal totalCalcAmt = 0, totalApprovedAmt = 0, totalPaidAmt = 0;
+
+        for (Incentive__c inc : incentives) {
+            total++;
+            Decimal amt = inc.Calculated_Amount__c != null ? inc.Calculated_Amount__c : 0;
+
+            if (inc.Status__c == 'Calculated') { calculated++; totalCalcAmt += amt; }
+            else if (inc.Status__c == 'Pending Approval') { pending++; totalCalcAmt += amt; }
+            else if (inc.Status__c == 'Approved') { approved++; totalApprovedAmt += (inc.Final_Amount__c != null ? inc.Final_Amount__c : amt); }
+            else if (inc.Status__c == 'Rejected') { rejected++; }
+            else if (inc.Status__c == 'Paid') { paid++; totalPaidAmt += (inc.Final_Amount__c != null ? inc.Final_Amount__c : amt); }
+        }
+
+        summary.put('total', total);
+        summary.put('calculated', calculated);
+        summary.put('pending', pending);
+        summary.put('approved', approved);
+        summary.put('rejected', rejected);
+        summary.put('paid', paid);
+        summary.put('totalCalcAmt', totalCalcAmt);
+        summary.put('totalApprovedAmt', totalApprovedAmt);
+        summary.put('totalPaidAmt', totalPaidAmt);
+
+        return summary;
+    }
+}
