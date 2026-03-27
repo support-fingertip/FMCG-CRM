@@ -188,22 +188,23 @@ export default class TamFilterBuilder extends LightningElement {
     // FIELD SEARCH
     handleFieldSearch(event) {
         const id = Number(event.target.dataset.id);
-        const filter = this.filters.find(f => f.id === id);
+        const idx = this.filters.findIndex(f => f.id === id);
+        if (idx === -1) return;
 
+        const filter = { ...this.filters[idx] };
         const search = (event.target.value || '').toLowerCase();
         filter.fieldSearchText = event.target.value;
-
 
         if (!search || this.fieldsMetadata.length === 0) {
             filter.filteredFieldOptions = [];
             filter.showFieldDropdown = false;
-            this.dispatch();
+            this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
             return;
         }
 
         filter.filteredFieldOptions = this.fieldsMetadata
             .filter(m =>
-                !this.isLookupField(m) &&                        // <-- hide lookup fields
+                !this.isLookupField(m) &&
                 (
                     (m.label && m.label.toLowerCase().includes(search)) ||
                     (m.apiName && m.apiName.toLowerCase().includes(search))
@@ -217,7 +218,7 @@ export default class TamFilterBuilder extends LightningElement {
             }));
 
         filter.showFieldDropdown = filter.filteredFieldOptions.length > 0;
-        this.dispatch();
+        this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
     }
 
 
@@ -225,36 +226,29 @@ export default class TamFilterBuilder extends LightningElement {
         const id = Number(event.currentTarget.dataset.id);
         const api = event.currentTarget.dataset.value;
 
-        const filter = this.filters.find(f => f.id === id);
-        if (!filter) return;
+        const idx = this.filters.findIndex(f => f.id === id);
+        if (idx === -1) return;
 
         const meta = this.fieldsMetadata.find(m => m.apiName === api);
         if (!meta) return;
 
-        // Assign selected field
+        const filter = { ...this.filters[idx] };
+
         filter.field = api;
         filter.fieldSearchText = `${meta.label} (${meta.apiName})`;
         filter.showFieldDropdown = false;
-
-        // Assign type
         filter.type = meta.type;
-
-        // Operators
         filter.operatorOptions = this.getOperatorsForType(meta.type);
 
-        // Picklist
         if (meta.picklistValues && meta.picklistValues.length) {
-            filter.picklistOptions = meta.picklistValues.map(v => ({
-                label: v,
-                value: v
-            }));
+            filter.picklistOptions = meta.picklistValues.map(v => ({ label: v, value: v }));
         } else {
             filter.picklistOptions = [];
         }
 
-        // Initialize field value UI
         this.initValueUI(filter, meta.type);
 
+        this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
         this.dispatch();
     }
 
@@ -374,69 +368,68 @@ export default class TamFilterBuilder extends LightningElement {
 
     handleOperatorChange(event) {
         const id = Number(event.target.dataset.id);
-        const filter = this.filters.find(f => f.id === id);
-        if (!filter) return;
+        const idx = this.filters.findIndex(f => f.id === id);
+        if (idx === -1) return;
 
+        const filter = { ...this.filters[idx] };
         filter.operator = event.target.value;
 
-        // Boolean – nothing special, always single value
         if (filter.type === 'Boolean') {
             filter.isMultiValue = false;
             filter.isPicklist = false;
             filter.isMultiPicklist = false;
-            this.dispatch();
-            return;
-        }
-
-
-        // Multi-value only for IN / NOT IN
-        //filter.isMultiValue = (filter.operator === 'IN' || filter.operator === 'NOT IN');
-        if (filter.type === 'Picklist') {
+        } else if (filter.type === 'Picklist') {
             if (filter.operator === 'IN' || filter.operator === 'NOT IN') {
                 filter.isPicklist = false;
                 filter.isMultiPicklist = true;
-                filter.isMultiValue = true; // not a text input
+                filter.isMultiValue = true;
             } else {
                 filter.isPicklist = true;
                 filter.isMultiPicklist = false;
                 filter.isMultiValue = false;
             }
         } else {
-            // Non-picklist fields
             filter.isMultiPicklist = false;
             filter.isPicklist = false;
             filter.isMultiValue = (filter.operator === 'IN' || filter.operator === 'NOT IN');
         }
+
+        this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
         this.dispatch();
     }
 
     handleValueChange(event) {
         const id = Number(event.target.dataset.id);
-        const filter = this.filters.find(f => f.id === id);
-        if (!filter) return;
+        const idx = this.filters.findIndex(f => f.id === id);
+        if (idx === -1) return;
 
+        const filter = { ...this.filters[idx] };
         filter.value = event.target.value;
+        this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
         this.dispatch();
     }
 
     handleMultiValueChange(event) {
         const id = Number(event.target.dataset.id);
-        const filter = this.filters.find(f => f.id === id);
-        if (!filter) return;
+        const idx = this.filters.findIndex(f => f.id === id);
+        if (idx === -1) return;
 
-        // store as array for JSON, display as string
+        const filter = { ...this.filters[idx] };
         const raw = event.target.value || '';
         filter.value = raw.split(',').map(v => v.trim()).filter(v => v.length);
+        this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
         this.dispatch();
     }
 
     handleMultiPicklistChange(event) {
         const id = Number(event.target.dataset.id);
-        const filter = this.filters.find(f => f.id === id);
-        if (!filter) return;
+        const idx = this.filters.findIndex(f => f.id === id);
+        if (idx === -1) return;
 
+        const filter = { ...this.filters[idx] };
         filter.valueArray = event.detail.value;
         filter.value = filter.valueArray;
+        this.filters = [...this.filters.slice(0, idx), filter, ...this.filters.slice(idx + 1)];
         this.dispatch();
     }
 
