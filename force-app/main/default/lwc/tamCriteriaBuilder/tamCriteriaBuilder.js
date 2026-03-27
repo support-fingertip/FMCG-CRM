@@ -10,14 +10,21 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class TamCriteriaBuilder extends LightningElement {
 
-    // ===== LIST VIEW STATE =====
+    // ===== VIEW STATE =====
+    currentView = 'list'; // 'list', 'detail', 'builder'
+
+    // ===== LIST STATE =====
     @track criteriaList = [];
-    @track showModal = false;
+
+    // ===== DETAIL STATE =====
+    @track selectedCriteria = {};
+
+    // ===== DELETE STATE =====
     @track showDeleteConfirm = false;
-    @track deleteTargetId = null;
+    deleteTargetId = null;
     @track deleteTargetName = '';
 
-    // ===== FORM STATE =====
+    // ===== BUILDER STATE =====
     @track criteria = {};
     @track currentStep = 1;
     @track fieldsMetadata = [];
@@ -49,39 +56,130 @@ export default class TamCriteriaBuilder extends LightningElement {
         this.isLoading = true;
         getAllCriteria()
             .then(data => {
-                this.criteriaList = data || [];
+                this.criteriaList = (data || []).map(item => {
+                    let filterCountDisplay = '0';
+                    if (item.Filters__c) {
+                        try {
+                            const parsed = JSON.parse(item.Filters__c);
+                            filterCountDisplay = String((parsed.filters || []).length);
+                        } catch (e) { /* ignore */ }
+                    }
+                    return { ...item, filterCountDisplay };
+                });
             })
-            .catch(error => {
+            .catch(() => {
                 this.showToast('Error', 'Failed to load criteria list', 'error');
             })
             .finally(() => { this.isLoading = false; });
     }
 
-    // ===== WIRES =====
     @wire(getAllObjects)
-    wiredObjects({ data, error }) {
+    wiredObjects({ data }) {
         if (data) {
             this.allObjects = data.map(o => ({ label: o.label, api: o.api }));
         }
     }
 
-    // ===== LIST VIEW GETTERS =====
-    get hasCriteria() {
-        return this.criteriaList && this.criteriaList.length > 0;
-    }
+    // ===== VIEW GETTERS =====
+    get isListView() { return this.currentView === 'list'; }
+    get isDetailView() { return this.currentView === 'detail'; }
+    get isBuilderView() { return this.currentView === 'builder'; }
+    get hasCriteria() { return this.criteriaList && this.criteriaList.length > 0; }
 
-    get modalTitle() {
-        return this.criteria.Id ? 'Edit Criteria' : 'New Criteria';
-    }
+    get totalCount() { return this.criteriaList ? this.criteriaList.length : 0; }
+    get activeCount() { return this.criteriaList ? this.criteriaList.filter(c => c.Active__c).length : 0; }
+    get inactiveCount() { return this.totalCount - this.activeCount; }
 
-    // ===== LIST VIEW ACTIONS =====
+    get builderTitle() { return this.criteria.Id ? 'Edit Criteria' : 'New Criteria'; }
+
+    // ===== LIST ACTIONS =====
     handleNewCriteria() {
         this.resetForm();
-        this.showModal = true;
+        this.currentView = 'builder';
+    }
+
+    handleRowClick(event) {
+        const id = event.currentTarget.dataset.id;
+        this.openDetail(id);
     }
 
     handleEdit(event) {
+        event.stopPropagation();
         const id = event.currentTarget.dataset.id;
+        this.openBuilder(id);
+    }
+
+    handleDelete(event) {
+        event.stopPropagation();
+        const id = event.currentTarget.dataset.id;
+        const item = this.criteriaList.find(c => c.Id === id);
+        this.deleteTargetId = id;
+        this.deleteTargetName = item ? item.Name : '';
+        this.showDeleteConfirm = true;
+    }
+
+    stopPropagation(event) {
+        event.stopPropagation();
+    }
+
+    // ===== DETAIL VIEW =====
+    openDetail(id) {
+        this.isLoading = true;
+        getCriteria({ criteriaId: id })
+            .then(res => {
+                this.selectedCriteria = { ...res };
+                this.currentView = 'detail';
+            })
+            .catch(() => {
+                this.showToast('Error', 'Failed to load criteria', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleEditFromDetail() {
+        this.openBuilder(this.selectedCriteria.Id);
+    }
+
+    handleDeleteFromDetail() {
+        this.deleteTargetId = this.selectedCriteria.Id;
+        this.deleteTargetName = this.selectedCriteria.Name;
+        this.showDeleteConfirm = true;
+    }
+
+    get detailHasFilters() {
+        return this.detailFilters.length > 0;
+    }
+
+    get detailFilterCount() {
+        return this.detailFilters.length;
+    }
+
+    get detailFilters() {
+        if (!this.selectedCriteria.Filters__c) return [];
+        try {
+            const parsed = JSON.parse(this.selectedCriteria.Filters__c);
+            return parsed.filters || [];
+        } catch (e) { return []; }
+    }
+
+    get detailQueryPreview() {
+        const c = this.selectedCriteria;
+        if (!c.Object__c) return '';
+        const agg = c.Operator__c === 'COUNT'
+            ? `COUNT(Id)`
+            : `SUM(${c.Field__c || '?'})`;
+        let q = `SELECT ${c.User_Field__c || '?'},\n       ${agg} val\nFROM ${c.Object__c}`;
+        const wheres = [];
+        if (c.Date_Field__c) wheres.push(`${c.Date_Field__c} >= :startDate`);
+        if (c.Date_Field__c) wheres.push(`${c.Date_Field__c} <= :endDate`);
+        if (c.User_Field__c) wheres.push(`${c.User_Field__c} IN :userIds`);
+        if (wheres.length) q += `\nWHERE ${wheres.join('\n  AND ')}`;
+        q += `\nGROUP BY ${c.User_Field__c || '?'}`;
+        return q;
+    }
+
+    // ===== BUILDER =====
+    openBuilder(id) {
         this.isLoading = true;
         this.resetForm();
 
@@ -94,9 +192,7 @@ export default class TamCriteriaBuilder extends LightningElement {
                     try {
                         const parsed = JSON.parse(this.criteria.Filters__c);
                         this.filters = parsed.filters || [];
-                    } catch (e) {
-                        this.filters = [];
-                    }
+                    } catch (e) { this.filters = []; }
                 }
 
                 if (this.criteria.Object__c) {
@@ -107,23 +203,17 @@ export default class TamCriteriaBuilder extends LightningElement {
                     return this.loadFieldMetadata(this.criteria.Object__c);
                 }
             })
-            .then(() => {
-                this.showModal = true;
-            })
-            .catch(error => {
-                this.showToast('Error', 'Failed to load criteria', 'error');
-            })
+            .then(() => { this.currentView = 'builder'; })
+            .catch(() => { this.showToast('Error', 'Failed to load criteria', 'error'); })
             .finally(() => { this.isLoading = false; });
     }
 
-    handleDelete(event) {
-        const id = event.currentTarget.dataset.id;
-        const item = this.criteriaList.find(c => c.Id === id);
-        this.deleteTargetId = id;
-        this.deleteTargetName = item ? item.Name : '';
-        this.showDeleteConfirm = true;
+    handleBackToList() {
+        this.currentView = 'list';
+        this.loadCriteriaList();
     }
 
+    // ===== DELETE =====
     handleCancelDelete() {
         this.showDeleteConfirm = false;
         this.deleteTargetId = null;
@@ -137,22 +227,17 @@ export default class TamCriteriaBuilder extends LightningElement {
         deleteCriteria({ criteriaId: this.deleteTargetId })
             .then(() => {
                 this.showToast('Success', 'Criteria deleted', 'success');
+                this.currentView = 'list';
                 this.loadCriteriaList();
             })
             .catch(error => {
-                const msg = error?.body?.message || 'Failed to delete';
-                this.showToast('Error', msg, 'error');
+                this.showToast('Error', error?.body?.message || 'Failed to delete', 'error');
             })
             .finally(() => {
                 this.isLoading = false;
                 this.deleteTargetId = null;
                 this.deleteTargetName = '';
             });
-    }
-
-    handleCloseModal() {
-        this.showModal = false;
-        this.resetForm();
     }
 
     // ===== STEP GETTERS =====
@@ -179,9 +264,7 @@ export default class TamCriteriaBuilder extends LightningElement {
     get showSaveButtons() { return this.currentStep === 4; }
 
     get isNextDisabled() {
-        if (this.currentStep === 1) {
-            return !this.criteria.Name || !this.criteria.Object__c;
-        }
+        if (this.currentStep === 1) return !this.criteria.Name || !this.criteria.Object__c;
         if (this.currentStep === 2) {
             if (!this.criteria.Operator__c) return true;
             if (this.criteria.Operator__c === 'SUM' && !this.criteria.Field__c) return true;
@@ -212,25 +295,15 @@ export default class TamCriteriaBuilder extends LightningElement {
         return f ? f.label : apiName;
     }
 
-    get jsonFilters() {
-        return JSON.stringify({
-            filters: (this.filters || []).map(f => ({
-                id: f.id, field: f.field, operator: f.operator, value: f.value, type: f.type
-            }))
-        }, null, 2);
-    }
-
     // ===== OBJECT SEARCH =====
     handleObjectSearch(event) {
         const search = (event.target.value || '').toLowerCase();
         this.objectSearchText = event.target.value;
-
         if (!search) {
             this.showObjectDropdown = false;
             this.filteredObjects = [];
             return;
         }
-
         this.filteredObjects = this.allObjects.filter(obj =>
             obj.label.toLowerCase().includes(search)
         );
@@ -290,8 +363,7 @@ export default class TamCriteriaBuilder extends LightningElement {
             this.criteria.Filter_Logic__c = '';
             return;
         }
-        const ids = this.filters.map(f => f.id);
-        this.criteria.Filter_Logic__c = ids.join(' AND ');
+        this.criteria.Filter_Logic__c = this.filters.map(f => f.id).join(' AND ');
     }
 
     // ===== NAVIGATION =====
@@ -300,10 +372,7 @@ export default class TamCriteriaBuilder extends LightningElement {
             const filterIds = this.filters.map(f => f.id);
             if (this.criteria.Filter_Logic__c && filterIds.length > 0) {
                 const result = FilterLogicValidator.validate(this.criteria.Filter_Logic__c, filterIds);
-                if (!result.valid) {
-                    this.logicError = result.message;
-                    return;
-                }
+                if (!result.valid) { this.logicError = result.message; return; }
             }
             this.logicError = null;
         }
@@ -340,19 +409,19 @@ export default class TamCriteriaBuilder extends LightningElement {
         };
 
         saveCriteria({ criteria: payload })
-            .then(() => {
+            .then(result => {
                 this.showToast('Success', 'Criteria saved successfully', 'success');
                 if (andNew) {
                     this.resetForm();
                 } else {
-                    this.showModal = false;
-                    this.resetForm();
+                    // Go to detail view of saved record
+                    this.selectedCriteria = { ...result };
+                    this.currentView = 'detail';
+                    this.loadCriteriaList();
                 }
-                this.loadCriteriaList();
             })
             .catch(error => {
-                const msg = error?.body?.message || 'Error saving criteria';
-                this.showToast('Error', msg, 'error');
+                this.showToast('Error', error?.body?.message || 'Error saving criteria', 'error');
             })
             .finally(() => { this.isLoading = false; });
     }
