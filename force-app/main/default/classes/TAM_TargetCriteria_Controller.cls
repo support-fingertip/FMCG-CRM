@@ -116,7 +116,7 @@ public with sharing class TAM_TargetCriteria_Controller {
     // =====================
     // 4. GET EXISTING CRITERIA
     // =====================
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled(cacheable=false)
     public static Target_Criteria__c getCriteria(Id criteriaId) {
         return [
             SELECT Id, Name, Object__c, Operator__c, Field__c,
