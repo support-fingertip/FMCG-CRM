@@ -138,10 +138,27 @@ public with sharing class TAM_TargetCriteria_Controller {
     }
 
     // =====================
-    // 6. DELETE CRITERIA
+    // 6. GET LINKED TARGET COUNT (for delete confirmation)
+    // =====================
+    @AuraEnabled
+    public static Integer getLinkedTargetCount(Id criteriaId) {
+        return [SELECT COUNT() FROM Target_Actual__c WHERE Target_Criteria__c = :criteriaId];
+    }
+
+    // =====================
+    // 7. DELETE CRITERIA (cascade deletes linked Target_Actual__c)
     // =====================
     @AuraEnabled
     public static void deleteCriteria(Id criteriaId) {
+        // Delete linked target actuals first
+        List<Target_Actual__c> linkedActuals = [
+            SELECT Id FROM Target_Actual__c WHERE Target_Criteria__c = :criteriaId
+        ];
+        if (!linkedActuals.isEmpty()) {
+            delete linkedActuals;
+        }
+
+        // Now delete the criteria
         Target_Criteria__c rec = [SELECT Id FROM Target_Criteria__c WHERE Id = :criteriaId LIMIT 1];
         delete rec;
     }

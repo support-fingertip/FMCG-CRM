@@ -5,6 +5,7 @@ import getFieldMetadata from '@salesforce/apex/TAM_FieldMetadata_Service.getFiel
 import getCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.getCriteria';
 import saveCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.saveCriteria';
 import deleteCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.deleteCriteria';
+import getLinkedTargetCount from '@salesforce/apex/TAM_TargetCriteria_Controller.getLinkedTargetCount';
 import FilterLogicValidator from 'c/tamFilterLogicValidator';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -115,7 +116,7 @@ export default class TamCriteriaBuilder extends LightningElement {
         const item = this.criteriaList.find(c => c.Id === id);
         this.deleteTargetId = id;
         this.deleteTargetName = item ? item.Name : '';
-        this.showDeleteConfirm = true;
+        this._fetchLinkedCountAndShowConfirm();
     }
 
     stopPropagation(event) {
@@ -143,7 +144,31 @@ export default class TamCriteriaBuilder extends LightningElement {
     handleDeleteFromDetail() {
         this.deleteTargetId = this.selectedCriteria.Id;
         this.deleteTargetName = this.selectedCriteria.Name;
-        this.showDeleteConfirm = true;
+        this._fetchLinkedCountAndShowConfirm();
+    }
+
+    // Fetch linked target count before showing delete confirmation
+    _fetchLinkedCountAndShowConfirm() {
+        this.isLoading = true;
+        getLinkedTargetCount({ criteriaId: this.deleteTargetId })
+            .then(count => {
+                this._linkedTargetCount = count || 0;
+                this.showDeleteConfirm = true;
+            })
+            .catch(() => {
+                this._linkedTargetCount = 0;
+                this.showDeleteConfirm = true;
+            })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    _linkedTargetCount = 0;
+
+    get deleteConfirmMessage() {
+        if (this._linkedTargetCount > 0) {
+            return `"${this.deleteTargetName}" is linked with ${this._linkedTargetCount} target actual record${this._linkedTargetCount > 1 ? 's' : ''}. Deleting this criteria will also delete all linked target records. Are you sure?`;
+        }
+        return `Are you sure you want to delete "${this.deleteTargetName}"? This cannot be undone.`;
     }
 
     get detailHasFilters() {
