@@ -214,7 +214,8 @@ export default class TamFilterBuilder extends LightningElement {
                 value: m.apiName,
                 label: `${m.label} (${m.apiName})`,
                 type: m.type,
-                icon: this.getIconForType(m.type)
+                icon: this.getIconForType(m.type),
+                typeBadgeClass: 'fbe-type fbe-type-' + (m.type || 'string').toLowerCase()
             }));
 
         filter.showFieldDropdown = filter.filteredFieldOptions.length > 0;

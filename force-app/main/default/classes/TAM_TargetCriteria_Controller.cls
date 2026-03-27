@@ -106,7 +106,7 @@ public with sharing class TAM_TargetCriteria_Controller {
                    Date_Field__c, User_Field__c,
                    Filters__c, Filter_Logic__c,
                    Active__c, Enable_Customer_Targets__c,
-                   CreatedDate, LastModifiedDate
+                   Category__c, CreatedDate, LastModifiedDate
             FROM Target_Criteria__c
             ORDER BY LastModifiedDate DESC
             LIMIT 200
@@ -122,7 +122,7 @@ public with sharing class TAM_TargetCriteria_Controller {
             SELECT Id, Name, Object__c, Operator__c, Field__c,
                    Date_Field__c, User_Field__c,
                    Filters__c, Filter_Logic__c,
-                   Enable_Customer_Targets__c, Active__c
+                   Enable_Customer_Targets__c, Active__c, Category__c
             FROM Target_Criteria__c
             WHERE Id = :criteriaId
         ];
@@ -161,7 +161,35 @@ public with sharing class TAM_TargetCriteria_Controller {
     }
 
     // =====================
-    // 8. TOGGLE ACTIVE STATUS
+    // 8. BULK UPDATE ACTIVE STATUS
+    // =====================
+    @AuraEnabled
+    public static void bulkToggleActive(List<Id> criteriaIds, Boolean isActive) {
+        List<Target_Criteria__c> recs = [SELECT Id, Active__c FROM Target_Criteria__c WHERE Id IN :criteriaIds];
+        for (Target_Criteria__c r : recs) {
+            r.Active__c = isActive;
+        }
+        update recs;
+    }
+
+    // =====================
+    // 9. BULK DELETE
+    // =====================
+    @AuraEnabled
+    public static void bulkDelete(List<Id> criteriaIds) {
+        // Cascade: delete linked target actuals first
+        List<Target_Actual__c> linkedActuals = [
+            SELECT Id FROM Target_Actual__c WHERE Target_Criteria__c IN :criteriaIds
+        ];
+        if (!linkedActuals.isEmpty()) {
+            delete linkedActuals;
+        }
+        List<Target_Criteria__c> recs = [SELECT Id FROM Target_Criteria__c WHERE Id IN :criteriaIds];
+        delete recs;
+    }
+
+    // =====================
+    // 10. TOGGLE ACTIVE STATUS (single)
     // =====================
     @AuraEnabled
     public static void toggleActive(Id criteriaId, Boolean isActive) {

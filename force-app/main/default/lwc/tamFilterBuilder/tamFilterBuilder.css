@@ -1,12 +1,13 @@
 .filter-card {
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid #d8dde6;
     background: #ffffff;
+    transition: all 0.15s;
 }
 
 .filter-card:hover {
     border-color: #0176d3;
-    box-shadow: 0 2px 6px rgba(1, 118, 211, 0.2);
+    box-shadow: 0 2px 8px rgba(1, 118, 211, 0.15);
 }
 
 /* Search dropdown */
@@ -18,37 +19,53 @@
     position: absolute;
     width: 100%;
     background: #ffffff;
-    border: 1px solid #dce0e5;
-    border-radius: 4px;
+    border: 1px solid #d8dde6;
+    border-radius: 8px;
     margin-top: 4px;
-    max-height: 200px;
+    max-height: 280px;
     overflow-y: auto;
     z-index: 20;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .fbe-option {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px;
+    padding: 10px 12px;
     cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.fbe-option:last-child {
+    border-bottom: none;
 }
 
 .fbe-option:hover {
-    background: #f4f6f9;
-}
-
-.fbe-icon {
-    color: #5f6ab1;
+    background: #f3f6f9;
 }
 
 .fbe-option-label {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
+    color: #3e3e3c;
 }
 
 .fbe-type {
-    font-size: 11px;
-    color: #7f8ea3;
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-top: 2px;
 }
+
+/* Type-specific badge colors */
+.fbe-type-string { background: #e8f4ff; color: #0176d3; }
+.fbe-type-number, .fbe-type-currency, .fbe-type-percent { background: #e6f9e6; color: #2e844a; }
+.fbe-type-date, .fbe-type-datetime { background: #fff3e0; color: #e65100; }
+.fbe-type-boolean { background: #f3e8fd; color: #7e5cef; }
+.fbe-type-picklist, .fbe-type-multipicklist { background: #fce4ec; color: #c62828; }
+.fbe-type-reference { background: #f5f5f5; color: #616161; }

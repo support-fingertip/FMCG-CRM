@@ -12,7 +12,7 @@
                     onclick={handleNewCriteria}></lightning-button>
             </div>
 
-            <!-- Stats Bar -->
+            <!-- Stats Bar + Category Filter -->
             <div class="tcb-stats-bar">
                 <div class="tcb-stat">
                     <span class="tcb-stat-value">{totalCount}</span>
@@ -26,33 +26,64 @@
                     <span class="tcb-stat-value tcb-stat-inactive">{inactiveCount}</span>
                     <span class="tcb-stat-label">Inactive</span>
                 </div>
+                <div class="tcb-filter-pills">
+                    <template for:each={categoryFilters} for:item="cat">
+                        <span key={cat.value} class={cat.pillClass} data-value={cat.value}
+                            onclick={handleCategoryFilter}>{cat.label}</span>
+                    </template>
+                </div>
             </div>
 
-            <template if:true={hasCriteria}>
+            <!-- Bulk Action Bar -->
+            <template if:true={hasSelectedItems}>
+                <div class="tcb-bulk-bar">
+                    <span class="tcb-bulk-count">{selectedCount} selected</span>
+                    <lightning-button label="Activate" variant="brand" icon-name="utility:toggle_on"
+                        onclick={handleBulkActivate} class="slds-m-right_small"></lightning-button>
+                    <lightning-button label="Deactivate" variant="neutral" icon-name="utility:toggle_off"
+                        onclick={handleBulkDeactivate} class="slds-m-right_small"></lightning-button>
+                    <lightning-button label="Delete" variant="destructive" icon-name="utility:delete"
+                        onclick={handleBulkDelete}></lightning-button>
+                    <lightning-button label="Clear Selection" variant="base"
+                        onclick={handleClearSelection} class="slds-m-left_medium"></lightning-button>
+                </div>
+            </template>
+
+            <template if:true={hasFilteredCriteria}>
                 <div class="tcb-table-wrapper">
                     <table class="tcb-table">
                         <thead>
                             <tr>
+                                <th class="tcb-th-check" onclick={stopPropagation}>
+                                    <lightning-input type="checkbox" checked={allSelected}
+                                        onchange={handleSelectAll} variant="label-hidden"
+                                        label="Select All"></lightning-input>
+                                </th>
                                 <th>Name</th>
+                                <th>Category</th>
                                 <th>Object</th>
                                 <th>Operator</th>
-                                <th>SUM Field</th>
-                                <th>Date Field</th>
-                                <th>User Field</th>
                                 <th>Filters</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <template for:each={criteriaList} for:item="item">
+                            <template for:each={filteredCriteriaList} for:item="item">
                                 <tr key={item.Id} class="tcb-row" data-id={item.Id} onclick={handleRowClick}>
+                                    <td class="tcb-td-check" onclick={stopPropagation}>
+                                        <lightning-input type="checkbox" checked={item.selected}
+                                            data-id={item.Id} onchange={handleSelectItem}
+                                            variant="label-hidden" label="Select"></lightning-input>
+                                    </td>
                                     <td class="tcb-name-cell">{item.Name}</td>
+                                    <td>
+                                        <template if:true={item.Category__c}>
+                                            <span class="tcb-category-badge">{item.Category__c}</span>
+                                        </template>
+                                    </td>
                                     <td><span class="tcb-badge">{item.Object__c}</span></td>
                                     <td>{item.Operator__c}</td>
-                                    <td>{item.Field__c}</td>
-                                    <td>{item.Date_Field__c}</td>
-                                    <td>{item.User_Field__c}</td>
                                     <td>{item.filterCountDisplay}</td>
                                     <td>
                                         <template if:true={item.Active__c}>
@@ -82,14 +113,20 @@
                 </div>
             </template>
 
-            <template if:false={hasCriteria}>
+            <template if:false={hasFilteredCriteria}>
                 <template if:false={isLoading}>
                     <div class="tcb-empty">
                         <lightning-icon icon-name="standard:empty" size="large"></lightning-icon>
-                        <h2>No Target Criteria Found</h2>
-                        <p>Create your first criteria to start defining dynamic targets.</p>
-                        <lightning-button label="Create Criteria" variant="brand" onclick={handleNewCriteria}
-                            class="slds-m-top_medium"></lightning-button>
+                        <template if:true={hasCriteria}>
+                            <h2>No Criteria Match Filter</h2>
+                            <p>Try selecting a different category or click "All" to see everything.</p>
+                        </template>
+                        <template if:false={hasCriteria}>
+                            <h2>No Target Criteria Found</h2>
+                            <p>Create your first criteria to start defining dynamic targets.</p>
+                            <lightning-button label="Create Criteria" variant="brand" onclick={handleNewCriteria}
+                                class="slds-m-top_medium"></lightning-button>
+                        </template>
                     </div>
                 </template>
             </template>
@@ -130,6 +167,17 @@
                         </div>
                         <div class="tcb-card-body">
                             <div class="tcb-detail-grid">
+                                <div class="tcb-detail-field">
+                                    <span class="tcb-detail-label">Category</span>
+                                    <span class="tcb-detail-value">
+                                        <template if:true={selectedCriteria.Category__c}>
+                                            <span class="tcb-category-badge">{selectedCriteria.Category__c}</span>
+                                        </template>
+                                        <template if:false={selectedCriteria.Category__c}>
+                                            <span class="slds-text-color_weak">—</span>
+                                        </template>
+                                    </span>
+                                </div>
                                 <div class="tcb-detail-field">
                                     <span class="tcb-detail-label">Object</span>
                                     <span class="tcb-detail-value"><span class="tcb-badge">{selectedCriteria.Object__c}</span></span>
@@ -230,6 +278,9 @@
                         <div class="two-col">
                             <lightning-input label="Criteria Name" data-field="Name" value={criteria.Name}
                                 onchange={handleInput} required></lightning-input>
+                            <lightning-combobox label="Category" data-field="Category__c"
+                                value={criteria.Category__c} options={categoryOptions}
+                                onchange={handleInput} placeholder="Select a category"></lightning-combobox>
                             <div class="tcb-search-box">
                                 <lightning-input type="text" label="Search Object" placeholder="Search objects..."
                                     value={objectSearchText} onchange={handleObjectSearch}></lightning-input>

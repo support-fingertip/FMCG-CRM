@@ -7,6 +7,8 @@ import saveCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.saveCri
 import deleteCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.deleteCriteria';
 import getLinkedTargetCount from '@salesforce/apex/TAM_TargetCriteria_Controller.getLinkedTargetCount';
 import toggleActive from '@salesforce/apex/TAM_TargetCriteria_Controller.toggleActive';
+import bulkToggleActive from '@salesforce/apex/TAM_TargetCriteria_Controller.bulkToggleActive';
+import bulkDelete from '@salesforce/apex/TAM_TargetCriteria_Controller.bulkDelete';
 import cloneCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.cloneCriteria';
 import previewCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.previewCriteria';
 import FilterLogicValidator from 'c/tamFilterLogicValidator';
@@ -19,6 +21,18 @@ export default class TamCriteriaBuilder extends LightningElement {
 
     // ===== LIST STATE =====
     @track criteriaList = [];
+    @track selectedCategory = 'All';
+    @track selectedIds = new Set();
+
+    categoryOptions = [
+        { label: '-- None --', value: '' },
+        { label: 'Revenue', value: 'Revenue' },
+        { label: 'Activity', value: 'Activity' },
+        { label: 'Collection', value: 'Collection' },
+        { label: 'Coverage', value: 'Coverage' },
+        { label: 'Quality', value: 'Quality' },
+        { label: 'Other', value: 'Other' }
+    ];
 
     // ===== DETAIL STATE =====
     @track selectedCriteria = {};
@@ -95,6 +109,105 @@ export default class TamCriteriaBuilder extends LightningElement {
     get inactiveCount() { return this.totalCount - this.activeCount; }
 
     get builderTitle() { return this.criteria.Id ? 'Edit Criteria' : 'New Criteria'; }
+
+    // ===== CATEGORY FILTERS =====
+    get categoryFilters() {
+        const categories = ['All', 'Revenue', 'Activity', 'Collection', 'Coverage', 'Quality', 'Other'];
+        return categories.map(c => ({
+            value: c,
+            label: c,
+            pillClass: 'tcb-pill' + (this.selectedCategory === c ? ' tcb-pill-active' : '')
+        }));
+    }
+
+    handleCategoryFilter(event) {
+        this.selectedCategory = event.currentTarget.dataset.value;
+        this.selectedIds = new Set();
+    }
+
+    get filteredCriteriaList() {
+        let list = this.criteriaList;
+        if (this.selectedCategory && this.selectedCategory !== 'All') {
+            list = list.filter(c => c.Category__c === this.selectedCategory);
+        }
+        return list.map(item => ({
+            ...item,
+            selected: this.selectedIds.has(item.Id)
+        }));
+    }
+
+    get hasFilteredCriteria() {
+        return this.filteredCriteriaList.length > 0;
+    }
+
+    // ===== BULK SELECTION =====
+    get hasSelectedItems() { return this.selectedIds.size > 0; }
+    get selectedCount() { return this.selectedIds.size; }
+
+    get allSelected() {
+        const filtered = this.filteredCriteriaList;
+        return filtered.length > 0 && filtered.every(c => this.selectedIds.has(c.Id));
+    }
+
+    handleSelectAll(event) {
+        if (event.target.checked) {
+            this.selectedIds = new Set(this.filteredCriteriaList.map(c => c.Id));
+        } else {
+            this.selectedIds = new Set();
+        }
+        // Force reactivity
+        this.criteriaList = [...this.criteriaList];
+    }
+
+    handleSelectItem(event) {
+        const id = event.currentTarget.dataset.id;
+        const newSet = new Set(this.selectedIds);
+        if (event.target.checked) {
+            newSet.add(id);
+        } else {
+            newSet.delete(id);
+        }
+        this.selectedIds = newSet;
+        this.criteriaList = [...this.criteriaList];
+    }
+
+    handleClearSelection() {
+        this.selectedIds = new Set();
+        this.criteriaList = [...this.criteriaList];
+    }
+
+    handleBulkActivate() {
+        const ids = Array.from(this.selectedIds);
+        this.isLoading = true;
+        bulkToggleActive({ criteriaIds: ids, isActive: true })
+            .then(() => {
+                this.showToast('Success', `${ids.length} criteria activated`, 'success');
+                this.selectedIds = new Set();
+                this.loadCriteriaList();
+            })
+            .catch(e => { this.showToast('Error', e?.body?.message || 'Failed', 'error'); })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleBulkDeactivate() {
+        const ids = Array.from(this.selectedIds);
+        this.isLoading = true;
+        bulkToggleActive({ criteriaIds: ids, isActive: false })
+            .then(() => {
+                this.showToast('Success', `${ids.length} criteria deactivated`, 'success');
+                this.selectedIds = new Set();
+                this.loadCriteriaList();
+            })
+            .catch(e => { this.showToast('Error', e?.body?.message || 'Failed', 'error'); })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleBulkDelete() {
+        const ids = Array.from(this.selectedIds);
+        this.deleteTargetName = `${ids.length} criteria`;
+        this._bulkDeleteIds = ids;
+        this.showDeleteConfirm = true;
+    }
 
     // ===== LIST ACTIONS =====
     handleNewCriteria() {
@@ -357,10 +470,18 @@ export default class TamCriteriaBuilder extends LightningElement {
         this.isLoading = true;
         this.showDeleteConfirm = false;
 
-        deleteCriteria({ criteriaId: this.deleteTargetId })
+        let deletePromise;
+        if (this._bulkDeleteIds && this._bulkDeleteIds.length > 0) {
+            deletePromise = bulkDelete({ criteriaIds: this._bulkDeleteIds });
+        } else {
+            deletePromise = deleteCriteria({ criteriaId: this.deleteTargetId });
+        }
+
+        deletePromise
             .then(() => {
                 this.showToast('Success', 'Criteria deleted', 'success');
                 this.currentView = 'list';
+                this.selectedIds = new Set();
                 this.loadCriteriaList();
             })
             .catch(error => {
@@ -370,6 +491,7 @@ export default class TamCriteriaBuilder extends LightningElement {
                 this.isLoading = false;
                 this.deleteTargetId = null;
                 this.deleteTargetName = '';
+                this._bulkDeleteIds = null;
             });
     }
 
@@ -538,7 +660,8 @@ export default class TamCriteriaBuilder extends LightningElement {
             Date_Field__c: this.criteria.Date_Field__c,
             User_Field__c: this.criteria.User_Field__c,
             Filters__c: filterJson,
-            Filter_Logic__c: this.criteria.Filter_Logic__c
+            Filter_Logic__c: this.criteria.Filter_Logic__c,
+            Category__c: this.criteria.Category__c || null
         };
 
         saveCriteria({ criteria: payload })
@@ -563,7 +686,8 @@ export default class TamCriteriaBuilder extends LightningElement {
     resetForm() {
         this.criteria = {
             Id: null, Name: '', Object__c: '', Operator__c: 'SUM',
-            Field__c: '', Date_Field__c: '', User_Field__c: '', Filter_Logic__c: ''
+            Field__c: '', Date_Field__c: '', User_Field__c: '', Filter_Logic__c: '',
+            Category__c: ''
         };
         this.objectSearchText = '';
         this.filters = [];
