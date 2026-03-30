@@ -26,6 +26,8 @@ export default class TamCriteriaBuilder extends LightningElement {
     @track selectedIds = new Set();
 
     @track prerequisiteOptions = [];
+    @track searchPrerequisite = '';
+    @track showPrerequisiteDropdown = false;
 
     categoryOptions = [
         { label: '-- None --', value: '' },
@@ -445,6 +447,10 @@ export default class TamCriteriaBuilder extends LightningElement {
                 if (this.criteria.Prerequisite_Criteria__c == null) this.criteria.Prerequisite_Criteria__c = '';
                 if (this.criteria.Prerequisite_Min_Percent__c == null) this.criteria.Prerequisite_Min_Percent__c = 90;
 
+                // Populate prerequisite search text
+                this.searchPrerequisite = this.criteria.Prerequisite_Criteria__r?.Name || '';
+                this.showPrerequisiteDropdown = false;
+
                 // Parse filters but DON'T assign to this.filters yet
                 if (this.criteria.Filters__c) {
                     try {
@@ -579,6 +585,31 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     // ===== OBJECT SEARCH =====
+    // ===== PREREQUISITE SEARCH =====
+    get filteredPrerequisiteSearch() {
+        const s = (this.searchPrerequisite || '').toLowerCase();
+        return (this.prerequisiteOptions || []).filter(o =>
+            o.value && o.label.toLowerCase().includes(s)
+        );
+    }
+
+    handleSearchPrerequisite(event) {
+        this.searchPrerequisite = event.target.value;
+        this.showPrerequisiteDropdown = true;
+    }
+
+    handleSearchPrerequisiteFocus() {
+        this.showPrerequisiteDropdown = true;
+    }
+
+    handleSelectPrerequisite(event) {
+        const val = event.currentTarget.dataset.value;
+        const label = event.currentTarget.dataset.label;
+        this.criteria.Prerequisite_Criteria__c = val || '';
+        this.searchPrerequisite = label || '';
+        this.showPrerequisiteDropdown = false;
+    }
+
     handleObjectSearch(event) {
         const search = (event.target.value || '').toLowerCase();
         this.objectSearchText = event.target.value;
@@ -740,6 +771,8 @@ export default class TamCriteriaBuilder extends LightningElement {
         this.logicError = null;
         this.currentStep = 1;
         this.autoFilterLogic = true;
+        this.searchPrerequisite = '';
+        this.showPrerequisiteDropdown = false;
     }
 
     // ===== TOAST =====

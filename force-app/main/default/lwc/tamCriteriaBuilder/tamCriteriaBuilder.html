@@ -357,12 +357,34 @@
                                 onchange={handleInput} step="0.01" min="0" max="100"
                                 field-level-help="Percentage weight this criteria contributes to total incentive (e.g., Revenue=60%, S&D=15%). Leave blank if no weighting needed."></lightning-input>
                             <div></div>
-                            <lightning-combobox label="Prerequisite Criteria"
-                                data-field="Prerequisite_Criteria__c"
-                                value={criteria.Prerequisite_Criteria__c}
-                                options={prerequisiteOptions} onchange={handleInput}
-                                placeholder="None (No Prerequisite)"
-                                field-level-help="Must achieve min % on this criteria to qualify for incentive. Example: S&D incentive requires 90% Revenue achievement."></lightning-combobox>
+                            <!-- Searchable Prerequisite Criteria -->
+                            <div class="tcb-search-box">
+                                <lightning-input type="text" label="Prerequisite Criteria"
+                                    placeholder="Search criteria... (leave empty for None)"
+                                    value={searchPrerequisite} onchange={handleSearchPrerequisite}
+                                    onfocus={handleSearchPrerequisiteFocus}
+                                    field-level-help="Must achieve min % on this criteria to qualify for incentive. Example: S&D incentive requires 90% Revenue achievement."></lightning-input>
+                                <template if:true={showPrerequisiteDropdown}>
+                                    <div class="tcb-dropdown">
+                                        <div class="tcb-option tcb-option-none" data-value="" data-label=""
+                                            onclick={handleSelectPrerequisite}>
+                                            <lightning-icon icon-name="utility:clear" size="x-small"></lightning-icon>
+                                            <div class="tcb-option-text">
+                                                <div class="tcb-label">-- None (No Prerequisite) --</div>
+                                            </div>
+                                        </div>
+                                        <template for:each={filteredPrerequisiteSearch} for:item="opt">
+                                            <div key={opt.value} class="tcb-option" data-value={opt.value}
+                                                data-label={opt.label} onclick={handleSelectPrerequisite}>
+                                                <lightning-icon icon-name="standard:goals" size="x-small"></lightning-icon>
+                                                <div class="tcb-option-text">
+                                                    <div class="tcb-label">{opt.label}</div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                             <lightning-input type="number" label="Prerequisite Min %"
                                 data-field="Prerequisite_Min_Percent__c"
                                 value={criteria.Prerequisite_Min_Percent__c}

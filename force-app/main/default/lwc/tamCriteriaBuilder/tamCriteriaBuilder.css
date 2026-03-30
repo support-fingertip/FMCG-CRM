@@ -460,6 +460,8 @@
 .tcb-footer-right lightning-button + lightning-button { margin-left: 0.5rem; }
 
 /* ===== MISC ===== */
+.tcb-option-none .tcb-label { color: #7e5cef; font-style: italic; }
+
 .tcb-error { color: #c23934; font-weight: 600; margin-top: 10px; }
 .tcb-help-text { font-size: 11px; color: #6b6d70; margin-top: 4px; }
 
