@@ -387,6 +387,7 @@ public with sharing class TAM_IncentiveCalculation_Service {
 
         for (Id userId : userQuarterlyTotals.keySet()) {
             List<Decimal> totals = userQuarterlyTotals.get(userId);
+            if (totals == null || totals.isEmpty()) continue;
             totals.sort();
 
             // Need at least 3 quarters to qualify

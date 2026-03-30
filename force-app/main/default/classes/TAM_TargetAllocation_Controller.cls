@@ -5,7 +5,6 @@ public class TAM_TargetAllocation_Controller {
         @AuraEnabled public List<Target_Period__c> periodsList;
         @AuraEnabled public List<Target_Period__c> currentPeriods;
         @AuraEnabled public String period;
-        @AuraEnabled public String userProfileName;
         @AuraEnabled public List<Target_Criteria__c> targetCriterias;
         @AuraEnabled public String currentUserId;
         @AuraEnabled public List<Target_Actual__c> targetActuals;

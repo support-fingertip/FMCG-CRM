@@ -71,6 +71,7 @@ public with sharing class TAM_IncentiveDashboard_Controller {
                    Status__c, Approved_By__c, Approved_By__r.Name,
                    Approval_Date__c, Payment_Date__c, Notes__c,
                    Period_Month__c, Period_Year__c,
+                   Is_Annual_Bonus__c, Annual_Bonus__c,
                    CreatedDate, LastModifiedDate
             FROM Incentive__c
             WHERE Id = :incentiveId
