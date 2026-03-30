@@ -209,6 +209,28 @@
                                     <span class="tcb-detail-label">Filter Logic</span>
                                     <span class="tcb-detail-value">{selectedCriteria.Filter_Logic__c}</span>
                                 </div>
+                                <div class="tcb-detail-field">
+                                    <span class="tcb-detail-label">Incentive Weight</span>
+                                    <span class="tcb-detail-value">
+                                        <template if:true={selectedCriteria.Incentive_Weight__c}>
+                                            {selectedCriteria.Incentive_Weight__c}%
+                                        </template>
+                                        <template if:false={selectedCriteria.Incentive_Weight__c}>
+                                            <span class="slds-text-color_weak">No weighting</span>
+                                        </template>
+                                    </span>
+                                </div>
+                                <div class="tcb-detail-field">
+                                    <span class="tcb-detail-label">Prerequisite</span>
+                                    <span class="tcb-detail-value">
+                                        <template if:true={selectedCriteria.Prerequisite_Criteria__c}>
+                                            {selectedCriteria.Prerequisite_Criteria__r.Name} (min {selectedCriteria.Prerequisite_Min_Percent__c}%)
+                                        </template>
+                                        <template if:false={selectedCriteria.Prerequisite_Criteria__c}>
+                                            <span class="slds-text-color_weak">None</span>
+                                        </template>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -318,6 +340,34 @@
                                     </template>
                                 </div>
                             </template>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Incentive Configuration (in Step 1) -->
+                <section class="tcb-card logic">
+                    <div class="tcb-card-header">
+                        <lightning-icon icon-name="utility:money" size="x-small"></lightning-icon>
+                        <span>Incentive Configuration</span>
+                    </div>
+                    <div class="tcb-card-body">
+                        <div class="two-col">
+                            <lightning-input type="number" label="Incentive Weight (%)"
+                                data-field="Incentive_Weight__c" value={criteria.Incentive_Weight__c}
+                                onchange={handleInput} step="0.01" min="0" max="100"
+                                field-level-help="Percentage weight this criteria contributes to total incentive (e.g., Revenue=60%, S&D=15%). Leave blank if no weighting needed."></lightning-input>
+                            <div></div>
+                            <lightning-combobox label="Prerequisite Criteria"
+                                data-field="Prerequisite_Criteria__c"
+                                value={criteria.Prerequisite_Criteria__c}
+                                options={prerequisiteOptions} onchange={handleInput}
+                                placeholder="None (No Prerequisite)"
+                                field-level-help="Must achieve min % on this criteria to qualify for incentive. Example: S&D incentive requires 90% Revenue achievement."></lightning-combobox>
+                            <lightning-input type="number" label="Prerequisite Min %"
+                                data-field="Prerequisite_Min_Percent__c"
+                                value={criteria.Prerequisite_Min_Percent__c}
+                                onchange={handleInput} step="0.01" min="0" max="200"
+                                field-level-help="Minimum achievement % required on the prerequisite criteria. Default is 90%."></lightning-input>
                         </div>
                     </div>
                 </section>

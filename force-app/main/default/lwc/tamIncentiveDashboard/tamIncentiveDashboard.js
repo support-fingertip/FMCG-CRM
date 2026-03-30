@@ -8,6 +8,7 @@ import submitForApproval from '@salesforce/apex/TAM_IncentiveDashboard_Controlle
 import approveIncentives from '@salesforce/apex/TAM_IncentiveDashboard_Controller.approveIncentives';
 import rejectIncentives from '@salesforce/apex/TAM_IncentiveDashboard_Controller.rejectIncentives';
 import markAsPaid from '@salesforce/apex/TAM_IncentiveDashboard_Controller.markAsPaid';
+import runAnnualBonus from '@salesforce/apex/TAM_IncentiveDashboard_Controller.runAnnualBonus';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class TamIncentiveDashboard extends LightningElement {
@@ -114,6 +115,21 @@ export default class TamIncentiveDashboard extends LightningElement {
     handleStatusFilter(event) {
         this.selectedStatus = event.currentTarget.dataset.value;
         this.selectedIds = new Set();
+    }
+
+    handleRunAnnualBonus() {
+        if (!this.selectedPeriod) {
+            this.showToast('Warning', 'Select a yearly period first', 'warning');
+            return;
+        }
+        this.isLoading = true;
+        runAnnualBonus({ periodId: this.selectedPeriod })
+            .then(() => {
+                this.showToast('Success', 'Annual bonus calculated', 'success');
+                this._reloadIncentives();
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Bonus calculation failed', 'error'))
+            .finally(() => { this.isLoading = false; });
     }
 
     handleRunCalculation() {

@@ -16,6 +16,8 @@ export default class TamIncentiveSlabManager extends LightningElement {
 
     @track slabList = [];
     @track criteriaOptions = [];
+    @track profileOptions = [];
+    @track territoryOptions = [];
     @track selectedIds = new Set();
 
     @track detail = {};
@@ -27,8 +29,9 @@ export default class TamIncentiveSlabManager extends LightningElement {
     _bulkDeleteIds = null;
 
     payoutTypeOptions = [
-        { label: 'Percentage', value: 'Percentage' },
-        { label: 'Fixed Amount', value: 'Fixed Amount' }
+        { label: 'Percentage (of Target Value)', value: 'Percentage' },
+        { label: 'Fixed Amount', value: 'Fixed Amount' },
+        { label: 'Salary Percentage (of Gross Salary)', value: 'Salary Percentage' }
     ];
 
     connectedCallback() { this.loadData(); }
@@ -39,6 +42,8 @@ export default class TamIncentiveSlabManager extends LightningElement {
             .then(result => {
                 this.slabList = result.slabs || [];
                 this.criteriaOptions = result.criteriaOptions || [];
+                this.profileOptions = result.profileOptions || [];
+                this.territoryOptions = result.territoryOptions || [];
             })
             .catch(e => this.showToast('Error', e?.body?.message || 'Failed to load', 'error'))
             .finally(() => { this.isLoading = false; });
@@ -65,10 +70,14 @@ export default class TamIncentiveSlabManager extends LightningElement {
             ...s,
             selected: this.selectedIds.has(s.Id),
             criteriaName: s.Target_Criteria__r?.Name || '',
+            profileDisplay: s.Profile_Name__c || '',
+            territoryDisplay: s.Territory__r?.Name || '',
             rangeDisplay: `${s.Min_Percent__c}% — ${s.Max_Percent__c}%`,
             payoutDisplay: s.Payout_Type__c === 'Percentage'
                 ? `${s.Payout_Value__c}% of target`
-                : `Fixed ${s.Payout_Value__c}`
+                : s.Payout_Type__c === 'Salary Percentage'
+                    ? `${s.Payout_Value__c}% of salary`
+                    : `Fixed ${s.Payout_Value__c}`
         }));
     }
 
@@ -80,28 +89,36 @@ export default class TamIncentiveSlabManager extends LightningElement {
 
     // Detail getters
     get detailCriteriaName() { return this.detail.Target_Criteria__r?.Name || 'Universal (All Criteria)'; }
+    get detailProfileName() { return this.detail.Profile_Name__c || 'Universal (All Profiles)'; }
+    get detailTerritoryName() { return this.detail.Territory__r?.Name || 'Universal (All Territories)'; }
     get detailPayoutRule() {
-        return this.detail.Payout_Type__c === 'Percentage'
-            ? `${this.detail.Payout_Value__c}% of target`
-            : `Fixed ${this.detail.Payout_Value__c}`;
+        if (this.detail.Payout_Type__c === 'Percentage') return `${this.detail.Payout_Value__c}% of target value`;
+        if (this.detail.Payout_Type__c === 'Salary Percentage') return `${this.detail.Payout_Value__c}% of gross salary`;
+        return `Fixed ${this.detail.Payout_Value__c}`;
     }
     get detailExamplePayout() {
-        const base = 100000;
         const mult = this.detail.Multiplier__c || 1;
         const val = this.detail.Payout_Value__c || 0;
         if (this.detail.Payout_Type__c === 'Percentage') {
-            return String(base * (val / 100) * mult);
+            return String(100000 * (val / 100) * mult);
+        }
+        if (this.detail.Payout_Type__c === 'Salary Percentage') {
+            return String(30000 * (val / 100) * mult);
         }
         return String(val * mult);
+    }
+    get detailExampleBase() {
+        if (this.detail.Payout_Type__c === 'Salary Percentage') return '30,000 (salary)';
+        return '1,00,000 (target)';
     }
 
     // ===== LIST ACTIONS =====
     handleNewSlab() {
         this.form = {
-            Id: null, Name: '', Target_Criteria__c: '', Min_Percent__c: 0,
-            Max_Percent__c: 100, Payout_Type__c: 'Percentage', Payout_Value__c: 0,
-            Multiplier__c: 1, Sort_Order__c: 0, Effective_From__c: '', Effective_To__c: '',
-            Description__c: ''
+            Id: null, Name: '', Target_Criteria__c: '', Profile_Name__c: '',
+            Territory__c: '', Min_Percent__c: 0, Max_Percent__c: 100,
+            Payout_Type__c: 'Percentage', Payout_Value__c: 0, Multiplier__c: 1,
+            Sort_Order__c: 0, Effective_From__c: '', Effective_To__c: '', Description__c: ''
         };
         this.currentView = 'form';
     }
@@ -239,6 +256,8 @@ export default class TamIncentiveSlabManager extends LightningElement {
                     Id: result.Id,
                     Name: result.Name,
                     Target_Criteria__c: result.Target_Criteria__c || '',
+                    Profile_Name__c: result.Profile_Name__c || '',
+                    Territory__c: result.Territory__c || '',
                     Min_Percent__c: result.Min_Percent__c,
                     Max_Percent__c: result.Max_Percent__c,
                     Payout_Type__c: result.Payout_Type__c,
@@ -273,6 +292,8 @@ export default class TamIncentiveSlabManager extends LightningElement {
         this.isLoading = true;
         const payload = { ...this.form };
         if (!payload.Target_Criteria__c) payload.Target_Criteria__c = null;
+        if (!payload.Profile_Name__c) payload.Profile_Name__c = null;
+        if (!payload.Territory__c) payload.Territory__c = null;
         if (!payload.Effective_From__c) payload.Effective_From__c = null;
         if (!payload.Effective_To__c) payload.Effective_To__c = null;
 

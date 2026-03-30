@@ -106,7 +106,10 @@ public with sharing class TAM_TargetCriteria_Controller {
                    Date_Field__c, User_Field__c,
                    Filters__c, Filter_Logic__c,
                    Active__c, Enable_Customer_Targets__c,
-                   Category__c, CreatedDate, LastModifiedDate
+                   Category__c, Incentive_Weight__c,
+                   Prerequisite_Criteria__c, Prerequisite_Criteria__r.Name,
+                   Prerequisite_Min_Percent__c,
+                   CreatedDate, LastModifiedDate
             FROM Target_Criteria__c
             ORDER BY LastModifiedDate DESC
             LIMIT 200
@@ -122,7 +125,9 @@ public with sharing class TAM_TargetCriteria_Controller {
             SELECT Id, Name, Object__c, Operator__c, Field__c,
                    Date_Field__c, User_Field__c,
                    Filters__c, Filter_Logic__c,
-                   Enable_Customer_Targets__c, Active__c, Category__c
+                   Enable_Customer_Targets__c, Active__c, Category__c,
+                   Incentive_Weight__c, Prerequisite_Criteria__c,
+                   Prerequisite_Criteria__r.Name, Prerequisite_Min_Percent__c
             FROM Target_Criteria__c
             WHERE Id = :criteriaId
         ];
@@ -135,6 +140,21 @@ public with sharing class TAM_TargetCriteria_Controller {
     public static Target_Criteria__c saveCriteria(Target_Criteria__c criteria) {
         upsert criteria;
         return getCriteria(criteria.Id);
+    }
+
+    // =====================
+    // 5b. GET CRITERIA OPTIONS (for prerequisite dropdown)
+    // =====================
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getCriteriaOptions() {
+        List<Map<String, String>> opts = new List<Map<String, String>>();
+        opts.add(new Map<String, String>{ 'label' => '-- None (No Prerequisite) --', 'value' => '' });
+        for (Target_Criteria__c tc : [
+            SELECT Id, Name FROM Target_Criteria__c WHERE Active__c = true ORDER BY Name
+        ]) {
+            opts.add(new Map<String, String>{ 'label' => tc.Name, 'value' => tc.Id });
+        }
+        return opts;
     }
 
     // =====================

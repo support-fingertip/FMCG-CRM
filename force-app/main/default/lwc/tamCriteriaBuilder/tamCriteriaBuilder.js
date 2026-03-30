@@ -11,6 +11,7 @@ import bulkToggleActive from '@salesforce/apex/TAM_TargetCriteria_Controller.bul
 import bulkDelete from '@salesforce/apex/TAM_TargetCriteria_Controller.bulkDelete';
 import cloneCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.cloneCriteria';
 import previewCriteria from '@salesforce/apex/TAM_TargetCriteria_Controller.previewCriteria';
+import getCriteriaOptions from '@salesforce/apex/TAM_TargetCriteria_Controller.getCriteriaOptions';
 import FilterLogicValidator from 'c/tamFilterLogicValidator';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -23,6 +24,8 @@ export default class TamCriteriaBuilder extends LightningElement {
     @track criteriaList = [];
     @track selectedCategory = 'All';
     @track selectedIds = new Set();
+
+    @track prerequisiteOptions = [];
 
     categoryOptions = [
         { label: '-- None --', value: '' },
@@ -68,6 +71,13 @@ export default class TamCriteriaBuilder extends LightningElement {
     // ===== LIFECYCLE =====
     connectedCallback() {
         this.loadCriteriaList();
+        this.loadPrerequisiteOptions();
+    }
+
+    loadPrerequisiteOptions() {
+        getCriteriaOptions()
+            .then(data => { this.prerequisiteOptions = data || []; })
+            .catch(() => {});
     }
 
     loadCriteriaList() {
@@ -432,6 +442,8 @@ export default class TamCriteriaBuilder extends LightningElement {
                 if (!this.criteria.Operator__c) this.criteria.Operator__c = 'SUM';
                 // Normalize null to empty string for combobox matching
                 if (this.criteria.Category__c == null) this.criteria.Category__c = '';
+                if (this.criteria.Prerequisite_Criteria__c == null) this.criteria.Prerequisite_Criteria__c = '';
+                if (this.criteria.Prerequisite_Min_Percent__c == null) this.criteria.Prerequisite_Min_Percent__c = 90;
 
                 // Parse filters but DON'T assign to this.filters yet
                 if (this.criteria.Filters__c) {
@@ -687,7 +699,10 @@ export default class TamCriteriaBuilder extends LightningElement {
             User_Field__c: this.criteria.User_Field__c,
             Filters__c: filterJson,
             Filter_Logic__c: this.criteria.Filter_Logic__c,
-            Category__c: this.criteria.Category__c || null
+            Category__c: this.criteria.Category__c || null,
+            Incentive_Weight__c: this.criteria.Incentive_Weight__c || null,
+            Prerequisite_Criteria__c: this.criteria.Prerequisite_Criteria__c || null,
+            Prerequisite_Min_Percent__c: this.criteria.Prerequisite_Min_Percent__c || null
         };
 
         saveCriteria({ criteria: payload })
@@ -713,7 +728,8 @@ export default class TamCriteriaBuilder extends LightningElement {
         this.criteria = {
             Id: null, Name: '', Object__c: '', Operator__c: 'SUM',
             Field__c: '', Date_Field__c: '', User_Field__c: '', Filter_Logic__c: '',
-            Category__c: ''
+            Category__c: '', Incentive_Weight__c: null,
+            Prerequisite_Criteria__c: '', Prerequisite_Min_Percent__c: 90
         };
         this.objectSearchText = '';
         this.filters = [];

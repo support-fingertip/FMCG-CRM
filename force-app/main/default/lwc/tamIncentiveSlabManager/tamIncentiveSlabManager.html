@@ -54,6 +54,8 @@
                                 </th>
                                 <th>Slab Name</th>
                                 <th>Criteria</th>
+                                <th>Profile</th>
+                                <th>Territory</th>
                                 <th>Range</th>
                                 <th>Payout</th>
                                 <th>Multiplier</th>
@@ -76,6 +78,22 @@
                                         </template>
                                         <template if:false={s.criteriaName}>
                                             <span class="ism-badge-universal">Universal</span>
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <template if:true={s.profileDisplay}>
+                                            <span class="ism-badge-profile">{s.profileDisplay}</span>
+                                        </template>
+                                        <template if:false={s.profileDisplay}>
+                                            <span class="ism-badge-universal">All</span>
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <template if:true={s.territoryDisplay}>
+                                            <span class="ism-badge-territory">{s.territoryDisplay}</span>
+                                        </template>
+                                        <template if:false={s.territoryDisplay}>
+                                            <span class="ism-badge-universal">All</span>
                                         </template>
                                     </td>
                                     <td>{s.rangeDisplay}</td>
@@ -161,6 +179,14 @@
                                     <span class="ism-detail-value">{detailCriteriaName}</span>
                                 </div>
                                 <div class="ism-detail-field">
+                                    <span class="ism-detail-label">Profile</span>
+                                    <span class="ism-detail-value">{detailProfileName}</span>
+                                </div>
+                                <div class="ism-detail-field">
+                                    <span class="ism-detail-label">Territory</span>
+                                    <span class="ism-detail-value">{detailTerritoryName}</span>
+                                </div>
+                                <div class="ism-detail-field">
                                     <span class="ism-detail-label">Achievement Range</span>
                                     <span class="ism-detail-value">{detail.Min_Percent__c}% — {detail.Max_Percent__c}%</span>
                                 </div>
@@ -196,10 +222,10 @@
                     <section class="ism-card ism-calc-card">
                         <div class="ism-card-header">Payout Example</div>
                         <div class="ism-card-body">
-                            <p class="ism-help-text">If a salesperson has a target of 100,000:</p>
+                            <p class="ism-help-text">Example calculation:</p>
                             <div class="ism-example-row">
-                                <span>Target Value</span>
-                                <strong>100,000</strong>
+                                <span>Base</span>
+                                <strong>{detailExampleBase}</strong>
                             </div>
                             <div class="ism-example-row">
                                 <span>Payout Rule</span>
@@ -237,6 +263,12 @@
                         <lightning-combobox label="Target Criteria" value={form.Target_Criteria__c}
                             options={criteriaOptions} data-field="Target_Criteria__c"
                             onchange={handleFormInput} placeholder="Universal (All Criteria)"></lightning-combobox>
+                        <lightning-combobox label="Profile" value={form.Profile_Name__c}
+                            options={profileOptions} data-field="Profile_Name__c"
+                            onchange={handleFormInput} placeholder="Universal (All Profiles)"></lightning-combobox>
+                        <lightning-combobox label="Territory" value={form.Territory__c}
+                            options={territoryOptions} data-field="Territory__c"
+                            onchange={handleFormInput} placeholder="Universal (All Territories)"></lightning-combobox>
                         <lightning-input type="number" label="Min Achievement %" value={form.Min_Percent__c}
                             data-field="Min_Percent__c" onchange={handleFormInput} required
                             step="0.01" min="0"></lightning-input>
