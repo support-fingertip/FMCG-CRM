@@ -71,9 +71,22 @@ export default class TamCriteriaBuilder extends LightningElement {
     ];
 
     // ===== LIFECYCLE =====
+    _closeDropdownsBound;
+
     connectedCallback() {
         this.loadCriteriaList();
         this.loadPrerequisiteOptions();
+        this._closeDropdownsBound = this._closeAllDropdowns.bind(this);
+        document.addEventListener('click', this._closeDropdownsBound);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('click', this._closeDropdownsBound);
+    }
+
+    _closeAllDropdowns() {
+        this.showObjectDropdown = false;
+        this.showPrerequisiteDropdown = false;
     }
 
     loadPrerequisiteOptions() {
@@ -594,12 +607,16 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     handleSearchPrerequisite(event) {
+        event.stopPropagation();
         this.searchPrerequisite = event.target.value;
         this.showPrerequisiteDropdown = true;
+        this.showObjectDropdown = false;
     }
 
-    handleSearchPrerequisiteFocus() {
+    handleSearchPrerequisiteFocus(event) {
+        event.stopPropagation();
         this.showPrerequisiteDropdown = true;
+        this.showObjectDropdown = false;
     }
 
     handleSelectPrerequisite(event) {
@@ -611,8 +628,10 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     handleObjectSearch(event) {
+        event.stopPropagation();
         const search = (event.target.value || '').toLowerCase();
         this.objectSearchText = event.target.value;
+        this.showPrerequisiteDropdown = false;
         if (!search) {
             this.showObjectDropdown = false;
             this.filteredObjects = [];

@@ -55,7 +55,23 @@ export default class TamIncentiveSlabManager extends LightningElement {
         { label: 'Salary Percentage (of Gross Salary)', value: 'Salary Percentage' }
     ];
 
-    connectedCallback() { this.loadData(); }
+    _closeDropdownsBound;
+
+    connectedCallback() {
+        this.loadData();
+        this._closeDropdownsBound = this._closeAllDropdowns.bind(this);
+        document.addEventListener('click', this._closeDropdownsBound);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('click', this._closeDropdownsBound);
+    }
+
+    _closeAllDropdowns() {
+        this.showCriteriaDropdown = false;
+        this.showProfileDropdown = false;
+        this.showTerritoryDropdown = false;
+    }
 
     loadData() {
         this.isLoading = true;
@@ -372,10 +388,13 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     handleSearchCriteria(event) {
+        event.stopPropagation();
         this.searchCriteria = event.target.value;
         this.showCriteriaDropdown = true;
+        this.showProfileDropdown = false;
+        this.showTerritoryDropdown = false;
     }
-    handleSearchCriteriaFocus() { this.showCriteriaDropdown = true; }
+    handleSearchCriteriaFocus(event) { event.stopPropagation(); this.showCriteriaDropdown = true; this.showProfileDropdown = false; this.showTerritoryDropdown = false; }
     handleSelectCriteria(event) {
         const val = event.currentTarget.dataset.value;
         const label = event.currentTarget.dataset.label;
@@ -385,10 +404,13 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     handleSearchProfile(event) {
+        event.stopPropagation();
         this.searchProfile = event.target.value;
         this.showProfileDropdown = true;
+        this.showCriteriaDropdown = false;
+        this.showTerritoryDropdown = false;
     }
-    handleSearchProfileFocus() { this.showProfileDropdown = true; }
+    handleSearchProfileFocus(event) { event.stopPropagation(); this.showProfileDropdown = true; this.showCriteriaDropdown = false; this.showTerritoryDropdown = false; }
     handleSelectProfile(event) {
         const val = event.currentTarget.dataset.value;
         const label = event.currentTarget.dataset.label;
@@ -398,10 +420,13 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     handleSearchTerritory(event) {
+        event.stopPropagation();
         this.searchTerritory = event.target.value;
         this.showTerritoryDropdown = true;
+        this.showCriteriaDropdown = false;
+        this.showProfileDropdown = false;
     }
-    handleSearchTerritoryFocus() { this.showTerritoryDropdown = true; }
+    handleSearchTerritoryFocus(event) { event.stopPropagation(); this.showTerritoryDropdown = true; this.showCriteriaDropdown = false; this.showProfileDropdown = false; }
     handleSelectTerritory(event) {
         const val = event.currentTarget.dataset.value;
         const label = event.currentTarget.dataset.label;
