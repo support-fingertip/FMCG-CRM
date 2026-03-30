@@ -39,6 +39,7 @@
     <tabs>Target_Actual__c</tabs>
     <tabs>Target_Period__c</tabs>
     <tabs>Incentive_Dashboard</tabs>
+    <tabs>Incentive_Slab_Manager</tabs>
     <tabs>Incentive_Slab__c</tabs>
     <tabs>Scheme__c</tabs>
     <tabs>Scheme_Manager</tabs>

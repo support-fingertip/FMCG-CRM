@@ -1,0 +1,293 @@
+import { LightningElement, track } from 'lwc';
+import getDashboardData from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.getDashboardData';
+import getSlabDetail from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.getSlabDetail';
+import saveSlab from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.saveSlab';
+import deleteSlab from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.deleteSlab';
+import toggleActive from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.toggleActive';
+import cloneSlab from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.cloneSlab';
+import bulkToggleActive from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.bulkToggleActive';
+import bulkDelete from '@salesforce/apex/TAM_IncentiveSlabManager_Controller.bulkDelete';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
+export default class TamIncentiveSlabManager extends LightningElement {
+
+    currentView = 'list';
+    @track isLoading = false;
+
+    @track slabList = [];
+    @track criteriaOptions = [];
+    @track selectedIds = new Set();
+
+    @track detail = {};
+    @track form = {};
+
+    @track showDeleteConfirm = false;
+    deleteTargetId = null;
+    @track deleteTargetName = '';
+    _bulkDeleteIds = null;
+
+    payoutTypeOptions = [
+        { label: 'Percentage', value: 'Percentage' },
+        { label: 'Fixed Amount', value: 'Fixed Amount' }
+    ];
+
+    connectedCallback() { this.loadData(); }
+
+    loadData() {
+        this.isLoading = true;
+        getDashboardData()
+            .then(result => {
+                this.slabList = result.slabs || [];
+                this.criteriaOptions = result.criteriaOptions || [];
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed to load', 'error'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    // ===== VIEW GETTERS =====
+    get isListView() { return this.currentView === 'list'; }
+    get isDetailView() { return this.currentView === 'detail'; }
+    get isFormView() { return this.currentView === 'form'; }
+    get hasSlabs() { return this.slabList.length > 0; }
+    get totalCount() { return this.slabList.length; }
+    get activeCount() { return this.slabList.filter(s => s.Is_Active__c).length; }
+    get inactiveCount() { return this.totalCount - this.activeCount; }
+    get formTitle() { return this.form.Id ? 'Edit Slab' : 'New Slab'; }
+
+    get hasSelectedItems() { return this.selectedIds.size > 0; }
+    get selectedCount() { return this.selectedIds.size; }
+    get allSelected() {
+        return this.slabList.length > 0 && this.slabList.every(s => this.selectedIds.has(s.Id));
+    }
+
+    get displaySlabs() {
+        return this.slabList.map(s => ({
+            ...s,
+            selected: this.selectedIds.has(s.Id),
+            criteriaName: s.Target_Criteria__r?.Name || '',
+            rangeDisplay: `${s.Min_Percent__c}% — ${s.Max_Percent__c}%`,
+            payoutDisplay: s.Payout_Type__c === 'Percentage'
+                ? `${s.Payout_Value__c}% of target`
+                : `Fixed ${s.Payout_Value__c}`
+        }));
+    }
+
+    get isSaveDisabled() {
+        return this.isLoading || !this.form.Name || this.form.Min_Percent__c == null
+            || this.form.Max_Percent__c == null || !this.form.Payout_Type__c
+            || this.form.Payout_Value__c == null;
+    }
+
+    // Detail getters
+    get detailCriteriaName() { return this.detail.Target_Criteria__r?.Name || 'Universal (All Criteria)'; }
+    get detailPayoutRule() {
+        return this.detail.Payout_Type__c === 'Percentage'
+            ? `${this.detail.Payout_Value__c}% of target`
+            : `Fixed ${this.detail.Payout_Value__c}`;
+    }
+    get detailExamplePayout() {
+        const base = 100000;
+        const mult = this.detail.Multiplier__c || 1;
+        const val = this.detail.Payout_Value__c || 0;
+        if (this.detail.Payout_Type__c === 'Percentage') {
+            return String(base * (val / 100) * mult);
+        }
+        return String(val * mult);
+    }
+
+    // ===== LIST ACTIONS =====
+    handleNewSlab() {
+        this.form = {
+            Id: null, Name: '', Target_Criteria__c: '', Min_Percent__c: 0,
+            Max_Percent__c: 100, Payout_Type__c: 'Percentage', Payout_Value__c: 0,
+            Multiplier__c: 1, Sort_Order__c: 0, Effective_From__c: '', Effective_To__c: '',
+            Description__c: ''
+        };
+        this.currentView = 'form';
+    }
+
+    handleRowClick(event) {
+        const id = event.currentTarget.dataset.id;
+        this.openDetail(id);
+    }
+
+    handleEdit(event) {
+        event.stopPropagation();
+        this.openForm(event.currentTarget.dataset.id);
+    }
+
+    handleDelete(event) {
+        event.stopPropagation();
+        const id = event.currentTarget.dataset.id;
+        const item = this.slabList.find(s => s.Id === id);
+        this.deleteTargetId = id;
+        this.deleteTargetName = item ? item.Name : '';
+        this.showDeleteConfirm = true;
+    }
+
+    handleToggleActive(event) {
+        event.stopPropagation();
+        const id = event.currentTarget.dataset.id;
+        const item = this.slabList.find(s => s.Id === id);
+        toggleActive({ slabId: id, isActive: !item.Is_Active__c })
+            .then(() => {
+                this.showToast('Success', item.Is_Active__c ? 'Deactivated' : 'Activated', 'success');
+                this.loadData();
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'));
+    }
+
+    stopPropagation(event) { event.stopPropagation(); }
+
+    // ===== SELECTION =====
+    handleSelectAll(event) {
+        this.selectedIds = event.target.checked ? new Set(this.slabList.map(s => s.Id)) : new Set();
+        this.slabList = [...this.slabList];
+    }
+    handleSelectItem(event) {
+        const newSet = new Set(this.selectedIds);
+        if (event.target.checked) newSet.add(event.currentTarget.dataset.id);
+        else newSet.delete(event.currentTarget.dataset.id);
+        this.selectedIds = newSet;
+        this.slabList = [...this.slabList];
+    }
+    handleClearSelection() { this.selectedIds = new Set(); this.slabList = [...this.slabList]; }
+
+    handleBulkActivate() { this._bulkToggle(true); }
+    handleBulkDeactivate() { this._bulkToggle(false); }
+    _bulkToggle(isActive) {
+        this.isLoading = true;
+        bulkToggleActive({ slabIds: Array.from(this.selectedIds), isActive })
+            .then(() => {
+                this.showToast('Success', `${this.selectedIds.size} slabs updated`, 'success');
+                this.selectedIds = new Set();
+                this.loadData();
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleBulkDelete() {
+        this._bulkDeleteIds = Array.from(this.selectedIds);
+        this.deleteTargetName = `${this._bulkDeleteIds.length} slabs`;
+        this.showDeleteConfirm = true;
+    }
+
+    // ===== DETAIL =====
+    openDetail(id) {
+        this.isLoading = true;
+        getSlabDetail({ slabId: id })
+            .then(result => { this.detail = result; this.currentView = 'detail'; })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleEditFromDetail() { this.openForm(this.detail.Id); }
+
+    handleDeleteFromDetail() {
+        this.deleteTargetId = this.detail.Id;
+        this.deleteTargetName = this.detail.Name;
+        this.showDeleteConfirm = true;
+    }
+
+    handleClone() {
+        this.isLoading = true;
+        cloneSlab({ slabId: this.detail.Id })
+            .then(result => {
+                this.showToast('Success', `Cloned as "${result.Name}"`, 'success');
+                this.detail = result;
+                this.loadData();
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleBackToList() { this.currentView = 'list'; this.loadData(); }
+
+    // ===== DELETE =====
+    handleCancelDelete() { this.showDeleteConfirm = false; this.deleteTargetId = null; this._bulkDeleteIds = null; }
+
+    handleConfirmDelete() {
+        this.isLoading = true;
+        this.showDeleteConfirm = false;
+
+        const promise = this._bulkDeleteIds
+            ? bulkDelete({ slabIds: this._bulkDeleteIds })
+            : deleteSlab({ slabId: this.deleteTargetId });
+
+        promise
+            .then(() => {
+                this.showToast('Success', 'Deleted', 'success');
+                this.currentView = 'list';
+                this.selectedIds = new Set();
+                this.loadData();
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'))
+            .finally(() => {
+                this.isLoading = false;
+                this.deleteTargetId = null;
+                this._bulkDeleteIds = null;
+            });
+    }
+
+    // ===== FORM =====
+    openForm(id) {
+        this.isLoading = true;
+        getSlabDetail({ slabId: id })
+            .then(result => {
+                this.form = {
+                    Id: result.Id,
+                    Name: result.Name,
+                    Target_Criteria__c: result.Target_Criteria__c || '',
+                    Min_Percent__c: result.Min_Percent__c,
+                    Max_Percent__c: result.Max_Percent__c,
+                    Payout_Type__c: result.Payout_Type__c,
+                    Payout_Value__c: result.Payout_Value__c,
+                    Multiplier__c: result.Multiplier__c,
+                    Sort_Order__c: result.Sort_Order__c,
+                    Effective_From__c: result.Effective_From__c || '',
+                    Effective_To__c: result.Effective_To__c || '',
+                    Description__c: result.Description__c || ''
+                };
+                this.currentView = 'form';
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    handleFormInput(event) {
+        const field = event.target.dataset.field;
+        let val = event.target.value;
+        if (['Min_Percent__c', 'Max_Percent__c', 'Payout_Value__c', 'Multiplier__c', 'Sort_Order__c'].includes(field)) {
+            val = val !== '' ? Number(val) : null;
+        }
+        this.form = { ...this.form, [field]: val };
+    }
+
+    handleSave() {
+        if (this.form.Min_Percent__c >= this.form.Max_Percent__c) {
+            this.showToast('Validation Error', 'Max % must be greater than Min %', 'error');
+            return;
+        }
+
+        this.isLoading = true;
+        const payload = { ...this.form };
+        if (!payload.Target_Criteria__c) payload.Target_Criteria__c = null;
+        if (!payload.Effective_From__c) payload.Effective_From__c = null;
+        if (!payload.Effective_To__c) payload.Effective_To__c = null;
+
+        saveSlab({ slab: payload })
+            .then(result => {
+                this.showToast('Success', 'Slab saved', 'success');
+                this.detail = result;
+                this.currentView = 'detail';
+                this.loadData();
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Failed to save', 'error'))
+            .finally(() => { this.isLoading = false; });
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+    }
+}

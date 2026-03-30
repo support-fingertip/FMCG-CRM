@@ -10,7 +10,11 @@
         <default>false</default>
         <visible>true</visible>
     </applicationVisibilities>
-            <classAccesses>
+                <classAccesses>
+        <apexClass>TAM_IncentiveSlabManager_Controller</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+<classAccesses>
         <apexClass>TAM_IncentiveDashboard_Controller</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -6483,6 +6487,10 @@
         <recordType>Account.Super_Stockist</recordType>
         <visible>true</visible>
     </recordTypeVisibilities>
+    <tabVisibilities>
+        <tab>Incentive_Slab_Manager</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
     <tabVisibilities>
         <tab>Incentive_Dashboard</tab>
         <visibility>DefaultOn</visibility>
