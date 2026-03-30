@@ -71,7 +71,15 @@ public with sharing class TAM_IncentiveDashboard_Controller {
 
     @AuraEnabled
     public static void runCalculation(String periodId) {
-        Database.executeBatch(new TAM_IncentiveCalculation_Batch(periodId), 50);
+        // Check if this is a yearly period — if so, also calculate annual bonus
+        Target_Period__c period = [SELECT Id, Type__c FROM Target_Period__c WHERE Id = :periodId];
+        Boolean calcBonus = (period.Type__c == 'Yearly');
+        Database.executeBatch(new TAM_IncentiveCalculation_Batch(periodId, calcBonus), 50);
+    }
+
+    @AuraEnabled
+    public static void runAnnualBonus(String periodId) {
+        TAM_IncentiveCalculation_Service.calculateAnnualBonus(periodId);
     }
 
     @AuraEnabled
