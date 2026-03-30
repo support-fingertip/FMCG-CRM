@@ -1,321 +1,254 @@
-import { LightningElement, api, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-
+import { LightningElement, track } from 'lwc';
+import { loadScript } from 'lightning/platformResourceLoader';
+import ChartJs from '@salesforce/resourceUrl/ChartJs';
+import getDashboardInit from '@salesforce/apex/AchievementDashboardController.getDashboardInit';
 import getTargetsAndAchievements from '@salesforce/apex/AchievementDashboardController.getTargetsAndAchievements';
+import getTrendData from '@salesforce/apex/AchievementDashboardController.getTrendData';
 import getLeaderboard from '@salesforce/apex/AchievementDashboardController.getLeaderboard';
 import getDrillDown from '@salesforce/apex/AchievementDashboardController.getDrillDown';
-
-const RING_CIRCUMFERENCE = 2 * Math.PI * 34; // r=34
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class AchievementDashboard extends LightningElement {
-    @api userId;
 
-    @track period = '';
-    @track selectedPeriod = 'Monthly';
-    @track selectedYear = new Date().getFullYear().toString();
-    @track targets = {};
-    @track achievements = {};
+    @track isLoading = false;
+    chartJsLoaded = false;
+
+    // Controls
+    @track periodOptions = [];
+    @track yearOptions = [];
+    selectedPeriod = '';
+    selectedYear = '';
+    currentUserId = '';
+
+    // Data
+    @track kpiCards = [];
+    @track totalPercent = 0;
     @track leaderboard = [];
-    @track drillDownData = [];
+    @track drillDown = [];
     @track trendData = [];
 
-    isLoading = false;
-
-    // KPI computed getters
-    get revenueKpi() {
-        return this.buildKpiData(
-            this.targets.revenue || 0,
-            this.achievements.revenue || 0,
-            true
-        );
-    }
-
-    get volumeKpi() {
-        return this.buildKpiData(
-            this.targets.volume || 0,
-            this.achievements.volume || 0,
-            false
-        );
-    }
-
-    get collectionKpi() {
-        return this.buildKpiData(
-            this.targets.collection || 0,
-            this.achievements.collection || 0,
-            true
-        );
-    }
-
-    get coverageKpi() {
-        return this.buildKpiData(
-            this.targets.coverage || 0,
-            this.achievements.coverage || 0,
-            false
-        );
-    }
-
-    get newOutletsKpi() {
-        return this.buildKpiData(
-            this.targets.newOutlets || 0,
-            this.achievements.newOutlets || 0,
-            false
-        );
-    }
-
-    get periodOptions() {
-        return [
-            { label: 'Monthly', value: 'Monthly' },
-            { label: 'Quarterly', value: 'Quarterly' }
-        ];
-    }
-
-    get yearOptions() {
-        const currentYear = new Date().getFullYear();
-        return [
-            { label: String(currentYear), value: String(currentYear) },
-            { label: String(currentYear - 1), value: String(currentYear - 1) }
-        ];
-    }
-
-    get hasDrillDownData() {
-        return this.drillDownData && this.drillDownData.length > 0;
-    }
+    // Charts
+    trendChart = null;
+    kpiChart = null;
 
     connectedCallback() {
-        this.loadDashboard();
+        this.loadChartJs();
+        this.loadInit();
     }
 
-    async loadDashboard() {
+    loadChartJs() {
+        loadScript(this, ChartJs)
+            .then(() => { this.chartJsLoaded = true; })
+            .catch(() => { this.showToast('Error', 'Failed to load Chart.js', 'error'); });
+    }
+
+    loadInit() {
         this.isLoading = true;
-        try {
-            await Promise.all([
-                this.loadTargetsAndAchievements(),
-                this.loadLeaderboardData(),
-                this.loadDrillDownData()
-            ]);
-            this.buildTrendChart();
-        } catch (error) {
-            console.error('Dashboard load error:', error);
-        } finally {
-            this.isLoading = false;
-        }
+        getDashboardInit()
+            .then(result => {
+                const periods = result.periods || [];
+                this.periodOptions = periods.map(p => ({ label: p.Name, value: p.Id }));
+                this.selectedPeriod = result.currentPeriodId || '';
+                this.currentUserId = result.currentUserId || '';
+                this.selectedYear = String(result.currentYear || new Date().getFullYear());
+
+                const cy = Number(this.selectedYear);
+                this.yearOptions = [
+                    { label: String(cy), value: String(cy) },
+                    { label: String(cy - 1), value: String(cy - 1) },
+                    { label: String(cy - 2), value: String(cy - 2) }
+                ];
+
+                this.loadAllData();
+            })
+            .catch(e => {
+                this.showToast('Error', e?.body?.message || 'Failed to initialize', 'error');
+                this.isLoading = false;
+            });
     }
 
-    async loadTargetsAndAchievements() {
-        try {
-            const result = await getTargetsAndAchievements({
-                userId: this.userId,
-                period: this.selectedPeriod,
-                year: parseInt(this.selectedYear, 10)
-            });
-            if (result) {
-                this.targets = {
-                    revenue: result.Revenue_Target__c || 0,
-                    volume: result.Volume_Target__c || 0,
-                    collection: result.Collection_Target__c || 0,
-                    coverage: result.Coverage_Target__c || 0,
-                    newOutlets: result.New_Outlet_Target__c || 0
-                };
-                this.achievements = {
-                    revenue: result.Revenue_Actual__c || 0,
-                    volume: result.Volume_Actual__c || 0,
-                    collection: result.Collection_Actual__c || 0,
-                    coverage: result.Coverage_Actual__c || 0,
-                    newOutlets: result.New_Outlet_Actual__c || 0
-                };
-            }
-        } catch (error) {
-            console.error('Error loading targets:', error);
-        }
+    loadAllData() {
+        this.isLoading = true;
+        Promise.all([
+            getTargetsAndAchievements({ userId: this.currentUserId, periodId: this.selectedPeriod }),
+            getLeaderboard({ periodId: this.selectedPeriod }),
+            getDrillDown({ userId: this.currentUserId, periodId: this.selectedPeriod }),
+            getTrendData({ userId: this.currentUserId, year: Number(this.selectedYear) })
+        ]).then(([kpiData, leaderboardData, drillDownData, trendData]) => {
+            this.processKpiData(kpiData);
+            this.processLeaderboard(leaderboardData);
+            this.drillDown = drillDownData || [];
+            this.trendData = trendData || [];
+
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => { this.renderCharts(); }, 300);
+        })
+        .catch(e => { this.showToast('Error', e?.body?.message || 'Failed to load data', 'error'); })
+        .finally(() => { this.isLoading = false; });
     }
 
-    async loadLeaderboardData() {
-        try {
-            const result = await getLeaderboard({
-                period: this.selectedPeriod,
-                year: parseInt(this.selectedYear, 10)
-            });
-            this.leaderboard = (result || []).map((person, index) => {
-                const achievement = this.calculatePercentage(
-                    person.Revenue_Actual__c || 0,
-                    person.Revenue_Target__c || 1
-                );
-                return {
-                    id: person.Id || 'person_' + index,
-                    rank: index + 1,
-                    name: person.User_Name__c || person.Name || 'Salesperson',
-                    territory: person.Territory__c || '',
-                    achievementPercent: achievement,
-                    revenueFormatted: this.formatCurrencyShort(person.Revenue_Actual__c || 0),
-                    rankClass: this.getRankClass(index + 1),
-                    achievementBadge: this.getAchievementBadgeClass(achievement),
-                    progressStyle: 'width: ' + Math.min(achievement, 100) + '%; background-color: ' + this.getProgressColor(achievement)
-                };
-            });
-        } catch (error) {
-            console.error('Error loading leaderboard:', error);
-        }
-    }
+    // ===== DATA PROCESSING =====
+    processKpiData(data) {
+        if (!data) { this.kpiCards = []; return; }
 
-    async loadDrillDownData() {
-        try {
-            const result = await getDrillDown({
-                userId: this.userId,
-                period: this.selectedPeriod,
-                year: parseInt(this.selectedYear, 10)
-            });
-            this.drillDownData = (result || []).map((row, index) => {
-                const achievement = this.calculatePercentage(
-                    row.Revenue_Actual__c || 0,
-                    row.Revenue_Target__c || 1
-                );
-                const isTerritory = row.Is_Territory__c || false;
-                return {
-                    id: row.Id || 'drill_' + index,
-                    name: row.Name,
-                    isTerritory: isTerritory,
-                    revenueTargetFormatted: this.formatCurrencyShort(row.Revenue_Target__c || 0),
-                    revenueActualFormatted: this.formatCurrencyShort(row.Revenue_Actual__c || 0),
-                    achievementPercent: achievement,
-                    volumeFormatted: this.formatNumber(row.Volume_Actual__c || 0),
-                    collectionFormatted: this.formatCurrencyShort(row.Collection_Actual__c || 0),
-                    coveragePercent: row.Coverage_Percent__c || 0,
-                    rowClass: isTerritory ? 'territory-row' : 'person-row',
-                    nameClass: isTerritory ? 'territory-name' : 'person-indent-name',
-                    progressStyle: 'width: ' + Math.min(achievement, 100) + '%; background-color: ' + this.getProgressColor(achievement),
-                    achievementBadge: this.getAchievementBadgeClass(achievement)
-                };
-            });
-        } catch (error) {
-            console.error('Error loading drill-down:', error);
-        }
-    }
+        const criteria = data.criteria || [];
+        const colors = ['#0176d3', '#2e844a', '#7e5cef', '#e65100', '#c23934', '#00796b'];
 
-    buildTrendChart() {
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const currentMonth = new Date().getMonth();
-        const maxMonths = this.selectedPeriod === 'Monthly' ? 12 : 4;
-        const displayMonths = months.slice(0, Math.min(currentMonth + 1, maxMonths));
-
-        const maxValue = this.targets.revenue || 1000000;
-        const chartHeight = 190;
-        const barWidth = 22;
-        const groupWidth = 55;
-        const startX = 70;
-
-        this.trendData = displayMonths.map((monthLabel, index) => {
-            const targetValue = (this.targets.revenue || 0) / 12;
-            const actualValue = index <= currentMonth
-                ? (this.achievements.revenue || 0) * ((index + 1) / (currentMonth + 1)) * (0.7 + Math.random() * 0.6)
-                : 0;
-
-            const targetHeight = Math.max((targetValue / maxValue) * chartHeight, 2);
-            const actualHeight = Math.max((actualValue / maxValue) * chartHeight, 2);
-            const actualPercent = targetValue > 0 ? (actualValue / targetValue) * 100 : 0;
+        this.kpiCards = criteria.map((c, i) => {
+            const pct = Number(c.percent) || 0;
+            const circumference = 2 * Math.PI * 34;
+            const offset = circumference - (circumference * Math.min(pct, 100) / 100);
 
             return {
-                month: monthLabel,
-                monthLabel: monthLabel,
-                targetX: startX + index * groupWidth,
-                targetY: 210 - targetHeight,
-                targetHeight: targetHeight,
-                actualX: startX + index * groupWidth + barWidth + 2,
-                actualY: 210 - actualHeight,
-                actualHeight: actualHeight,
-                labelX: startX + index * groupWidth + barWidth + 1,
-                barColor: this.getProgressColor(actualPercent)
+                key: c.name,
+                name: c.name,
+                category: c.category || '',
+                target: this.formatNumber(c.target),
+                actual: this.formatNumber(c.actual),
+                percent: pct,
+                color: colors[i % colors.length],
+                ringOffset: offset,
+                ringCircumference: circumference,
+                percentClass: pct >= 100 ? 'ad-pct-green' : pct >= 70 ? 'ad-pct-amber' : 'ad-pct-red'
+            };
+        });
+
+        this.totalPercent = Number(data.totalPercent) || 0;
+    }
+
+    processLeaderboard(data) {
+        this.leaderboard = (data || []).map((row, idx) => {
+            const pct = Number(row.percent) || 0;
+            return {
+                ...row,
+                rank: idx + 1,
+                percentDisplay: pct.toFixed(1),
+                actualDisplay: this.formatNumber(row.actual),
+                progressWidth: `width: ${Math.min(pct, 100)}%`,
+                rankClass: idx === 0 ? 'ad-rank-gold' : idx === 1 ? 'ad-rank-silver' : idx === 2 ? 'ad-rank-bronze' : 'ad-rank-default'
             };
         });
     }
 
-    buildKpiData(target, actual, isCurrency) {
-        const percent = this.calculatePercentage(actual, target);
-        const cappedPercent = Math.min(percent, 100);
-        const dashOffset = RING_CIRCUMFERENCE - (cappedPercent / 100) * RING_CIRCUMFERENCE;
-
-        return {
-            target: target,
-            actual: actual,
-            percent: percent,
-            targetFormatted: isCurrency ? this.formatCurrencyShort(target) : this.formatNumber(target),
-            actualFormatted: isCurrency ? this.formatCurrencyShort(actual) : this.formatNumber(actual),
-            dashArray: RING_CIRCUMFERENCE.toFixed(2),
-            dashOffset: dashOffset.toFixed(2),
-            ringClass: 'progress-ring-circle ' + this.getProgressRingClass(percent),
-            badgeClass: this.getAchievementBadgeClass(percent)
-        };
+    // ===== CHARTS =====
+    renderCharts() {
+        if (!this.chartJsLoaded) return;
+        this.renderTrendChart();
+        this.renderKpiChart();
     }
 
-    calculatePercentage(actual, target) {
-        if (!target || target === 0) return 0;
-        return Math.round((actual / target) * 100);
+    renderTrendChart() {
+        const canvas = this.template.querySelector('.ad-trend-canvas');
+        if (!canvas || !this.trendData.length) return;
+
+        if (this.trendChart) this.trendChart.destroy();
+
+        this.trendChart = new window.Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: this.trendData.map(d => d.label),
+                datasets: [
+                    {
+                        label: 'Target',
+                        data: this.trendData.map(d => d.target || 0),
+                        backgroundColor: 'rgba(1, 118, 211, 0.3)',
+                        borderColor: '#0176d3',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Achievement',
+                        data: this.trendData.map(d => d.actual || 0),
+                        backgroundColor: 'rgba(46, 132, 74, 0.6)',
+                        borderColor: '#2e844a',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { font: { size: 12 } } } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { font: { size: 11 } } },
+                    x: { ticks: { font: { size: 11 } } }
+                }
+            }
+        });
     }
 
-    calculatePercentages(data) {
-        // Batch percentage calculation utility
-        return Object.keys(data).reduce((result, key) => {
-            result[key] = this.calculatePercentage(data[key].actual, data[key].target);
-            return result;
-        }, {});
+    renderKpiChart() {
+        const canvas = this.template.querySelector('.ad-kpi-canvas');
+        if (!canvas || !this.kpiCards.length) return;
+
+        if (this.kpiChart) this.kpiChart.destroy();
+
+        this.kpiChart = new window.Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: this.kpiCards.map(k => k.name),
+                datasets: [{
+                    data: this.kpiCards.map(k => Number(k.percent) || 0),
+                    backgroundColor: this.kpiCards.map(k => k.color),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } } }
+            }
+        });
     }
 
-    getProgressColor(percent) {
-        if (percent >= 90) return '#2e844a';
-        if (percent >= 70) return '#dd7a01';
-        return '#ea001e';
-    }
-
-    getProgressRingClass(percent) {
-        if (percent >= 90) return 'ring-green';
-        if (percent >= 70) return 'ring-amber';
-        return 'ring-red';
-    }
-
-    getAchievementBadgeClass(percent) {
-        if (percent >= 90) return 'achievement-badge badge-green';
-        if (percent >= 70) return 'achievement-badge badge-amber';
-        return 'achievement-badge badge-red';
-    }
-
-    getRankClass(rank) {
-        if (rank === 1) return 'rank-badge rank-gold';
-        if (rank === 2) return 'rank-badge rank-silver';
-        if (rank === 3) return 'rank-badge rank-bronze';
-        return 'rank-badge rank-default';
-    }
-
+    // ===== EVENT HANDLERS =====
     handlePeriodChange(event) {
-        this.selectedPeriod = event.detail.value;
-        this.loadDashboard();
+        this.selectedPeriod = event.target.value;
+        this.loadAllData();
     }
 
     handleYearChange(event) {
-        this.selectedYear = event.detail.value;
-        this.loadDashboard();
+        this.selectedYear = event.target.value;
+        this.loadAllData();
     }
 
-    handleRefresh() {
-        this.loadDashboard();
+    handleRefresh() { this.loadAllData(); }
+
+    // ===== GETTERS =====
+    get hasKpiCards() { return this.kpiCards.length > 0; }
+    get hasLeaderboard() { return this.leaderboard.length > 0; }
+    get hasDrillDown() { return this.drillDown.length > 0; }
+    get hasTrendData() { return this.trendData.length > 0; }
+
+    get totalPercentClass() {
+        return this.totalPercent >= 100 ? 'ad-pct-green' : this.totalPercent >= 70 ? 'ad-pct-amber' : 'ad-pct-red';
     }
 
-    formatCurrencyShort(value) {
-        if (!value) return '0';
-        if (value >= 10000000) {
-            return (value / 10000000).toFixed(1) + ' Cr';
-        }
-        if (value >= 100000) {
-            return (value / 100000).toFixed(1) + ' L';
-        }
-        if (value >= 1000) {
-            return (value / 1000).toFixed(1) + ' K';
-        }
-        return new Intl.NumberFormat('en-IN').format(Math.round(value));
+    get computedDrillDown() {
+        return this.drillDown.map(row => {
+            const pct = Number(row.percent) || 0;
+            return {
+                ...row,
+                percentDisplay: pct.toFixed(1),
+                targetDisplay: this.formatNumber(row.target),
+                actualDisplay: this.formatNumber(row.actual),
+                progressWidth: `width: ${Math.min(pct, 100)}%`,
+                percentClass: pct >= 100 ? 'ad-pct-green' : pct >= 70 ? 'ad-pct-amber' : 'ad-pct-red'
+            };
+        });
     }
 
-    formatNumber(value) {
-        if (!value) return '0';
-        return new Intl.NumberFormat('en-IN').format(Math.round(value));
+    // ===== HELPERS =====
+    formatNumber(val) {
+        if (val == null) return '0';
+        val = Number(val);
+        if (val >= 10000000) return (val / 10000000).toFixed(1) + 'Cr';
+        if (val >= 100000) return (val / 100000).toFixed(1) + 'L';
+        if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+        return String(Math.round(val));
     }
 
     showToast(title, message, variant) {

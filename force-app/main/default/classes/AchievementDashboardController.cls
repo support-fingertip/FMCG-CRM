@@ -1,127 +1,164 @@
 /**
  * @description Controller for the Achievement Dashboard LWC component.
- *              Provides targets vs achievements, leaderboard ranking, and
- *              territory drill-down using the dynamic Target_Actual__c model.
- *
- *              Replaces the legacy Target__c-based implementation with
- *              criteria-driven Target_Actual__c + Target_Criteria__c data.
+ *              Provides targets vs achievements, leaderboard ranking, territory
+ *              drill-down, and monthly trend data using the dynamic Target_Actual__c model.
  *
  * @author  SFA Development Team
  * @date    2024
  */
 public with sharing class AchievementDashboardController {
 
-    // ── Get Targets and Achievements (Aggregated) ─────────────────────────────
+    // ── Get Targets and Achievements ────────────────────────────────
 
-    /**
-     * @description Retrieves aggregated target and achievement values for a user
-     *              in a given period, grouped by Target_Criteria__c name.
-     *              Returns a single map with keys like Revenue_Target__c, Revenue_Actual__c, etc.
-     * @param userId The User Id.
-     * @param period The period type ('Monthly' or 'Quarterly').
-     * @param year   The four-digit year integer.
-     * @return Map of aggregated KPI metric names to their values.
-     */
-    @AuraEnabled(cacheable=true)
-    public static Map<String, Object> getTargetsAndAchievements(Id userId, String period, Integer year) {
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Object> getTargetsAndAchievements(Id userId, String periodId) {
         Map<String, Object> result = new Map<String, Object>();
 
-        // Derive date range
-        Date startDate;
-        Date endDate;
-        if (period == 'Quarterly') {
-            Integer currentMonth = Date.today().month();
-            Integer quarterStart = ((currentMonth - 1) / 3) * 3 + 1;
-            startDate = Date.newInstance(year, quarterStart, 1);
-            endDate = startDate.addMonths(3).addDays(-1);
-        } else {
-            // Monthly — use current month
-            Integer currentMonth = Date.today().month();
-            startDate = Date.newInstance(year, currentMonth, 1);
-            endDate = startDate.addMonths(1).addDays(-1);
+        if (String.isBlank(periodId)) {
+            List<Target_Period__c> current = [
+                SELECT Id FROM Target_Period__c
+                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY LIMIT 1
+            ];
+            if (current.isEmpty()) return result;
+            periodId = current[0].Id;
         }
 
-        // Query target actuals for the user within the period
         List<Target_Actual__c> actuals = [
             SELECT Id, Target_Value__c, Achievement_Value__c,
-                   Target_Criteria__c, Target_Criteria__r.Name
+                   Target_Criteria__c, Target_Criteria__r.Name,
+                   Target_Criteria__r.Category__c,
+                   Teams_Target__c, Teams_Achievement__c
             FROM Target_Actual__c
             WHERE User__c = :userId
-            AND Target_Period__r.Start_Date__c >= :startDate
-            AND Target_Period__r.End_Date__c <= :endDate
+            AND Target_Period__c = :periodId
             AND Target_Criteria__r.Active__c = true
         ];
 
-        // Aggregate by criteria name
-        Map<String, Decimal> targetMap = new Map<String, Decimal>();
-        Map<String, Decimal> achievementMap = new Map<String, Decimal>();
+        // Build per-criteria aggregation
+        List<Map<String, Object>> criteriaList = new List<Map<String, Object>>();
+        Decimal totalTarget = 0, totalAchievement = 0;
 
         for (Target_Actual__c ta : actuals) {
-            String criteriaName = ta.Target_Criteria__r.Name;
-            if (String.isBlank(criteriaName)) continue;
-
-            // Normalize name for key (e.g., "Revenue Target" → "Revenue")
-            String key = criteriaName.trim();
+            String name = ta.Target_Criteria__r.Name;
+            if (String.isBlank(name)) continue;
 
             Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
             Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
+            Decimal ttv = ta.Teams_Target__c != null ? ta.Teams_Target__c : 0;
+            Decimal tav = ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0;
+            Decimal pct = tv > 0 ? (av / tv * 100).setScale(1, RoundingMode.HALF_UP) : 0;
 
-            targetMap.put(key, (targetMap.containsKey(key) ? targetMap.get(key) : 0) + tv);
-            achievementMap.put(key, (achievementMap.containsKey(key) ? achievementMap.get(key) : 0) + av);
+            Map<String, Object> item = new Map<String, Object>();
+            item.put('name', name);
+            item.put('category', ta.Target_Criteria__r.Category__c);
+            item.put('target', tv);
+            item.put('actual', av);
+            item.put('teamsTarget', ttv);
+            item.put('teamsActual', tav);
+            item.put('percent', pct);
+            criteriaList.add(item);
+
+            totalTarget += tv;
+            totalAchievement += av;
         }
 
-        // Map to expected LWC field names
-        result.put('Revenue_Target__c', targetMap.get('Revenue') != null ? targetMap.get('Revenue') : 0);
-        result.put('Revenue_Actual__c', achievementMap.get('Revenue') != null ? achievementMap.get('Revenue') : 0);
-        result.put('Volume_Target__c', targetMap.get('Volume') != null ? targetMap.get('Volume') : 0);
-        result.put('Volume_Actual__c', achievementMap.get('Volume') != null ? achievementMap.get('Volume') : 0);
-        result.put('Collection_Target__c', targetMap.get('Collection') != null ? targetMap.get('Collection') : 0);
-        result.put('Collection_Actual__c', achievementMap.get('Collection') != null ? achievementMap.get('Collection') : 0);
-        result.put('Coverage_Target__c', targetMap.get('Coverage') != null ? targetMap.get('Coverage') : 0);
-        result.put('Coverage_Actual__c', achievementMap.get('Coverage') != null ? achievementMap.get('Coverage') : 0);
-        result.put('New_Outlet_Target__c', targetMap.get('New Outlets') != null ? targetMap.get('New Outlets') : 0);
-        result.put('New_Outlet_Actual__c', achievementMap.get('New Outlets') != null ? achievementMap.get('New Outlets') : 0);
+        result.put('criteria', criteriaList);
+        result.put('totalTarget', totalTarget);
+        result.put('totalAchievement', totalAchievement);
+        result.put('totalPercent', totalTarget > 0
+            ? (totalAchievement / totalTarget * 100).setScale(1, RoundingMode.HALF_UP) : 0);
 
         return result;
     }
 
-    // ── Get Leaderboard ───────────────────────────────────────────────────────
+    // ── Get Monthly Trend Data (REAL data, not random) ──────────────
 
-    /**
-     * @description Retrieves a leaderboard of top performers for a given period,
-     *              ranked by revenue achievement percentage.
-     * @param period The period type ('Monthly' or 'Quarterly').
-     * @param year   The four-digit year integer.
-     * @return List of maps representing top performers.
-     */
-    @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getLeaderboard(String period, Integer year) {
-        List<Map<String, Object>> results = new List<Map<String, Object>>();
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getTrendData(Id userId, Integer year) {
+        List<Map<String, Object>> trend = new List<Map<String, Object>>();
 
-        Date startDate;
-        Date endDate;
-        if (period == 'Quarterly') {
-            Integer currentMonth = Date.today().month();
-            Integer quarterStart = ((currentMonth - 1) / 3) * 3 + 1;
-            startDate = Date.newInstance(year, quarterStart, 1);
-            endDate = startDate.addMonths(3).addDays(-1);
-        } else {
-            Integer currentMonth = Date.today().month();
-            startDate = Date.newInstance(year, currentMonth, 1);
-            endDate = startDate.addMonths(1).addDays(-1);
+        // Get all monthly periods for the year
+        Date yearStart = Date.newInstance(year, 1, 1);
+        Date yearEnd = Date.newInstance(year, 12, 31);
+
+        List<Target_Period__c> monthlyPeriods = [
+            SELECT Id, Name, Start_Date__c
+            FROM Target_Period__c
+            WHERE Type__c = 'Monthly'
+            AND Start_Date__c >= :yearStart
+            AND End_Date__c <= :yearEnd
+            ORDER BY Start_Date__c ASC
+        ];
+
+        if (monthlyPeriods.isEmpty()) return trend;
+
+        Set<Id> periodIds = new Set<Id>();
+        for (Target_Period__c p : monthlyPeriods) periodIds.add(p.Id);
+
+        // Aggregate target and achievement by period
+        List<AggregateResult> aggs = [
+            SELECT Target_Period__c periodId,
+                   SUM(Target_Value__c) totalTarget,
+                   SUM(Achievement_Value__c) totalActual
+            FROM Target_Actual__c
+            WHERE User__c = :userId
+            AND Target_Period__c IN :periodIds
+            AND Target_Criteria__r.Active__c = true
+            GROUP BY Target_Period__c
+        ];
+
+        Map<Id, Map<String, Decimal>> periodDataMap = new Map<Id, Map<String, Decimal>>();
+        for (AggregateResult ar : aggs) {
+            Id pid = (Id) ar.get('periodId');
+            Map<String, Decimal> data = new Map<String, Decimal>();
+            data.put('target', (Decimal) ar.get('totalTarget'));
+            data.put('actual', (Decimal) ar.get('totalActual'));
+            periodDataMap.put(pid, data);
         }
 
-        // Get revenue criteria targets grouped by user
+        String[] monthNames = new String[]{
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        };
+
+        for (Target_Period__c p : monthlyPeriods) {
+            Map<String, Object> row = new Map<String, Object>();
+            Integer monthIndex = p.Start_Date__c.month() - 1;
+            row.put('label', monthNames[monthIndex]);
+            row.put('periodId', p.Id);
+
+            if (periodDataMap.containsKey(p.Id)) {
+                Map<String, Decimal> data = periodDataMap.get(p.Id);
+                row.put('target', data.get('target') != null ? data.get('target') : 0);
+                row.put('actual', data.get('actual') != null ? data.get('actual') : 0);
+            } else {
+                row.put('target', 0);
+                row.put('actual', 0);
+            }
+
+            trend.add(row);
+        }
+
+        return trend;
+    }
+
+    // ── Get Leaderboard ─────────────────────────────────────────────
+
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getLeaderboard(String periodId) {
+        List<Map<String, Object>> results = new List<Map<String, Object>>();
+
+        if (String.isBlank(periodId)) return results;
+
         List<AggregateResult> aggResults = [
             SELECT User__c userId,
                    User__r.Name userName,
                    SUM(Target_Value__c) totalTarget,
                    SUM(Achievement_Value__c) totalAchievement
             FROM Target_Actual__c
-            WHERE Target_Period__r.Start_Date__c >= :startDate
-            AND Target_Period__r.End_Date__c <= :endDate
+            WHERE Target_Period__c = :periodId
             AND Target_Criteria__r.Active__c = true
-            AND Target_Criteria__r.Name = 'Revenue'
+            AND Target_Value__c > 0
             GROUP BY User__c, User__r.Name
             ORDER BY SUM(Achievement_Value__c) DESC
             LIMIT 20
@@ -129,18 +166,16 @@ public with sharing class AchievementDashboardController {
 
         for (AggregateResult ar : aggResults) {
             Map<String, Object> row = new Map<String, Object>();
-            row.put('Id', (Id) ar.get('userId'));
-            row.put('User_Name__c', (String) ar.get('userName'));
-            row.put('Name', (String) ar.get('userName'));
+            Decimal tt = (Decimal) ar.get('totalTarget');
+            Decimal ta = (Decimal) ar.get('totalAchievement');
+            tt = tt != null ? tt : 0;
+            ta = ta != null ? ta : 0;
 
-            Decimal totalTarget = (Decimal) ar.get('totalTarget');
-            Decimal totalAchievement = (Decimal) ar.get('totalAchievement');
-            totalTarget = totalTarget != null ? totalTarget : 0;
-            totalAchievement = totalAchievement != null ? totalAchievement : 0;
-
-            row.put('Revenue_Target__c', totalTarget);
-            row.put('Revenue_Actual__c', totalAchievement);
-            row.put('Territory__c', '');
+            row.put('userId', (Id) ar.get('userId'));
+            row.put('name', (String) ar.get('userName'));
+            row.put('target', tt);
+            row.put('actual', ta);
+            row.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
 
             results.add(row);
         }
@@ -148,86 +183,75 @@ public with sharing class AchievementDashboardController {
         return results;
     }
 
-    // ── Get Drill-Down ────────────────────────────────────────────────────────
+    // ── Get Team Drill-Down ─────────────────────────────────────────
 
-    /**
-     * @description Retrieves a user-level breakdown of targets and achievements
-     *              for the subordinates of a given user (manager view).
-     * @param userId The manager's User Id.
-     * @param period The period type.
-     * @param year   The four-digit year integer.
-     * @return List of maps with per-user target/achievement breakdowns.
-     */
-    @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getDrillDown(Id userId, String period, Integer year) {
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getDrillDown(Id userId, String periodId) {
         List<Map<String, Object>> results = new List<Map<String, Object>>();
 
-        Date startDate;
-        Date endDate;
-        if (period == 'Quarterly') {
-            Integer currentMonth = Date.today().month();
-            Integer quarterStart = ((currentMonth - 1) / 3) * 3 + 1;
-            startDate = Date.newInstance(year, quarterStart, 1);
-            endDate = startDate.addMonths(3).addDays(-1);
-        } else {
-            Integer currentMonth = Date.today().month();
-            startDate = Date.newInstance(year, currentMonth, 1);
-            endDate = startDate.addMonths(1).addDays(-1);
-        }
+        if (String.isBlank(periodId)) return results;
 
-        // Get subordinate users
         Set<Id> subordinateIds = TAM_RoleHierarchy_Service.getRoleSubordinateUsers(userId);
+        subordinateIds.remove(userId); // Exclude self
 
         if (subordinateIds.isEmpty()) return results;
 
-        // Get all target actuals for subordinates
-        List<Target_Actual__c> allActuals = [
-            SELECT Id, User__c, User__r.Name,
-                   Target_Value__c, Achievement_Value__c,
-                   Target_Criteria__c, Target_Criteria__r.Name
+        // Aggregate per subordinate across all criteria
+        List<AggregateResult> aggs = [
+            SELECT User__c userId, User__r.Name userName,
+                   SUM(Target_Value__c) totalTarget,
+                   SUM(Achievement_Value__c) totalAchievement
             FROM Target_Actual__c
-            WHERE User__c IN :subordinateIds
-            AND Target_Period__r.Start_Date__c >= :startDate
-            AND Target_Period__r.End_Date__c <= :endDate
+            WHERE Target_Period__c = :periodId
+            AND User__c IN :subordinateIds
             AND Target_Criteria__r.Active__c = true
+            GROUP BY User__c, User__r.Name
+            ORDER BY User__r.Name
         ];
 
-        // Group by user, then by criteria name
-        Map<Id, Map<String, Object>> userDataMap = new Map<Id, Map<String, Object>>();
+        for (AggregateResult ar : aggs) {
+            Map<String, Object> row = new Map<String, Object>();
+            Decimal tt = (Decimal) ar.get('totalTarget');
+            Decimal ta = (Decimal) ar.get('totalAchievement');
+            tt = tt != null ? tt : 0;
+            ta = ta != null ? ta : 0;
 
-        for (Target_Actual__c ta : allActuals) {
-            if (!userDataMap.containsKey(ta.User__c)) {
-                Map<String, Object> userData = new Map<String, Object>();
-                userData.put('Id', ta.User__c);
-                userData.put('Name', ta.User__r.Name);
-                userData.put('Is_Territory__c', false);
-                userData.put('Revenue_Target__c', 0);
-                userData.put('Revenue_Actual__c', 0);
-                userData.put('Volume_Actual__c', 0);
-                userData.put('Collection_Actual__c', 0);
-                userData.put('Coverage_Percent__c', 0);
-                userDataMap.put(ta.User__c, userData);
-            }
+            row.put('userId', (Id) ar.get('userId'));
+            row.put('name', (String) ar.get('userName'));
+            row.put('target', tt);
+            row.put('actual', ta);
+            row.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
 
-            Map<String, Object> userData = userDataMap.get(ta.User__c);
-            String criteriaName = ta.Target_Criteria__r.Name;
-            Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
-            Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
-
-            if (criteriaName == 'Revenue') {
-                userData.put('Revenue_Target__c', (Decimal) userData.get('Revenue_Target__c') + tv);
-                userData.put('Revenue_Actual__c', (Decimal) userData.get('Revenue_Actual__c') + av);
-            } else if (criteriaName == 'Volume') {
-                userData.put('Volume_Actual__c', (Decimal) userData.get('Volume_Actual__c') + av);
-            } else if (criteriaName == 'Collection') {
-                userData.put('Collection_Actual__c', (Decimal) userData.get('Collection_Actual__c') + av);
-            } else if (criteriaName == 'Coverage') {
-                Decimal coverageTarget = tv > 0 ? tv : 1;
-                userData.put('Coverage_Percent__c', (av / coverageTarget * 100).setScale(1, RoundingMode.HALF_UP));
-            }
+            results.add(row);
         }
 
-        results.addAll(userDataMap.values());
         return results;
+    }
+
+    // ── Get Dashboard Init Data ─────────────────────────────────────
+
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Object> getDashboardInit() {
+        Map<String, Object> result = new Map<String, Object>();
+
+        result.put('periods', [
+            SELECT Id, Name, Type__c, Start_Date__c, End_Date__c
+            FROM Target_Period__c
+            WHERE Is_Active__c = true
+            ORDER BY Start_Date__c DESC
+            LIMIT 24
+        ]);
+
+        List<Target_Period__c> current = [
+            SELECT Id FROM Target_Period__c
+            WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+            AND Type__c = 'Monthly'
+            LIMIT 1
+        ];
+        result.put('currentPeriodId', current.isEmpty() ? '' : current[0].Id);
+        result.put('currentUserId', UserInfo.getUserId());
+        result.put('currentYear', Date.today().year());
+
+        return result;
     }
 }
