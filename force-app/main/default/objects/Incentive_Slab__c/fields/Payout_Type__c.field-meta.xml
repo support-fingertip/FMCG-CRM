@@ -20,7 +20,13 @@
                 <default>false</default>
                 <label>Fixed Amount</label>
             </value>
+            <value>
+                <fullName>Salary Percentage</fullName>
+                <default>false</default>
+                <label>Salary Percentage</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
-    <description>Whether payout is a percentage of target value or a fixed amount.</description>
+    <inlineHelpText>Percentage: payout = Target Value x Slab% x Multiplier. Fixed Amount: payout = Slab Value x Multiplier. Salary Percentage: payout = Employee Gross Salary x Slab% x Multiplier (salary auto-scales for quarterly/annual periods).</inlineHelpText>
+    <description>Determines how the incentive payout is calculated. Salary Percentage uses the employee gross salary as the base.</description>
 </CustomField>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Profile_Name__c</fullName>
+    <label>Profile Name</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <inlineHelpText>Salesforce Profile name this slab applies to (e.g., "Custom: Field Sales Rep"). Leave blank for a universal slab that applies to all profiles. The system matches: 1) Criteria + Profile + Territory, 2) Criteria + Profile, 3) Criteria only, 4) Universal.</inlineHelpText>
+    <description>Profile-based slab targeting. Blank = applies to all profiles (universal fallback).</description>
+</CustomField>

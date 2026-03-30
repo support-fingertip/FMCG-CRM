@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Incentive_Weight__c</fullName>
+    <label>Incentive Weight (%)</label>
+    <precision>5</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <type>Percent</type>
+    <inlineHelpText>Percentage weight this criteria contributes to the total incentive pool. Example: Revenue=60%, S&amp;D Parameter=15%, Focus Brand=10%, Collection=15%. All weights across criteria should sum to 100%. If left blank, no weighting is applied and each criteria is calculated independently.</inlineHelpText>
+    <description>Incentive weightage for this criteria. Used to split total incentive across multiple KPIs. Blank = no weighting (independent calculation).</description>
+</CustomField>
