@@ -72,21 +72,24 @@ export default class TamCriteriaBuilder extends LightningElement {
 
     // ===== LIFECYCLE =====
     _closeDropdownsBound;
+    _dropdownJustOpened = false;
 
     connectedCallback() {
         this.loadCriteriaList();
         this.loadPrerequisiteOptions();
-        this._closeDropdownsBound = this._closeAllDropdowns.bind(this);
+        this._closeDropdownsBound = () => {
+            if (this._dropdownJustOpened) {
+                this._dropdownJustOpened = false;
+                return;
+            }
+            this.showObjectDropdown = false;
+            this.showPrerequisiteDropdown = false;
+        };
         document.addEventListener('click', this._closeDropdownsBound);
     }
 
     disconnectedCallback() {
         document.removeEventListener('click', this._closeDropdownsBound);
-    }
-
-    _closeAllDropdowns() {
-        this.showObjectDropdown = false;
-        this.showPrerequisiteDropdown = false;
     }
 
     loadPrerequisiteOptions() {
@@ -607,16 +610,16 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     handleSearchPrerequisite(event) {
-        event.stopPropagation();
         this.searchPrerequisite = event.target.value;
         this.showPrerequisiteDropdown = true;
         this.showObjectDropdown = false;
+        this._dropdownJustOpened = true;
     }
 
-    handleSearchPrerequisiteFocus(event) {
-        event.stopPropagation();
+    handleSearchPrerequisiteFocus() {
         this.showPrerequisiteDropdown = true;
         this.showObjectDropdown = false;
+        this._dropdownJustOpened = true;
     }
 
     handleSelectPrerequisite(event) {
@@ -628,10 +631,10 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     handleObjectSearch(event) {
-        event.stopPropagation();
         const search = (event.target.value || '').toLowerCase();
         this.objectSearchText = event.target.value;
         this.showPrerequisiteDropdown = false;
+        this._dropdownJustOpened = true;
         if (!search) {
             this.showObjectDropdown = false;
             this.filteredObjects = [];

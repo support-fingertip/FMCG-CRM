@@ -56,21 +56,25 @@ export default class TamIncentiveSlabManager extends LightningElement {
     ];
 
     _closeDropdownsBound;
+    _dropdownJustOpened = false;
 
     connectedCallback() {
         this.loadData();
-        this._closeDropdownsBound = this._closeAllDropdowns.bind(this);
+        this._closeDropdownsBound = () => {
+            if (this._dropdownJustOpened) {
+                this._dropdownJustOpened = false;
+                return;
+            }
+            this.showCriteriaDropdown = false;
+            this.showProfileDropdown = false;
+            this.showTerritoryDropdown = false;
+        };
+        // Use setTimeout to avoid catching the same click that opened the dropdown
         document.addEventListener('click', this._closeDropdownsBound);
     }
 
     disconnectedCallback() {
         document.removeEventListener('click', this._closeDropdownsBound);
-    }
-
-    _closeAllDropdowns() {
-        this.showCriteriaDropdown = false;
-        this.showProfileDropdown = false;
-        this.showTerritoryDropdown = false;
     }
 
     loadData() {
@@ -388,13 +392,13 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     handleSearchCriteria(event) {
-        event.stopPropagation();
         this.searchCriteria = event.target.value;
         this.showCriteriaDropdown = true;
         this.showProfileDropdown = false;
         this.showTerritoryDropdown = false;
+        this._dropdownJustOpened = true;
     }
-    handleSearchCriteriaFocus(event) { event.stopPropagation(); this.showCriteriaDropdown = true; this.showProfileDropdown = false; this.showTerritoryDropdown = false; }
+    handleSearchCriteriaFocus() { this.showCriteriaDropdown = true; this.showProfileDropdown = false; this.showTerritoryDropdown = false; this._dropdownJustOpened = true; }
     handleSelectCriteria(event) {
         const val = event.currentTarget.dataset.value;
         const label = event.currentTarget.dataset.label;
@@ -404,13 +408,13 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     handleSearchProfile(event) {
-        event.stopPropagation();
         this.searchProfile = event.target.value;
         this.showProfileDropdown = true;
         this.showCriteriaDropdown = false;
         this.showTerritoryDropdown = false;
+        this._dropdownJustOpened = true;
     }
-    handleSearchProfileFocus(event) { event.stopPropagation(); this.showProfileDropdown = true; this.showCriteriaDropdown = false; this.showTerritoryDropdown = false; }
+    handleSearchProfileFocus() { this.showProfileDropdown = true; this.showCriteriaDropdown = false; this.showTerritoryDropdown = false; this._dropdownJustOpened = true; }
     handleSelectProfile(event) {
         const val = event.currentTarget.dataset.value;
         const label = event.currentTarget.dataset.label;
@@ -420,13 +424,13 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     handleSearchTerritory(event) {
-        event.stopPropagation();
         this.searchTerritory = event.target.value;
         this.showTerritoryDropdown = true;
         this.showCriteriaDropdown = false;
         this.showProfileDropdown = false;
+        this._dropdownJustOpened = true;
     }
-    handleSearchTerritoryFocus(event) { event.stopPropagation(); this.showTerritoryDropdown = true; this.showCriteriaDropdown = false; this.showProfileDropdown = false; }
+    handleSearchTerritoryFocus() { this.showTerritoryDropdown = true; this.showCriteriaDropdown = false; this.showProfileDropdown = false; this._dropdownJustOpened = true; }
     handleSelectTerritory(event) {
         const val = event.currentTarget.dataset.value;
         const label = event.currentTarget.dataset.label;
