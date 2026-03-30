@@ -28,6 +28,30 @@
                 </div>
             </div>
 
+            <!-- Search Filters -->
+            <div class="ism-filters">
+                <div class="ism-filter-item">
+                    <lightning-combobox label="Target Criteria" value={filterCriteria}
+                        options={criteriaOptions} onchange={handleFilterCriteria}
+                        placeholder="All Criteria" variant="label-stacked"></lightning-combobox>
+                </div>
+                <div class="ism-filter-item">
+                    <lightning-combobox label="Profile" value={filterProfile}
+                        options={profileOptions} onchange={handleFilterProfile}
+                        placeholder="All Profiles" variant="label-stacked"></lightning-combobox>
+                </div>
+                <div class="ism-filter-item">
+                    <lightning-combobox label="Territory" value={filterTerritory}
+                        options={territoryOptions} onchange={handleFilterTerritory}
+                        placeholder="All Territories" variant="label-stacked"></lightning-combobox>
+                </div>
+                <div class="ism-filter-item">
+                    <lightning-combobox label="Payout Type" value={filterPayoutType}
+                        options={payoutTypeFilterOptions} onchange={handleFilterPayoutType}
+                        placeholder="All Types" variant="label-stacked"></lightning-combobox>
+                </div>
+            </div>
+
             <!-- Bulk Actions -->
             <template if:true={hasSelectedItems}>
                 <div class="ism-bulk-bar">
@@ -43,7 +67,7 @@
             </template>
 
             <!-- Table -->
-            <template if:true={hasSlabs}>
+            <template if:true={hasFilteredSlabs}>
                 <div class="ism-table-wrapper">
                     <table class="ism-table">
                         <thead>
@@ -131,14 +155,20 @@
                 </div>
             </template>
 
-            <template if:false={hasSlabs}>
+            <template if:false={hasFilteredSlabs}>
                 <template if:false={isLoading}>
                     <div class="ism-empty">
                         <lightning-icon icon-name="standard:empty" size="large"></lightning-icon>
-                        <h2>No Incentive Slabs Found</h2>
-                        <p>Create slab tiers to define how achievement percentages map to incentive payouts.</p>
-                        <lightning-button label="Create Slab" variant="brand" onclick={handleNewSlab}
-                            class="slds-m-top_medium"></lightning-button>
+                        <template if:true={hasSlabs}>
+                            <h2>No Slabs Match Filters</h2>
+                            <p>Try adjusting the filter criteria above.</p>
+                        </template>
+                        <template if:false={hasSlabs}>
+                            <h2>No Incentive Slabs Found</h2>
+                            <p>Create slab tiers to define how achievement percentages map to incentive payouts.</p>
+                            <lightning-button label="Create Slab" variant="brand" onclick={handleNewSlab}
+                                class="slds-m-top_medium"></lightning-button>
+                        </template>
                     </div>
                 </template>
             </template>

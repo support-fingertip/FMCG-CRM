@@ -20,6 +20,19 @@ export default class TamIncentiveSlabManager extends LightningElement {
     @track territoryOptions = [];
     @track selectedIds = new Set();
 
+    // Filters
+    @track filterCriteria = '';
+    @track filterProfile = '';
+    @track filterTerritory = '';
+    @track filterPayoutType = '';
+
+    payoutTypeFilterOptions = [
+        { label: '-- All Types --', value: '' },
+        { label: 'Percentage (of Target Value)', value: 'Percentage' },
+        { label: 'Fixed Amount', value: 'Fixed Amount' },
+        { label: 'Salary Percentage (of Gross Salary)', value: 'Salary Percentage' }
+    ];
+
     @track detail = {};
     @track form = {};
 
@@ -66,7 +79,23 @@ export default class TamIncentiveSlabManager extends LightningElement {
     }
 
     get displaySlabs() {
-        return this.slabList.map(s => ({
+        let list = this.slabList;
+
+        // Apply filters
+        if (this.filterCriteria) {
+            list = list.filter(s => s.Target_Criteria__c === this.filterCriteria);
+        }
+        if (this.filterProfile) {
+            list = list.filter(s => s.Profile_Name__c === this.filterProfile);
+        }
+        if (this.filterTerritory) {
+            list = list.filter(s => s.Territory__c === this.filterTerritory);
+        }
+        if (this.filterPayoutType) {
+            list = list.filter(s => s.Payout_Type__c === this.filterPayoutType);
+        }
+
+        return list.map(s => ({
             ...s,
             selected: this.selectedIds.has(s.Id),
             criteriaName: s.Target_Criteria__r?.Name || '',
@@ -79,6 +108,29 @@ export default class TamIncentiveSlabManager extends LightningElement {
                     ? `${s.Payout_Value__c}% of salary`
                     : `Fixed ${s.Payout_Value__c}`
         }));
+    }
+
+    get hasFilteredSlabs() { return this.displaySlabs.length > 0; }
+
+    // ===== FILTER HANDLERS =====
+    handleFilterCriteria(event) {
+        this.filterCriteria = event.target.value;
+        this.selectedIds = new Set();
+    }
+
+    handleFilterProfile(event) {
+        this.filterProfile = event.target.value;
+        this.selectedIds = new Set();
+    }
+
+    handleFilterTerritory(event) {
+        this.filterTerritory = event.target.value;
+        this.selectedIds = new Set();
+    }
+
+    handleFilterPayoutType(event) {
+        this.filterPayoutType = event.target.value;
+        this.selectedIds = new Set();
     }
 
     get isSaveDisabled() {

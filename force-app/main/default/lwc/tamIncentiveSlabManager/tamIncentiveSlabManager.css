@@ -13,6 +13,20 @@
 .ism-stat-inactive { color: #c23934; }
 .ism-stat-label { font-size: 11px; color: #6b6d70; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
+/* Filters */
+.ism-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.ism-filter-item {
+    min-width: 180px;
+    flex: 1;
+    max-width: 250px;
+}
+
 /* Bulk bar */
 .ism-bulk-bar { display: flex; align-items: center; gap: 8px; background: #eef4ff; border: 1px solid #0176d3; border-radius: 8px; padding: 10px 16px; margin-bottom: 12px; }
 .ism-bulk-count { font-size: 13px; font-weight: 600; color: #0176d3; margin-right: 8px; }
