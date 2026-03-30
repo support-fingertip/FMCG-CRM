@@ -36,6 +36,14 @@ export default class TamIncentiveSlabManager extends LightningElement {
     @track detail = {};
     @track form = {};
 
+    // Search state for form dropdowns
+    @track searchCriteria = '';
+    @track searchProfile = '';
+    @track searchTerritory = '';
+    @track showCriteriaDropdown = false;
+    @track showProfileDropdown = false;
+    @track showTerritoryDropdown = false;
+
     @track showDeleteConfirm = false;
     deleteTargetId = null;
     @track deleteTargetName = '';
@@ -172,6 +180,12 @@ export default class TamIncentiveSlabManager extends LightningElement {
             Payout_Type__c: 'Percentage', Payout_Value__c: 0, Multiplier__c: 1,
             Sort_Order__c: 0, Effective_From__c: '', Effective_To__c: '', Description__c: ''
         };
+        this.searchCriteria = '';
+        this.searchProfile = '';
+        this.searchTerritory = '';
+        this.showCriteriaDropdown = false;
+        this.showProfileDropdown = false;
+        this.showTerritoryDropdown = false;
         this.currentView = 'form';
     }
 
@@ -320,10 +334,80 @@ export default class TamIncentiveSlabManager extends LightningElement {
                     Effective_To__c: result.Effective_To__c || '',
                     Description__c: result.Description__c || ''
                 };
+                // Set search text from existing values
+                this.searchCriteria = result.Target_Criteria__r?.Name || '';
+                this.searchProfile = result.Profile_Name__c || '';
+                const tOpt = (this.territoryOptions || []).find(o => o.value === (result.Territory__c || ''));
+                this.searchTerritory = tOpt ? tOpt.label : '';
+                this.showCriteriaDropdown = false;
+                this.showProfileDropdown = false;
+                this.showTerritoryDropdown = false;
+
                 this.currentView = 'form';
             })
             .catch(e => this.showToast('Error', e?.body?.message || 'Failed', 'error'))
             .finally(() => { this.isLoading = false; });
+    }
+
+    // ===== SEARCHABLE DROPDOWNS =====
+    get filteredCriteriaSearch() {
+        const s = (this.searchCriteria || '').toLowerCase();
+        return (this.criteriaOptions || []).filter(o =>
+            o.value && o.label.toLowerCase().includes(s)
+        );
+    }
+
+    get filteredProfileSearch() {
+        const s = (this.searchProfile || '').toLowerCase();
+        return (this.profileOptions || []).filter(o =>
+            o.value && o.label.toLowerCase().includes(s)
+        );
+    }
+
+    get filteredTerritorySearch() {
+        const s = (this.searchTerritory || '').toLowerCase();
+        return (this.territoryOptions || []).filter(o =>
+            o.value && o.label.toLowerCase().includes(s)
+        );
+    }
+
+    handleSearchCriteria(event) {
+        this.searchCriteria = event.target.value;
+        this.showCriteriaDropdown = true;
+    }
+    handleSearchCriteriaFocus() { this.showCriteriaDropdown = true; }
+    handleSelectCriteria(event) {
+        const val = event.currentTarget.dataset.value;
+        const label = event.currentTarget.dataset.label;
+        this.form = { ...this.form, Target_Criteria__c: val || '' };
+        this.searchCriteria = label || '';
+        this.showCriteriaDropdown = false;
+    }
+
+    handleSearchProfile(event) {
+        this.searchProfile = event.target.value;
+        this.showProfileDropdown = true;
+    }
+    handleSearchProfileFocus() { this.showProfileDropdown = true; }
+    handleSelectProfile(event) {
+        const val = event.currentTarget.dataset.value;
+        const label = event.currentTarget.dataset.label;
+        this.form = { ...this.form, Profile_Name__c: val || '' };
+        this.searchProfile = label || '';
+        this.showProfileDropdown = false;
+    }
+
+    handleSearchTerritory(event) {
+        this.searchTerritory = event.target.value;
+        this.showTerritoryDropdown = true;
+    }
+    handleSearchTerritoryFocus() { this.showTerritoryDropdown = true; }
+    handleSelectTerritory(event) {
+        const val = event.currentTarget.dataset.value;
+        const label = event.currentTarget.dataset.label;
+        this.form = { ...this.form, Territory__c: val || '' };
+        this.searchTerritory = label || '';
+        this.showTerritoryDropdown = false;
     }
 
     handleFormInput(event) {

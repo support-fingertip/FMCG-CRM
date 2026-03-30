@@ -290,15 +290,76 @@
                     <div class="ism-form-grid">
                         <lightning-input label="Slab Name" value={form.Name}
                             data-field="Name" onchange={handleFormInput} required></lightning-input>
-                        <lightning-combobox label="Target Criteria" value={form.Target_Criteria__c}
-                            options={criteriaOptions} data-field="Target_Criteria__c"
-                            onchange={handleFormInput} placeholder="Universal (All Criteria)"></lightning-combobox>
-                        <lightning-combobox label="Profile" value={form.Profile_Name__c}
-                            options={profileOptions} data-field="Profile_Name__c"
-                            onchange={handleFormInput} placeholder="Universal (All Profiles)"></lightning-combobox>
-                        <lightning-combobox label="Territory" value={form.Territory__c}
-                            options={territoryOptions} data-field="Territory__c"
-                            onchange={handleFormInput} placeholder="Universal (All Territories)"></lightning-combobox>
+
+                        <!-- Searchable Target Criteria -->
+                        <div class="ism-search-box">
+                            <lightning-input type="text" label="Target Criteria"
+                                placeholder="Search criteria... (leave empty for Universal)"
+                                value={searchCriteria} onchange={handleSearchCriteria}
+                                onfocus={handleSearchCriteriaFocus}></lightning-input>
+                            <template if:true={showCriteriaDropdown}>
+                                <div class="ism-search-dropdown">
+                                    <div class="ism-search-option ism-search-universal"
+                                        onclick={handleSelectCriteria} data-value="" data-label="">
+                                        -- Universal (All Criteria) --
+                                    </div>
+                                    <template for:each={filteredCriteriaSearch} for:item="opt">
+                                        <div key={opt.value} class="ism-search-option"
+                                            onclick={handleSelectCriteria}
+                                            data-value={opt.value} data-label={opt.label}>
+                                            {opt.label}
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Searchable Profile -->
+                        <div class="ism-search-box">
+                            <lightning-input type="text" label="Profile"
+                                placeholder="Search profiles... (leave empty for Universal)"
+                                value={searchProfile} onchange={handleSearchProfile}
+                                onfocus={handleSearchProfileFocus}></lightning-input>
+                            <template if:true={showProfileDropdown}>
+                                <div class="ism-search-dropdown">
+                                    <div class="ism-search-option ism-search-universal"
+                                        onclick={handleSelectProfile} data-value="" data-label="">
+                                        -- Universal (All Profiles) --
+                                    </div>
+                                    <template for:each={filteredProfileSearch} for:item="opt">
+                                        <div key={opt.value} class="ism-search-option"
+                                            onclick={handleSelectProfile}
+                                            data-value={opt.value} data-label={opt.label}>
+                                            {opt.label}
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Searchable Territory -->
+                        <div class="ism-search-box">
+                            <lightning-input type="text" label="Territory"
+                                placeholder="Search territories... (leave empty for Universal)"
+                                value={searchTerritory} onchange={handleSearchTerritory}
+                                onfocus={handleSearchTerritoryFocus}></lightning-input>
+                            <template if:true={showTerritoryDropdown}>
+                                <div class="ism-search-dropdown">
+                                    <div class="ism-search-option ism-search-universal"
+                                        onclick={handleSelectTerritory} data-value="" data-label="">
+                                        -- Universal (All Territories) --
+                                    </div>
+                                    <template for:each={filteredTerritorySearch} for:item="opt">
+                                        <div key={opt.value} class="ism-search-option"
+                                            onclick={handleSelectTerritory}
+                                            data-value={opt.value} data-label={opt.label}>
+                                            {opt.label}
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
                         <lightning-input type="number" label="Min Achievement %" value={form.Min_Percent__c}
                             data-field="Min_Percent__c" onchange={handleFormInput} required
                             step="0.01" min="0"></lightning-input>
