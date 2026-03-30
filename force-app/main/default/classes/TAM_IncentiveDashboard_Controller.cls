@@ -5,6 +5,9 @@ public with sharing class TAM_IncentiveDashboard_Controller {
         @AuraEnabled public List<Target_Period__c> periods;
         @AuraEnabled public Map<String, Object> summary;
         @AuraEnabled public String currentPeriodId;
+        @AuraEnabled public List<Map<String, String>> criteriaOptions;
+        @AuraEnabled public List<Map<String, String>> profileOptions;
+        @AuraEnabled public List<Map<String, String>> territoryOptions;
     }
 
     @AuraEnabled(cacheable=false)
@@ -25,6 +28,11 @@ public with sharing class TAM_IncentiveDashboard_Controller {
             LIMIT 1
         ];
         dx.currentPeriodId = currentPeriods.isEmpty() ? '' : currentPeriods[0].Id;
+
+        // Filter options
+        dx.criteriaOptions = getFilterOptions('criteria');
+        dx.profileOptions = getFilterOptions('profile');
+        dx.territoryOptions = getFilterOptions('territory');
 
         if (String.isNotBlank(dx.currentPeriodId)) {
             dx.incentives = queryIncentives(dx.currentPeriodId, null);
@@ -136,12 +144,15 @@ public with sharing class TAM_IncentiveDashboard_Controller {
 
     private static List<Incentive__c> queryIncentives(String periodId, String status) {
         String q = 'SELECT Id, Name, Salesperson__c, Salesperson__r.Name, ' +
+            'Salesperson__r.Profile.Name, ' +
             'Target_Criteria__c, Target_Criteria__r.Name, ' +
             'Target_Period__c, Target_Period__r.Name, ' +
             'Incentive_Slab_Ref__c, Incentive_Slab_Ref__r.Name, ' +
+            'Incentive_Slab_Ref__r.Profile_Name__c, ' +
+            'Incentive_Slab_Ref__r.Territory__c, Incentive_Slab_Ref__r.Territory__r.Name, ' +
             'Achievement_Percent__c, Multiplier__c, ' +
             'Base_Amount__c, Calculated_Amount__c, Final_Amount__c, ' +
-            'Status__c, Payment_Date__c, Approval_Date__c ' +
+            'Status__c, Payment_Date__c, Approval_Date__c, Is_Annual_Bonus__c ' +
             'FROM Incentive__c WHERE Target_Period__c = :periodId';
 
         if (String.isNotBlank(status) && status != 'All') {
@@ -180,5 +191,37 @@ public with sharing class TAM_IncentiveDashboard_Controller {
         summary.put('totalPaidAmt', totalPaidAmt);
 
         return summary;
+    }
+
+    private static List<Map<String, String>> getFilterOptions(String filterType) {
+        List<Map<String, String>> opts = new List<Map<String, String>>();
+        opts.add(new Map<String, String>{ 'label' => '-- All --', 'value' => '' });
+
+        if (filterType == 'criteria') {
+            for (Target_Criteria__c tc : [
+                SELECT Id, Name FROM Target_Criteria__c WHERE Active__c = true ORDER BY Name
+            ]) {
+                opts.add(new Map<String, String>{ 'label' => tc.Name, 'value' => tc.Id });
+            }
+        } else if (filterType == 'profile') {
+            for (AggregateResult ar : [
+                SELECT Salesperson__r.Profile.Name profileName
+                FROM Incentive__c
+                WHERE Salesperson__r.Profile.Name != null
+                GROUP BY Salesperson__r.Profile.Name
+                ORDER BY Salesperson__r.Profile.Name
+            ]) {
+                String pn = (String) ar.get('profileName');
+                opts.add(new Map<String, String>{ 'label' => pn, 'value' => pn });
+            }
+        } else if (filterType == 'territory') {
+            for (Territory_Master__c tm : [
+                SELECT Id, Name FROM Territory_Master__c WHERE Is_Active__c = true ORDER BY Name
+            ]) {
+                opts.add(new Map<String, String>{ 'label' => tm.Name, 'value' => tm.Id });
+            }
+        }
+
+        return opts;
     }
 }

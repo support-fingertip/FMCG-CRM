@@ -24,6 +24,14 @@ export default class TamIncentiveDashboard extends LightningElement {
     @track selectedIds = new Set();
     @track summary = {};
 
+    // Filter state
+    @track criteriaOptions = [];
+    @track profileOptions = [];
+    @track territoryOptions = [];
+    @track selectedCriteria = '';
+    @track selectedProfile = '';
+    @track selectedTerritory = '';
+
     // Detail state
     @track detail = {};
 
@@ -44,6 +52,9 @@ export default class TamIncentiveDashboard extends LightningElement {
                 this.selectedPeriod = result.currentPeriodId || '';
                 this.incentiveList = result.incentives || [];
                 this.summary = result.summary || {};
+                this.criteriaOptions = result.criteriaOptions || [];
+                this.profileOptions = result.profileOptions || [];
+                this.territoryOptions = result.territoryOptions || [];
             })
             .catch(e => this.showToast('Error', e?.body?.message || 'Failed to load', 'error'))
             .finally(() => { this.isLoading = false; });
@@ -91,6 +102,17 @@ export default class TamIncentiveDashboard extends LightningElement {
         if (this.selectedStatus && this.selectedStatus !== 'All') {
             list = list.filter(i => i.Status__c === this.selectedStatus);
         }
+        if (this.selectedCriteria) {
+            list = list.filter(i => i.Target_Criteria__c === this.selectedCriteria);
+        }
+        if (this.selectedProfile) {
+            list = list.filter(i => i.Salesperson__r?.Profile?.Name === this.selectedProfile);
+        }
+        if (this.selectedTerritory) {
+            list = list.filter(i =>
+                i.Incentive_Slab_Ref__r?.Territory__c === this.selectedTerritory
+            );
+        }
         return list.map(inc => ({
             ...inc,
             selected: this.selectedIds.has(inc.Id),
@@ -110,6 +132,21 @@ export default class TamIncentiveDashboard extends LightningElement {
         this.selectedPeriod = event.target.value;
         this.selectedIds = new Set();
         this._reloadIncentives();
+    }
+
+    handleCriteriaFilter(event) {
+        this.selectedCriteria = event.target.value;
+        this.selectedIds = new Set();
+    }
+
+    handleProfileFilter(event) {
+        this.selectedProfile = event.target.value;
+        this.selectedIds = new Set();
+    }
+
+    handleTerritoryFilter(event) {
+        this.selectedTerritory = event.target.value;
+        this.selectedIds = new Set();
     }
 
     handleStatusFilter(event) {

@@ -22,16 +22,33 @@
                     <lightning-combobox label="Period" value={selectedPeriod}
                         options={periodOptions} onchange={handlePeriodChange}></lightning-combobox>
                 </div>
-                <div class="idb-filter-pills">
-                    <template for:each={statusFilters} for:item="sf">
-                        <span key={sf.value} class={sf.pillClass} data-value={sf.value}
-                            onclick={handleStatusFilter}>{sf.label}
-                            <template if:true={sf.count}>
-                                <span class="idb-pill-count">{sf.count}</span>
-                            </template>
-                        </span>
-                    </template>
+                <div class="idb-control-item">
+                    <lightning-combobox label="Target Criteria" value={selectedCriteria}
+                        options={criteriaOptions} onchange={handleCriteriaFilter}
+                        placeholder="All Criteria"></lightning-combobox>
                 </div>
+                <div class="idb-control-item">
+                    <lightning-combobox label="Profile" value={selectedProfile}
+                        options={profileOptions} onchange={handleProfileFilter}
+                        placeholder="All Profiles"></lightning-combobox>
+                </div>
+                <div class="idb-control-item">
+                    <lightning-combobox label="Territory" value={selectedTerritory}
+                        options={territoryOptions} onchange={handleTerritoryFilter}
+                        placeholder="All Territories"></lightning-combobox>
+                </div>
+            </div>
+
+            <!-- Status Filter Pills -->
+            <div class="idb-status-pills">
+                <template for:each={statusFilters} for:item="sf">
+                    <span key={sf.value} class={sf.pillClass} data-value={sf.value}
+                        onclick={handleStatusFilter}>{sf.label}
+                        <template if:true={sf.count}>
+                            <span class="idb-pill-count">{sf.count}</span>
+                        </template>
+                    </span>
+                </template>
             </div>
 
             <!-- Stats Cards -->
