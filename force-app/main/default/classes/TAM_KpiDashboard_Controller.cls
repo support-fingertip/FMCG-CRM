@@ -139,6 +139,20 @@ public with sharing class TAM_KpiDashboard_Controller {
                 ORDER BY SUM(Achievement_Value__c) DESC
             ];
 
+            // Pre-load all incentive totals per user in ONE query (avoids SOQL in loop)
+            Map<Id, Decimal> userIncentiveMap = new Map<Id, Decimal>();
+            for (AggregateResult incAr : [
+                SELECT Salesperson__c userId, SUM(Calculated_Amount__c) totalInc
+                FROM Incentive__c
+                WHERE Target_Period__c = :periodId
+                AND Salesperson__c IN :scopeUserIds
+                AND Status__c != 'Rejected'
+                GROUP BY Salesperson__c
+            ]) {
+                Decimal total = (Decimal) incAr.get('totalInc');
+                userIncentiveMap.put((Id) incAr.get('userId'), total != null ? total : 0);
+            }
+
             List<Map<String, Object>> team = new List<Map<String, Object>>();
             for (AggregateResult ar : teamAggs) {
                 Decimal tt = (Decimal) ar.get('totalTarget');
@@ -146,24 +160,15 @@ public with sharing class TAM_KpiDashboard_Controller {
                 tt = tt != null ? tt : 0;
                 ta = ta != null ? ta : 0;
 
+                Id teamUserId = (Id) ar.get('userId');
                 Map<String, Object> row = new Map<String, Object>();
-                row.put('userId', (Id) ar.get('userId'));
+                row.put('userId', teamUserId);
                 row.put('name', (String) ar.get('userName'));
                 row.put('profile', (String) ar.get('profileName'));
                 row.put('target', tt);
                 row.put('actual', ta);
                 row.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
-
-                // Get this user's total incentive
-                Decimal userInc = 0;
-                for (Incentive__c inc : [
-                    SELECT Calculated_Amount__c FROM Incentive__c
-                    WHERE Target_Period__c = :periodId AND Salesperson__c = :(Id) ar.get('userId')
-                    AND Status__c != 'Rejected'
-                ]) {
-                    userInc += inc.Calculated_Amount__c != null ? inc.Calculated_Amount__c : 0;
-                }
-                row.put('incentive', userInc);
+                row.put('incentive', userIncentiveMap.containsKey(teamUserId) ? userIncentiveMap.get(teamUserId) : 0);
 
                 team.add(row);
             }

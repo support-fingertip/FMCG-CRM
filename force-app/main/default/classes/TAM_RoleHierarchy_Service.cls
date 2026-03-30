@@ -1,25 +1,32 @@
 public with sharing class TAM_RoleHierarchy_Service {
 
+    private static final Integer MAX_DEPTH = 6; // Prevent infinite recursion / governor limits
+
     public static Set<ID> getRoleSubordinateUsers(Id userId) {
-
-        Set<Id> allSubRoleIds = getAllSubRoleIds(new Set<ID>{userId});
+        Set<Id> allSubRoleIds = getAllSubRoleIds(new Set<ID>{userId}, 0);
         allSubRoleIds.add(userId);
-        Map<Id, User> users = new Map<Id, User>([SELECT Id, Name FROM User WHERE Id IN :allSubRoleIds]);
-
-        return users.keySet();
+        return allSubRoleIds;
     }
 
-    // Recursive function
-    private static Set<ID> getAllSubRoleIds(Set<ID> userId) {
+    // Recursive function with depth limit and active user filter
+    private static Set<ID> getAllSubRoleIds(Set<ID> userIds, Integer depth) {
+        if (depth >= MAX_DEPTH || userIds.isEmpty()) return new Set<Id>();
 
         Set<ID> currentRoleIds = new Set<ID>();
 
-        for (User userRole : [SELECT Id, Name, ManagerId FROM User WHERE ManagerId IN :userId AND ManagerId != null]) {
+        for (User userRole : [
+            SELECT Id FROM User
+            WHERE ManagerId IN :userIds
+            AND ManagerId != null
+            AND IsActive = true
+        ]) {
             currentRoleIds.add(userRole.Id);
         }
-        if (currentRoleIds.size() > 0) {
-            currentRoleIds.addAll(getAllSubRoleIds(currentRoleIds));
+
+        if (!currentRoleIds.isEmpty()) {
+            currentRoleIds.addAll(getAllSubRoleIds(currentRoleIds, depth + 1));
         }
+
         return currentRoleIds;
     }
 }

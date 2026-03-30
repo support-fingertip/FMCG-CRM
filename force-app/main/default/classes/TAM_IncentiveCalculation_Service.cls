@@ -431,16 +431,15 @@ public with sharing class TAM_IncentiveCalculation_Service {
     private static Map<Id, Decimal> loadUserSalaries(Set<Id> userIds) {
         Map<Id, Decimal> salaryMap = new Map<Id, Decimal>();
 
-        // Map Employee__c to User via the User__c lookup or matching by name
-        // Try User__c lookup first (if exists on Employee__c)
+        // Map Employee__c to User via the User__c lookup field
         for (Employee__c emp : [
-            SELECT Id, Gross_Salary__c, OwnerId
+            SELECT Id, Gross_Salary__c, User__c
             FROM Employee__c
-            WHERE OwnerId IN :userIds
+            WHERE User__c IN :userIds
             AND Is_Active__c = true
         ]) {
-            if (emp.Gross_Salary__c != null) {
-                salaryMap.put(emp.OwnerId, emp.Gross_Salary__c);
+            if (emp.Gross_Salary__c != null && emp.User__c != null) {
+                salaryMap.put(emp.User__c, emp.Gross_Salary__c);
             }
         }
 
@@ -454,17 +453,26 @@ public with sharing class TAM_IncentiveCalculation_Service {
     private static Map<Id, Id> loadUserTerritories(Set<Id> userIds) {
         Map<Id, Id> territoryMap = new Map<Id, Id>();
 
-        // Try to get territory from Target_Actual__c or user's territory assignment
-        // This uses a simple approach: check if Employee__c has a territory-like field
-        for (Employee__c emp : [
-            SELECT Id, OwnerId, Region__c
-            FROM Employee__c
-            WHERE OwnerId IN :userIds
-            AND Is_Active__c = true
+        // Look up territory from Employee__c Region__c field
+        // Map region name to Territory_Master__c Id
+        Map<String, Id> regionToTerritoryMap = new Map<String, Id>();
+        for (Territory_Master__c tm : [
+            SELECT Id, Name FROM Territory_Master__c WHERE Is_Active__c = true
         ]) {
-            // Region__c on Employee maps to Territory_Master__c
-            // For now, store as-is — can be enhanced to lookup Territory_Master__c by name
-            // This is a placeholder until Territory assignment is formalized
+            regionToTerritoryMap.put(tm.Name.toLowerCase(), tm.Id);
+        }
+
+        for (Employee__c emp : [
+            SELECT Id, User__c, Region__c
+            FROM Employee__c
+            WHERE User__c IN :userIds
+            AND Is_Active__c = true
+            AND Region__c != null
+        ]) {
+            String region = emp.Region__c.toLowerCase();
+            if (regionToTerritoryMap.containsKey(region)) {
+                territoryMap.put(emp.User__c, regionToTerritoryMap.get(region));
+            }
         }
 
         // Alternative: look at recent Target_Actual__c for territory context
