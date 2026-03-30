@@ -40,11 +40,18 @@ public with sharing class TAM_KpiDashboard_Controller {
         }
 
         // ── KPI Summary (aggregated across scope) ──
+        // Load criteria weights separately (Percent fields can't be grouped)
+        Map<Id, Decimal> criteriaWeightMap = new Map<Id, Decimal>();
+        for (Target_Criteria__c tc : [
+            SELECT Id, Incentive_Weight__c FROM Target_Criteria__c WHERE Active__c = true
+        ]) {
+            criteriaWeightMap.put(tc.Id, tc.Incentive_Weight__c);
+        }
+
         List<AggregateResult> kpiAggs = [
             SELECT Target_Criteria__c criteriaId,
                    Target_Criteria__r.Name criteriaName,
                    Target_Criteria__r.Category__c category,
-                   Target_Criteria__r.Incentive_Weight__c weight,
                    SUM(Target_Value__c) totalTarget,
                    SUM(Achievement_Value__c) totalActual
             FROM Target_Actual__c
@@ -52,7 +59,7 @@ public with sharing class TAM_KpiDashboard_Controller {
             AND User__c IN :scopeUserIds
             AND Target_Criteria__r.Active__c = true
             GROUP BY Target_Criteria__c, Target_Criteria__r.Name,
-                     Target_Criteria__r.Category__c, Target_Criteria__r.Incentive_Weight__c
+                     Target_Criteria__r.Category__c
             ORDER BY Target_Criteria__r.Name
         ];
 
@@ -66,10 +73,11 @@ public with sharing class TAM_KpiDashboard_Controller {
             ta = ta != null ? ta : 0;
 
             Map<String, Object> kpi = new Map<String, Object>();
-            kpi.put('criteriaId', (Id) ar.get('criteriaId'));
+            Id critId = (Id) ar.get('criteriaId');
+            kpi.put('criteriaId', critId);
             kpi.put('name', (String) ar.get('criteriaName'));
             kpi.put('category', (String) ar.get('category'));
-            kpi.put('weight', ar.get('weight'));
+            kpi.put('weight', criteriaWeightMap.get(critId));
             kpi.put('target', tt);
             kpi.put('actual', ta);
             kpi.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
