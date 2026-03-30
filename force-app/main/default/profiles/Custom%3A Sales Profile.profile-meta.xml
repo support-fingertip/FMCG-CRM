@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
-                <classAccesses>
+                    <classAccesses>
+        <apexClass>TAM_KpiDashboard_Controller</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+<classAccesses>
         <apexClass>TAM_IncentiveSlabManager_Controller</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -4452,6 +4456,10 @@
         <enabled>true</enabled>
         <name>ViewSetup</name>
     </userPermissions>
+    <tabVisibilities>
+        <tab>KPI_Dashboard</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
     <tabVisibilities>
         <tab>Incentive_Slab__c</tab>
         <visibility>DefaultOff</visibility>

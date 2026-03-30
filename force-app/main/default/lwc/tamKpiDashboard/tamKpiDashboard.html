@@ -1,0 +1,154 @@
+<template>
+    <div class="kd-container">
+
+        <!-- Header -->
+        <div class="kd-header">
+            <div class="kd-header-left">
+                <lightning-icon icon-name="standard:dashboard" size="medium"></lightning-icon>
+                <h1>KPI Dashboard</h1>
+            </div>
+            <div class="kd-header-right">
+                <!-- View Toggle -->
+                <div class="kd-view-toggle">
+                    <template for:each={viewOptions} for:item="v">
+                        <span key={v.value} class={v.pillClass} data-value={v.value}
+                            onclick={handleViewChange}>{v.label}</span>
+                    </template>
+                </div>
+                <lightning-combobox label="Period" value={selectedPeriod}
+                    options={periodOptions} onchange={handlePeriodChange}
+                    variant="label-hidden" class="kd-period-picker"></lightning-combobox>
+                <lightning-button-icon icon-name="utility:refresh" variant="border-filled"
+                    onclick={handleRefresh}></lightning-button-icon>
+            </div>
+        </div>
+
+        <!-- Overall Stats Bar -->
+        <div class="kd-stats-bar">
+            <div class="kd-stat kd-stat-primary">
+                <span class="kd-stat-value">{grandPercentDisplay}%</span>
+                <span class="kd-stat-label">Overall Achievement</span>
+            </div>
+            <div class="kd-stat">
+                <span class="kd-stat-value">{grandTargetDisplay}</span>
+                <span class="kd-stat-label">Total Target</span>
+            </div>
+            <div class="kd-stat">
+                <span class="kd-stat-value">{grandActualDisplay}</span>
+                <span class="kd-stat-label">Total Actual</span>
+            </div>
+            <div class="kd-stat kd-stat-incentive">
+                <span class="kd-stat-value">{totalIncentiveDisplay}</span>
+                <span class="kd-stat-label">Incentive Earned</span>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <template if:true={hasKpis}>
+            <div class="kd-kpi-grid">
+                <template for:each={computedKpis} for:item="kpi">
+                    <div key={kpi.key} class="kd-kpi-card">
+                        <div class="kd-kpi-top">
+                            <div class="kd-kpi-ring">
+                                <svg viewBox="0 0 80 80">
+                                    <circle cx="40" cy="40" r="34" fill="none"
+                                        stroke="#e5e5e5" stroke-width="6"></circle>
+                                    <circle cx="40" cy="40" r="34" fill="none"
+                                        stroke={kpi.color} stroke-width="6"
+                                        stroke-dasharray={kpi.circumference}
+                                        stroke-dashoffset={kpi.offset}
+                                        stroke-linecap="round"
+                                        transform="rotate(-90 40 40)"></circle>
+                                </svg>
+                                <span class={kpi.percentClass}>{kpi.percent}%</span>
+                            </div>
+                            <div class="kd-kpi-detail">
+                                <h3>{kpi.name}</h3>
+                                <template if:true={kpi.weight}>
+                                    <span class="kd-kpi-weight">Weight: {kpi.weight}%</span>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="kd-kpi-bottom">
+                            <div class="kd-kpi-metric">
+                                <span class="kd-metric-label">Target</span>
+                                <span class="kd-metric-value">{kpi.targetDisplay}</span>
+                            </div>
+                            <div class="kd-kpi-metric">
+                                <span class="kd-metric-label">Actual</span>
+                                <span class="kd-metric-value kd-metric-actual">{kpi.actualDisplay}</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Charts Row -->
+        <div class="kd-charts-row">
+            <div class="kd-chart-card kd-chart-trend">
+                <div class="kd-card-header">Performance Trend (Last 6 Months)</div>
+                <div class="kd-chart-body">
+                    <canvas class="kd-trend-canvas"></canvas>
+                </div>
+            </div>
+            <div class="kd-chart-card kd-chart-inc">
+                <div class="kd-card-header">Incentive Breakdown</div>
+                <div class="kd-chart-body">
+                    <canvas class="kd-incentive-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Table (Manager/Leadership view) -->
+        <template if:true={showTeam}>
+            <div class="kd-card">
+                <div class="kd-card-header">Team Performance</div>
+                <div class="kd-card-body">
+                    <template if:true={hasTeam}>
+                        <table class="kd-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Profile</th>
+                                    <th>Target</th>
+                                    <th>Actual</th>
+                                    <th>Achievement</th>
+                                    <th>Incentive</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={computedTeam} for:item="row">
+                                    <tr key={row.userId}>
+                                        <td class="kd-name-cell">{row.name}</td>
+                                        <td><span class="kd-badge">{row.profile}</span></td>
+                                        <td>{row.targetDisplay}</td>
+                                        <td>{row.actualDisplay}</td>
+                                        <td>
+                                            <div class="kd-progress-cell">
+                                                <span class={row.percentClass}>{row.percentDisplay}%</span>
+                                                <div class="kd-mini-bar">
+                                                    <div class="kd-mini-fill" style={row.progressWidth}></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="kd-incentive-cell">{row.incentiveDisplay}</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template if:false={hasTeam}>
+                        <div class="kd-no-data">No team data available</div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <template if:true={isLoading}>
+        <div class="kd-spinner-backdrop">
+            <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+        </div>
+    </template>
+</template>
