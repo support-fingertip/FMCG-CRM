@@ -4194,6 +4194,26 @@
         <name>ViewSetup</name>
     </userPermissions>
     <tabVisibilities>
+        <tab>Target_Period__c</tab>
+        <visibility>DefaultOff</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Target_Criteria__c</tab>
+        <visibility>DefaultOff</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Target_Actual__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Target_Criteria_Manager</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
+        <tab>Incentive_Slab__c</tab>
+        <visibility>DefaultOff</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Incentive_Slab_Manager</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>

@@ -6195,6 +6195,10 @@
         <visible>false</visible>
     </recordTypeVisibilities>
     <tabVisibilities>
+        <tab>Incentive_Slab__c</tab>
+        <visibility>DefaultOff</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Incentive_Slab_Manager</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
