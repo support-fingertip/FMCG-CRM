@@ -14,6 +14,7 @@
     <tabs>Home_Page</tabs>
     <tabs>FSCRM_Dashboard</tabs>
     <tabs>KPI_Dashboard</tabs>
+    <tabs>Achievement_Dashboard</tabs>
     <tabs>Visit__c</tabs>
     <tabs>Visit_Manager</tabs>
     <tabs>Team_Visit_Dashboard</tabs>

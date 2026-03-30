@@ -3787,6 +3787,10 @@
         <name>ViewHelpLink</name>
     </userPermissions>
     <tabVisibilities>
+        <tab>Achievement_Dashboard</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>KPI_Dashboard</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
