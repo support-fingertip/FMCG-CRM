@@ -267,6 +267,11 @@
         <field>Incentive__c.Target_Period__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Incentive_Slab__c.Is_Active__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
 <fieldPermissions>
         <editable>false</editable>
         <field>Incentive_Slab__c.Description__c</field>
