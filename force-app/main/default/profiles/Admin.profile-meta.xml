@@ -6547,6 +6547,10 @@
         <visible>true</visible>
     </recordTypeVisibilities>
     <tabVisibilities>
+        <tab>Incentive__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Achievement_Dashboard</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>

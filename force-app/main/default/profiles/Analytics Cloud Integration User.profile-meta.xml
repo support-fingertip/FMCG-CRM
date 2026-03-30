@@ -4522,6 +4522,10 @@
         <name>WorkDotComUserPerm</name>
     </userPermissions>
     <tabVisibilities>
+        <tab>Incentive__c</tab>
+        <visibility>DefaultOn</visibility>
+    </tabVisibilities>
+    <tabVisibilities>
         <tab>Achievement_Dashboard</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
