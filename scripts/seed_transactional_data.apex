@@ -188,8 +188,7 @@ for (Visit__c v : visits) {
         Order_Date__c = v.Visit_Date__c,
         Order_Type__c = 'Regular',
         Channel__c = 'Field App',
-        Status__c = 'Approved',
-        Order_Status__c = 'Approved',
+        Status__c = 'Draft',
         Payment_Terms__c = 'Net 30',
         Notes__c = 'Order placed during field visit',
         Must_Sell_Compliance__c = 80,
@@ -284,8 +283,41 @@ for (Sales_Order__c order : orders) {
 }
 
 insert lineItems;
-update orders; // update totals
-System.debug('Created ' + lineItems.size() + ' Order Line Items');
+
+// Update order totals only (don't touch Status — triggers may have advanced it)
+List<Sales_Order__c> totalUpdates = new List<Sales_Order__c>();
+for (Sales_Order__c o : orders) {
+    totalUpdates.add(new Sales_Order__c(
+        Id = o.Id,
+        Total_Items__c = o.Total_Items__c,
+        Total_Gross_Amount__c = o.Total_Gross_Amount__c,
+        Total_Tax__c = o.Total_Tax__c,
+        Total_Net_Amount__c = o.Total_Net_Amount__c,
+        Total_Discount__c = o.Total_Discount__c,
+        Line_Amount__c = o.Line_Amount__c,
+        Net_Amount__c = o.Net_Amount__c,
+        Total_Amount__c = o.Total_Amount__c
+    ));
+}
+update totalUpdates;
+
+// Advance orders through status flow: Draft → Submitted → Approved
+// Re-query to get current status (triggers may have changed it)
+List<Sales_Order__c> ordersToAdvance = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id IN :orders];
+List<Sales_Order__c> statusUpdates = new List<Sales_Order__c>();
+for (Sales_Order__c o : ordersToAdvance) {
+    if (o.Status__c == 'Draft') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Submitted'));
+}
+if (!statusUpdates.isEmpty()) update statusUpdates;
+
+statusUpdates.clear();
+ordersToAdvance = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id IN :orders];
+for (Sales_Order__c o : ordersToAdvance) {
+    if (o.Status__c == 'Submitted') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Approved'));
+}
+if (!statusUpdates.isEmpty()) update statusUpdates;
+
+System.debug('Created ' + lineItems.size() + ' Order Line Items, orders advanced to Approved');
 
 
 // ════════════════════════════════════════════════════════════
