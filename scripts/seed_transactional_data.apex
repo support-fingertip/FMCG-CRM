@@ -188,7 +188,7 @@ for (Visit__c v : visits) {
         Order_Date__c = v.Visit_Date__c,
         Order_Type__c = 'Regular',
         Channel__c = 'Field App',
-        Status__c = 'Draft',
+        Status__c = 'Delivered',
         Payment_Terms__c = 'Net 30',
         Notes__c = 'Order placed during field visit',
         Must_Sell_Compliance__c = 80,
@@ -199,7 +199,10 @@ for (Visit__c v : visits) {
         Total_Net_Amount__c = 0
     ));
 }
+// Bypass all order triggers/validations for seed data insert
+TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
 insert orders;
+TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
 System.debug('Created ' + orders.size() + ' Sales Order records');
 
 
@@ -299,29 +302,11 @@ for (Sales_Order__c o : orders) {
         Total_Amount__c = o.Total_Amount__c
     ));
 }
-update totalUpdates;
-
-// Advance orders through status flow: Draft → Submitted → Approved
-// Bypass trigger to skip must-sell validation for seed data
 TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
-
-List<Sales_Order__c> ordersToAdvance = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id IN :orders];
-List<Sales_Order__c> statusUpdates = new List<Sales_Order__c>();
-for (Sales_Order__c o : ordersToAdvance) {
-    if (o.Status__c == 'Draft') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Submitted'));
-}
-if (!statusUpdates.isEmpty()) update statusUpdates;
-
-statusUpdates.clear();
-ordersToAdvance = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id IN :orders];
-for (Sales_Order__c o : ordersToAdvance) {
-    if (o.Status__c == 'Submitted') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Approved'));
-}
-if (!statusUpdates.isEmpty()) update statusUpdates;
-
+update totalUpdates;
 TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
 
-System.debug('Created ' + lineItems.size() + ' Order Line Items, orders advanced to Approved');
+System.debug('Created ' + lineItems.size() + ' Order Line Items (orders inserted as Delivered)');
 
 
 // ════════════════════════════════════════════════════════════
