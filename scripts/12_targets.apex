@@ -55,7 +55,6 @@ for (String terCode : territoryRevTargets.keySet()) {
 
     // Revenue target
     targets.add(new Target__c(
-        Name = 'Revenue Target - ' + terCode + ' - ' + currentMonthName + ' ' + currentYear,
         Territory__c = terMap.get(terCode),
         Period_Month__c = currentMonth,
         Period_Year__c = currentYear,
@@ -75,7 +74,6 @@ for (String terCode : territoryRevTargets.keySet()) {
 
     // Collection target
     targets.add(new Target__c(
-        Name = 'Collection Target - ' + terCode + ' - ' + currentMonthName + ' ' + currentYear,
         Territory__c = terMap.get(terCode),
         Period_Month__c = currentMonth,
         Period_Year__c = currentYear,
@@ -95,7 +93,6 @@ for (String terCode : territoryRevTargets.keySet()) {
 
     // Volume target (cases/units sold)
     targets.add(new Target__c(
-        Name = 'Volume Target - ' + terCode + ' - ' + currentMonthName + ' ' + currentYear,
         Territory__c = terMap.get(terCode),
         Period_Month__c = currentMonth,
         Period_Year__c = currentYear,
@@ -115,7 +112,6 @@ for (String terCode : territoryRevTargets.keySet()) {
 
     // Focus Brand target (annual)
     targets.add(new Target__c(
-        Name = 'Focus Brand Target - ' + terCode + ' - ' + currentYear,
         Territory__c = terMap.get(terCode),
         Period_Month__c = null,
         Period_Year__c = currentYear,
@@ -135,7 +131,6 @@ for (String terCode : territoryRevTargets.keySet()) {
 
     // New Outlet Activation target (monthly)
     targets.add(new Target__c(
-        Name = 'New Outlet Target - ' + terCode + ' - ' + currentMonthName + ' ' + currentYear,
         Territory__c = terMap.get(terCode),
         Period_Month__c = currentMonth,
         Period_Year__c = currentYear,
