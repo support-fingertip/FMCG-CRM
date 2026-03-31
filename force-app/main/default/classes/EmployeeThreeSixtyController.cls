@@ -30,8 +30,7 @@ public with sharing class EmployeeThreeSixtyController {
                    Reporting_Manager__r.Designation__c,
                    User__c, Date_of_Joining__c, Is_Active__c,
                    Profile_Photo_URL__c, Address__c,
-                   CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c,
-                   Week_Off_Days__c
+                                      Week_Off_Days__c
             FROM Employee__c
             WHERE Id = :employeeId
             LIMIT 1

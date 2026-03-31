@@ -41,10 +41,6 @@ const EMPTY_EMPLOYEE_FORM = {
     Is_Active__c: true,
     Profile_Photo_URL__c: '',
     Address__c: '',
-    CL_Balance__c: 0,
-    SL_Balance__c: 0,
-    EL_Balance__c: 0,
-    CO_Balance__c: 0,
     Week_Off_Days__c: 'Sunday'
 };
 
@@ -516,10 +512,6 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             Is_Active__c: this.selectedEmployee.Is_Active__c !== false,
             Profile_Photo_URL__c: this.selectedEmployee.Profile_Photo_URL__c || '',
             Address__c: this.selectedEmployee.Address__c || '',
-            CL_Balance__c: this.selectedEmployee.CL_Balance__c || 0,
-            SL_Balance__c: this.selectedEmployee.SL_Balance__c || 0,
-            EL_Balance__c: this.selectedEmployee.EL_Balance__c || 0,
-            CO_Balance__c: this.selectedEmployee.CO_Balance__c || 0,
             Week_Off_Days__c: this.selectedEmployee.Week_Off_Days__c || 'Sunday'
         };
         this.isEditMode = true;
@@ -576,10 +568,6 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
                 Is_Active__c: this.employeeForm.Is_Active__c,
                 Profile_Photo_URL__c: this.employeeForm.Profile_Photo_URL__c,
                 Address__c: this.employeeForm.Address__c,
-                CL_Balance__c: this.employeeForm.CL_Balance__c,
-                SL_Balance__c: this.employeeForm.SL_Balance__c,
-                EL_Balance__c: this.employeeForm.EL_Balance__c,
-                CO_Balance__c: this.employeeForm.CO_Balance__c,
                 Week_Off_Days__c: this.employeeForm.Week_Off_Days__c
             };
             if (this.employeeForm.Id) {

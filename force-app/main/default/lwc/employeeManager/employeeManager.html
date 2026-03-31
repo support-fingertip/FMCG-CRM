@@ -510,32 +510,7 @@
                                 </div>
                             </div>
 
-                            <!-- Section: Leave Balances -->
-                            <div class="form-section form-section-last">
-                                <h3 class="form-section-title">Leave Balances</h3>
-                                <div class="slds-grid slds-gutters slds-wrap">
-                                    <div class="slds-col slds-size_1-of-4 slds-m-bottom_small">
-                                        <lightning-input label="CL Balance" type="number" step="0.5"
-                                            value={employeeForm.CL_Balance__c}
-                                            data-field="CL_Balance__c" onchange={handleFormChange}></lightning-input>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-4 slds-m-bottom_small">
-                                        <lightning-input label="SL Balance" type="number" step="0.5"
-                                            value={employeeForm.SL_Balance__c}
-                                            data-field="SL_Balance__c" onchange={handleFormChange}></lightning-input>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-4 slds-m-bottom_small">
-                                        <lightning-input label="EL Balance" type="number" step="0.5"
-                                            value={employeeForm.EL_Balance__c}
-                                            data-field="EL_Balance__c" onchange={handleFormChange}></lightning-input>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-4 slds-m-bottom_small">
-                                        <lightning-input label="CO Balance" type="number" step="0.5"
-                                            value={employeeForm.CO_Balance__c}
-                                            data-field="CO_Balance__c" onchange={handleFormChange}></lightning-input>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Leave balances are now managed via Leave_Balance__c records -->
                         </lightning-record-edit-form>
                     </div>
                     <footer class="slds-modal__footer">

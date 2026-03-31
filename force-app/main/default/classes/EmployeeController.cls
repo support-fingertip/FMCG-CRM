@@ -74,8 +74,7 @@ public with sharing class EmployeeController {
                    Email__c, Phone__c, Department__c, Designation__c,
                    Date_of_Joining__c, Is_Active__c, Zone__c, Region__c,
                    Profile_Photo_URL__c, Address__c, User__c, User__r.Name, Week_Off_Days__c, Gross_Salary__c,
-                   CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c,
-                   Territory__c, Territory__r.Name,
+                                      Territory__c, Territory__r.Name,
                    Reporting_Manager__c, Reporting_Manager__r.First_Name__c,
                    Reporting_Manager__r.Last_Name__c, Reporting_Manager__r.Employee_Code__c
             FROM Employee__c
@@ -103,8 +102,7 @@ public with sharing class EmployeeController {
                        Email__c, Phone__c, Department__c, Designation__c,
                        Date_of_Joining__c, Is_Active__c, Zone__c, Region__c,
                        Profile_Photo_URL__c, Address__c, User__c, User__r.Name, Week_Off_Days__c, Gross_Salary__c,
-                       CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c,
-                       Territory__c, Territory__r.Name,
+                                              Territory__c, Territory__r.Name,
                        Reporting_Manager__c, Reporting_Manager__r.First_Name__c,
                        Reporting_Manager__r.Last_Name__c, Reporting_Manager__r.Employee_Code__c
                 FROM Employee__c
@@ -160,8 +158,7 @@ public with sharing class EmployeeController {
                    Email__c, Phone__c, Department__c, Designation__c,
                    Date_of_Joining__c, Is_Active__c, Zone__c, Region__c,
                    Profile_Photo_URL__c, Address__c, User__c, User__r.Name, Week_Off_Days__c, Gross_Salary__c,
-                   CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c,
-                   Territory__c, Territory__r.Name,
+                                      Territory__c, Territory__r.Name,
                    Reporting_Manager__c, Reporting_Manager__r.First_Name__c,
                    Reporting_Manager__r.Last_Name__c, Reporting_Manager__r.Employee_Code__c
             FROM Employee__c
