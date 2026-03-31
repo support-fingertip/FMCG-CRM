@@ -31,7 +31,7 @@ public with sharing class EmployeeController {
         String query = 'SELECT Id, Name, Employee_Code__c, First_Name__c, Last_Name__c, ' +
                         'Email__c, Phone__c, Department__c, Designation__c, ' +
                         'Date_of_Joining__c, Is_Active__c, Zone__c, Region__c, ' +
-                        'Profile_Photo_URL__c, User__c, Week_Off_Days__c, Gross_Salary__c, Gross_Salary__c, ' +
+                        'Profile_Photo_URL__c, User__c, Week_Off_Days__c, Gross_Salary__c, ' +
                         'Territory__c, Territory__r.Name, ' +
                         'Reporting_Manager__c, Reporting_Manager__r.First_Name__c, ' +
                         'Reporting_Manager__r.Last_Name__c, Reporting_Manager__r.Employee_Code__c ' +
