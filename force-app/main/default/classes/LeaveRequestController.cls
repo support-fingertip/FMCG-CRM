@@ -328,7 +328,11 @@ public with sharing class LeaveRequestController {
 
             // Validate leave balance using Leave_Balance__c
             String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
-            Id employeeId = leaveRequest.Employee__c;
+            // Employee__c on Leave_Request__c is a Lookup(User), need Employee__c record Id
+            Id employeeId = LeaveBalanceService.getEmployeeId(leaveRequest.Employee__c);
+            if (employeeId == null) {
+                throw new AuraHandledException('No employee record linked to your user. Please contact HR.');
+            }
             LeaveBalanceService.validateBalance(employeeId, leaveRequest.Leave_Type__c, numberOfDays, fiscalYear);
 
             upsert leaveRequest;
@@ -396,7 +400,10 @@ public with sharing class LeaveRequestController {
 
             // Deduct leave balance using Leave_Balance__c
             String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
-            LeaveBalanceService.deductBalance(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+            Id empId = LeaveBalanceService.getEmployeeId(request.Employee__c);
+            if (empId != null) {
+                LeaveBalanceService.deductBalance(empId, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+            }
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
@@ -453,7 +460,10 @@ public with sharing class LeaveRequestController {
 
             // Remove from pending balance
             String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
-            LeaveBalanceService.removePending(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+            Id empIdReject = LeaveBalanceService.getEmployeeId(request.Employee__c);
+            if (empIdReject != null) {
+                LeaveBalanceService.removePending(empIdReject, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+            }
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
@@ -502,11 +512,13 @@ public with sharing class LeaveRequestController {
 
             // Restore leave balance if the request was previously approved
             String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
-            if (wasApproved) {
-                LeaveBalanceService.restoreBalance(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
-            } else {
-                // Was submitted/pending — remove from pending
-                LeaveBalanceService.removePending(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+            Id empIdCancel = LeaveBalanceService.getEmployeeId(request.Employee__c);
+            if (empIdCancel != null) {
+                if (wasApproved) {
+                    LeaveBalanceService.restoreBalance(empIdCancel, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+                } else {
+                    LeaveBalanceService.removePending(empIdCancel, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+                }
             }
 
             return [
