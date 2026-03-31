@@ -336,7 +336,7 @@ for (Integer i = 0; i < Math.min(6, orders.size()); i++) {
         Salesperson__c = currentUser,
         Collection_Date__c = order.Order_Date__c,
         Payment_Mode__c = paymentModes[i],
-        Status__c = 'Confirmed',
+        Status__c = 'Collected',
         Visit__c = matchingVisit != null ? matchingVisit.Id : null,
         Receipt_Number__c = 'RCP-2026-' + String.valueOf(i + 1).leftPad(4, '0'),
         Notes__c = 'Payment against order'
@@ -365,7 +365,7 @@ collections.add(new Collection__c(
     Salesperson__c = currentUser,
     Collection_Date__c = Date.today().addDays(-2),
     Payment_Mode__c = 'Cash',
-    Status__c = 'Confirmed',
+    Status__c = 'Collected',
     Is_On_Account__c = true,
     Receipt_Number__c = 'RCP-2026-ADV-001',
     Notes__c = 'Advance payment on account'
