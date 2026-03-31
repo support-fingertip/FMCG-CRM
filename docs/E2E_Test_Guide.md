@@ -11,10 +11,13 @@ This guide walks through the complete FMCG sales flow — from setting up produc
 Run these scripts in order via Developer Console (Execute Anonymous) or CLI:
 
 ```bash
+sf apex run --file scripts/00_delete_all.apex          # Clean slate (optional)
 sf apex run --file scripts/01_company_hierarchy.apex
 sf apex run --file scripts/02_territory_master.apex
 sf apex run --file scripts/03_product_category.apex
+sf apex run --file scripts/04a_uom_master.apex         # UOM + global conversions
 sf apex run --file scripts/04_products.apex
+sf apex run --file scripts/04b_uom_conversions.apex    # Product-specific conversions (after products)
 sf apex run --file scripts/05_batch_master.apex
 sf apex run --file scripts/06_tax_configuration.apex
 sf apex run --file scripts/07_price_list.apex
@@ -22,6 +25,7 @@ sf apex run --file scripts/08_warehouse.apex
 sf apex run --file scripts/09_accounts.apex
 sf apex run --file scripts/10_beats_and_outlets.apex
 sf apex run --file scripts/11_schemes.apex
+sf apex run --file scripts/11a_must_sell_config.apex    # Priority Sell configs
 sf apex run --file scripts/13_employees.apex
 sf apex run --file scripts/13_target_periods.apex
 sf apex run --file scripts/14_target_criteria_and_actuals.apex
@@ -30,39 +34,68 @@ sf apex run --file scripts/15_test_team.apex
 sf apex run --file scripts/16_leave_policies.apex
 ```
 
-After running, verify:
-- Products: `SELECT COUNT() FROM Product_Extension__c WHERE Is_Active__c = true`
-- Accounts: `SELECT COUNT() FROM Account`
-- Territories: `SELECT COUNT() FROM Territory_Master__c WHERE Is_Active__c = true`
-- Periods: `SELECT COUNT() FROM Target_Period__c WHERE Is_Active__c = true`
-- Criteria: `SELECT COUNT() FROM Target_Criteria__c WHERE Active__c = true`
+After running, verify record counts:
+```apex
+System.debug('Products: '   + [SELECT COUNT() FROM Product_Extension__c WHERE Is_Active__c = true]);   // 30
+System.debug('Accounts: '   + [SELECT COUNT() FROM Account]);                                          // 20
+System.debug('Territories: '+ [SELECT COUNT() FROM Territory_Master__c WHERE Is_Active__c = true]);     // 8
+System.debug('Periods: '    + [SELECT COUNT() FROM Target_Period__c WHERE Is_Active__c = true]);        // 17
+System.debug('Criteria: '   + [SELECT COUNT() FROM Target_Criteria__c WHERE Active__c = true]);         // 6
+System.debug('UOMs: '       + [SELECT COUNT() FROM UOM__c WHERE Is_Active__c = true]);                  // 10
+System.debug('UOM Conv: '   + [SELECT COUNT() FROM UOM_Conversion__c WHERE Is_Active__c = true]);       // 65+
+System.debug('Must Sell: '  + [SELECT COUNT() FROM Must_Sell_Config__c WHERE Is_Active__c = true]);     // 30
+System.debug('Schemes: '    + [SELECT COUNT() FROM Scheme__c WHERE Status__c = 'Active']);              // 7
+System.debug('Slabs: '      + [SELECT COUNT() FROM Incentive_Slab__c WHERE Is_Active__c = true]);       // 40+
+```
 
 ---
 
 ## Step 2: UOM Configuration
 
 ### 2.1 Verify UOM Master
-Go to **UOM tab** and verify these exist:
-| UOM Code | Name | Is Base |
-|---|---|---|
-| PCS | Pieces | Yes |
-| BOX | Box | No |
-| CSE | Case | No |
-| KG | Kilogram | Yes |
-| DOZ | Dozen | No |
+Go to **UOM tab** and verify 10 UOMs exist:
+| UOM Code | Name | Type | Is Base |
+|---|---|---|---|
+| PCS | Pieces | Count | Yes |
+| BOX | Box | Count | No |
+| CSE | Case | Count | No |
+| DOZ | Dozen | Count | No |
+| KG | Kilogram | Weight | Yes |
+| GM | Gram | Weight | No |
+| LTR | Litre | Volume | Yes |
+| ML | Millilitre | Volume | No |
+| PKT | Pack | Count | No |
+| STP | Strip | Count | No |
 
 ### 2.2 Verify UOM Conversions
-Go to **UOM Conversion Manager tab** and verify:
-| Product | From UOM | To UOM | Factor |
+Go to **UOM Conversion Manager tab**. You should see:
+
+**Global conversions** (no product — apply to all):
+| From UOM | To UOM | Factor | Type |
 |---|---|---|---|
-| Biscuit Premium 200g | BOX | PCS | 12 |
-| Biscuit Premium 200g | CSE | BOX | 10 |
-| Rice Basmati 5kg | BOX | PCS | 6 |
+| Box (BOX) | Pieces (PCS) | 12 | Global |
+| Case (CSE) | Box (BOX) | 10 | Global |
+| Dozen (DOZ) | Pieces (PCS) | 12 | Global |
+| Kilogram (KG) | Gram (GM) | 1000 | Global |
+| Litre (LTR) | Millilitre (ML) | 1000 | Global |
+
+**Product-specific conversions** (created by `04b_uom_conversions.apex`):
+| Product | From UOM | To UOM | Factor | Source |
+|---|---|---|---|---|
+| Crispy Masala Chips 150g | BOX | PCS | 48 | Case_Size__c = 48 |
+| Classic Cream Biscuits 200g | BOX | PCS | 60 | Case_Size__c = 60 |
+| Fresh Mango Juice 1L | BOX | PCS | 24 | Case_Size__c = 24 |
+| Power Wash Detergent 1kg | BOX | PCS | 20 | Case_Size__c = 20 |
+| All products | CSE | BOX | 10 | Standard |
+
+Product-specific conversions override global ones. Each product gets 2 conversions (BOX→PCS using `Case_Size__c`, CSE→BOX at 10).
 
 ### 2.3 How UOM Works in Orders
 When creating an order line:
 - User selects **Order UOM** (e.g., BOX)
-- System auto-calculates **Base Quantity** = Quantity × Conversion Factor
+- System finds the matching UOM conversion (product-specific first, then global)
+- Auto-calculates **Base Quantity** = Order Quantity × Conversion Factor
+- Example: 2 BOX of Crispy Masala Chips → 2 × 48 = 96 PCS base quantity
 - Pricing uses Base UOM price × Base Quantity
 - Target achievement calculation uses **Base Quantity** for volume, **Total Amount** for revenue
 
@@ -71,24 +104,33 @@ When creating an order line:
 ## Step 3: Scheme Configuration
 
 ### 3.1 Verify Active Schemes
-Go to **Scheme Manager tab**. You should see schemes like:
+Go to **Scheme Manager tab**. You should see 7 active schemes:
 
-| Scheme | Type | Discount | Min Qty | Period |
+| Code | Scheme | Category | Type | Key Config |
 |---|---|---|---|---|
-| Buy 5 Get 1 Free | Same Product Qty | Free Product | 5 | Current month |
-| 10% Off Beverages | Invoice Value | 10% Discount | ₹1000 min | Current month |
-| Festive Bonanza | Assorted Value | 5% Discount | ₹5000 min | Current month |
+| SCH-2026-001 | Chips Buy 3 Get 1 Free | Free Products | Same Product (QTY) | Min Qty: 3, Free: Classic Salted Chips 75g |
+| SCH-2026-002 | Biscuits MOV Free Product | Free Products | Same Product (VAL) | MOV: ₹500, Free: Mango Toffees |
+| SCH-2026-003 | Snacks & Noodles 3% Off | Discount in % | Assorted Product (QTY) | 3% discount, Max Cap: ₹500 |
+| SCH-2026-004 | Detergent Invoice Qty Discount | Discount in Value | Invoice Qty Based | 10 KG threshold, ₹200 discount |
+| SCH-2026-005 | Invoice Value Reward Points | Reward Points | Invoice Val Based | ₹5,000 threshold, 300 points |
+| SCH-2026-006 | Juice Qty Reward Points | Reward Points | Same Product (QTY) | Min 6 packs, 300 points |
+| SCH-2026-007 | Personal Care Volume Discount | Discount in % | Same Product (QTY) | Slab-based: 5%/8%/12% |
 
 ### 3.2 Scheme Slabs
-Each scheme can have tiered slabs:
-| Scheme | Slab | Min Qty | Max Qty | Discount |
-|---|---|---|---|---|
-| Buy 5 Get 1 Free | Slab 1 | 5 | 10 | 1 Free |
-| Buy 5 Get 1 Free | Slab 2 | 11 | 20 | 2 Free |
-| Buy 5 Get 1 Free | Slab 3 | 21 | 999 | 5 Free |
+Check **Scheme Slabs** on the Personal Care and Chips schemes:
+| Scheme | Slab Type | Range | Discount |
+|---|---|---|---|
+| Personal Care Volume Discount | Value | ₹1,000 – ₹4,999 | 5% |
+| Personal Care Volume Discount | Value | ₹5,000 – ₹14,999 | 8% |
+| Personal Care Volume Discount | Value | ₹15,000+ | 12% |
+| Chips Buy 3 Get 1 Free | Quantity | 10 – 49 | 2 Free |
+| Chips Buy 3 Get 1 Free | Quantity | 50 – 999 | 12 Free |
+| Invoice Value Reward Points | Value | ₹5,000 – ₹9,999 | 300 points |
+| Invoice Value Reward Points | Value | ₹10,000+ | 750 points |
 
 ### 3.3 How Schemes Apply to Orders
 - Scheme engine auto-evaluates applicable schemes on order save
+- Filters by: Channel (GT/MT), Outlet Type, Territory mapping, Customer Type
 - Discounts applied to matching line items
 - Scheme_Applied__c, Scheme_Discount__c populated on Order_Line_Item__c
 - Budget tracked on Scheme__c (Budget_Used__c increments)
@@ -98,15 +140,36 @@ Each scheme can have tiered slabs:
 ## Step 4: Must-Sell Configuration
 
 ### 4.1 Verify Must-Sell Configs
-Go to **Must Sell Config tab**:
-| Product | Territory | Min Qty | Active |
+Go to **Priority Sell Config tab** (Must_Sell_Config__c):
+
+**National Must Sell** (all territories, all channels):
+| Product | Classification | Min Qty |
+|---|---|---|
+| Crispy Masala Chips 150g | Must Sell | 12 |
+| Classic Cream Biscuits 200g | Must Sell | 12 |
+| Instant Noodles Masala 70g | Must Sell | 24 |
+| Fresh Mint Toothpaste 150g | Must Sell | 6 |
+| Power Wash Detergent 1kg | Must Sell | 6 |
+
+**Channel-specific** (GT / MT):
+| Product | Channel | Classification | Min Qty |
 |---|---|---|---|
-| Biscuit Premium 200g | Delhi NCR | 5 | Yes |
-| Tea Classic 250g | All | 3 | Yes |
-| Soap Fresh 100g | Mumbai Metro | 10 | Yes |
+| Tangy Tomato Chips 150g | GT | Must Sell | 12 |
+| Cola Fizz 300ml | GT | Must Sell | 12 |
+| Classic Salted Chips 75g | MT | Must Sell | 24 |
+| Digestive Wheat Biscuits 250g | MT | Must Sell | 12 |
+
+**Territory-specific** (Delhi, Mumbai, Bangalore, Chennai):
+| Product | Territory | Outlet Type | Classification |
+|---|---|---|---|
+| Instant Coffee 50g | Delhi | Grocery | Must Sell |
+| Hair Oil 200ml | Mumbai | — | Must Sell |
+| Instant Coffee 50g | Bangalore | Grocery | Must Sell |
+| Hair Oil 200ml | Chennai | — | Must Sell |
 
 ### 4.2 How Must-Sell Works
-- During order creation, system checks if must-sell products are included
+- During order creation, `getMustSellProducts()` returns applicable configs for the account
+- Filters by: Territory, Channel, Outlet Type (matches Account.Outlet_Type__c)
 - `Must_Sell_Compliance__c` on Sales_Order__c shows compliance %
 - Visit's `Must_Sell_Products_Required__c` vs `Must_Sell_Products_Ordered__c`
 - Non-compliant orders can be flagged or require `Must_Sell_Override__c`
@@ -123,35 +186,35 @@ Go to **Must Sell Config tab**:
 
 ### 5.2 Create Order During Visit
 1. From the visit, click **Create Order**
-2. Select products:
+2. Select products from seed data:
 
-| Product | UOM | Qty | Unit Price | Line Total |
-|---|---|---|---|---|
-| Biscuit Premium 200g | BOX | 10 | ₹120 | ₹1,200 |
-| Tea Classic 250g | PCS | 20 | ₹85 | ₹1,700 |
-| Soap Fresh 100g | CSE | 2 | ₹450 | ₹900 |
-| Rice Basmati 5kg | PCS | 5 | ₹350 | ₹1,750 |
+| Product | SKU | UOM | Qty | Unit Price | Line Total |
+|---|---|---|---|---|---|
+| Crispy Masala Chips 150g | FF-SNK-001 | BOX | 2 | ₹21 × 48 | ₹2,016 |
+| Classic Cream Biscuits 200g | FF-BIS-001 | PCS | 24 | ₹17.50 | ₹420 |
+| Power Wash Detergent 1kg | FF-DET-001 | PCS | 12 | ₹95 | ₹1,140 |
+| Fresh Mango Juice 1L | FF-JUC-001 | PCS | 6 | ₹55 | ₹330 |
 
 3. Verify auto-calculations:
-   - **Base Quantity**: BOX(10) × 12 = 120 PCS for Biscuit
-   - **Scheme Applied**: If "Buy 5 Get 1 Free" matches → Free Qty populated
-   - **Discount**: Scheme discount auto-applied to line items
-   - **Tax**: GST auto-calculated from product HSN/SAC code
+   - **Base Quantity**: BOX(2) × 48 = 96 PCS for Chips (product-specific conversion)
+   - **Scheme Applied**: "Chips Buy 3 Get 1 Free" checks min qty 3 on Chips product
+   - **Must-Sell Check**: Chips, Biscuits, Detergent are national must-sell → compliance tracked
+   - **Tax**: GST auto-calculated (12% for Chips, 18% for Biscuits, 18% for Detergent)
    - **Total Net Amount**: Sum of all line totals after discount + tax
 
 4. **Submit Order** → Status changes to "Submitted"
 5. **Approve Order** (as manager) → Status = "Approved"
 
 ### 5.3 Create Multiple Orders
-Create 5-10 orders across different accounts and users to generate meaningful target achievement data:
+Create 5-10 orders across different accounts from seed data:
 
-| Order | Account | Salesperson | Total Amount | Status |
+| Order | Account (from seed) | Salesperson (from test team) | Territory | Approx Total |
 |---|---|---|---|---|
-| ORD-001 | ABC Store | Rahul Kumar | ₹15,500 | Approved |
-| ORD-002 | XYZ Mart | Rahul Kumar | ₹22,000 | Approved |
-| ORD-003 | PQR Shop | Anjali Reddy | ₹18,000 | Approved |
-| ORD-004 | LMN Store | Karthik Nambiar | ₹31,000 | Approved |
-| ORD-005 | DEF Outlet | Meera Iyer | ₹12,500 | Approved |
+| ORD-001 | Lakshmi General Store | Rahul Kumar (TSE) | Delhi | ~₹15,000 |
+| ORD-002 | Ganesh Provision Store | Anjali Reddy (TSE) | Delhi | ~₹22,000 |
+| ORD-003 | Kumar Kirana | Karthik Nambiar (TSE) | Mumbai | ~₹18,000 |
+| ORD-004 | Deepak Grocery | Meera Iyer (TSE) | Mumbai | ~₹31,000 |
+| ORD-005 | Gupta Mart | Nikhil Rao (TSE) | Bangalore | ~₹12,500 |
 
 ---
 
@@ -241,31 +304,44 @@ Or check in **KPI Dashboard** → My KPIs view.
 
 ## Step 9: Configure Incentive Slabs
 
-### 9.1 Create Slabs
-Go to **Incentive Slab Manager tab** → Click **New Slab**
+### 9.1 Verify Slabs
+Go to **Incentive Slab Manager tab**. The seed script creates slabs across all 4 FSCRM profiles:
 
-#### Universal Slabs (all criteria, all profiles):
+#### Universal Slabs (fallback — no criteria/profile):
 | Slab Name | Range | Payout Type | Value | Multiplier |
 |---|---|---|---|---|
-| Below Threshold | 0% – 89.99% | Fixed Amount | 0 | 0 |
-| Base Achiever | 90% – 94.99% | Salary Percentage | 4.5% | 1.0 |
-| Standard | 95% – 99.99% | Salary Percentage | 10% | 1.0 |
-| Achiever | 100% – 109.99% | Salary Percentage | 17.75% | 1.0 |
-| Super Achiever | 110%+ | Salary Percentage | 20% | 1.0 |
+| Universal — Below Threshold | 0% – 89.99% | Fixed Amount | ₹0 | 0 |
+| Universal — Base | 90% – 94.99% | Percentage | 3% | 1.0 |
+| Universal — Standard | 95% – 99.99% | Percentage | 8% | 1.0 |
+| Universal — Achiever | 100% – 109.99% | Percentage | 15% | 1.0 |
+| Universal — Super Achiever | 110%+ | Percentage | 15% | 1.3 |
 
-#### Revenue-Specific (different rates by profile):
-| Slab | Profile | Range | Payout | Value |
+#### Revenue Slabs — Salary-Based by Profile:
+| Profile | 90-95% | 95-100% | 100-110% | 110%+ |
 |---|---|---|---|---|
-| Revenue TSE 90-95% | FSCRM_TSE | 90% – 94.99% | Salary % | 4.5% |
-| Revenue TSE 100%+ | FSCRM_TSE | 100% – 109.99% | Salary % | 17.75% |
-| Revenue ASM 90-95% | FSCRM_ASM | 90% – 94.99% | Salary % | 3.75% |
-| Revenue ASM 100%+ | FSCRM_ASM | 100% – 109.99% | Salary % | 14.5% |
+| FSCRM_TSE | 4.5% | 10% | 17.75% | 20% |
+| FSCRM_ASM | 3.75% | 8.25% | 14.5% | 17% |
+| FSCRM_RSM | 3% | 7% | 12% | 15% |
+| FSCRM_NSM | 2.5% | 5.5% | 10% | 12.5% |
+
+#### Fixed Amount Slabs (Collection & Volume — same for all profiles):
+| Criteria | 70-90% | 90-100% | 100%+ |
+|---|---|---|---|
+| Collection | ₹1,000 | ₹2,500 | ₹5,000 |
+| Volume | — | ₹1,500 (80%+) | ₹3,000 (×1.5) |
+
+#### Territory-Specific (Delhi premium):
+| Slab | Profile | Territory | Range | Payout |
+|---|---|---|---|---|
+| Revenue Delhi TSE — 100-110% | FSCRM_TSE | Delhi | 100-110% | 20% salary |
+| Revenue Delhi TSE — 110%+ | FSCRM_TSE | Delhi | 110%+ | 22.5% salary |
 
 ### 9.2 Slab Matching Priority
+The incentive engine matches slabs in this order (most specific first):
 ```
-1. Criteria + Profile + Territory  (most specific)
-2. Criteria + Profile              (profile-specific)
-3. Criteria only                   (criteria-specific)
+1. Criteria + Profile + Territory  (e.g., Revenue + FSCRM_TSE + Delhi)
+2. Criteria + Profile              (e.g., Revenue + FSCRM_TSE)
+3. Criteria only                   (e.g., Collection — no profile)
 4. Universal                       (fallback for all)
 ```
 
@@ -288,18 +364,25 @@ Database.executeBatch(new TAM_IncentiveCalculation_Batch(period.Id), 50);
 
 ### 10.2 Calculation Example
 
-**TSE Rahul Kumar** (Salary: ₹30,000):
-| Criteria | Target | Actual | % | Slab Matched | Payout |
-|---|---|---|---|---|---|
-| Revenue | ₹4,00,000 | ₹3,80,000 | 95% | Standard (10%) | ₹30,000 × 10% × 60% weight = ₹1,800 |
-| Focus Brand | ₹80,000 | ₹76,000 | 95% | Standard (10%) | ₹30,000 × 10% × 15% weight = ₹450 |
-| Outlet Expansion | 10 | 11 | 110% | Super (20%) | ₹30,000 × 20% × 15% weight = ₹900 |
-| Collection | ₹2,80,000 | ₹2,50,000 | 89% | Below | ₹0 |
-| **Total Monthly** | | | | | **₹3,150** |
+**TSE Rahul Kumar** (Profile: FSCRM_TSE, Gross Salary: ₹30,000/month):
+
+| Criteria | Weight | Target | Actual | % | Slab Matched | Payout Calculation |
+|---|---|---|---|---|---|---|
+| Revenue | 60% | ₹4,00,000 | ₹3,80,000 | 95% | Revenue TSE 95-100% (10%) | ₹30,000 × 10% × 1.0 × 60% = **₹1,800** |
+| Focus Brand | 15% | ₹80,000 | ₹76,000 | 95% | Revenue TSE 95-100% (10%) | ₹30,000 × 10% × 1.0 × 15% = **₹450** |
+| Outlet Expansion | 15% | 10 | 11 | 110% | Revenue TSE 110%+ (20%) | ₹30,000 × 20% × 1.0 × 15% = **₹900** |
+| Collection | 10% | ₹2,80,000 | ₹2,50,000 | 89% | Below Threshold (₹0) | **₹0** |
+| | | | | | **Total Monthly** | **₹3,150** |
+
+**PBIS Payout Formula:** `Gross Salary × Slab% × Multiplier × KPI Weight`
 
 **Prerequisite Check:**
 - Revenue = 95% (≥ 90%) → Focus Brand and Outlet Expansion qualify ✓
-- If Revenue was 85% → Focus Brand and Outlet Expansion would be ₹0
+- If Revenue was 85% → Focus Brand and Outlet Expansion would be ₹0 (prerequisite not met)
+
+**Territory Premium Example** (if Rahul is in Delhi):
+- Revenue at 105% → matches "Revenue Delhi TSE 100-110%" slab at 20% (vs standard 17.75%)
+- Payout: ₹30,000 × 20% × 1.0 × 60% = ₹3,600 (vs ₹3,195 at standard rate)
 
 ### 10.3 Review in Dashboard
 1. **Incentive Dashboard** → Shows all calculated incentives
