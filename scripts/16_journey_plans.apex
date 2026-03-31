@@ -36,8 +36,8 @@ String monthName = monthNames[currentMonth];
 Date firstDay = Date.newInstance(currentYear, currentMonth, 1);
 Date lastDay = firstDay.addMonths(1).addDays(-1);
 
-// Create Journey Plans for Delhi, Mumbai, and Bengaluru territories
-// Each plan tracks exclusion preferences and assigns a salesperson user
+// Create Journey Plans — all as Draft first (trigger blocks day inserts on Approved/Active plans)
+// Status will be updated after plan days are inserted
 List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
     new Journey_Plan__c(
         Name = 'PJP - Delhi - ' + monthName + ' ' + currentYear,
@@ -46,7 +46,7 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Territory__c = terMap.get('TER-DEL-001'),
         Salesperson__c = salespersonId,
         User__c = salespersonId,
-        Status__c = 'Active',
+        Status__c = 'Draft',
         Plan_Date__c = Date.today(),
         Effective_From__c = firstDay,
         Effective_To__c = lastDay,
@@ -61,12 +61,10 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Territory__c = terMap.get('TER-MUM-001'),
         Salesperson__c = salespersonId,
         User__c = salespersonId,
-        Status__c = 'Approved',
+        Status__c = 'Draft',
         Plan_Date__c = Date.today(),
         Effective_From__c = firstDay,
         Effective_To__c = lastDay,
-        Approval_Date__c = Date.today(),
-        Approved_By__c = currentUserId,
         Exclude_Holidays__c = true,
         Exclude_Leaves__c = true,
         Exclude_Week_Offs__c = true
@@ -88,7 +86,7 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
     )
 };
 insert plans;
-System.debug('Inserted journey plans: ' + plans.size());
+System.debug('Inserted journey plans (all Draft): ' + plans.size());
 
 // Day of week mapping
 Map<String, Integer> dowMap = new Map<String, Integer>{
@@ -162,7 +160,8 @@ if (!planDays.isEmpty()) {
     insert planDays;
 }
 
-// Update plan totals
+// Update plan totals and set final statuses
+// Delhi → Active, Mumbai → Approved, Bengaluru → stays Draft
 for (Journey_Plan__c p : plans) {
     Integer totalDays = 0;
     Integer totalVisits = 0;
@@ -175,6 +174,14 @@ for (Journey_Plan__c p : plans) {
     p.Total_Planned_Days__c = totalDays;
     p.Total_Planned_Visits__c = totalVisits;
 }
+
+// Set final statuses now that days are already inserted
+plans[0].Status__c = 'Active';                    // Delhi — active plan
+plans[1].Status__c = 'Approved';                  // Mumbai — approved plan
+plans[1].Approval_Date__c = Date.today();
+plans[1].Approved_By__c = currentUserId;
+// plans[2] stays Draft                           // Bengaluru — draft plan
+
 update plans;
 
 System.debug('Journey Plans setup complete. Plans: ' + plans.size() + ', Plan Days: ' + planDays.size());
