@@ -56,7 +56,7 @@ for (String sku : prodMap.keySet()) {
         Effective_From__c = effectiveFrom,
         Is_Active__c = true,
         Status__c = 'Approved',
-        Priority__c = 100
+        Priority__c = 99
     ));
 
     // MT Channel — Distributor Price (60% of MRP)
@@ -69,7 +69,7 @@ for (String sku : prodMap.keySet()) {
         Effective_From__c = effectiveFrom,
         Is_Active__c = true,
         Status__c = 'Approved',
-        Priority__c = 100
+        Priority__c = 99
     ));
 
     // E-Commerce — MRP
@@ -82,7 +82,7 @@ for (String sku : prodMap.keySet()) {
         Effective_From__c = effectiveFrom,
         Is_Active__c = true,
         Status__c = 'Approved',
-        Priority__c = 100
+        Priority__c = 99
     ));
 }
 
@@ -110,7 +110,7 @@ if (delhiTer != null) {
             Effective_From__c = effectiveFrom,
             Is_Active__c = true,
             Status__c = 'Approved',
-            Priority__c = 80  // Higher priority (lower number) than standard
+            Priority__c = 60  // Higher priority (lower number) than standard
         ));
     }
 }
@@ -130,7 +130,7 @@ if (mumbaiTer != null) {
             Effective_From__c = effectiveFrom,
             Is_Active__c = true,
             Status__c = 'Approved',
-            Priority__c = 80
+            Priority__c = 60
         ));
     }
 }
@@ -152,7 +152,7 @@ if (beverageCat != null) {
         Effective_From__c = effectiveFrom,
         Is_Active__c = true,
         Status__c = 'Approved',
-        Priority__c = 90
+        Priority__c = 60
     ));
 }
 
@@ -180,7 +180,7 @@ if (!keyAccounts.isEmpty()) {
             Effective_From__c = effectiveFrom,
             Is_Active__c = true,
             Status__c = 'Approved',
-            Priority__c = 50  // Highest priority — customer-specific wins
+            Priority__c = 10  // Highest priority — customer-specific wins
         ));
         count++;
     }
@@ -208,7 +208,7 @@ for (String sku : new List<String>{'FF-SNK-001', 'FF-SNK-002', 'FF-SNK-003'}) {
         Effective_From__c = effectiveFrom,
         Is_Active__c = true,
         Status__c = 'Approved',
-        Priority__c = 70  // Higher priority than territory but lower than customer
+        Priority__c = 40  // Higher priority than territory but lower than customer
     ));
 }
 
@@ -230,9 +230,8 @@ System.debug('  Customer-specific: ' + Math.min(5, prodMap.size()));
 System.debug('  Volume-based: 3');
 System.debug('');
 System.debug('Priority Resolution (lower number = higher priority):');
-System.debug('  50 = Customer-specific');
-System.debug('  70 = Volume-based (min qty)');
-System.debug('  80 = Territory-specific');
-System.debug('  90 = Category-level');
-System.debug('  100 = Standard (default)');
+System.debug('  10 = Customer-specific');
+System.debug('  40 = Volume-based (min qty)');
+System.debug('  60 = Territory-specific / Category-level');
+System.debug('  99 = Standard (default)');
 System.debug('═══════════════════════════════════════════');
