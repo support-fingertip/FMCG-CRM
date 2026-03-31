@@ -223,7 +223,7 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             const accrued = lb.Accrued__c || 0;
             const carry = lb.Carry_Forward__c || 0;
             const pool = accrued + carry;
-            const available = lb.Available__c || 0;
+            const available = ((lb.Accrued__c || 0) + (lb.Carry_Forward__c || 0) - (lb.Used__c || 0) - (lb.Pending__c || 0)) || 0;
             const used = lb.Used__c || 0;
             const pending = lb.Pending__c || 0;
             const pct = pool > 0 ? Math.min(Math.round((available / pool) * 100), 100) : 0;
@@ -256,13 +256,13 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
 
     _getBalanceForType(type) {
         const lb = this.leaveBalances.find(b => b.Leave_Type__c === type);
-        return lb ? (lb.Available__c || 0) : 0;
+        return lb ? (((lb.Accrued__c || 0) + (lb.Carry_Forward__c || 0) - (lb.Used__c || 0) - (lb.Pending__c || 0)) || 0) : 0;
     }
     _getProgressForType(type) {
         const lb = this.leaveBalances.find(b => b.Leave_Type__c === type);
         if (!lb) return 'width: 0%';
         const pool = (lb.Accrued__c || 0) + (lb.Carry_Forward__c || 0);
-        const pct = pool > 0 ? Math.min(Math.round(((lb.Available__c || 0) / pool) * 100), 100) : 0;
+        const pct = pool > 0 ? Math.min(Math.round(((((lb.Accrued__c || 0) + (lb.Carry_Forward__c || 0) - (lb.Used__c || 0) - (lb.Pending__c || 0)) || 0) / pool) * 100), 100) : 0;
         return 'width: ' + pct + '%';
     }
 

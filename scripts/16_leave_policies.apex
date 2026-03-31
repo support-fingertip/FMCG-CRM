@@ -86,12 +86,12 @@ System.debug('');
 System.debug('Sample balances:');
 for (Leave_Balance__c lb : [
     SELECT Employee__r.First_Name__c, Employee__r.Last_Name__c,
-           Leave_Type__c, Entitled__c, Accrued__c, Carry_Forward__c, Available__c
+           Leave_Type__c, Entitled__c, Accrued__c, Carry_Forward__c, Used__c, Pending__c
     FROM Leave_Balance__c WHERE Year__c = :currentYear
     ORDER BY Employee__r.Last_Name__c, Leave_Type__c LIMIT 20
 ]) {
     System.debug('  ' + lb.Employee__r.First_Name__c + ' ' + lb.Employee__r.Last_Name__c +
         ' | ' + lb.Leave_Type__c + ' | Entitled: ' + lb.Entitled__c +
-        ' | Accrued: ' + lb.Accrued__c + ' | Available: ' + lb.Available__c);
+        ' | Accrued: ' + lb.Accrued__c + ' | Available: ' + (lb.Accrued__c + lb.Carry_Forward__c - lb.Used__c - lb.Pending__c));
 }
 System.debug('════════════════════════════════════════════');

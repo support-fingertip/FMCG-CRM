@@ -231,7 +231,7 @@ public with sharing class EmployeeThreeSixtyController {
 
         if (empId != null) {
             for (Leave_Balance__c lb : LeaveBalanceService.getBalancesForEmployee(empId, fiscalYear)) {
-                Decimal avail = lb.Available__c != null ? lb.Available__c : 0;
+                Decimal avail = LeaveBalanceService.calcAvailable(lb);
                 if (lb.Leave_Type__c == 'Casual Leave') clBal = avail;
                 else if (lb.Leave_Type__c == 'Sick Leave') slBal = avail;
                 else if (lb.Leave_Type__c == 'Earned Leave') elBal = avail;

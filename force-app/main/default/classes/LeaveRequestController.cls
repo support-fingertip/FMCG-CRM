@@ -562,12 +562,13 @@ public with sharing class LeaveRequestController {
             row.put('carryForward', lb.Carry_Forward__c);
             row.put('used', lb.Used__c);
             row.put('pending', lb.Pending__c);
-            row.put('available', lb.Available__c);
+            Decimal available = LeaveBalanceService.calcAvailable(lb);
+            row.put('available', available);
             balanceList.add(row);
 
             String shortType = shortTypeMap.get(lb.Leave_Type__c);
             if (shortType != null) {
-                simpleBalance.put(shortType, lb.Available__c != null ? lb.Available__c : 0);
+                simpleBalance.put(shortType, available);
             }
         }
 

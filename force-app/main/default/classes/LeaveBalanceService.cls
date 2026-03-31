@@ -33,7 +33,7 @@ public with sharing class LeaveBalanceService {
         String prevYear = String.valueOf(Integer.valueOf(year) - 1);
         Map<String, Leave_Balance__c> prevBalanceMap = new Map<String, Leave_Balance__c>();
         for (Leave_Balance__c lb : [
-            SELECT Id, Employee__c, Leave_Type__c, Available__c, Accrued__c, Used__c, Pending__c
+            SELECT Id, Employee__c, Leave_Type__c, Accrued__c, Carry_Forward__c, Used__c, Pending__c
             FROM Leave_Balance__c
             WHERE Year__c = :prevYear
         ]) {
@@ -77,7 +77,7 @@ public with sharing class LeaveBalanceService {
                 if (maxCarry > 0) {
                     Leave_Balance__c prevBal = prevBalanceMap.get(key);
                     if (prevBal != null) {
-                        Decimal unusedDays = prevBal.Available__c != null ? prevBal.Available__c : 0;
+                        Decimal unusedDays = calcAvailable(prevBal);
                         carryForward = Math.min(unusedDays, maxCarry);
                         if (carryForward < 0) carryForward = 0;
                     }
@@ -202,7 +202,7 @@ public with sharing class LeaveBalanceService {
             );
         }
 
-        Decimal available = lb.Available__c != null ? lb.Available__c : 0;
+        Decimal available = calcAvailable(lb);
 
         if (days > available) {
             throw new AuraHandledException(
@@ -227,7 +227,7 @@ public with sharing class LeaveBalanceService {
 
         return [
             SELECT Id, Leave_Type__c, Year__c, Entitled__c, Accrued__c,
-                   Carry_Forward__c, Used__c, Pending__c, Available__c,
+                   Carry_Forward__c, Used__c, Pending__c,
                    Leave_Policy__c, Leave_Policy__r.Name
             FROM Leave_Balance__c
             WHERE Employee__c = :employees[0].Id
@@ -239,7 +239,7 @@ public with sharing class LeaveBalanceService {
     public static List<Leave_Balance__c> getBalancesForEmployee(Id employeeId, String year) {
         return [
             SELECT Id, Leave_Type__c, Year__c, Entitled__c, Accrued__c,
-                   Carry_Forward__c, Used__c, Pending__c, Available__c,
+                   Carry_Forward__c, Used__c, Pending__c,
                    Leave_Policy__c, Leave_Policy__r.Name
             FROM Leave_Balance__c
             WHERE Employee__c = :employeeId
@@ -254,7 +254,7 @@ public with sharing class LeaveBalanceService {
 
     private static Leave_Balance__c getBalance(Id employeeId, String leaveType, String year) {
         List<Leave_Balance__c> balances = [
-            SELECT Id, Used__c, Pending__c, Available__c, Accrued__c, Carry_Forward__c
+            SELECT Id, Used__c, Pending__c, Accrued__c, Carry_Forward__c
             FROM Leave_Balance__c
             WHERE Employee__c = :employeeId
             AND Leave_Type__c = :leaveType
@@ -282,5 +282,14 @@ public with sharing class LeaveBalanceService {
             SELECT Id FROM Employee__c WHERE User__c = :userId AND Is_Active__c = true LIMIT 1
         ];
         return employees.isEmpty() ? null : employees[0].Id;
+    }
+
+    // Calculate available balance in code (doesn't depend on formula field)
+    public static Decimal calcAvailable(Leave_Balance__c lb) {
+        Decimal accrued = lb.Accrued__c != null ? lb.Accrued__c : 0;
+        Decimal carry = lb.Carry_Forward__c != null ? lb.Carry_Forward__c : 0;
+        Decimal used = lb.Used__c != null ? lb.Used__c : 0;
+        Decimal pending = lb.Pending__c != null ? lb.Pending__c : 0;
+        return accrued + carry - used - pending;
     }
 }
