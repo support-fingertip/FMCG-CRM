@@ -48,10 +48,11 @@ public class TAM_TargetAllocation_Controller {
             LIMIT 20
         ];
 
-        // Find current active period
+        // Find current active monthly period (not quarterly/annual)
         List<Target_Period__c> currentPeriodList = [
             SELECT Id FROM Target_Period__c
             WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+            AND Type__c = 'Monthly'
             LIMIT 1
         ];
         dx.period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
