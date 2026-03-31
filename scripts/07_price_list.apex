@@ -88,43 +88,58 @@ for (String sku : prodMap.keySet()) {
 
 System.debug('Standard prices: ' + prices.size());
 
+// Insert standard prices first
+insert prices;
+System.debug('Inserted ' + prices.size() + ' standard prices');
+
 // ═══════════════════════════════════════════════════════════
-// 2. TERRITORY-SPECIFIC PRICES (Delhi gets 5% premium, Mumbai 3% discount)
+// 2. TERRITORY-SPECIFIC PRICES (select products only)
 // ═══════════════════════════════════════════════════════════
+
+List<Price_List__c> extraPrices = new List<Price_List__c>();
 
 Id delhiTer = terMap.get('TER-DEL-001');
 Id mumbaiTer = terMap.get('TER-MUM-001');
 
+// Only top 5 products for territory pricing (avoid validation overlap)
+List<String> territorySkus = new List<String>();
+Integer tCount = 0;
+for (String sku : prodMap.keySet()) {
+    territorySkus.add(sku);
+    tCount++;
+    if (tCount >= 5) break;
+}
+
 if (delhiTer != null) {
-    for (String sku : prodMap.keySet()) {
+    for (String sku : territorySkus) {
         Product_Extension__c p = prodMap.get(sku);
         Decimal mrp = p.MRP__c != null ? p.MRP__c : 100;
 
-        prices.add(new Price_List__c(
+        extraPrices.add(new Price_List__c(
             Name = 'DEL-GT-' + sku,
             Product_Ext__c = p.Id,
             Price_Type__c = 'Retailer Price',
-            Unit_Price__c = (mrp * 0.735).setScale(2), // 5% premium over standard GT
+            Unit_Price__c = (mrp * 0.735).setScale(2),
             Channel__c = 'GT',
             Territory__c = delhiTer,
             Effective_From__c = effectiveFrom,
             Is_Active__c = true,
             Status__c = 'Approved',
-            Priority__c = 60  // Higher priority (lower number) than standard
+            Priority__c = 60
         ));
     }
 }
 
 if (mumbaiTer != null) {
-    for (String sku : prodMap.keySet()) {
+    for (String sku : territorySkus) {
         Product_Extension__c p = prodMap.get(sku);
         Decimal mrp = p.MRP__c != null ? p.MRP__c : 100;
 
-        prices.add(new Price_List__c(
+        extraPrices.add(new Price_List__c(
             Name = 'MUM-GT-' + sku,
             Product_Ext__c = p.Id,
             Price_Type__c = 'Retailer Price',
-            Unit_Price__c = (mrp * 0.679).setScale(2), // 3% discount over standard GT
+            Unit_Price__c = (mrp * 0.679).setScale(2),
             Channel__c = 'GT',
             Territory__c = mumbaiTer,
             Effective_From__c = effectiveFrom,
@@ -143,7 +158,7 @@ System.debug('Territory prices added');
 
 Id beverageCat = catMap.get('CAT-BEV');
 if (beverageCat != null) {
-    prices.add(new Price_List__c(
+    extraPrices.add(new Price_List__c(
         Name = 'CAT-BEV-GT-DISCOUNT',
         Category__c = beverageCat,
         Price_Type__c = 'Retailer Price',
@@ -170,7 +185,7 @@ if (!keyAccounts.isEmpty()) {
         Product_Extension__c p = prodMap.get(sku);
         Decimal mrp = p.MRP__c != null ? p.MRP__c : 100;
 
-        prices.add(new Price_List__c(
+        extraPrices.add(new Price_List__c(
             Name = 'KEY-' + keyAccount.Name.left(10) + '-' + sku,
             Product_Ext__c = p.Id,
             Customer__c = keyAccount.Id,
@@ -192,38 +207,38 @@ System.debug('Customer-specific prices added');
 // 5. VOLUME-BASED PRICING (Min qty discounts)
 // ═══════════════════════════════════════════════════════════
 
-// For snack products: order 100+ PCS = extra 5% off
 for (String sku : new List<String>{'FF-SNK-001', 'FF-SNK-002', 'FF-SNK-003'}) {
     if (!prodMap.containsKey(sku)) continue;
     Product_Extension__c p = prodMap.get(sku);
     Decimal mrp = p.MRP__c != null ? p.MRP__c : 100;
 
-    prices.add(new Price_List__c(
+    extraPrices.add(new Price_List__c(
         Name = 'VOL-100-' + sku,
         Product_Ext__c = p.Id,
         Price_Type__c = 'Retailer Price',
-        Unit_Price__c = (mrp * 0.665).setScale(2), // 5% extra discount on bulk
+        Unit_Price__c = (mrp * 0.665).setScale(2),
         Channel__c = 'GT',
         Min_Qty__c = 100,
         Effective_From__c = effectiveFrom,
         Is_Active__c = true,
         Status__c = 'Approved',
-        Priority__c = 40  // Higher priority than territory but lower than customer
+        Priority__c = 40
     ));
 }
 
-System.debug('Volume-based prices added');
-
 // ═══════════════════════════════════════════════════════════
-// INSERT ALL
+// INSERT EXTRA PRICES (territory, customer, volume)
 // ═══════════════════════════════════════════════════════════
 
-insert prices;
+if (!extraPrices.isEmpty()) {
+    insert extraPrices;
+    System.debug('Inserted ' + extraPrices.size() + ' extra prices (territory/customer/volume)');
+}
 
 System.debug('');
 System.debug('═══════════════════════════════════════════');
 System.debug('Price List Setup Complete:');
-System.debug('  Total Price Records: ' + prices.size());
+System.debug('  Total Price Records: ' + (prices.size() + extraPrices.size()));
 System.debug('  Standard (all products × 3 channels): ' + (prodMap.size() * 3));
 System.debug('  Territory-specific (Delhi + Mumbai): ' + (delhiTer != null ? prodMap.size() : 0) + ' + ' + (mumbaiTer != null ? prodMap.size() : 0));
 System.debug('  Customer-specific: ' + Math.min(5, prodMap.size()));
