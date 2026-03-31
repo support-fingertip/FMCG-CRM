@@ -234,7 +234,7 @@ export default class LeaveManager extends LightningElement {
         return configs.map(cfg => {
             const available = this.leaveBalance[cfg.key] || 0;
             const total = this.getTotalForType(cfg.key);
-            const used = total - available;
+            const used = Math.max(total - available, 0);
             const percent = total > 0 ? Math.round((available / total) * 100) : 0;
             const cappedPercent = Math.min(percent, 100);
             const dashOffset = RING_CIRCUMFERENCE - (cappedPercent / 100) * RING_CIRCUMFERENCE;
@@ -821,9 +821,8 @@ export default class LeaveManager extends LightningElement {
     // ── Utility Methods ─────────────────────────────────────
 
     getTotalForType(key) {
-        // Default totals — must match Employee__c field defaultValue
         const defaults = { CL: 12, SL: 7, EL: 15, CO: 0 };
-        return defaults[key] || 12;
+        return defaults.hasOwnProperty(key) ? defaults[key] : 12;
     }
 
     calculateBusinessDays(startStr, endStr) {
