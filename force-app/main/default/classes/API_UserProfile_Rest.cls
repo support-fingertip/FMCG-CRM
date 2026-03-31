@@ -49,11 +49,11 @@ global with sharing class API_UserProfile_Rest {
 
         // Look up Employee by User__c or by Employee Id
         List<Employee__c> employees = [
-            SELECT Id, Employee_Code__c, First_Name__c, Last_Name__c,
+            SELECT Id, Employee_Code__c,Name, First_Name__c, Last_Name__c,
                    Phone__c, Email__c
             FROM Employee__c
             WHERE User__c = :userId
-               OR Id = :userId
+               OR Name = :userId
             LIMIT 1
         ];
 
@@ -66,8 +66,7 @@ global with sharing class API_UserProfile_Rest {
 
         Map<String, Object> data = new Map<String, Object>();
         data.put('userId', emp.Employee_Code__c);
-        data.put('name', ((emp.First_Name__c != null ? emp.First_Name__c : '') + ' ' +
-                          (emp.Last_Name__c != null ? emp.Last_Name__c : '')).trim());
+        data.put('name', emp.Name);
         data.put('mobileNumber', emp.Phone__c);
         data.put('emailAddress', emp.Email__c);
 

@@ -64,7 +64,7 @@ global with sharing class API_Expense_Rest {
         // Resolve employee
         List<Employee__c> employees = [
             SELECT Id, User__c FROM Employee__c
-            WHERE User__c = :userId OR Id = :userId
+            WHERE User__c = :userId OR Name = :userId
             LIMIT 1
         ];
         if (employees.isEmpty()) {
@@ -160,7 +160,7 @@ global with sharing class API_Expense_Rest {
             SELECT Id, Name, Expense_Date__c, Claimed_Amount__c, Notes__c,
                    Expense_Type__c, Approval_Status__c
             FROM Expense_Item__c
-            WHERE Expense__r.Employee__r.User__c = :sfUserId
+            WHERE Expense__r.Employee__r.Name = :sfUserId
             ORDER BY Expense_Date__c DESC
             LIMIT 500
         ];
@@ -296,7 +296,7 @@ global with sharing class API_Expense_Rest {
                    CreatedDate, LastModifiedDate
             FROM Expense_Item__c
             WHERE Id = :expenseId
-              AND Expense__r.Employee__r.User__c = :sfUserId
+              AND Expense__r.Employee__r.Name = :sfUserId
             LIMIT 1
         ];
 
@@ -360,7 +360,7 @@ global with sharing class API_Expense_Rest {
     private static Id resolveUserId(String userId) {
         List<Employee__c> employees = [
             SELECT Id, User__c FROM Employee__c
-            WHERE User__c = :userId OR Id = :userId
+            WHERE User__c = :userId OR Name = :userId
             LIMIT 1
         ];
         return employees.isEmpty() ? null : employees[0].User__c;

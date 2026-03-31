@@ -127,7 +127,7 @@ global with sharing class API_Planner_Rest {
     private static Id resolveUserId(String userId) {
         List<Employee__c> employees = [
             SELECT Id, User__c FROM Employee__c
-            WHERE User__c = :userId OR Id = :userId
+            WHERE User__c = :userId OR Name = :userId
             LIMIT 1
         ];
         return employees.isEmpty() ? null : employees[0].User__c;

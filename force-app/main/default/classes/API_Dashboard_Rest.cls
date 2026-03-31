@@ -42,7 +42,7 @@ global with sharing class API_Dashboard_Rest {
         // Resolve employee → Salesforce User Id
         List<Employee__c> employees = [
             SELECT Id, User__c FROM Employee__c
-            WHERE User__c = :userId OR Id = :userId
+            WHERE User__c = :userId OR Name = :userId
             LIMIT 1
         ];
         if (employees.isEmpty()) {
