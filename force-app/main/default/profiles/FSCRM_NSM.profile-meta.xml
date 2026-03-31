@@ -760,4 +760,23 @@
         <tab>Warehouse__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Designation__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Effective_Year__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Encashable__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Max_Carry_Forward__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Monthly_Accrual__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Accrued__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Carry_Forward__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Employee__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Entitled__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Leave_Policy__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Pending__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Used__c</field><readable>true</readable></fieldPermissions>
+    <layoutAssignments><layout>Leave_Policy__c-Leave Policy Layout</layout></layoutAssignments>
+    <layoutAssignments><layout>Leave_Balance__c-Leave Balance Layout</layout></layoutAssignments>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
+    <tabVisibilities><tab>Leave_Policy__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
 </Profile>

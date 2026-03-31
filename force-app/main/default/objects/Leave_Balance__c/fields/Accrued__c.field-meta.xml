@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Accrued__c</fullName>
+    <label>Accrued</label>
+    <precision>5</precision>
+    <scale>2</scale>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <defaultValue>0</defaultValue>
+    <inlineHelpText>Days accrued so far this year. For lump-sum leave types (CL, SL), this equals the full entitlement. For monthly-accrual types (EL), this increments each month.</inlineHelpText>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Max_Carry_Forward__c</fullName>
+    <label>Max Carry Forward (Days)</label>
+    <precision>5</precision>
+    <scale>1</scale>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <defaultValue>0</defaultValue>
+    <inlineHelpText>Maximum unused days that can carry forward to the next year. 0 = no carry forward (balance resets). Example: EL may carry up to 30 days.</inlineHelpText>
+</CustomField>

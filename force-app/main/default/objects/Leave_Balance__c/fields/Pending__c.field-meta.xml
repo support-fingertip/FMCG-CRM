@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pending__c</fullName>
+    <label>Pending</label>
+    <precision>5</precision>
+    <scale>1</scale>
+    <required>false</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <defaultValue>0</defaultValue>
+    <inlineHelpText>Days in submitted/pending leave requests (not yet approved or rejected).</inlineHelpText>
+</CustomField>

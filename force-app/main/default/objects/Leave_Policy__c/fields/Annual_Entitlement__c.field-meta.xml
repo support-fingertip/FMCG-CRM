@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Annual_Entitlement__c</fullName>
+    <label>Annual Entitlement (Days)</label>
+    <precision>5</precision>
+    <scale>1</scale>
+    <required>true</required>
+    <type>Number</type>
+    <unique>false</unique>
+    <defaultValue>12</defaultValue>
+    <inlineHelpText>Total number of leave days entitled per year for this leave type and designation.</inlineHelpText>
+</CustomField>

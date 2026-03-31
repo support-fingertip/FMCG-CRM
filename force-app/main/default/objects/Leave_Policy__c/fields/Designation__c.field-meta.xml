@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Designation__c</fullName>
+    <label>Designation</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+    <inlineHelpText>Employee designation this policy applies to (e.g., Sales Representative, Area Sales Manager). Leave blank for a universal policy that applies to all designations.</inlineHelpText>
+    <description>Blank = applies to all designations (universal fallback).</description>
+</CustomField>
