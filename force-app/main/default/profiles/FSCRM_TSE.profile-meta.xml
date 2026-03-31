@@ -349,6 +349,7 @@
     <fieldPermissions><editable>false</editable><field>Leave_Balance__c.Leave_Policy__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Leave_Balance__c.Pending__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Leave_Balance__c.Used__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Leave_Balance__c.Available__c</field><readable>true</readable></fieldPermissions>
     <layoutAssignments>
         <layout>Employee__c-Employee Layout</layout>
     </layoutAssignments>
