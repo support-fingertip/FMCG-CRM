@@ -37,6 +37,11 @@ for (Product_Extension__c p : [SELECT Id, SKU_Code__c, Name, Unit_Price__c, MRP_
     prodMap.put(p.SKU_Code__c, p);
 }
 
+Map<String, Id> uomMap = new Map<String, Id>();
+for (UOM__c u : [SELECT Id, UOM_Code__c FROM UOM__c WHERE Is_Active__c = true]) {
+    uomMap.put(u.UOM_Code__c, u.Id);
+}
+
 Map<String, Id> warehouseMap = new Map<String, Id>();
 for (Warehouse__c w : [SELECT Id, Warehouse_Code__c FROM Warehouse__c WHERE Is_Active__c = true]) {
     warehouseMap.put(w.Warehouse_Code__c, w.Id);
@@ -250,7 +255,8 @@ for (Sales_Order__c order : orders) {
             Total_Amount__c = lineTotal + taxAmt,
             HSN_SAC_Code__c = prod.HSN_SAC_Code__c,
             UOM__c = 'Pieces',
-            Order_UOM__c = 'PCS',
+            Order_UOM__c = uomMap.get('PCS'),
+            Base_UOM__c = uomMap.get('PCS'),
             Base_Quantity__c = qty,
             Conversion_Factor__c = 1,
             Discount_Amount__c = 0,
