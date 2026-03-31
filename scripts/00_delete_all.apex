@@ -135,9 +135,26 @@ if (c > 0) { delete [SELECT Id FROM Stock_Transfer__c]; System.debug('Deleted ' 
 c = [SELECT COUNT() FROM Warehouse__c];
 if (c > 0) { delete [SELECT Id FROM Warehouse__c]; System.debug('Deleted ' + c + ' Warehouse__c'); }
 
-// ── Accounts ─────────────────────────────────────────────
-c = [SELECT COUNT() FROM Account];
-if (c > 0) { delete [SELECT Id FROM Account]; System.debug('Deleted ' + c + ' Account'); }
+// ── Accounts (skip standard SF sample data that has Cases/Opportunities) ──
+try {
+    // Delete Cases first (block Account deletion)
+    c = [SELECT COUNT() FROM Case];
+    if (c > 0) { delete [SELECT Id FROM Case]; System.debug('Deleted ' + c + ' Case'); }
+
+    // Delete Opportunities
+    c = [SELECT COUNT() FROM Opportunity];
+    if (c > 0) { delete [SELECT Id FROM Opportunity]; System.debug('Deleted ' + c + ' Opportunity'); }
+
+    // Delete Contacts
+    c = [SELECT COUNT() FROM Contact];
+    if (c > 0) { delete [SELECT Id FROM Contact]; System.debug('Deleted ' + c + ' Contact'); }
+
+    // Now delete Accounts
+    c = [SELECT COUNT() FROM Account];
+    if (c > 0) { delete [SELECT Id FROM Account]; System.debug('Deleted ' + c + ' Account'); }
+} catch (Exception e) {
+    System.debug('Account cleanup partial — some standard data could not be deleted: ' + e.getMessage());
+}
 
 // ── Expenses, Holidays, Leaves ───────────────────────────
 c = [SELECT COUNT() FROM Expense__c];
