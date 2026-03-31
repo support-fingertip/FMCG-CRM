@@ -252,20 +252,26 @@ List<Employee__c> updates = new List<Employee__c>();
 updates.add(new Employee__c(Id = empMap.get('EMP-RSM-001').Id, Reporting_Manager__c = empMap.get('EMP-NSM-001').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-RSM-002').Id, Reporting_Manager__c = empMap.get('EMP-NSM-001').Id));
 
-// ASMs report to RSMs
+// ASMs report to RSMs (geographic alignment)
+// RSM-001 Suresh Menon (West): ASM-001 Mumbai + ASM-002 Bangalore
+// RSM-002 Priya Sharma (North): ASM-003 Delhi + ASM-004 Chennai
 updates.add(new Employee__c(Id = empMap.get('EMP-ASM-001').Id, Reporting_Manager__c = empMap.get('EMP-RSM-001').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-ASM-002').Id, Reporting_Manager__c = empMap.get('EMP-RSM-001').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-ASM-003').Id, Reporting_Manager__c = empMap.get('EMP-RSM-002').Id));
-updates.add(new Employee__c(Id = empMap.get('EMP-ASM-004').Id, Reporting_Manager__c = empMap.get('EMP-RSM-001').Id));
+updates.add(new Employee__c(Id = empMap.get('EMP-ASM-004').Id, Reporting_Manager__c = empMap.get('EMP-RSM-002').Id));
 
-// Sales Reps report to ASMs
+// Sales Reps report to ASMs (territory alignment)
+// ASM-001 Amit (Mumbai): SR-003 Mumbai + SR-004 Pune
+// ASM-002 Deepa (Bangalore): SR-005 Bangalore + SR-008 Hyderabad
+// ASM-003 Vikram (Delhi): SR-001 Delhi + SR-002 Delhi
+// ASM-004 Kavitha (Chennai): SR-006 Chennai + SR-007 Kolkata
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-001').Id, Reporting_Manager__c = empMap.get('EMP-ASM-003').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-002').Id, Reporting_Manager__c = empMap.get('EMP-ASM-003').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-003').Id, Reporting_Manager__c = empMap.get('EMP-ASM-001').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-004').Id, Reporting_Manager__c = empMap.get('EMP-ASM-001').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-005').Id, Reporting_Manager__c = empMap.get('EMP-ASM-002').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-006').Id, Reporting_Manager__c = empMap.get('EMP-ASM-004').Id));
-updates.add(new Employee__c(Id = empMap.get('EMP-SR-007').Id, Reporting_Manager__c = empMap.get('EMP-ASM-003').Id));
+updates.add(new Employee__c(Id = empMap.get('EMP-SR-007').Id, Reporting_Manager__c = empMap.get('EMP-ASM-004').Id));
 updates.add(new Employee__c(Id = empMap.get('EMP-SR-008').Id, Reporting_Manager__c = empMap.get('EMP-ASM-002').Id));
 
 update updates;

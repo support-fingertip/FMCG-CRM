@@ -231,24 +231,28 @@ FreshFields FMCG Ltd (HC-FFMCG) — Parent Company
 | Pune Metro | TER-PUN-001 | Maharashtra | Pune | 18.52°N, 73.86°E, 25km | — |
 | Ahmedabad City | TER-AHM-001 | Gujarat | Ahmedabad | 23.02°N, 72.57°E, 25km | WH-AHM (C&F) |
 
-### 5.3 Employee Hierarchy
+### 5.3 Employee Hierarchy (13_employees.apex)
 ```
 Rajesh Kapoor (NSM, L1, ₹1,20,000) — All India
-├── Priya Sharma (RSM North, L2, ₹80,000) — Delhi
-│   ├── Vikram Singh (ASM, L3, ₹50,000) — Delhi
-│   │   ├── Rahul Verma (SR, L4, ₹30,000) — Delhi
-│   │   └── Sneha Gupta (SR, L4, ₹30,000) — Delhi
-│   └── Kavitha Rajan (ASM, L3, ₹50,000) — Chennai
-│       ├── Pradeep Menon (SR, L4, ₹30,000) — Chennai
-│       └── Lakshmi Sundaram (SR, L4, ₹30,000) — Kolkata
-└── Suresh Menon (RSM West, L2, ₹80,000) — Mumbai
-    ├── Amit Patel (ASM, L3, ₹50,000) — Mumbai
-    │   ├── Arjun Deshmukh (SR, L4, ₹30,000) — Mumbai
-    │   └── Meera Joshi (SR, L4, ₹30,000) — Pune
-    └── Deepa Nair (ASM, L3, ₹50,000) — Bangalore
-        ├── Sanjay Kulkarni (SR, L4, ₹30,000) — Bangalore
-        └── Divya Mohan (SR, L4, ₹30,000) — Hyderabad
+├── Suresh Menon (RSM West, L2, ₹80,000) — Mumbai
+│   ├── Amit Patel (ASM, L3, ₹50,000) — Mumbai
+│   │   ├── Arjun Deshmukh (SR, L4, ₹30,000) — Mumbai
+│   │   └── Meera Joshi (SR, L4, ₹30,000) — Pune
+│   └── Deepa Nair (ASM, L3, ₹50,000) — Bangalore
+│       ├── Karthik Iyer (SR, L4, ₹30,000) — Bangalore
+│       └── Divya Reddy (SR, L4, ₹30,000) — Hyderabad
+└── Priya Sharma (RSM North, L2, ₹80,000) — Delhi
+    ├── Vikram Singh (ASM, L3, ₹50,000) — Delhi
+    │   ├── Rahul Verma (SR, L4, ₹30,000) — Delhi
+    │   └── Sneha Gupta (SR, L4, ₹30,000) — Delhi
+    └── Kavitha Rajan (ASM, L3, ₹50,000) — Chennai
+        ├── Pradeep Menon (SR, L4, ₹30,000) — Chennai
+        └── Ankit Agarwal (SR, L4, ₹30,000) — Kolkata
 ```
+
+> **Note:** 15_test_team.apex creates a separate set of 15 test Users with FSCRM profiles
+> (`@fmcg-test.com` emails, `TEST-xxx` employee codes) for login/permission testing.
+> 13_employees.apex creates the Employee__c hierarchy (`EMP-xxx` codes) for operational data.
 
 ### 5.4 Beat Plan Coverage
 | Beat | Territory | Days | TSE | Outlets |
