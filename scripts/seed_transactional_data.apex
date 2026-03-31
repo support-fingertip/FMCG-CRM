@@ -32,7 +32,7 @@ for (Beat__c b : [SELECT Id, Beat_Code__c, Territory__c FROM Beat__c WHERE Is_Ac
 }
 
 Map<String, Product_Extension__c> prodMap = new Map<String, Product_Extension__c>();
-for (Product_Extension__c p : [SELECT Id, SKU_Code__c, Name, Unit_Price__c, MRP__c, GST_Rate__c, HSN_SAC_Code__c, Case_Size__c
+for (Product_Extension__c p : [SELECT Id, SKU_Code__c, Name, Unit_Price__c, MRP__c, GST_Rate__c, HSN_SAC_Code__c, Case_Size__c, Min_Order_Qty__c
                                 FROM Product_Extension__c WHERE Is_Active__c = true]) {
     prodMap.put(p.SKU_Code__c, p);
 }
@@ -230,7 +230,8 @@ for (Sales_Order__c order : orders) {
         Product_Extension__c prod = prodMap.get(sku);
         if (prod == null) continue;
 
-        Decimal qty = 6 + (Math.mod(orderIdx + p, 5) * 6); // 6, 12, 18, 24, 30
+        Decimal minQty = (prod.Min_Order_Qty__c != null && prod.Min_Order_Qty__c > 0) ? prod.Min_Order_Qty__c : 12;
+        Decimal qty = minQty + (Math.mod(orderIdx + p, 4) * minQty); // 1x, 2x, 3x, 4x of min qty
         Decimal unitPrice = prod.Unit_Price__c != null ? prod.Unit_Price__c : 50;
         Decimal lineTotal = qty * unitPrice;
         Decimal gstRate = prod.GST_Rate__c != null ? prod.GST_Rate__c : 18;
