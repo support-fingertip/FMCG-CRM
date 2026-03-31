@@ -175,13 +175,25 @@ for (Journey_Plan__c p : plans) {
     p.Total_Planned_Visits__c = totalVisits;
 }
 
-// Set final statuses now that days are already inserted
-plans[0].Status__c = 'Active';                    // Delhi — active plan
-plans[1].Status__c = 'Approved';                  // Mumbai — approved plan
+// Set final statuses — must follow valid transitions:
+// Draft → Submitted → Approved → Active
+
+// Step 1: Delhi + Mumbai → Submitted
+plans[0].Status__c = 'Submitted';
+plans[1].Status__c = 'Submitted';
+update plans;
+
+// Step 2: Delhi + Mumbai → Approved
+plans[0].Status__c = 'Approved';
+plans[0].Approval_Date__c = Date.today();
+plans[0].Approved_By__c = currentUserId;
+plans[1].Status__c = 'Approved';
 plans[1].Approval_Date__c = Date.today();
 plans[1].Approved_By__c = currentUserId;
-// plans[2] stays Draft                           // Bengaluru — draft plan
+update new List<Journey_Plan__c>{ plans[0], plans[1] };
 
-update plans;
+// Step 3: Delhi → Active (Mumbai stays Approved, Bengaluru stays Draft)
+plans[0].Status__c = 'Active';
+update new List<Journey_Plan__c>{ plans[0] };
 
 System.debug('Journey Plans setup complete. Plans: ' + plans.size() + ', Plan Days: ' + planDays.size());
