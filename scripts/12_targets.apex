@@ -65,7 +65,6 @@ for (String terCode : territoryRevTargets.keySet()) {
         Target_Type__c = 'Revenue',
         Target_Value__c = revTarget,
         Achievement_Value__c = revTarget * 0.35,
-        Achievement_Percent__c = 35.0,
         Status__c = 'Active',
         KPI_Weight__c = 40,
         Set_By__c = runningUserId,
@@ -84,7 +83,6 @@ for (String terCode : territoryRevTargets.keySet()) {
         Target_Type__c = 'Collection',
         Target_Value__c = revTarget * 0.9,
         Achievement_Value__c = revTarget * 0.28,
-        Achievement_Percent__c = 31.1,
         Status__c = 'Active',
         KPI_Weight__c = 30,
         Set_By__c = runningUserId,
@@ -103,7 +101,6 @@ for (String terCode : territoryRevTargets.keySet()) {
         Target_Type__c = 'Volume',
         Target_Value__c = (revTarget / 250).setScale(0),
         Achievement_Value__c = ((revTarget / 250) * 0.35).setScale(0),
-        Achievement_Percent__c = 35.0,
         Status__c = 'Active',
         KPI_Weight__c = 20,
         Set_By__c = runningUserId,
@@ -122,7 +119,6 @@ for (String terCode : territoryRevTargets.keySet()) {
         Target_Type__c = 'Focus Brand',
         Target_Value__c = revTarget * 12 * 0.15,
         Achievement_Value__c = revTarget * 12 * 0.15 * 0.30,
-        Achievement_Percent__c = 30.0,
         Status__c = 'Active',
         KPI_Weight__c = 15,
         Set_By__c = runningUserId,
@@ -141,7 +137,6 @@ for (String terCode : territoryRevTargets.keySet()) {
         Target_Type__c = 'New Outlet Activation',
         Target_Value__c = 10,
         Achievement_Value__c = 3,
-        Achievement_Percent__c = 30.0,
         Status__c = 'Active',
         KPI_Weight__c = 10,
         Set_By__c = runningUserId,
@@ -184,8 +179,7 @@ for (Target__c t : revenueTargets) {
             Target_Value__c = splitValue,
             Target_Qty__c = targetQty,
             Achievement_Value__c = splitValue * 0.35,
-            Achievement_Qty__c = (targetQty * 0.35).setScale(0),
-            Achievement_Percent__c = 35.0
+            Achievement_Qty__c = (targetQty * 0.35).setScale(0)
         ));
     }
 }
