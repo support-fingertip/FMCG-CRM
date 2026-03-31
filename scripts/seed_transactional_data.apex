@@ -182,7 +182,7 @@ for (Visit__c v : visits) {
         Warehouse__c = delWarehouse,
         Order_Date__c = v.Visit_Date__c,
         Order_Type__c = 'Regular',
-        Channel__c = 'GT',
+        Channel__c = 'Field App',
         Status__c = 'Approved',
         Order_Status__c = 'Approved',
         Payment_Terms__c = 'Net 30',
