@@ -238,6 +238,10 @@
                                             <span class="detail-label">Status</span>
                                             <span class={selectedEmployeeStatusClass}>{selectedEmployeeStatusLabel}</span>
                                         </div>
+                                        <div class="slds-col slds-size_1-of-3 detail-field">
+                                            <span class="detail-label">Gross Salary</span>
+                                            <span class="detail-value">{selectedEmployeeSalary}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -451,6 +455,13 @@
                                             options={designationFilterOptions}
                                             data-field="Designation__c"
                                             onchange={handleFormChange}></lightning-combobox>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-input type="number" label="Gross Salary"
+                                            value={employeeForm.Gross_Salary__c}
+                                            data-field="Gross_Salary__c" step="0.01" min="0"
+                                            onchange={handleFormChange}
+                                            field-level-help="Monthly gross salary for PBIS incentive calculation"></lightning-input>
                                     </div>
                                     <div class="slds-col slds-size_1-of-3 slds-m-bottom_small form-active-toggle">
                                         <lightning-input type="toggle" label="Is Active"

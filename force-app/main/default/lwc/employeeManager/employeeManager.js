@@ -188,6 +188,14 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             : 'status-badge status-inactive';
     }
 
+    get selectedEmployeeSalary() {
+        if (!this.selectedEmployee || !this.selectedEmployee.Gross_Salary__c) return '—';
+        const val = this.selectedEmployee.Gross_Salary__c;
+        if (val >= 100000) return '₹' + (val / 100000).toFixed(1) + 'L';
+        if (val >= 1000) return '₹' + (val / 1000).toFixed(1) + 'K';
+        return '₹' + val;
+    }
+
     get selectedEmployeeUserName() {
         if (!this.selectedEmployee) return '-';
         return this.selectedEmployee.User__r ? this.selectedEmployee.User__r.Name : '-';
