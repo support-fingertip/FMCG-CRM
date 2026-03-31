@@ -37,15 +37,15 @@ List<UOM_Conversion__c> conversions = new List<UOM_Conversion__c>();
 
 // Generic conversions (no product — universal)
 conversions.add(new UOM_Conversion__c(
-    Name = 'DOZ to PCS', From_UOM__c = uomMap.get('DOZ'), To_UOM__c = uomMap.get('PCS'),
+From_UOM__c = uomMap.get('DOZ'), To_UOM__c = uomMap.get('PCS'),
     Conversion_Factor__c = 12, Inverse_Conversion_Factor__c = 0.0833, Is_Active__c = true
 ));
 conversions.add(new UOM_Conversion__c(
-    Name = 'KG to GM', From_UOM__c = uomMap.get('KG'), To_UOM__c = uomMap.get('GM'),
+From_UOM__c = uomMap.get('KG'), To_UOM__c = uomMap.get('GM'),
     Conversion_Factor__c = 1000, Inverse_Conversion_Factor__c = 0.001, Is_Active__c = true
 ));
 conversions.add(new UOM_Conversion__c(
-    Name = 'LTR to ML', From_UOM__c = uomMap.get('LTR'), To_UOM__c = uomMap.get('ML'),
+From_UOM__c = uomMap.get('LTR'), To_UOM__c = uomMap.get('ML'),
     Conversion_Factor__c = 1000, Inverse_Conversion_Factor__c = 0.001, Is_Active__c = true
 ));
 
@@ -53,12 +53,12 @@ conversions.add(new UOM_Conversion__c(
 // Snacks: 1 BOX = 48 PCS, 1 CSE = 10 BOX
 if (prodMap.containsKey('FF-SNK-001')) {
     conversions.add(new UOM_Conversion__c(
-        Name = 'Chips BOX→PCS', Product__c = prodMap.get('FF-SNK-001'),
+    Product__c = prodMap.get('FF-SNK-001'),
         From_UOM__c = uomMap.get('BOX'), To_UOM__c = uomMap.get('PCS'),
         Conversion_Factor__c = 48, Inverse_Conversion_Factor__c = 0.0208, Is_Active__c = true
     ));
     conversions.add(new UOM_Conversion__c(
-        Name = 'Chips CSE→BOX', Product__c = prodMap.get('FF-SNK-001'),
+    Product__c = prodMap.get('FF-SNK-001'),
         From_UOM__c = uomMap.get('CSE'), To_UOM__c = uomMap.get('BOX'),
         Conversion_Factor__c = 10, Inverse_Conversion_Factor__c = 0.1, Is_Active__c = true
     ));
@@ -67,7 +67,7 @@ if (prodMap.containsKey('FF-SNK-001')) {
 // Biscuits: 1 BOX = 24 PCS
 if (prodMap.containsKey('FF-BIS-001')) {
     conversions.add(new UOM_Conversion__c(
-        Name = 'Biscuit BOX→PCS', Product__c = prodMap.get('FF-BIS-001'),
+    Product__c = prodMap.get('FF-BIS-001'),
         From_UOM__c = uomMap.get('BOX'), To_UOM__c = uomMap.get('PCS'),
         Conversion_Factor__c = 24, Inverse_Conversion_Factor__c = 0.0417, Is_Active__c = true
     ));
@@ -76,7 +76,7 @@ if (prodMap.containsKey('FF-BIS-001')) {
 // Beverages: 1 BOX = 12 PCS
 if (prodMap.containsKey('FF-TEA-001')) {
     conversions.add(new UOM_Conversion__c(
-        Name = 'Tea BOX→PCS', Product__c = prodMap.get('FF-TEA-001'),
+    Product__c = prodMap.get('FF-TEA-001'),
         From_UOM__c = uomMap.get('BOX'), To_UOM__c = uomMap.get('PCS'),
         Conversion_Factor__c = 12, Inverse_Conversion_Factor__c = 0.0833, Is_Active__c = true
     ));
@@ -84,11 +84,11 @@ if (prodMap.containsKey('FF-TEA-001')) {
 
 // Generic BOX = 12 PCS (default for products without specific conversion)
 conversions.add(new UOM_Conversion__c(
-    Name = 'Generic BOX→PCS', From_UOM__c = uomMap.get('BOX'), To_UOM__c = uomMap.get('PCS'),
+From_UOM__c = uomMap.get('BOX'), To_UOM__c = uomMap.get('PCS'),
     Conversion_Factor__c = 12, Inverse_Conversion_Factor__c = 0.0833, Is_Active__c = true
 ));
 conversions.add(new UOM_Conversion__c(
-    Name = 'Generic CSE→BOX', From_UOM__c = uomMap.get('CSE'), To_UOM__c = uomMap.get('BOX'),
+From_UOM__c = uomMap.get('CSE'), To_UOM__c = uomMap.get('BOX'),
     Conversion_Factor__c = 10, Inverse_Conversion_Factor__c = 0.1, Is_Active__c = true
 ));
 
