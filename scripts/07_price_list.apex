@@ -24,7 +24,7 @@ for (Product_Category__c pc : [SELECT Id, Category_Code__c FROM Product_Category
     catMap.put(pc.Category_Code__c, pc.Id);
 }
 
-List<Account> distAccounts = [SELECT Id, Name FROM Account WHERE Type = 'Distributor' AND Is_Active__c = true ORDER BY Name LIMIT 3];
+List<Account> distAccounts = [SELECT Id, Name FROM Account WHERE RecordType.Name = 'Distributor' AND Is_Active__c = true ORDER BY Name LIMIT 3];
 
 Date fromDate = Date.today().addMonths(-6);
 Date toDate = Date.today().addMonths(6);
