@@ -120,10 +120,15 @@ global with sharing class API_Visit_Rest {
         }
 
         List<Visit__c> visits = [
-            SELECT Id, Name, Account__r.Name,
+            SELECT Id, Name, Account__r.Name, Account__r.AccountNumber,
                    Account__r.BillingStreet, Account__r.BillingCity,
                    Account__r.BillingState, Account__r.BillingPostalCode,
-                   Check_In_Longitude__c, Check_In_Latitude__c
+                   Visit_Status__c, Visit_Date__c,
+                   Check_In_Time__c, Check_Out_Time__c,
+                   Check_In_Latitude__c, Check_In_Longitude__c,
+                   Is_Planned__c, Ad_Hoc_Reason__c, Notes__c,
+                   Order_Value__c, Total_Orders_Count__c,
+                   Missed_Reason__c
             FROM Visit__c
             WHERE Id = :siteVisitId
               AND Salesperson__c = :sfUserId
@@ -136,13 +141,24 @@ global with sharing class API_Visit_Rest {
         }
 
         Visit__c v = visits[0];
-        String address = buildAddress(v);
 
         Map<String, Object> data = new Map<String, Object>();
-        data.put('accountName', v.Account__r != null ? v.Account__r.Name : '');
-        data.put('address', address);
-        data.put('longitude', v.Check_In_Longitude__c != null ? String.valueOf(v.Check_In_Longitude__c) : '');
-        data.put('latitude', v.Check_In_Latitude__c != null ? String.valueOf(v.Check_In_Latitude__c) : '');
+        data.put('outletName', v.Account__r != null ? v.Account__r.Name : '');
+        data.put('outletCode', v.Account__r != null ? v.Account__r.AccountNumber : '');
+        data.put('outletAddress', buildAddress(v));
+        data.put('visitType', v.Is_Planned__c ? 'Scheduled' : 'Ad-Hoc');
+        data.put('status', v.Visit_Status__c);
+        data.put('scheduledDate', v.Visit_Date__c != null ? String.valueOf(v.Visit_Date__c) : null);
+        data.put('scheduledTime', v.Check_In_Time__c != null ? v.Check_In_Time__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') : null);
+        data.put('checkInTime', v.Check_In_Time__c != null ? v.Check_In_Time__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') : null);
+        data.put('checkOutTime', v.Check_Out_Time__c != null ? v.Check_Out_Time__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') : null);
+        data.put('purpose', v.Ad_Hoc_Reason__c);
+        data.put('notes', v.Notes__c);
+        data.put('latitude', v.Check_In_Latitude__c);
+        data.put('longitude', v.Check_In_Longitude__c);
+        data.put('hasOrder', v.Total_Orders_Count__c != null && v.Total_Orders_Count__c > 0);
+        data.put('orderAmount', v.Order_Value__c != null ? v.Order_Value__c : 0);
+        data.put('missedReason', v.Missed_Reason__c);
 
         API_ResponseWrapper.sendSuccess('Site Visit Detail', data);
     }
