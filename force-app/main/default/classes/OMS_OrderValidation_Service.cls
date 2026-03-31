@@ -194,11 +194,11 @@ public without sharing class OMS_OrderValidation_Service {
 
         if (orderIds.isEmpty()) return;
 
-        // Query account details for customer type
+        // Query account details for customer type (outlet type)
         Map<Id, Account> accountMap = new Map<Id, Account>();
         if (!accountIds.isEmpty()) {
             accountMap = new Map<Id, Account>([
-                SELECT Id, RecordType.DeveloperName
+                SELECT Id, Outlet_Type__c
                 FROM Account
                 WHERE Id IN :accountIds
             ]);
@@ -239,7 +239,7 @@ public without sharing class OMS_OrderValidation_Service {
                 ? productsByOrder.get(order.Id) : new Set<Id>();
 
             Account acct = accountMap.get(order.Account__c);
-            String customerType = (acct != null) ? getCustomerTypeFromRecordType(acct) : '';
+            String customerType = (acct != null && acct.Outlet_Type__c != null) ? acct.Outlet_Type__c : '';
 
             List<String> missingProducts = new List<String>();
 
@@ -309,21 +309,4 @@ public without sharing class OMS_OrderValidation_Service {
         return 0; // Default: no minimum
     }
 
-    private static String getCustomerTypeFromRecordType(Account acct) {
-        if (acct.RecordType == null || String.isBlank(acct.RecordType.DeveloperName)) {
-            return '';
-        }
-        Map<String, String> recordTypeToCustomerType = new Map<String, String>{
-            'Retailer' => 'Retailer',
-            'Distributor' => 'Distributor',
-            'Super_Stockist' => 'Super Stockist',
-            'Modern_Trade' => 'Modern Trade',
-            'Grocery' => 'Grocery',
-            'Medical' => 'Medical',
-            'Hardware' => 'Hardware',
-            'General_Store' => 'General Store'
-        };
-        String result = recordTypeToCustomerType.get(acct.RecordType.DeveloperName);
-        return result != null ? result : acct.RecordType.DeveloperName;
-    }
 }

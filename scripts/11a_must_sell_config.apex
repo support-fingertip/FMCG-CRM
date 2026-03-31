@@ -324,36 +324,52 @@ if (terMap.containsKey('TER-CHN-001')) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// CUSTOMER TYPE SPECIFIC — Medical outlets
+// CUSTOMER TYPE SPECIFIC — Grocery outlets
+// (Customer_Type__c matches Account.Outlet_Type__c picklist)
 // ═══════════════════════════════════════════════════════════
 
-// Toothpaste must sell for medical/pharmacy outlets
+// Dairy must-have for grocery outlets
 configs.add(new Must_Sell_Config__c(
-    Product_Ext__c = prodMap.get('FF-ORL-002'),
+    Product_Ext__c = prodMap.get('FF-DRY-001'),
     Classification__c = 'Must Sell',
-    Customer_Type__c = 'Medical',
+    Customer_Type__c = 'Grocery',
     Min_Qty__c = 6,
     Is_Active__c = true,
     Start_Date__c = startDate,
     End_Date__c = endDate
 ));
 
-// Face Wash — medical/pharmacy must have
+// Face Wash — grocery personal care section
 configs.add(new Must_Sell_Config__c(
     Product_Ext__c = prodMap.get('FF-SKN-001'),
-    Classification__c = 'Must Sell',
-    Customer_Type__c = 'Medical',
+    Classification__c = 'Focused Sell',
+    Customer_Type__c = 'Grocery',
     Min_Qty__c = 3,
     Is_Active__c = true,
     Start_Date__c = startDate,
     End_Date__c = endDate
 ));
 
-// Moisturizer — medical/pharmacy
+// ═══════════════════════════════════════════════════════════
+// CUSTOMER TYPE SPECIFIC — General Store outlets
+// ═══════════════════════════════════════════════════════════
+
+// Confectionery — counter display for general stores
 configs.add(new Must_Sell_Config__c(
-    Product_Ext__c = prodMap.get('FF-SKN-002'),
+    Product_Ext__c = prodMap.get('FF-CNF-002'),
+    Classification__c = 'Must Sell',
+    Customer_Type__c = 'General Store',
+    Min_Qty__c = 6,
+    Is_Active__c = true,
+    Start_Date__c = startDate,
+    End_Date__c = endDate
+));
+
+// Glass Cleaner — general store home care
+configs.add(new Must_Sell_Config__c(
+    Product_Ext__c = prodMap.get('FF-CLN-002'),
     Classification__c = 'Focused Sell',
-    Customer_Type__c = 'Medical',
+    Customer_Type__c = 'General Store',
     Min_Qty__c = 3,
     Is_Active__c = true,
     Start_Date__c = startDate,
