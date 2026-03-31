@@ -117,6 +117,12 @@ c = [SELECT COUNT() FROM UOM__c];
 if (c > 0) { delete [SELECT Id FROM UOM__c]; System.debug('Deleted ' + c + ' UOM__c'); }
 
 // ── Stock & Warehouses ───────────────────────────────────
+c = [SELECT COUNT() FROM Stock_Adjustment__c];
+if (c > 0) { delete [SELECT Id FROM Stock_Adjustment__c]; System.debug('Deleted ' + c + ' Stock_Adjustment__c'); }
+
+c = [SELECT COUNT() FROM Stock_Transaction__c];
+if (c > 0) { delete [SELECT Id FROM Stock_Transaction__c]; System.debug('Deleted ' + c + ' Stock_Transaction__c'); }
+
 c = [SELECT COUNT() FROM Distributor_Stock__c];
 if (c > 0) { delete [SELECT Id FROM Distributor_Stock__c]; System.debug('Deleted ' + c + ' Distributor_Stock__c'); }
 
