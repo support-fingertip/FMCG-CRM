@@ -228,14 +228,16 @@ public with sharing class EmployeeThreeSixtyController {
         String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
         Id empId = LeaveBalanceService.getEmployeeId(userId);
         Decimal clBal = 0, slBal = 0, elBal = 0, coBal = 0;
+        Decimal clEnt = 12, slEnt = 7, elEnt = 15, coEnt = 0;
 
         if (empId != null) {
             for (Leave_Balance__c lb : LeaveBalanceService.getBalancesForEmployee(empId, fiscalYear)) {
                 Decimal avail = LeaveBalanceService.calcAvailable(lb);
-                if (lb.Leave_Type__c == 'Casual Leave') clBal = avail;
-                else if (lb.Leave_Type__c == 'Sick Leave') slBal = avail;
-                else if (lb.Leave_Type__c == 'Earned Leave') elBal = avail;
-                else if (lb.Leave_Type__c == 'Compensatory Off') coBal = avail;
+                Decimal entitled = lb.Entitled__c != null ? lb.Entitled__c : 0;
+                if (lb.Leave_Type__c == 'Casual Leave') { clBal = avail; clEnt = entitled; }
+                else if (lb.Leave_Type__c == 'Sick Leave') { slBal = avail; slEnt = entitled; }
+                else if (lb.Leave_Type__c == 'Earned Leave') { elBal = avail; elEnt = entitled; }
+                else if (lb.Leave_Type__c == 'Compensatory Off') { coBal = avail; coEnt = entitled; }
             }
         }
 
@@ -243,6 +245,10 @@ public with sharing class EmployeeThreeSixtyController {
         kpis.put('slBalance', slBal);
         kpis.put('elBalance', elBal);
         kpis.put('coBalance', coBal);
+        kpis.put('clEntitled', clEnt);
+        kpis.put('slEntitled', slEnt);
+        kpis.put('elEntitled', elEnt);
+        kpis.put('coEntitled', coEnt);
         kpis.put('totalLeaveBalance', clBal + slBal + elBal + coBal);
 
         // ── Average Hours Worked (MTD) ──────────────────────────────

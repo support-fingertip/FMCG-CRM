@@ -775,20 +775,31 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     get clBalance() {
-        return this.kpis.clBalance || this.employee.CL_Balance__c || 0;
+        return this.kpis.clBalance != null ? this.kpis.clBalance : 0;
     }
 
     get slBalance() {
-        return this.kpis.slBalance || this.employee.SL_Balance__c || 0;
+        return this.kpis.slBalance != null ? this.kpis.slBalance : 0;
     }
 
     get elBalance() {
-        return this.kpis.elBalance || this.employee.EL_Balance__c || 0;
+        return this.kpis.elBalance != null ? this.kpis.elBalance : 0;
     }
 
     get coBalance() {
-        return this.kpis.coBalance || this.employee.CO_Balance__c || 0;
+        return this.kpis.coBalance != null ? this.kpis.coBalance : 0;
     }
+
+    // Entitled totals from KPIs (for ring calculations and "of X days" display)
+    get clTotal() { return this.kpis.clEntitled || 12; }
+    get slTotal() { return this.kpis.slEntitled || 7; }
+    get elTotal() { return this.kpis.elEntitled || 15; }
+    get coTotal() { return this.kpis.coEntitled || 0; }
+
+    get clTotalDisplay() { return 'of ' + this.clTotal + ' days'; }
+    get slTotalDisplay() { return 'of ' + this.slTotal + ' days'; }
+    get elTotalDisplay() { return 'of ' + this.elTotal + ' days'; }
+    get coTotalDisplay() { return 'of ' + this.coTotal + ' days'; }
 
     get avgHoursWorked() {
         const val = this.kpis.avgHoursWorked || 0;
@@ -796,10 +807,10 @@ export default class EmployeeThreeSixty extends NavigationMixin(LightningElement
     }
 
     // Leave ring computations
-    get clRingDasharray() { return this.computeLeaveRing(this.clBalance, 12); }
-    get slRingDasharray() { return this.computeLeaveRing(this.slBalance, 12); }
-    get elRingDasharray() { return this.computeLeaveRing(this.elBalance, 30); }
-    get coRingDasharray() { return this.computeLeaveRing(this.coBalance, 5); }
+    get clRingDasharray() { return this.computeLeaveRing(this.clBalance, this.clTotal); }
+    get slRingDasharray() { return this.computeLeaveRing(this.slBalance, this.slTotal); }
+    get elRingDasharray() { return this.computeLeaveRing(this.elBalance, this.elTotal); }
+    get coRingDasharray() { return this.computeLeaveRing(this.coBalance, Math.max(this.coTotal, 1)); }
 
     computeLeaveRing(balance, total) {
         const pct = Math.min((balance / total) * 100, 100);
