@@ -56,8 +56,8 @@ for (String terCode : territoryRevTargets.keySet()) {
     // Revenue target
     targets.add(new Target__c(
         Territory__c = terMap.get(terCode),
-        Period_Month__c = currentMonth,
-        Period_Year__c = currentYear,
+        Period_Month__c = currentMonthName,
+        Period_Year__c = currentYearStr,
         Period_Start__c = monthStart,
         Period_End__c = monthEnd,
         Month__c = currentMonthName,
@@ -75,8 +75,8 @@ for (String terCode : territoryRevTargets.keySet()) {
     // Collection target
     targets.add(new Target__c(
         Territory__c = terMap.get(terCode),
-        Period_Month__c = currentMonth,
-        Period_Year__c = currentYear,
+        Period_Month__c = currentMonthName,
+        Period_Year__c = currentYearStr,
         Period_Start__c = monthStart,
         Period_End__c = monthEnd,
         Month__c = currentMonthName,
@@ -94,8 +94,8 @@ for (String terCode : territoryRevTargets.keySet()) {
     // Volume target (cases/units sold)
     targets.add(new Target__c(
         Territory__c = terMap.get(terCode),
-        Period_Month__c = currentMonth,
-        Period_Year__c = currentYear,
+        Period_Month__c = currentMonthName,
+        Period_Year__c = currentYearStr,
         Period_Start__c = monthStart,
         Period_End__c = monthEnd,
         Month__c = currentMonthName,
@@ -114,7 +114,7 @@ for (String terCode : territoryRevTargets.keySet()) {
     targets.add(new Target__c(
         Territory__c = terMap.get(terCode),
         Period_Month__c = null,
-        Period_Year__c = currentYear,
+        Period_Year__c = currentYearStr,
         Period_Start__c = yearStart,
         Period_End__c = yearEnd,
         Month__c = null,
@@ -132,8 +132,8 @@ for (String terCode : territoryRevTargets.keySet()) {
     // New Outlet Activation target (monthly)
     targets.add(new Target__c(
         Territory__c = terMap.get(terCode),
-        Period_Month__c = currentMonth,
-        Period_Year__c = currentYear,
+        Period_Month__c = currentMonthName,
+        Period_Year__c = currentYearStr,
         Period_Start__c = monthStart,
         Period_End__c = monthEnd,
         Month__c = currentMonthName,
