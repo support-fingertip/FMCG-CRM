@@ -1,12 +1,30 @@
 // Script 04: Products (Product_Extension__c) - Complete product master
 // Run: sf apex run -f scripts/04_products.apex
-// Prerequisite: 03_product_category.apex
+// Prerequisite: 03_product_category.apex, UOM__c records must exist
 // Creates 30 products across all categories with full field data
 
 // Fetch sub-categories by code
 Map<String, Id> catMap = new Map<String, Id>();
 for (Product_Category__c pc : [SELECT Id, Category_Code__c FROM Product_Category__c WHERE Level__c = 'Sub-Category']) {
     catMap.put(pc.Category_Code__c, pc.Id);
+}
+
+// Fetch UOM records for Base_UOM__c and Secondary_UOM__c lookups
+Map<String, Id> uomMap = new Map<String, Id>();
+for (UOM__c u : [SELECT Id, UOM_Code__c FROM UOM__c WHERE Is_Active__c = true]) {
+    uomMap.put(u.UOM_Code__c, u.Id);
+}
+
+// Default UOMs
+Id pcsUom = uomMap.get('PCS');   // Pieces
+Id boxUom = uomMap.get('BOX');   // Box
+Id cseUom = uomMap.get('CSE');   // Case
+Id kgUom = uomMap.get('KG');     // Kilogram
+Id ltrUom = uomMap.get('LTR');   // Litre
+Id dozUom = uomMap.get('DOZ');   // Dozen
+
+if (pcsUom == null) {
+    System.debug('WARNING: UOM records not found. Run UOM seed script first or create PCS/BOX/CSE/KG UOM records.');
 }
 
 List<Product_Extension__c> products = new List<Product_Extension__c>();
@@ -308,4 +326,37 @@ products.add(new Product_Extension__c(
 ));
 
 insert products;
+
+// ── Set Base_UOM__c, Secondary_UOM__c, Ordering_UOMs__c on all products ──
+if (pcsUom != null) {
+    List<Product_Extension__c> toUpdate = new List<Product_Extension__c>();
+    for (Product_Extension__c p : products) {
+        Product_Extension__c upd = new Product_Extension__c(Id = p.Id);
+
+        // Most FMCG products: Base = PCS, Secondary = BOX or CSE
+        if (p.Unit_of_Measure__c == 'Piece' || p.Unit_of_Measure__c == 'Pieces') {
+            upd.Base_UOM__c = pcsUom;
+            upd.Secondary_UOM__c = boxUom;
+            upd.Ordering_UOMs__c = 'PCS,BOX,CSE';
+        } else if (p.Unit_of_Measure__c == 'Kg' || p.Unit_of_Measure__c == 'kg') {
+            upd.Base_UOM__c = kgUom;
+            upd.Secondary_UOM__c = boxUom;
+            upd.Ordering_UOMs__c = 'KG,BOX';
+        } else if (p.Unit_of_Measure__c == 'Litre' || p.Unit_of_Measure__c == 'litre') {
+            upd.Base_UOM__c = ltrUom;
+            upd.Secondary_UOM__c = boxUom;
+            upd.Ordering_UOMs__c = 'LTR,BOX';
+        } else {
+            // Default to PCS
+            upd.Base_UOM__c = pcsUom;
+            upd.Secondary_UOM__c = boxUom;
+            upd.Ordering_UOMs__c = 'PCS,BOX,CSE';
+        }
+
+        toUpdate.add(upd);
+    }
+    update toUpdate;
+    System.debug('Updated Base_UOM__c on ' + toUpdate.size() + ' products');
+}
+
 System.debug('Products setup complete. Total Product Extensions: ' + products.size());
