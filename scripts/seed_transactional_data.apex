@@ -306,7 +306,7 @@ update totalUpdates;
 List<Sales_Order__c> ordersToAdvance = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id IN :orders];
 List<Sales_Order__c> statusUpdates = new List<Sales_Order__c>();
 for (Sales_Order__c o : ordersToAdvance) {
-    if (o.Status__c == 'Draft') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Submitted'));
+    if (o.Status__c == 'Draft') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Submitted', Must_Sell_Override__c = true));
 }
 if (!statusUpdates.isEmpty()) update statusUpdates;
 
