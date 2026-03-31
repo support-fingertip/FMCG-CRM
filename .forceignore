@@ -2,3 +2,6 @@
 package.xml
 .eslintrc.json
 **/__tests__/**
+
+**/jsconfig.json
+**/.eslintrc.json
