@@ -16,6 +16,22 @@
 // ── Config ──────────────────────────────────────────────────
 String emailDomain = '@fmcg-test.com';
 
+// ── Cleanup existing test data ──────────────────────────────
+// Delete test employees (by code prefix)
+List<Employee__c> oldEmps = [SELECT Id FROM Employee__c WHERE Employee_Code__c LIKE 'TEST-%'];
+if (!oldEmps.isEmpty()) {
+    delete oldEmps;
+    System.debug('Deleted ' + oldEmps.size() + ' existing test employees');
+}
+
+// Deactivate test users (by email domain) — can't delete users in SF
+List<User> oldUsers = [SELECT Id FROM User WHERE Email LIKE :('%' + emailDomain) AND IsActive = true AND Id != :UserInfo.getUserId()];
+if (!oldUsers.isEmpty()) {
+    for (User u : oldUsers) u.IsActive = false;
+    update oldUsers;
+    System.debug('Deactivated ' + oldUsers.size() + ' existing test users');
+}
+
 // Get profiles by role
 Map<String, Id> profileMap = new Map<String, Id>();
 for (Profile p : [SELECT Id, Name FROM Profile WHERE Name IN ('FSCRM_NSM','FSCRM_RSM','FSCRM_ASM','FSCRM_TSE')]) {
@@ -189,7 +205,7 @@ for (Integer i = 0; i < users.size(); i++) {
     employees.add(new Employee__c(
         First_Name__c = users[i].FirstName,
         Last_Name__c = users[i].LastName,
-        Employee_Code__c = 'EMP-' + String.valueOf(i + 1).leftPad(3, '0'),
+        Employee_Code__c = 'TEST-' + String.valueOf(i + 1).leftPad(3, '0'),
         Email__c = users[i].Email,
         Phone__c = '98' + String.valueOf(10000000 + i),
         Department__c = 'Sales',
