@@ -20,7 +20,7 @@ public with sharing class TAM_KpiDashboard_Controller {
             List<Target_Period__c> current = [
                 SELECT Id FROM Target_Period__c
                 WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-                AND Type__c = 'Monthly' LIMIT 1
+                AND Type__c = 'Monthly' AND Is_Active__c = true LIMIT 1
             ];
             periodId = current.isEmpty() ? '' : current[0].Id;
         }

@@ -44,6 +44,7 @@ public class TAM_TargetAllocation_Controller {
         dx.periodsList = [
             SELECT Id, Name, Start_Date__c, End_Date__c
             FROM Target_Period__c
+            WHERE Is_Active__c = true
             ORDER BY Start_Date__c DESC
             LIMIT 20
         ];
@@ -52,7 +53,7 @@ public class TAM_TargetAllocation_Controller {
         List<Target_Period__c> currentPeriodList = [
             SELECT Id FROM Target_Period__c
             WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-            AND Type__c = 'Monthly'
+            AND Type__c = 'Monthly' AND Is_Active__c = true
             LIMIT 1
         ];
         dx.period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
@@ -67,7 +68,7 @@ public class TAM_TargetAllocation_Controller {
         dx.currentPeriods = [
             SELECT Id, Name, Start_Date__c, End_Date__c
             FROM Target_Period__c
-            WHERE End_Date__c >= TODAY
+            WHERE End_Date__c >= TODAY AND Is_Active__c = true
             ORDER BY Start_Date__c
         ];
 
@@ -80,6 +81,7 @@ public class TAM_TargetAllocation_Controller {
             List<Target_Period__c> currentPeriodList = [
                 SELECT Id FROM Target_Period__c
                 WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                AND Is_Active__c = true
                 LIMIT 1
             ];
             period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
@@ -99,6 +101,7 @@ public class TAM_TargetAllocation_Controller {
             List<Target_Period__c> currentPeriodList = [
                 SELECT Id FROM Target_Period__c
                 WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                AND Is_Active__c = true
                 LIMIT 1
             ];
             period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
