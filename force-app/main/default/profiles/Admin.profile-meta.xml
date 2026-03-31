@@ -801,4 +801,8 @@
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <tabVisibilities><tab>Leave_Policy__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <classAccesses><apexClass>LeaveBalanceService</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeaveYearlyResetBatch</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeaveAccrualBatch</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeaveAccrualScheduler</apexClass><enabled>true</enabled></classAccesses>
 </Profile>
