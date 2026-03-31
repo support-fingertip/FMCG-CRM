@@ -240,6 +240,24 @@ employees.add(new Employee__c(
 insert employees;
 System.debug('Inserted employees: ' + employees.size());
 
+// Pass 1b: Link employees to Users
+// Try matching test team users by first name (@fmcg-test.com), fall back to current user
+Map<String, Id> userByFirstName = new Map<String, Id>();
+for (User u : [SELECT Id, FirstName FROM User WHERE IsActive = true AND Email LIKE '%@fmcg-test.com']) {
+    userByFirstName.put(u.FirstName, u.Id);
+}
+Id fallbackUserId = UserInfo.getUserId();
+
+List<Employee__c> userLinks = new List<Employee__c>();
+for (Employee__c e : [SELECT Id, First_Name__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
+    Id userId = userByFirstName.containsKey(e.First_Name__c)
+        ? userByFirstName.get(e.First_Name__c) : fallbackUserId;
+    userLinks.add(new Employee__c(Id = e.Id, User__c = userId));
+}
+update userLinks;
+System.debug('Linked employees to users: ' + userLinks.size() +
+    ' (matched: ' + userByFirstName.size() + ' test users, rest → current user)');
+
 // Pass 2: Link reporting hierarchy
 Map<String, Employee__c> empMap = new Map<String, Employee__c>();
 for (Employee__c e : [SELECT Id, Employee_Code__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
