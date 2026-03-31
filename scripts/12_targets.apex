@@ -151,7 +151,7 @@ System.debug('Inserted targets: ' + targets.size());
 List<Target__c> revenueTargets = [
     SELECT Id, Target_Value__c, Territory__c
     FROM Target__c
-    WHERE Target_Type__c = 'Revenue' AND Period_Month__c = :currentMonth AND Period_Year__c = :currentYear
+    WHERE Target_Type__c = 'Revenue' AND Period_Month__c = :currentMonthName AND Period_Year__c = :currentYearStr
 ];
 
 List<Target_Line__c> targetLines = new List<Target_Line__c>();
