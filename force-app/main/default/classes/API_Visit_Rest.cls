@@ -130,8 +130,8 @@ global with sharing class API_Visit_Rest {
                    Order_Value__c, Total_Orders_Count__c,
                    Missed_Reason__c
             FROM Visit__c
-            WHERE Id = :siteVisitId
-              AND Salesperson__c = :sfUserId
+            WHERE Name = :siteVisitId
+              AND OwnerId = :sfUserId
             LIMIT 1
         ];
 
@@ -217,7 +217,7 @@ global with sharing class API_Visit_Rest {
     private static Id resolveUserId(String userId) {
         List<Employee__c> employees = [
             SELECT Id, User__c FROM Employee__c
-            WHERE User__c = :userId OR Id = :userId
+            WHERE User__c = :userId OR Name = :userId
             LIMIT 1
         ];
         return employees.isEmpty() ? null : employees[0].User__c;
