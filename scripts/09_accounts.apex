@@ -8,10 +8,36 @@
 //   Channel__c              = Sales Channel (GT, MT, E-Commerce)
 //   Outlet_Class__c         = Revenue Class (A, B, C, D)
 
-// Clean up existing accounts (delete child objects first)
+// Clean up existing accounts (delete ALL child objects first)
+delete [SELECT Id FROM Order_Line_Item__c];
+delete [SELECT Id FROM Collection__c];
+delete [SELECT Id FROM Sales_Order__c];
+delete [SELECT Id FROM Visit__c];
+delete [SELECT Id FROM Day_Attendance__c];
+delete [SELECT Id FROM GRN_Line__c];
+delete [SELECT Id FROM GRN__c];
+delete [SELECT Id FROM Invoice_Line__c];
+delete [SELECT Id FROM Invoice__c];
+delete [SELECT Id FROM Indent_Line__c];
+delete [SELECT Id FROM Indent__c];
+delete [SELECT Id FROM Return_Line__c];
+delete [SELECT Id FROM Return_Order__c];
+delete [SELECT Id FROM Claim_Line__c];
+delete [SELECT Id FROM Claim__c];
+delete [SELECT Id FROM Ledger_Entry__c];
+delete [SELECT Id FROM Survey_Response__c];
+delete [SELECT Id FROM Merchandising__c];
+delete [SELECT Id FROM Competitor__c];
+delete [SELECT Id FROM Distributor_Stock__c];
+delete [SELECT Id FROM Drug_License__c];
+delete [SELECT Id FROM Loyalty_Points__c];
+delete [SELECT Id FROM Ticket__c];
+delete [SELECT Id FROM Scorecard__c];
+delete [SELECT Id FROM Channel_Partner__c];
+delete [SELECT Id FROM Scheme_Mapping__c];
 delete [SELECT Id FROM Beat_Outlet__c];
-delete [SELECT Id FROM Account WHERE Is_Active__c = true];
-System.debug('Cleaned up Accounts');
+delete [SELECT Id FROM Account];
+System.debug('Cleaned up Accounts and all child objects');
 
 // Fetch Record Type IDs
 Map<String, Id> rtMap = new Map<String, Id>();
