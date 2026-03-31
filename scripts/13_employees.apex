@@ -240,23 +240,44 @@ employees.add(new Employee__c(
 insert employees;
 System.debug('Inserted employees: ' + employees.size());
 
-// Pass 1b: Link employees to Users
-// Try matching test team users by first name (@fmcg-test.com), fall back to current user
-Map<String, Id> userByFirstName = new Map<String, Id>();
-for (User u : [SELECT Id, FirstName FROM User WHERE IsActive = true AND Email LIKE '%@fmcg-test.com']) {
-    userByFirstName.put(u.FirstName, u.Id);
+// Pass 1b: Link employees to Users (test team from 15_test_team.apex)
+// Test team emails: firstname.lastname@fmcg-test.com
+// Explicit mapping: Employee Code → test team email prefix
+Map<String, String> empToEmail = new Map<String, String>{
+    'EMP-NSM-001' => 'rajesh.kapoor',
+    'EMP-RSM-001' => 'suresh.menon',
+    'EMP-RSM-002' => 'priya.nair',
+    'EMP-ASM-001' => 'amit.sharma',
+    'EMP-ASM-002' => 'deepa.pillai',
+    'EMP-ASM-003' => 'vikram.singh',
+    'EMP-ASM-004' => 'shalini.gupta',
+    'EMP-SR-001'  => 'rahul.kumar',
+    'EMP-SR-002'  => 'anjali.reddy',
+    'EMP-SR-003'  => 'karthik.nambiar',
+    'EMP-SR-004'  => 'meera.iyer',
+    'EMP-SR-005'  => 'arjun.patel',
+    'EMP-SR-006'  => 'divya.joshi',
+    'EMP-SR-007'  => 'nikhil.rao',
+    'EMP-SR-008'  => 'pooja.desai'
+};
+
+Map<String, Id> userByEmail = new Map<String, Id>();
+for (User u : [SELECT Id, Email FROM User WHERE IsActive = true AND Email LIKE '%@fmcg-test.com']) {
+    userByEmail.put(u.Email.substringBefore('@'), u.Id);
 }
 Id fallbackUserId = UserInfo.getUserId();
 
 List<Employee__c> userLinks = new List<Employee__c>();
-for (Employee__c e : [SELECT Id, First_Name__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
-    Id userId = userByFirstName.containsKey(e.First_Name__c)
-        ? userByFirstName.get(e.First_Name__c) : fallbackUserId;
+Integer matched = 0;
+for (Employee__c e : [SELECT Id, Employee_Code__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
+    String emailPrefix = empToEmail.get(e.Employee_Code__c);
+    Id userId = (emailPrefix != null && userByEmail.containsKey(emailPrefix))
+        ? userByEmail.get(emailPrefix) : fallbackUserId;
+    if (userId != fallbackUserId) matched++;
     userLinks.add(new Employee__c(Id = e.Id, User__c = userId));
 }
 update userLinks;
-System.debug('Linked employees to users: ' + userLinks.size() +
-    ' (matched: ' + userByFirstName.size() + ' test users, rest → current user)');
+System.debug('Linked employees to users: ' + matched + '/' + userLinks.size() + ' matched test team users');
 
 // Pass 2: Link reporting hierarchy
 Map<String, Employee__c> empMap = new Map<String, Employee__c>();
