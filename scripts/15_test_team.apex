@@ -15,10 +15,20 @@
 
 // ── Config ──────────────────────────────────────────────────
 String emailDomain = '@fmcg-test.com';
-String profileName = 'Standard';
 
-// Get profile
-Profile stdProfile = [SELECT Id FROM Profile WHERE Name = :profileName LIMIT 1];
+// Get profiles by role
+Map<String, Id> profileMap = new Map<String, Id>();
+for (Profile p : [SELECT Id, Name FROM Profile WHERE Name IN ('FSCRM_NSM','FSCRM_RSM','FSCRM_ASM','FSCRM_TSE')]) {
+    profileMap.put(p.Name, p.Id);
+}
+if (profileMap.size() < 4) {
+    System.debug('ERROR: Missing profiles. Need FSCRM_NSM, FSCRM_RSM, FSCRM_ASM, FSCRM_TSE');
+    return;
+}
+Id nsmProfile = profileMap.get('FSCRM_NSM');
+Id rsmProfile = profileMap.get('FSCRM_RSM');
+Id asmProfile = profileMap.get('FSCRM_ASM');
+Id tseProfile = profileMap.get('FSCRM_TSE');
 
 // Get current period
 Target_Period__c currentPeriod;
@@ -55,7 +65,7 @@ users.add(new User(
     FirstName = 'Rajesh', LastName = 'Kapoor',
     Alias = 'rkapoor', Email = 'rajesh.kapoor' + emailDomain,
     Username = 'rajesh.kapoor' + emailDomain + '.' + UserInfo.getOrganizationId(),
-    ProfileId = stdProfile.Id, TimeZoneSidKey = 'Asia/Kolkata',
+    ProfileId = nsmProfile, TimeZoneSidKey = 'Asia/Kolkata',
     LocaleSidKey = 'en_IN', EmailEncodingKey = 'UTF-8',
     LanguageLocaleKey = 'en_US', IsActive = true
 ));
@@ -65,7 +75,7 @@ users.add(new User(
     FirstName = 'Suresh', LastName = 'Menon',
     Alias = 'smenon', Email = 'suresh.menon' + emailDomain,
     Username = 'suresh.menon' + emailDomain + '.' + UserInfo.getOrganizationId(),
-    ProfileId = stdProfile.Id, TimeZoneSidKey = 'Asia/Kolkata',
+    ProfileId = rsmProfile, TimeZoneSidKey = 'Asia/Kolkata',
     LocaleSidKey = 'en_IN', EmailEncodingKey = 'UTF-8',
     LanguageLocaleKey = 'en_US', IsActive = true
 ));
@@ -73,7 +83,7 @@ users.add(new User(
     FirstName = 'Priya', LastName = 'Nair',
     Alias = 'pnair', Email = 'priya.nair' + emailDomain,
     Username = 'priya.nair' + emailDomain + '.' + UserInfo.getOrganizationId(),
-    ProfileId = stdProfile.Id, TimeZoneSidKey = 'Asia/Kolkata',
+    ProfileId = rsmProfile, TimeZoneSidKey = 'Asia/Kolkata',
     LocaleSidKey = 'en_IN', EmailEncodingKey = 'UTF-8',
     LanguageLocaleKey = 'en_US', IsActive = true
 ));
@@ -87,7 +97,7 @@ for (Integer i = 0; i < 4; i++) {
         FirstName = asmFirstNames[i], LastName = asmLastNames[i],
         Alias = alias, Email = asmFirstNames[i].toLowerCase() + '.' + asmLastNames[i].toLowerCase() + emailDomain,
         Username = asmFirstNames[i].toLowerCase() + '.' + asmLastNames[i].toLowerCase() + emailDomain + '.' + UserInfo.getOrganizationId(),
-        ProfileId = stdProfile.Id, TimeZoneSidKey = 'Asia/Kolkata',
+        ProfileId = asmProfile, TimeZoneSidKey = 'Asia/Kolkata',
         LocaleSidKey = 'en_IN', EmailEncodingKey = 'UTF-8',
         LanguageLocaleKey = 'en_US', IsActive = true
     ));
@@ -102,7 +112,7 @@ for (Integer i = 0; i < 8; i++) {
         FirstName = tseFirstNames[i], LastName = tseLastNames[i],
         Alias = alias, Email = tseFirstNames[i].toLowerCase() + '.' + tseLastNames[i].toLowerCase() + emailDomain,
         Username = tseFirstNames[i].toLowerCase() + '.' + tseLastNames[i].toLowerCase() + emailDomain + '.' + UserInfo.getOrganizationId(),
-        ProfileId = stdProfile.Id, TimeZoneSidKey = 'Asia/Kolkata',
+        ProfileId = tseProfile, TimeZoneSidKey = 'Asia/Kolkata',
         LocaleSidKey = 'en_IN', EmailEncodingKey = 'UTF-8',
         LanguageLocaleKey = 'en_US', IsActive = true
     ));
