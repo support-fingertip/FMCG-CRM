@@ -92,7 +92,7 @@ private class API_Visit_Rest_Test {
         System.assertEquals(true, result.get('status'));
 
         Map<String, Object> data = (Map<String, Object>) result.get('data');
-        System.assertEquals('Happy Traders', data.get('accountName'));
+        System.assertEquals('Happy Traders', data.get('outletName'));
     }
 
     @isTest
