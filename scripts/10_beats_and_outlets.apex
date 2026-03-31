@@ -1,4 +1,4 @@
-// Script 10: Beats and Beat-Outlet mappings
+// Script 10: Beats and Beat-Outlet mappings (with user assignments)
 // Run: sf apex run -f scripts/10_beats_and_outlets.apex
 // Prerequisite: 02_territory_master.apex, 09_accounts.apex
 
@@ -9,17 +9,51 @@ for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master
 }
 System.debug('Territories found: ' + terMap.keySet());
 System.assert(!terMap.isEmpty(), 'No territories found. Run 02_territory_master.apex first.');
-System.assert(terMap.containsKey('TER-DEL-001'), 'Territory TER-DEL-001 not found. Available: ' + terMap.keySet());
 
-// Create beats - 6 beats for Delhi and Mumbai territories
-List<Beat__c> beats = new List<Beat__c>{
-    new Beat__c(Name = 'Delhi Central Beat', Beat_Code__c = 'BT-DEL-001', Territory__c = terMap.get('TER-DEL-001'), Day_of_Week__c = 'Monday;Wednesday', Frequency__c = 'Weekly', Is_Active__c = true),
-    new Beat__c(Name = 'Delhi South Beat', Beat_Code__c = 'BT-DEL-002', Territory__c = terMap.get('TER-DEL-001'), Day_of_Week__c = 'Tuesday;Thursday', Frequency__c = 'Weekly', Is_Active__c = true),
-    new Beat__c(Name = 'Mumbai Central Beat', Beat_Code__c = 'BT-MUM-001', Territory__c = terMap.get('TER-MUM-001'), Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true),
-    new Beat__c(Name = 'Mumbai Suburban Beat', Beat_Code__c = 'BT-MUM-002', Territory__c = terMap.get('TER-MUM-001'), Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true),
-    new Beat__c(Name = 'Bengaluru Main Beat', Beat_Code__c = 'BT-BLR-001', Territory__c = terMap.get('TER-BLR-001'), Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true),
-    new Beat__c(Name = 'Chennai Central Beat', Beat_Code__c = 'BT-CHN-001', Territory__c = terMap.get('TER-CHN-001'), Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true)
-};
+// Fetch active users for beat assignment (TSEs and ASMs from test team)
+Map<String, Id> userMap = new Map<String, Id>();
+for (User u : [SELECT Id, FirstName, LastName, Email FROM User WHERE IsActive = true AND Email LIKE '%@fmcg-test.com' ORDER BY FirstName]) {
+    userMap.put(u.FirstName + ' ' + u.LastName, u.Id);
+}
+// Also include current user
+userMap.put('Admin', UserInfo.getUserId());
+System.debug('Users for beat assignment: ' + userMap.keySet());
+
+// Create beats — 2 per territory, assigned to users
+List<Beat__c> beats = new List<Beat__c>();
+
+// Delhi beats
+beats.add(new Beat__c(Name = 'Delhi Central Beat', Beat_Code__c = 'BT-DEL-001', Territory__c = terMap.get('TER-DEL-001'),
+    Day_of_Week__c = 'Monday;Wednesday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Rahul Kumar') ? userMap.get('Rahul Kumar') : UserInfo.getUserId()));
+beats.add(new Beat__c(Name = 'Delhi South Beat', Beat_Code__c = 'BT-DEL-002', Territory__c = terMap.get('TER-DEL-001'),
+    Day_of_Week__c = 'Tuesday;Thursday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Anjali Reddy') ? userMap.get('Anjali Reddy') : UserInfo.getUserId()));
+
+// Mumbai beats
+beats.add(new Beat__c(Name = 'Mumbai Central Beat', Beat_Code__c = 'BT-MUM-001', Territory__c = terMap.get('TER-MUM-001'),
+    Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Karthik Nambiar') ? userMap.get('Karthik Nambiar') : UserInfo.getUserId()));
+beats.add(new Beat__c(Name = 'Mumbai Suburban Beat', Beat_Code__c = 'BT-MUM-002', Territory__c = terMap.get('TER-MUM-001'),
+    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Meera Iyer') ? userMap.get('Meera Iyer') : UserInfo.getUserId()));
+
+// Bangalore beats
+beats.add(new Beat__c(Name = 'Bengaluru Main Beat', Beat_Code__c = 'BT-BLR-001', Territory__c = terMap.get('TER-BLR-001'),
+    Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Nikhil Rao') ? userMap.get('Nikhil Rao') : UserInfo.getUserId()));
+beats.add(new Beat__c(Name = 'Bengaluru South Beat', Beat_Code__c = 'BT-BLR-002', Territory__c = terMap.get('TER-BLR-001'),
+    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Pooja Desai') ? userMap.get('Pooja Desai') : UserInfo.getUserId()));
+
+// Chennai beats
+beats.add(new Beat__c(Name = 'Chennai Central Beat', Beat_Code__c = 'BT-CHN-001', Territory__c = terMap.get('TER-CHN-001'),
+    Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Arjun Patel') ? userMap.get('Arjun Patel') : UserInfo.getUserId()));
+beats.add(new Beat__c(Name = 'Chennai South Beat', Beat_Code__c = 'BT-CHN-002', Territory__c = terMap.get('TER-CHN-001'),
+    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Assigned_User__c = userMap.containsKey('Divya Joshi') ? userMap.get('Divya Joshi') : UserInfo.getUserId()));
+
 insert beats;
 System.debug('Inserted beats: ' + beats.size());
 

@@ -1,6 +1,6 @@
 // Script 11: Trade Schemes - Full 4x6 Matrix with Products, Slabs, and Mappings
 // Run: sf apex run -f scripts/11_schemes.apex
-// Prerequisite: 04_products.apex
+// Prerequisite: 04_products.apex, 03_product_category.apex
 
 // Clean up existing scheme data (child objects first, then parent)
 delete [SELECT Id FROM Scheme_Mapping__c LIMIT 10000];
@@ -19,6 +19,12 @@ for (Product_Extension__c pe : [SELECT Id, SKU_Code__c FROM Product_Extension__c
 Map<String, Id> catMap = new Map<String, Id>();
 for (Product_Category__c pc : [SELECT Id, Category_Code__c FROM Product_Category__c WHERE Level__c = 'Sub-Category']) {
     catMap.put(pc.Category_Code__c, pc.Id);
+}
+
+// Fetch UOMs for Base_UOM__c
+Map<String, Id> uomMap = new Map<String, Id>();
+for (UOM__c u : [SELECT Id, UOM_Code__c FROM UOM__c WHERE Is_Active__c = true]) {
+    uomMap.put(u.UOM_Code__c, u.Id);
 }
 
 // Product references for scheme materials
@@ -48,8 +54,13 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Free_Product_Ext__c = peChips75,
         Free_Quantity__c = 1,
         Product_Ext__c = peChips150,
+        Product_Category__c = catMap.get('SUB-SNACK'),
         Budget_Amount__c = 100000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'GT',
+        Applicable_Outlet_Type__c = 'Grocery;General Store',
+        Base_UOM__c = uomMap.get('PCS'),
+        Max_Usage_Per_Customer__c = 5,
         Priority__c = 1
     ),
 
@@ -67,8 +78,13 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Free_Product_Ext__c = peToffee200,
         Free_Quantity__c = 1,
         Product_Ext__c = peBiscuit200,
+        Product_Category__c = catMap.get('SUB-BISC'),
         Budget_Amount__c = 80000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'GT',
+        Applicable_Outlet_Type__c = 'Grocery;General Store',
+        Base_UOM__c = uomMap.get('PCS'),
+        Max_Usage_Per_Customer__c = 3,
         Priority__c = 2
     ),
 
@@ -83,8 +99,12 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         End_Date__c = Date.today().addMonths(6),
         Status__c = 'Active',
         Discount_Percent__c = 3,
+        Max_Discount_Cap__c = 500,
+        Product_Category__c = catMap.get('SUB-SNACK'),
         Budget_Amount__c = 200000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'GT',
+        Base_UOM__c = uomMap.get('PCS'),
         Priority__c = 3
     ),
 
@@ -101,8 +121,12 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Invoice_Qty_Threshold__c = 10,
         Invoice_Qty_UOM__c = 'KG',
         Price_Discount__c = 200,
+        Max_Discount_Cap__c = 200,
+        Product_Category__c = catMap.get('SUB-DET'),
         Budget_Amount__c = 50000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'GT',
+        Base_UOM__c = uomMap.get('KG'),
         Priority__c = 4
     ),
 
@@ -120,6 +144,8 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Reward_Points__c = 300,
         Budget_Amount__c = 150000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'All',
+        Applicable_Outlet_Type__c = 'Grocery;General Store;Medical;Hardware',
         Priority__c = 5,
         Is_Stackable__c = true
     ),
@@ -139,6 +165,9 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Product_Ext__c = peJuice1L,
         Budget_Amount__c = 50000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'GT',
+        Base_UOM__c = uomMap.get('PCS'),
+        Max_Usage_Per_Customer__c = 10,
         Priority__c = 6,
         Is_Stackable__c = true
     ),
@@ -153,8 +182,11 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(6),
         Status__c = 'Active',
+        Max_Discount_Cap__c = 2000,
         Budget_Amount__c = 200000,
         Applicable_Channel__c = 'GT',
+        Channel__c = 'GT',
+        Base_UOM__c = uomMap.get('PCS'),
         Priority__c = 7
     ),
 
@@ -168,8 +200,11 @@ List<Scheme__c> schemes = new List<Scheme__c>{
         Start_Date__c = Date.today(),
         End_Date__c = Date.today().addMonths(1),
         Status__c = 'Draft',
+        Discount_Amount__c = 100,
+        Max_Discount_Cap__c = 1000,
         Budget_Amount__c = 50000,
         Applicable_Channel__c = 'MT',
+        Channel__c = 'MT',
         Priority__c = 8
     )
 };
@@ -190,13 +225,14 @@ List<Scheme_Product__c> schProducts = new List<Scheme_Product__c>();
 if (peChips150 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Product_Ext__c = peChips150,
+        Product_Ext__c = peChips150, Product_Category__c = catMap.get('SUB-SNACK'),
+        Product_Classification__c = 'Must Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 3));
 }
 if (peChips75 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Product_Ext__c = peChips75,
+        Product_Ext__c = peChips75, Product_Category__c = catMap.get('SUB-SNACK'),
         Is_Buy_Product__c = false, Is_Get_Product__c = true, Min_Quantity__c = 0));
 }
 
@@ -204,13 +240,14 @@ if (peChips75 != null) {
 if (peBiscuit200 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-002'),
-        Product_Ext__c = peBiscuit200,
+        Product_Ext__c = peBiscuit200, Product_Category__c = catMap.get('SUB-BISC'),
+        Product_Classification__c = 'Focused Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 20));
 }
 if (peToffee200 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-002'),
-        Product_Ext__c = peToffee200,
+        Product_Ext__c = peToffee200, Product_Category__c = catMap.get('SUB-CONF'),
         Is_Buy_Product__c = false, Is_Get_Product__c = true, Min_Quantity__c = 0));
 }
 
@@ -218,13 +255,15 @@ if (peToffee200 != null) {
 if (peChips150 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-003'),
-        Product_Ext__c = peChips150,
+        Product_Ext__c = peChips150, Product_Category__c = catMap.get('SUB-SNACK'),
+        Product_Classification__c = 'Must Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 3));
 }
 if (peNoodles70 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-003'),
-        Product_Ext__c = peNoodles70,
+        Product_Ext__c = peNoodles70, Product_Category__c = catMap.get('SUB-NOODL'),
+        Product_Classification__c = 'Must Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 4));
 }
 
@@ -232,7 +271,8 @@ if (peNoodles70 != null) {
 if (peDetergent1kg != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-004'),
-        Product_Ext__c = peDetergent1kg,
+        Product_Ext__c = peDetergent1kg, Product_Category__c = catMap.get('SUB-DET'),
+        Product_Classification__c = 'Must Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 1));
 }
 
@@ -242,7 +282,8 @@ if (peDetergent1kg != null) {
 if (peJuice1L != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-006'),
-        Product_Ext__c = peJuice1L,
+        Product_Ext__c = peJuice1L, Product_Category__c = catMap.get('SUB-JUICE'),
+        Product_Classification__c = 'Focused Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 6));
 }
 
@@ -250,7 +291,8 @@ if (peJuice1L != null) {
 if (peShampoo200 != null) {
     schProducts.add(new Scheme_Product__c(
         Scheme__c = schMap.get('SCH-2026-007'),
-        Product_Ext__c = peShampoo200,
+        Product_Ext__c = peShampoo200, Product_Category__c = catMap.get('SUB-HAIR'),
+        Product_Classification__c = 'Focused Sell',
         Is_Buy_Product__c = true, Is_Get_Product__c = false, Min_Quantity__c = 1));
 }
 
@@ -265,21 +307,31 @@ List<Scheme_Slab__c> slabs = new List<Scheme_Slab__c>{
     // Value-based slabs for Personal Care Volume Discount (SCH-2026-007)
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-007'),
         Slab_Type__c = 'Value', Min_Value__c = 1000, Max_Value__c = 4999,
-        Discount_Type__c = 'Percent', Discount_Value__c = 5, Is_Active__c = true),
+        Discount_Type__c = 'Percent', Discount_Value__c = 5, Discount_Percent__c = 5, Is_Active__c = true),
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-007'),
         Slab_Type__c = 'Value', Min_Value__c = 5000, Max_Value__c = 14999,
-        Discount_Type__c = 'Percent', Discount_Value__c = 8, Is_Active__c = true),
+        Discount_Type__c = 'Percent', Discount_Value__c = 8, Discount_Percent__c = 8, Is_Active__c = true),
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-007'),
         Slab_Type__c = 'Value', Min_Value__c = 15000, Max_Value__c = 999999,
-        Discount_Type__c = 'Percent', Discount_Value__c = 12, Is_Active__c = true),
+        Discount_Type__c = 'Percent', Discount_Value__c = 12, Discount_Percent__c = 12, Is_Active__c = true),
 
     // Quantity-based slabs for Chips Buy 3 Get 1 Free (SCH-2026-001)
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-001'),
         Slab_Type__c = 'Quantity', Min_Quantity__c = 10, Max_Quantity__c = 49,
-        Discount_Type__c = 'Free Product', Free_Quantity__c = 2, Is_Active__c = true),
+        Discount_Type__c = 'Free Product', Free_Quantity__c = 2,
+        Free_Product_Ext__c = peChips75, Is_Active__c = true),
     new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-001'),
         Slab_Type__c = 'Quantity', Min_Quantity__c = 50, Max_Quantity__c = 999,
-        Discount_Type__c = 'Free Product', Free_Quantity__c = 12, Is_Active__c = true)
+        Discount_Type__c = 'Free Product', Free_Quantity__c = 12,
+        Free_Product_Ext__c = peChips75, Is_Active__c = true),
+
+    // Quantity-based slabs for Invoice Val Reward Points (SCH-2026-005)
+    new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-005'),
+        Slab_Type__c = 'Value', Min_Value__c = 5000, Max_Value__c = 9999,
+        Discount_Type__c = 'Reward Points', Reward_Points__c = 300, Is_Active__c = true),
+    new Scheme_Slab__c(Scheme__c = schMap.get('SCH-2026-005'),
+        Slab_Type__c = 'Value', Min_Value__c = 10000, Max_Value__c = 999999,
+        Discount_Type__c = 'Reward Points', Reward_Points__c = 750, Is_Active__c = true)
 };
 insert slabs;
 System.debug('Inserted scheme slabs: ' + slabs.size());
@@ -298,38 +350,55 @@ List<Scheme_Mapping__c> mappings = new List<Scheme_Mapping__c>{
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-001'),
         Territory__c = terrMap.containsKey('TER-DEL-001') ? terrMap.get('TER-DEL-001') : null,
-        Zone__c = 'North',
-        Area__c = 'Delhi NCR',
+        Zone__c = 'North', Sub_Zone__c = 'North-1',
+        Area__c = 'Delhi NCR', District__c = 'Central Delhi',
         Customer_Type__c = 'Retailer',
         Is_Active__c = true
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-001'),
         Territory__c = terrMap.containsKey('TER-MUM-001') ? terrMap.get('TER-MUM-001') : null,
-        Zone__c = 'West',
-        Area__c = 'Mumbai Metro',
+        Zone__c = 'West', Sub_Zone__c = 'West-1',
+        Area__c = 'Mumbai Metro', District__c = 'Mumbai City',
         Customer_Type__c = 'Retailer',
         Is_Active__c = true
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-005'),
         Territory__c = terrMap.containsKey('TER-CHN-001') ? terrMap.get('TER-CHN-001') : null,
-        Zone__c = 'South',
+        Zone__c = 'South', Sub_Zone__c = 'South-1',
+        District__c = 'Chennai',
         Customer_Type__c = 'Retailer',
         Is_Active__c = true
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-005'),
         Territory__c = terrMap.containsKey('TER-KOL-001') ? terrMap.get('TER-KOL-001') : null,
-        Zone__c = 'East',
+        Zone__c = 'East', Sub_Zone__c = 'East-1',
+        District__c = 'Kolkata',
         Customer_Type__c = 'Distributor',
         Is_Active__c = true
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-003'),
         Territory__c = terrMap.containsKey('TER-BLR-001') ? terrMap.get('TER-BLR-001') : null,
-        Zone__c = 'South',
-        Area__c = 'Bangalore Urban',
+        Zone__c = 'South', Sub_Zone__c = 'South-2',
+        Area__c = 'Bangalore Urban', District__c = 'Bangalore Urban',
+        Is_Active__c = true
+    ),
+    // Additional mappings for broader coverage
+    new Scheme_Mapping__c(
+        Scheme__c = schMap.get('SCH-2026-004'),
+        Territory__c = terrMap.containsKey('TER-DEL-001') ? terrMap.get('TER-DEL-001') : null,
+        Zone__c = 'North', Sub_Zone__c = 'North-1',
+        Customer_Type__c = 'Retailer',
+        Is_Active__c = true
+    ),
+    new Scheme_Mapping__c(
+        Scheme__c = schMap.get('SCH-2026-007'),
+        Territory__c = terrMap.containsKey('TER-MUM-001') ? terrMap.get('TER-MUM-001') : null,
+        Zone__c = 'West', Sub_Zone__c = 'West-1',
+        Customer_Type__c = 'Retailer',
         Is_Active__c = true
     )
 };

@@ -54,7 +54,7 @@ System.debug('8th Base Prices: ' + basePrices.size());
 
 List<Price_List__c> catPrices = new List<Price_List__c>();
 Id snackCat = catMap.get('SUB-SNACK');
-Id biscuitCat = catMap.get('SUB-BISCUIT');
+Id biscuitCat = catMap.get('SUB-BISC');
 if (snackCat != null) {
     for (Product_Extension__c p : prodMap.values()) {
         if (p.Product_Category__c == snackCat) {
