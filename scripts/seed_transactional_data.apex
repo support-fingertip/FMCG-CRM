@@ -146,7 +146,7 @@ for (Day_Attendance__c da : attendances) {
             Is_Geo_Fenced__c = true,
             Is_Ad_Hoc__c = false,
             Distance_To_Outlet__c = 50 + (v * 20),
-            Non_Productive_Reason__c = isProductive ? null : 'Shop Closed',
+            Non_Productive_Reason__c = isProductive ? null : 'Closed',
             Notes__c = isProductive ? 'Order taken, new products introduced' : 'Shop was closed, will revisit'
         );
         visits.add(vis);
