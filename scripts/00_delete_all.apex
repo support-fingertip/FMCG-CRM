@@ -91,6 +91,9 @@ if (c > 0) { delete [SELECT Id FROM Scheme__c]; System.debug('Deleted ' + c + ' 
 c = [SELECT COUNT() FROM UOM_Conversion__c];
 if (c > 0) { delete [SELECT Id FROM UOM_Conversion__c]; System.debug('Deleted ' + c + ' UOM_Conversion__c'); }
 
+c = [SELECT COUNT() FROM Price_Change_Log__c];
+if (c > 0) { delete [SELECT Id FROM Price_Change_Log__c]; System.debug('Deleted ' + c + ' Price_Change_Log__c'); }
+
 c = [SELECT COUNT() FROM Price_List__c];
 if (c > 0) { delete [SELECT Id FROM Price_List__c]; System.debug('Deleted ' + c + ' Price_List__c'); }
 
