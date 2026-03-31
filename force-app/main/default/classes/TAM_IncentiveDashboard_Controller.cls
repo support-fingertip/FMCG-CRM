@@ -24,10 +24,16 @@ public with sharing class TAM_IncentiveDashboard_Controller {
 
         List<Target_Period__c> currentPeriods = [
             SELECT Id FROM Target_Period__c
-            WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-            AND Type__c = 'Monthly' AND Is_Active__c = true
+            WHERE Is_Default__c = true AND Is_Active__c = true
             LIMIT 1
         ];
+        if (currentPeriods.isEmpty()) {
+            currentPeriods = [
+                SELECT Id FROM Target_Period__c
+                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                AND Is_Active__c = true ORDER BY Type__c ASC LIMIT 1
+            ];
+        }
         dx.currentPeriodId = currentPeriods.isEmpty() ? '' : currentPeriods[0].Id;
 
         // Filter options

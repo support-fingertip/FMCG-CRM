@@ -49,13 +49,21 @@ public class TAM_TargetAllocation_Controller {
             LIMIT 20
         ];
 
-        // Find current active monthly period (not quarterly/annual)
+        // Find default period first, then fall back to current date match
         List<Target_Period__c> currentPeriodList = [
             SELECT Id FROM Target_Period__c
-            WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-            AND Type__c = 'Monthly' AND Is_Active__c = true
+            WHERE Is_Default__c = true AND Is_Active__c = true
             LIMIT 1
         ];
+        if (currentPeriodList.isEmpty()) {
+            currentPeriodList = [
+                SELECT Id FROM Target_Period__c
+                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                AND Is_Active__c = true
+                ORDER BY Type__c ASC
+                LIMIT 1
+            ];
+        }
         dx.period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
 
         if (String.isNotBlank(dx.period)) {
@@ -80,8 +88,7 @@ public class TAM_TargetAllocation_Controller {
         if (String.isBlank(period)) {
             List<Target_Period__c> currentPeriodList = [
                 SELECT Id FROM Target_Period__c
-                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-                AND Is_Active__c = true
+                WHERE Is_Default__c = true AND Is_Active__c = true
                 LIMIT 1
             ];
             period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;
@@ -100,8 +107,7 @@ public class TAM_TargetAllocation_Controller {
         if (String.isBlank(period)) {
             List<Target_Period__c> currentPeriodList = [
                 SELECT Id FROM Target_Period__c
-                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-                AND Is_Active__c = true
+                WHERE Is_Default__c = true AND Is_Active__c = true
                 LIMIT 1
             ];
             period = currentPeriodList.isEmpty() ? '' : currentPeriodList[0].Id;

@@ -17,9 +17,15 @@ public with sharing class AchievementDashboardController {
         if (String.isBlank(periodId)) {
             List<Target_Period__c> current = [
                 SELECT Id FROM Target_Period__c
-                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-                AND Type__c = 'Monthly' AND Is_Active__c = true LIMIT 1
+                WHERE Is_Default__c = true AND Is_Active__c = true LIMIT 1
             ];
+            if (current.isEmpty()) {
+                current = [
+                    SELECT Id FROM Target_Period__c
+                    WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                    AND Is_Active__c = true ORDER BY Type__c ASC LIMIT 1
+                ];
+            }
             if (current.isEmpty()) return result;
             periodId = current[0].Id;
         }
@@ -245,10 +251,16 @@ public with sharing class AchievementDashboardController {
 
         List<Target_Period__c> current = [
             SELECT Id FROM Target_Period__c
-            WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
-            AND Type__c = 'Monthly' AND Is_Active__c = true
+            WHERE Is_Default__c = true AND Is_Active__c = true
             LIMIT 1
         ];
+        if (current.isEmpty()) {
+            current = [
+                SELECT Id FROM Target_Period__c
+                WHERE Start_Date__c <= TODAY AND End_Date__c >= TODAY
+                AND Is_Active__c = true ORDER BY Type__c ASC LIMIT 1
+            ];
+        }
         result.put('currentPeriodId', current.isEmpty() ? '' : current[0].Id);
         result.put('currentUserId', UserInfo.getUserId());
         result.put('currentYear', Date.today().year());
