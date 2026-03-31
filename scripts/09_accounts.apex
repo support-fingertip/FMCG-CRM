@@ -36,7 +36,10 @@ delete [SELECT Id FROM Scorecard__c];
 delete [SELECT Id FROM Channel_Partner__c];
 delete [SELECT Id FROM Scheme_Mapping__c];
 delete [SELECT Id FROM Beat_Outlet__c];
-delete [SELECT Id FROM Account];
+// Only delete accounts created by seed scripts (skip Salesforce system accounts)
+delete [SELECT Id FROM Account WHERE Type IN ('Distributor', 'Super Stockist', 'Retailer', 'Modern Trade')];
+// Also delete any with our territory lookups
+delete [SELECT Id FROM Account WHERE Territory__c != null];
 System.debug('Cleaned up Accounts and all child objects');
 
 // Fetch Record Type IDs
