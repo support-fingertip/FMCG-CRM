@@ -46,11 +46,10 @@ if (c > 0) { delete [SELECT Id FROM Invoice_Line__c]; System.debug('Deleted ' + 
 c = [SELECT COUNT() FROM Invoice__c];
 if (c > 0) { delete [SELECT Id FROM Invoice__c]; System.debug('Deleted ' + c + ' Invoice__c'); }
 
-c = [SELECT COUNT() FROM Order_Line_Item__c];
-if (c > 0) { delete [SELECT Id FROM Order_Line_Item__c]; System.debug('Deleted ' + c + ' Order_Line_Item__c'); }
-
+// Delete orders first — line items auto-cascade via Master-Detail
+// (Deleting line items first triggers order update validation errors)
 c = [SELECT COUNT() FROM Sales_Order__c];
-if (c > 0) { delete [SELECT Id FROM Sales_Order__c]; System.debug('Deleted ' + c + ' Sales_Order__c'); }
+if (c > 0) { delete [SELECT Id FROM Sales_Order__c]; System.debug('Deleted ' + c + ' Sales_Order__c (+ line items cascaded)'); }
 
 c = [SELECT COUNT() FROM Collection__c];
 if (c > 0) { delete [SELECT Id FROM Collection__c]; System.debug('Deleted ' + c + ' Collection__c'); }
