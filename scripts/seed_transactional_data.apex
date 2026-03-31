@@ -302,11 +302,13 @@ for (Sales_Order__c o : orders) {
 update totalUpdates;
 
 // Advance orders through status flow: Draft → Submitted → Approved
-// Re-query to get current status (triggers may have changed it)
+// Bypass trigger to skip must-sell validation for seed data
+TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
+
 List<Sales_Order__c> ordersToAdvance = [SELECT Id, Status__c FROM Sales_Order__c WHERE Id IN :orders];
 List<Sales_Order__c> statusUpdates = new List<Sales_Order__c>();
 for (Sales_Order__c o : ordersToAdvance) {
-    if (o.Status__c == 'Draft') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Submitted', Must_Sell_Override__c = true));
+    if (o.Status__c == 'Draft') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Submitted'));
 }
 if (!statusUpdates.isEmpty()) update statusUpdates;
 
@@ -316,6 +318,8 @@ for (Sales_Order__c o : ordersToAdvance) {
     if (o.Status__c == 'Submitted') statusUpdates.add(new Sales_Order__c(Id = o.Id, Status__c = 'Approved'));
 }
 if (!statusUpdates.isEmpty()) update statusUpdates;
+
+TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
 
 System.debug('Created ' + lineItems.size() + ' Order Line Items, orders advanced to Approved');
 
