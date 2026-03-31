@@ -277,24 +277,27 @@ updates.add(new Employee__c(Id = empMap.get('EMP-SR-008').Id, Reporting_Manager_
 update updates;
 System.debug('Updated reporting hierarchy: ' + updates.size());
 
-// Pass 3: Set L1 and L2 approvers based on reporting hierarchy
-// Re-query with Reporting_Manager's Reporting_Manager for L2 chain
-Map<String, Id> empManagerMap = new Map<String, Id>();   // empCode -> manager Id
-Map<Id, Id> idToManagerId = new Map<Id, Id>();           // empId -> manager Id
-for (Employee__c e : [SELECT Id, Employee_Code__c, Reporting_Manager__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
-    empManagerMap.put(e.Employee_Code__c, e.Reporting_Manager__c);
-    idToManagerId.put(e.Id, e.Reporting_Manager__c);
+// Pass 3: Set L1 and L2 approvers (User lookups, not Employee lookups)
+// L1_Approver__c / L2_Approver__c are Lookup(User), so we need User__c from the manager Employee
+// Build empId → User__c map, and empId → managerId map
+Map<Id, Id> empToUser = new Map<Id, Id>();       // Employee Id → User Id
+Map<Id, Id> empToManager = new Map<Id, Id>();    // Employee Id → Manager Employee Id
+for (Employee__c e : [SELECT Id, User__c, Reporting_Manager__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
+    if (e.User__c != null) empToUser.put(e.Id, e.User__c);
+    empToManager.put(e.Id, e.Reporting_Manager__c);
 }
 
 List<Employee__c> approverUpdates = new List<Employee__c>();
-for (Employee__c e : [SELECT Id, Employee_Code__c, Reporting_Manager__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
-    Id l1 = e.Reporting_Manager__c;
-    Id l2 = (l1 != null) ? idToManagerId.get(l1) : null;
-    if (l1 != null || l2 != null) {
-        approverUpdates.add(new Employee__c(Id = e.Id, L1_Approver__c = l1, L2_Approver__c = l2));
+for (Employee__c e : [SELECT Id, Reporting_Manager__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
+    Id managerId = e.Reporting_Manager__c;
+    Id l1UserId = (managerId != null) ? empToUser.get(managerId) : null;
+    Id grandManagerId = (managerId != null) ? empToManager.get(managerId) : null;
+    Id l2UserId = (grandManagerId != null) ? empToUser.get(grandManagerId) : null;
+    if (l1UserId != null || l2UserId != null) {
+        approverUpdates.add(new Employee__c(Id = e.Id, L1_Approver__c = l1UserId, L2_Approver__c = l2UserId));
     }
 }
 if (!approverUpdates.isEmpty()) update approverUpdates;
-System.debug('Updated L1/L2 approvers: ' + approverUpdates.size());
+System.debug('Updated L1/L2 approvers: ' + approverUpdates.size() + ' (requires User__c on employees)');
 
 System.debug('Employee setup complete. Total: ' + employees.size());
