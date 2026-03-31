@@ -161,7 +161,7 @@ System.debug('Created ' + visits.size() + ' Visit records');
 // 3. SALES ORDERS — 1 per productive completed visit
 // ════════════════════════════════════════════════════════════
 
-Id delWarehouse = warehouseMap.get('WH-DEL');
+Id delWarehouse = warehouseMap.get('WHDEL01');
 List<Sales_Order__c> orders = new List<Sales_Order__c>();
 
 for (Visit__c v : visits) {
