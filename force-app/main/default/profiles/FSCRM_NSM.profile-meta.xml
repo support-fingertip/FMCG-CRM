@@ -1,175 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
-    <custom>true</custom>
-    <userLicense>Salesforce</userLicense>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>AccessOrchestrationObjects</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ActivitiesAccess</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>AllowUniversalSearch</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>AllowViewKnowledge</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ApexRestServices</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ApiEnabled</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>AssignTopics</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>CanAccessCE</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ChatterFileLink</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ContentWorkspaces</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ConvertLeads</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>CreateCustomizeFilters</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>CreateCustomizeReports</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>CreateTopics</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>DistributeFromPersWksp</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EditEvent</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EditOppLineItemUnitPrice</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EditTask</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EditTopics</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EmailMass</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EmailSingle</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EnableCommunityAppLauncher</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>EnableNotifications</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ExportReport</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ImportPersonal</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>LightningConsoleAllowedForUser</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>LightningExperienceUser</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ListEmailSend</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>MassInlineEdit</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>RunReports</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>SelectFilesFromSalesforce</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>SendSitRequests</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ShowCompanyNameAsUserBadge</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>SubmitMacrosAllowed</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>SubscribeToLightningReports</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>TransactionalEmailSend</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>UseWebLink</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ViewDeveloperName</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ViewHelpLink</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ViewPublicCapstoneFolders</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ViewRoles</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ViewSetup</name>
-    </userPermissions>
     <applicationVisibilities>
         <application>Field_Sales_CRM</application>
         <default>true</default>
@@ -271,6 +101,12 @@
         <apexClass>VisitManagerController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses><apexClass>LeaveBalanceService</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeaveYearlyResetBatch</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeaveAccrualBatch</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeaveAccrualScheduler</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeavePolicyController</apexClass><enabled>true</enabled></classAccesses>
+    <custom>true</custom>
     <fieldPermissions>
         <editable>true</editable>
         <field>Employee__c.Gross_Salary__c</field>
@@ -501,6 +337,18 @@
         <field>Target_Period__c.Parent_Period__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Designation__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Effective_Year__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Encashable__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Max_Carry_Forward__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Monthly_Accrual__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Accrued__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Carry_Forward__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Entitled__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Leave_Policy__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Pending__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Used__c</field><readable>true</readable></fieldPermissions>
     <layoutAssignments>
         <layout>Employee__c-Employee Layout</layout>
     </layoutAssignments>
@@ -519,6 +367,8 @@
     <layoutAssignments>
         <layout>Target_Period__c-Target Period Layout</layout>
     </layoutAssignments>
+    <layoutAssignments><layout>Leave_Policy__c-Leave Policy Layout</layout></layoutAssignments>
+    <layoutAssignments><layout>Leave_Balance__c-Leave Balance Layout</layout></layoutAssignments>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
@@ -564,6 +414,8 @@
         <object>Target_Period__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
     <tabVisibilities>
         <tab>Achievement_Dashboard</tab>
         <visibility>DefaultOn</visibility>
@@ -760,27 +612,175 @@
         <tab>Warehouse__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
-    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Designation__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Effective_Year__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Encashable__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Max_Carry_Forward__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Policy__c.Monthly_Accrual__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Accrued__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Carry_Forward__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Entitled__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Leave_Policy__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Pending__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Used__c</field><readable>true</readable></fieldPermissions>
-    <layoutAssignments><layout>Leave_Policy__c-Leave Policy Layout</layout></layoutAssignments>
-    <layoutAssignments><layout>Leave_Balance__c-Leave Balance Layout</layout></layoutAssignments>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
     <tabVisibilities><tab>Leave_Policy__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
-    <classAccesses><apexClass>LeaveBalanceService</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>LeaveYearlyResetBatch</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>LeaveAccrualBatch</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>LeaveAccrualScheduler</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>LeavePolicyController</apexClass><enabled>true</enabled></classAccesses>
+    <userLicense>Salesforce</userLicense>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>AccessOrchestrationObjects</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ActivitiesAccess</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>AllowUniversalSearch</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>AllowViewKnowledge</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ApexRestServices</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ApiEnabled</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>AssignTopics</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>CanAccessCE</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ChatterFileLink</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ContentWorkspaces</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ConvertLeads</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>CreateCustomizeFilters</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>CreateCustomizeReports</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>CreateTopics</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>DistributeFromPersWksp</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EditEvent</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EditOppLineItemUnitPrice</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EditTask</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EditTopics</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EmailMass</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EmailSingle</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EnableCommunityAppLauncher</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>EnableNotifications</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ExportReport</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ImportPersonal</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>LightningConsoleAllowedForUser</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>LightningExperienceUser</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ListEmailSend</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>MassInlineEdit</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>RunReports</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>SelectFilesFromSalesforce</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>SendSitRequests</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ShowCompanyNameAsUserBadge</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>SubmitMacrosAllowed</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>SubscribeToLightningReports</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>TransactionalEmailSend</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>UseWebLink</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewDeveloperName</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewHelpLink</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewPublicCapstoneFolders</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewRoles</name>
+    </userPermissions>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>ViewSetup</name>
+    </userPermissions>
 </Profile>
