@@ -30,16 +30,14 @@ for (Product_Extension__c p : products) {
     //          For non-near-expiry: manufactured 6 months ago, expiring at full shelf life from mfg date
     Date mfgDate1;
     Date expDate1;
-    Boolean isNearExpiry1 = false;
     if (makeNearExpiry) {
+        // Near-expiry: manufactured long ago, expiring in ~20 days (formula auto-flags)
         mfgDate1 = Date.today().addDays(-(shelfDays - 20));
         expDate1 = Date.today().addDays(20);
-        isNearExpiry1 = true;
         nearExpiryCount++;
     } else {
         mfgDate1 = Date.today().addMonths(-6);
         expDate1 = mfgDate1.addDays(shelfDays);
-        isNearExpiry1 = false;
     }
 
     batches.add(new Batch_Master__c(
@@ -50,8 +48,7 @@ for (Product_Extension__c p : products) {
         Expiry_Date__c = expDate1,
         Quantity_Manufactured__c = 10000,
         Shelf_Life_Days__c = shelfDays,
-        Status__c = 'Active',
-        Is_Near_Expiry__c = isNearExpiry1
+        Status__c = 'Active'
     ));
     batchNum++;
 
@@ -66,8 +63,7 @@ for (Product_Extension__c p : products) {
         Expiry_Date__c = expDate2,
         Quantity_Manufactured__c = 15000,
         Shelf_Life_Days__c = shelfDays,
-        Status__c = 'Active',
-        Is_Near_Expiry__c = false
+        Status__c = 'Active'
     ));
     batchNum++;
 }
