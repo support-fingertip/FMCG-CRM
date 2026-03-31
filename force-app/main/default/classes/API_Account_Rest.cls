@@ -59,7 +59,7 @@ global with sharing class API_Account_Rest {
         }
 
         List<Account> accounts = [
-            SELECT Id, Name, AccountNumber, Outlet_Type__c, Region__c,
+            SELECT Id, Name, AccountNumber, Outlet_Type__c, Region__c,Email__c,
                    BillingStreet, BillingCity, BillingState, BillingPostalCode,
                    Phone, Owner_Name__c, Outlet_Latitude__c, Outlet_Longitude__c,
                    Credit_Limit__c, Outstanding_Balance__c, Is_Active__c
@@ -80,14 +80,14 @@ global with sharing class API_Account_Rest {
 
     private static Map<String, Object> buildAccountResponse(Account acc) {
         Map<String, Object> item = new Map<String, Object>();
-        item.put('_object_name', 'Outlet_sfa__c (Master Object)');
+      //  item.put('_object_name', 'Account');
         item.put('Outlet_Code__c', acc.AccountNumber != null ? acc.AccountNumber : '');
         item.put('Name', acc.Name);
         item.put('Type__c', acc.Outlet_Type__c != null ? acc.Outlet_Type__c : '');
         item.put('Area__c', acc.Region__c != null ? acc.Region__c : '');
         item.put('Address__c', buildAddress(acc));
         item.put('Phone__c', acc.Phone != null ? acc.Phone : '');
-        item.put('Email__c', '');
+        item.put('Email__c', acc.Email__c != null ? acc.Email__c : '');
         item.put('Contact_Person__c', acc.Owner_Name__c != null ? acc.Owner_Name__c : '');
         item.put('Latitude__c', acc.Outlet_Latitude__c);
         item.put('Longitude__c', acc.Outlet_Longitude__c);

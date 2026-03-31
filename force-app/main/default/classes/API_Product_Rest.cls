@@ -31,7 +31,7 @@ global with sharing class API_Product_Rest {
         List<Product_Extension__c> products = [
             SELECT Id, Name, Is_Active__c, Weight__c, Weight_Unit__c,
                    HSN_SAC_Code__c, Barcode_EAN__c, Case_Size__c, Min_Order_Qty__c,
-                   Product__c, Product_Category__r.Name
+                    Product_Category__r.Name
             FROM Product_Extension__c
             WHERE Is_Active__c = true
             ORDER BY Name ASC
@@ -40,8 +40,8 @@ global with sharing class API_Product_Rest {
         // Collect Product Ids for discount lookup
         Set<Id> productIds = new Set<Id>();
         for (Product_Extension__c pe : products) {
-            if (pe.Product__c != null) {
-                productIds.add(pe.Product__c);
+            if (pe.Id != null) {
+                productIds.add(pe.Id);
             }
         }
 
@@ -49,24 +49,24 @@ global with sharing class API_Product_Rest {
         Map<Id, Scheme__c> discountByProduct = new Map<Id, Scheme__c>();
         if (!productIds.isEmpty()) {
             for (Scheme__c scheme : [
-                SELECT Product__c, Discount_Percent__c, Start_Date__c, End_Date__c
+                SELECT Product_Ext__c, Discount_Percent__c, Start_Date__c, End_Date__c
                 FROM Scheme__c
-                WHERE Product__c IN :productIds
+                WHERE Product_Ext__c IN :productIds
                   AND Status__c = 'Active'
                   AND Start_Date__c <= TODAY
                   AND End_Date__c >= TODAY
                 ORDER BY Priority__c ASC
             ]) {
                 // Keep the highest priority (first) scheme per product
-                if (!discountByProduct.containsKey(scheme.Product__c)) {
-                    discountByProduct.put(scheme.Product__c, scheme);
+                if (!discountByProduct.containsKey(scheme.Product_Ext__c)) {
+                    discountByProduct.put(scheme.Product_Ext__c, scheme);
                 }
             }
         }
 
         List<Map<String, Object>> dataList = new List<Map<String, Object>>();
         for (Product_Extension__c pe : products) {
-            Scheme__c discount = pe.Product__c != null ? discountByProduct.get(pe.Product__c) : null;
+            Scheme__c discount = pe.Id != null ? discountByProduct.get(pe.Id) : null;
             dataList.add(buildProductResponse(pe, discount));
         }
 
@@ -77,7 +77,7 @@ global with sharing class API_Product_Rest {
 
     private static Map<String, Object> buildProductResponse(Product_Extension__c pe, Scheme__c discount) {
         Map<String, Object> item = new Map<String, Object>();
-        item.put('_object_name', 'Product_sfa__c (Master Object)');
+       // item.put('_object_name', 'Product_sfa__c (Master Object)');
         item.put('Product_Code__c', pe.HSN_SAC_Code__c != null ? pe.HSN_SAC_Code__c : '');
         item.put('Name', pe.Name);
         item.put('Category__c', pe.Product_Category__r != null ? pe.Product_Category__r.Name : '');
