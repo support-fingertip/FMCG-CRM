@@ -181,8 +181,8 @@ String[] designations = new String[]{
     'National Sales Manager',
     'Regional Sales Manager', 'Regional Sales Manager',
     'Area Sales Manager', 'Area Sales Manager', 'Area Sales Manager', 'Area Sales Manager',
-    'Territory Sales Executive', 'Territory Sales Executive', 'Territory Sales Executive', 'Territory Sales Executive',
-    'Territory Sales Executive', 'Territory Sales Executive', 'Territory Sales Executive', 'Territory Sales Executive'
+    'Sales Representative', 'Sales Representative', 'Sales Representative', 'Sales Representative',
+    'Sales Representative', 'Sales Representative', 'Sales Representative', 'Sales Representative'
 };
 
 Decimal[] salaries = new Decimal[]{
@@ -239,7 +239,7 @@ System.debug('Created ' + employees.size() + ' Employees with hierarchy');
 
 // Target values by designation
 Map<String, Decimal> revenueTargets = new Map<String, Decimal>{
-    'Territory Sales Executive' => 300000,
+    'Sales Representative' => 300000,
     'Area Sales Manager' => 700000,
     'Regional Sales Manager' => 1500000,
     'National Sales Manager' => 3000000
@@ -281,8 +281,8 @@ for (Integer i = 0; i < users.size(); i++) {
         ));
     }
 
-    // Focus Brand (20% of revenue, only for TSEs)
-    if (criteriaMap.containsKey('Focus Brand') && designations[i] == 'Territory Sales Executive') {
+    // Focus Brand (20% of revenue, only for Sales Reps)
+    if (criteriaMap.containsKey('Focus Brand') && designations[i] == 'Sales Representative') {
         Decimal fbTarget = baseTarget * 0.2;
         allActuals.add(new Target_Actual__c(
             Target_Criteria__c = criteriaMap.get('Focus Brand'),
@@ -293,9 +293,9 @@ for (Integer i = 0; i < users.size(); i++) {
         ));
     }
 
-    // Coverage (visits, only for TSEs and ASMs)
-    if (criteriaMap.containsKey('Coverage') && (designations[i].contains('Territory') || designations[i].contains('Area'))) {
-        Decimal coverageTarget = designations[i].contains('Territory') ? 150 : 50;
+    // Coverage (visits, only for Sales Reps and ASMs)
+    if (criteriaMap.containsKey('Coverage') && (designations[i] == 'Sales Representative' || designations[i].contains('Area'))) {
+        Decimal coverageTarget = designations[i] == 'Sales Representative' ? 150 : 50;
         allActuals.add(new Target_Actual__c(
             Target_Criteria__c = criteriaMap.get('Coverage'),
             Target_Period__c = currentPeriod.Id,
