@@ -173,8 +173,57 @@ export default class LeaveManager extends LightningElement {
             : 'view-tab';
     }
 
-    // Balance cards
+    // Balance cards — uses detailed Leave_Balance__c data when available
     get balanceCards() {
+        const colorMap = {
+            'Casual Leave': '#0176d3', 'Sick Leave': '#2e844a',
+            'Earned Leave': '#7b61ff', 'Compensatory Off': '#dd7a01',
+            'Maternity Leave': '#e65100', 'Paternity Leave': '#00796b',
+            'Loss of Pay': '#c23934'
+        };
+        const shortMap = {
+            'Casual Leave': 'CL', 'Sick Leave': 'SL',
+            'Earned Leave': 'EL', 'Compensatory Off': 'CO',
+            'Maternity Leave': 'ML', 'Paternity Leave': 'PL',
+            'Loss of Pay': 'LOP'
+        };
+
+        // If we have detailed balance data, use it
+        if (this.leaveBalanceDetails && this.leaveBalanceDetails.length > 0) {
+            return this.leaveBalanceDetails.map(lb => {
+                const entitled = lb.entitled || 0;
+                const accrued = lb.accrued || 0;
+                const carryFwd = lb.carryForward || 0;
+                const used = lb.used || 0;
+                const pending = lb.pending || 0;
+                const available = lb.available || 0;
+                const totalPool = accrued + carryFwd;
+                const percent = totalPool > 0 ? Math.round((available / totalPool) * 100) : 0;
+                const cappedPercent = Math.min(Math.max(percent, 0), 100);
+                const dashOffset = RING_CIRCUMFERENCE - (cappedPercent / 100) * RING_CIRCUMFERENCE;
+                const color = colorMap[lb.leaveType] || '#54698d';
+
+                return {
+                    key: shortMap[lb.leaveType] || lb.leaveType,
+                    label: lb.leaveType,
+                    available: available,
+                    total: totalPool,
+                    entitled: entitled,
+                    accrued: accrued,
+                    carryForward: carryFwd,
+                    used: used,
+                    pending: pending,
+                    percent: percent,
+                    color: color,
+                    ringDashArray: RING_CIRCUMFERENCE.toFixed(2),
+                    ringDashOffset: dashOffset.toFixed(2),
+                    ringStyle: 'stroke: ' + color,
+                    hasDetails: true
+                };
+            });
+        }
+
+        // Fallback: use simple balance map (backward compatible)
         const configs = [
             { type: 'Casual Leave', key: 'CL', color: '#0176d3', label: 'Casual Leave' },
             { type: 'Sick Leave', key: 'SL', color: '#2e844a', label: 'Sick Leave' },
@@ -196,11 +245,13 @@ export default class LeaveManager extends LightningElement {
                 available: available,
                 total: total,
                 used: used,
+                pending: 0,
                 percent: percent,
                 color: cfg.color,
                 ringDashArray: RING_CIRCUMFERENCE.toFixed(2),
                 ringDashOffset: dashOffset.toFixed(2),
-                ringStyle: 'stroke: ' + cfg.color
+                ringStyle: 'stroke: ' + cfg.color,
+                hasDetails: false
             };
         });
     }
@@ -407,10 +458,18 @@ export default class LeaveManager extends LightningElement {
 
     // ── Data Loading ────────────────────────────────────────
 
+    @track leaveBalanceDetails = []; // Full breakdown from Leave_Balance__c
+
     async loadLeaveBalance() {
         try {
             const result = await getLeaveBalance({ userId: this.currentUserId });
-            this.leaveBalance = result || {};
+            if (result) {
+                this.leaveBalance = result.simple || {};
+                this.leaveBalanceDetails = result.balances || [];
+            } else {
+                this.leaveBalance = {};
+                this.leaveBalanceDetails = [];
+            }
         } catch (error) {
             console.error('Error loading leave balance:', error);
         }

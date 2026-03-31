@@ -208,6 +208,15 @@
     color: var(--text-primary);
 }
 
+.balance-available {
+    color: #2e844a;
+    font-weight: 700;
+}
+
+.balance-pending {
+    color: #dd7a01;
+}
+
 /* ── Status Filter Pills ─────────────────────────────── */
 
 .status-filters {

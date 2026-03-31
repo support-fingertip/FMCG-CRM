@@ -85,16 +85,30 @@
                                         <div class="balance-details">
                                             <div class="balance-detail-row">
                                                 <span class="balance-detail-label">Available</span>
-                                                <span class="balance-detail-value">{card.available}</span>
+                                                <span class="balance-detail-value balance-available">{card.available}</span>
                                             </div>
-                                            <div class="balance-detail-row">
-                                                <span class="balance-detail-label">Total</span>
-                                                <span class="balance-detail-value">{card.total}</span>
-                                            </div>
+                                            <template if:true={card.hasDetails}>
+                                                <div class="balance-detail-row">
+                                                    <span class="balance-detail-label">Accrued</span>
+                                                    <span class="balance-detail-value">{card.accrued}</span>
+                                                </div>
+                                                <template if:true={card.carryForward}>
+                                                    <div class="balance-detail-row">
+                                                        <span class="balance-detail-label">Carry Fwd</span>
+                                                        <span class="balance-detail-value">{card.carryForward}</span>
+                                                    </div>
+                                                </template>
+                                            </template>
                                             <div class="balance-detail-row">
                                                 <span class="balance-detail-label">Used</span>
                                                 <span class="balance-detail-value">{card.used}</span>
                                             </div>
+                                            <template if:true={card.pending}>
+                                                <div class="balance-detail-row">
+                                                    <span class="balance-detail-label">Pending</span>
+                                                    <span class="balance-detail-value balance-pending">{card.pending}</span>
+                                                </div>
+                                            </template>
                                         </div>
                                     </div>
                                 </div>
