@@ -297,7 +297,7 @@ for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master
 List<Scheme_Mapping__c> mappings = new List<Scheme_Mapping__c>{
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Territory__c = terrMap.containsKey('TER-001') ? terrMap.get('TER-001') : null,
+        Territory__c = terrMap.containsKey('TER-DEL-001') ? terrMap.get('TER-DEL-001') : null,
         Zone__c = 'North',
         Area__c = 'Delhi NCR',
         Customer_Type__c = 'Retailer',
@@ -305,7 +305,7 @@ List<Scheme_Mapping__c> mappings = new List<Scheme_Mapping__c>{
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-001'),
-        Territory__c = terrMap.containsKey('TER-003') ? terrMap.get('TER-003') : null,
+        Territory__c = terrMap.containsKey('TER-MUM-001') ? terrMap.get('TER-MUM-001') : null,
         Zone__c = 'West',
         Area__c = 'Mumbai Metro',
         Customer_Type__c = 'Retailer',
@@ -313,20 +313,21 @@ List<Scheme_Mapping__c> mappings = new List<Scheme_Mapping__c>{
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-005'),
-        Zone__c = 'North',
+        Territory__c = terrMap.containsKey('TER-CHN-001') ? terrMap.get('TER-CHN-001') : null,
+        Zone__c = 'South',
         Customer_Type__c = 'Retailer',
         Is_Active__c = true
     ),
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-005'),
-        Zone__c = 'South',
+        Territory__c = terrMap.containsKey('TER-KOL-001') ? terrMap.get('TER-KOL-001') : null,
+        Zone__c = 'East',
         Customer_Type__c = 'Distributor',
         Is_Active__c = true
     ),
-    // Mapping without customer type filter (applies to all customer types in territory)
     new Scheme_Mapping__c(
         Scheme__c = schMap.get('SCH-2026-003'),
-        Territory__c = terrMap.containsKey('TER-002') ? terrMap.get('TER-002') : null,
+        Territory__c = terrMap.containsKey('TER-BLR-001') ? terrMap.get('TER-BLR-001') : null,
         Zone__c = 'South',
         Area__c = 'Bangalore Urban',
         Is_Active__c = true
