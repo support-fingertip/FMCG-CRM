@@ -9,28 +9,12 @@
  */
 public with sharing class LeaveRequestController {
 
-    // ── Leave Type to Balance Field Mapping ───────────────────────────────────
-
-    private static final Map<String, String> LEAVE_TYPE_BALANCE_FIELD = new Map<String, String>{
-        'Casual Leave'     => 'CL_Balance__c',
-        'Sick Leave'       => 'SL_Balance__c',
-        'Earned Leave'     => 'EL_Balance__c',
-        'Compensatory Off' => 'CO_Balance__c'
-    };
-
-    // Default annual entitlements (must match field defaultValue on Employee__c)
+    // Default balance fallback (used only when no Leave_Balance__c records exist)
     private static final Map<String, Decimal> DEFAULT_BALANCE = new Map<String, Decimal>{
         'CL' => 12,
         'SL' => 7,
         'EL' => 15,
         'CO' => 0
-    };
-
-    private static final Map<String, Decimal> DEFAULT_BALANCE_BY_FIELD = new Map<String, Decimal>{
-        'CL_Balance__c' => 12,
-        'SL_Balance__c' => 7,
-        'EL_Balance__c' => 15,
-        'CO_Balance__c' => 0
     };
 
     // ── Check if User is a Manager or Admin ──────────────────────────────────
@@ -342,10 +326,17 @@ public with sharing class LeaveRequestController {
                 leaveRequest.Status__c = 'Submitted';
             }
 
-            // Validate leave balance
-            validateLeaveBalance(leaveRequest.Employee__c, leaveRequest.Leave_Type__c, numberOfDays);
+            // Validate leave balance using Leave_Balance__c
+            String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
+            Id employeeId = leaveRequest.Employee__c;
+            LeaveBalanceService.validateBalance(employeeId, leaveRequest.Leave_Type__c, numberOfDays, fiscalYear);
 
             upsert leaveRequest;
+
+            // Add to pending balance
+            if (isNew) {
+                LeaveBalanceService.addPending(employeeId, leaveRequest.Leave_Type__c, numberOfDays, fiscalYear);
+            }
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
@@ -403,8 +394,9 @@ public with sharing class LeaveRequestController {
             }
             update request;
 
-            // Deduct leave balance
-            deductLeaveBalance(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c);
+            // Deduct leave balance using Leave_Balance__c
+            String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
+            LeaveBalanceService.deductBalance(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
 
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
@@ -459,6 +451,10 @@ public with sharing class LeaveRequestController {
             }
             update request;
 
+            // Remove from pending balance
+            String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
+            LeaveBalanceService.removePending(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+
             return [
                 SELECT Id, Name, Employee__c, Employee__r.Name, Leave_Type__c,
                        Start_Date__c, Start_Session__c, End_Date__c, End_Session__c,
@@ -505,8 +501,12 @@ public with sharing class LeaveRequestController {
             update request;
 
             // Restore leave balance if the request was previously approved
+            String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
             if (wasApproved) {
-                restoreLeaveBalance(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c);
+                LeaveBalanceService.restoreBalance(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
+            } else {
+                // Was submitted/pending — remove from pending
+                LeaveBalanceService.removePending(request.Employee__c, request.Leave_Type__c, request.Number_of_Days__c, fiscalYear);
             }
 
             return [
@@ -537,26 +537,53 @@ public with sharing class LeaveRequestController {
      * @return Map with leave type abbreviation keys and Decimal balance values.
      */
     @AuraEnabled
-    public static Map<String, Decimal> getLeaveBalance(Id userId) {
-        List<Employee__c> employees = [
-            SELECT CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
-            FROM Employee__c
-            WHERE User__c = :userId
-            LIMIT 1
-        ];
+    public static Map<String, Object> getLeaveBalance(Id userId) {
+        String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
+        List<Leave_Balance__c> balances = LeaveBalanceService.getBalancesForUser(userId, fiscalYear);
 
-        if (!employees.isEmpty()) {
-            Employee__c emp = employees[0];
-            return new Map<String, Decimal>{
-                'CL' => emp.CL_Balance__c != null ? emp.CL_Balance__c : DEFAULT_BALANCE.get('CL'),
-                'SL' => emp.SL_Balance__c != null ? emp.SL_Balance__c : DEFAULT_BALANCE.get('SL'),
-                'EL' => emp.EL_Balance__c != null ? emp.EL_Balance__c : DEFAULT_BALANCE.get('EL'),
-                'CO' => emp.CO_Balance__c != null ? emp.CO_Balance__c : DEFAULT_BALANCE.get('CO')
-            };
+        Map<String, Object> result = new Map<String, Object>();
+        List<Map<String, Object>> balanceList = new List<Map<String, Object>>();
+
+        // Short type mapping for backward compatibility
+        Map<String, String> shortTypeMap = new Map<String, String>{
+            'Casual Leave' => 'CL', 'Sick Leave' => 'SL',
+            'Earned Leave' => 'EL', 'Compensatory Off' => 'CO',
+            'Maternity Leave' => 'ML', 'Paternity Leave' => 'PL',
+            'Loss of Pay' => 'LOP'
+        };
+
+        Map<String, Decimal> simpleBalance = new Map<String, Decimal>();
+
+        for (Leave_Balance__c lb : balances) {
+            Map<String, Object> row = new Map<String, Object>();
+            row.put('leaveType', lb.Leave_Type__c);
+            row.put('entitled', lb.Entitled__c);
+            row.put('accrued', lb.Accrued__c);
+            row.put('carryForward', lb.Carry_Forward__c);
+            row.put('used', lb.Used__c);
+            row.put('pending', lb.Pending__c);
+            row.put('available', lb.Available__c);
+            balanceList.add(row);
+
+            String shortType = shortTypeMap.get(lb.Leave_Type__c);
+            if (shortType != null) {
+                simpleBalance.put(shortType, lb.Available__c != null ? lb.Available__c : 0);
+            }
         }
 
-        // No Employee record linked to this user — return default entitlements
-        return new Map<String, Decimal>(DEFAULT_BALANCE);
+        // If no balances found, return defaults
+        if (balances.isEmpty()) {
+            simpleBalance.put('CL', DEFAULT_BALANCE.get('CL'));
+            simpleBalance.put('SL', DEFAULT_BALANCE.get('SL'));
+            simpleBalance.put('EL', DEFAULT_BALANCE.get('EL'));
+            simpleBalance.put('CO', DEFAULT_BALANCE.get('CO'));
+        }
+
+        result.put('balances', balanceList);
+        result.put('simple', simpleBalance);
+        result.put('year', fiscalYear);
+
+        return result;
     }
 
     // ── Get Leaves Summary ────────────────────────────────────────────────────
@@ -692,117 +719,8 @@ public with sharing class LeaveRequestController {
         return Decimal.valueOf(businessDays);
     }
 
-    // ── Private Helper: Validate Leave Balance ────────────────────────────────
-
-    private static void validateLeaveBalance(Id userId, String leaveType, Decimal days) {
-        String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
-        if (balanceField == null) {
-            return;
-        }
-
-        Decimal defaultForField = DEFAULT_BALANCE_BY_FIELD.get(balanceField);
-
-        List<Employee__c> employees = [
-            SELECT CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
-            FROM Employee__c
-            WHERE User__c = :userId
-            LIMIT 1
-        ];
-
-        Decimal currentBalance;
-
-        if (employees.isEmpty()) {
-            currentBalance = defaultForField != null ? defaultForField : 0;
-        } else {
-            Employee__c emp = employees[0];
-
-            if (balanceField == 'CL_Balance__c') {
-                currentBalance = emp.CL_Balance__c != null ? emp.CL_Balance__c : defaultForField;
-            } else if (balanceField == 'SL_Balance__c') {
-                currentBalance = emp.SL_Balance__c != null ? emp.SL_Balance__c : defaultForField;
-            } else if (balanceField == 'EL_Balance__c') {
-                currentBalance = emp.EL_Balance__c != null ? emp.EL_Balance__c : defaultForField;
-            } else if (balanceField == 'CO_Balance__c') {
-                currentBalance = emp.CO_Balance__c != null ? emp.CO_Balance__c : defaultForField;
-            } else {
-                currentBalance = 0;
-            }
-        }
-
-        if (days > currentBalance) {
-            throw new AuraHandledException(
-                'Insufficient ' + leaveType + ' balance. Available: ' +
-                String.valueOf(currentBalance) + ' days, Requested: ' +
-                String.valueOf(days) + ' days.'
-            );
-        }
-    }
-
-    // ── Private Helper: Deduct Leave Balance ──────────────────────────────────
-
-    private static void deductLeaveBalance(Id userId, String leaveType, Decimal days) {
-        String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
-        if (balanceField == null) {
-            return;
-        }
-
-        List<Employee__c> employees = [
-            SELECT Id, CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
-            FROM Employee__c
-            WHERE User__c = :userId
-            LIMIT 1
-        ];
-
-        if (employees.isEmpty()) {
-            return;
-        }
-
-        Employee__c emp = employees[0];
-
-        if (balanceField == 'CL_Balance__c') {
-            emp.CL_Balance__c = (emp.CL_Balance__c != null ? emp.CL_Balance__c : 0) - days;
-        } else if (balanceField == 'SL_Balance__c') {
-            emp.SL_Balance__c = (emp.SL_Balance__c != null ? emp.SL_Balance__c : 0) - days;
-        } else if (balanceField == 'EL_Balance__c') {
-            emp.EL_Balance__c = (emp.EL_Balance__c != null ? emp.EL_Balance__c : 0) - days;
-        } else if (balanceField == 'CO_Balance__c') {
-            emp.CO_Balance__c = (emp.CO_Balance__c != null ? emp.CO_Balance__c : 0) - days;
-        }
-
-        update emp;
-    }
-
-    // ── Private Helper: Restore Leave Balance ─────────────────────────────────
-
-    private static void restoreLeaveBalance(Id userId, String leaveType, Decimal days) {
-        String balanceField = LEAVE_TYPE_BALANCE_FIELD.get(leaveType);
-        if (balanceField == null) {
-            return;
-        }
-
-        List<Employee__c> employees = [
-            SELECT Id, CL_Balance__c, SL_Balance__c, EL_Balance__c, CO_Balance__c
-            FROM Employee__c
-            WHERE User__c = :userId
-            LIMIT 1
-        ];
-
-        if (employees.isEmpty()) {
-            return;
-        }
-
-        Employee__c emp = employees[0];
-
-        if (balanceField == 'CL_Balance__c') {
-            emp.CL_Balance__c = (emp.CL_Balance__c != null ? emp.CL_Balance__c : 0) + days;
-        } else if (balanceField == 'SL_Balance__c') {
-            emp.SL_Balance__c = (emp.SL_Balance__c != null ? emp.SL_Balance__c : 0) + days;
-        } else if (balanceField == 'EL_Balance__c') {
-            emp.EL_Balance__c = (emp.EL_Balance__c != null ? emp.EL_Balance__c : 0) + days;
-        } else if (balanceField == 'CO_Balance__c') {
-            emp.CO_Balance__c = (emp.CO_Balance__c != null ? emp.CO_Balance__c : 0) + days;
-        }
-
-        update emp;
-    }
+    // Old private helpers removed — now delegated to LeaveBalanceService:
+    // validateLeaveBalance → LeaveBalanceService.validateBalance()
+    // deductLeaveBalance → LeaveBalanceService.deductBalance()
+    // restoreLeaveBalance → LeaveBalanceService.restoreBalance()
 }
