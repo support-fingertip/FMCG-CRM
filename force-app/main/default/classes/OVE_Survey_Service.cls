@@ -30,10 +30,10 @@ public without sharing class OVE_Survey_Service {
         String outletType = null;
         if (accountId != null) {
             List<Account> accounts = [
-                SELECT Id, Type FROM Account WHERE Id = :accountId LIMIT 1
+                SELECT Id, Outlet_Type__c FROM Account WHERE Id = :accountId LIMIT 1
             ];
             if (!accounts.isEmpty()) {
-                outletType = accounts[0].Type;
+                outletType = accounts[0].Outlet_Type__c;
             }
         }
 

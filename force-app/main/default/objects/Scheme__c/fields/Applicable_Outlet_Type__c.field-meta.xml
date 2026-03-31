@@ -29,6 +29,16 @@
                 <default>false</default>
                 <label>General Store</label>
             </value>
+            <value>
+                <fullName>Cosmetics</fullName>
+                <default>false</default>
+                <label>Cosmetics</label>
+            </value>
+            <value>
+                <fullName>Pan Shop</fullName>
+                <default>false</default>
+                <label>Pan Shop</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

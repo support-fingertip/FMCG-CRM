@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Customer_Type__c</fullName>
-    <label>Customer Type</label>
-    <description>When set, this config applies only to accounts of this outlet type. Leave blank for all customer types.</description>
+    <label>Outlet Type</label>
+    <description>When set, this config applies only to Retailer accounts of this outlet type (matches Account.Outlet_Type__c). Leave blank for all outlet types. For Modern Trade targeting, use Channel = MT instead.</description>
     <type>Picklist</type>
     <required>false</required>
     <valueSet>
@@ -30,9 +30,14 @@
                 <label>General Store</label>
             </value>
             <value>
-                <fullName>Modern Trade</fullName>
+                <fullName>Cosmetics</fullName>
                 <default>false</default>
-                <label>Modern Trade</label>
+                <label>Cosmetics</label>
+            </value>
+            <value>
+                <fullName>Pan Shop</fullName>
+                <default>false</default>
+                <label>Pan Shop</label>
             </value>
         </valueSetDefinition>
     </valueSet>

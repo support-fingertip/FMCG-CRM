@@ -30,9 +30,14 @@
                 <label>General Store</label>
             </value>
             <value>
-                <fullName>Modern Trade</fullName>
+                <fullName>Cosmetics</fullName>
                 <default>false</default>
-                <label>Modern Trade</label>
+                <label>Cosmetics</label>
+            </value>
+            <value>
+                <fullName>Pan Shop</fullName>
+                <default>false</default>
+                <label>Pan Shop</label>
             </value>
         </valueSetDefinition>
     </valueSet>

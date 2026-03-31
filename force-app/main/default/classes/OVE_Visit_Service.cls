@@ -607,9 +607,9 @@ public without sharing class OVE_Visit_Service {
 
         // Basic outlet info
         List<Account> outlets = [
-            SELECT Id, Name, Type, RecordType.Name, Channel__c, BillingCity, BillingState,
-                   Credit_Limit__c, Outlet_Latitude__c, Outlet_Longitude__c,
-                   Geofence_Radius__c
+            SELECT Id, Name, Type, RecordType.Name, Channel__c, Outlet_Type__c,
+                   BillingCity, BillingState, Credit_Limit__c,
+                   Outlet_Latitude__c, Outlet_Longitude__c, Geofence_Radius__c
             FROM Account WHERE Id = :accountId LIMIT 1
         ];
 
@@ -617,6 +617,7 @@ public without sharing class OVE_Visit_Service {
             Account outlet = outlets[0];
             summary.put('outletName', outlet.Name);
             summary.put('outletType', outlet.RecordType != null ? outlet.RecordType.Name : (outlet.Type != null ? outlet.Type : '--'));
+            summary.put('outletFormat', outlet.Outlet_Type__c);
             summary.put('channel', outlet.Channel__c);
             summary.put('city', outlet.BillingCity);
             summary.put('creditLimit', outlet.Credit_Limit__c);

@@ -30,12 +30,11 @@ public with sharing class OVE_SchemeInfoController {
             String channel = null;
             if (accountId != null) {
                 List<Account> accounts = [
-                    SELECT Id, Type, Channel__c, Outlet_Type__c
+                    SELECT Id, Channel__c, Outlet_Type__c
                     FROM Account WHERE Id = :accountId LIMIT 1
                 ];
                 if (!accounts.isEmpty()) {
-                    outletType = accounts[0].Outlet_Type__c != null
-                        ? accounts[0].Outlet_Type__c : accounts[0].Type;
+                    outletType = accounts[0].Outlet_Type__c;
                     channel = accounts[0].Channel__c;
                 }
             }

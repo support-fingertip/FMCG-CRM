@@ -279,6 +279,16 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'Modern Trade', value: 'Modern Trade' }
         ];
     }
+    get outletTypeOptions() {
+        return [
+            { label: 'Grocery', value: 'Grocery' },
+            { label: 'Medical', value: 'Medical' },
+            { label: 'Hardware', value: 'Hardware' },
+            { label: 'General Store', value: 'General Store' },
+            { label: 'Cosmetics', value: 'Cosmetics' },
+            { label: 'Pan Shop', value: 'Pan Shop' }
+        ];
+    }
     get uomTypeOptions() {
         return [
             { label: 'Count', value: 'Count' },
