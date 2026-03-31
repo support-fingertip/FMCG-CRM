@@ -29,34 +29,50 @@ List<Beat__c> beats = new List<Beat__c>();
 
 // Delhi beats
 beats.add(new Beat__c(Name = 'Delhi Central Beat', Beat_Code__c = 'BT-DEL-001', Territory__c = terMap.get('TER-DEL-001'),
-    Day_of_Week__c = 'Monday;Wednesday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Monday;Wednesday', Beat_Day__c = 'Monday;Wednesday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 1, Description__c = 'Central Delhi commercial area beat',
+    Pincode_Cluster__c = '110001;110002;110003',
     Assigned_User__c = userMap.containsKey('Rahul Kumar') ? userMap.get('Rahul Kumar') : UserInfo.getUserId()));
 beats.add(new Beat__c(Name = 'Delhi South Beat', Beat_Code__c = 'BT-DEL-002', Territory__c = terMap.get('TER-DEL-001'),
-    Day_of_Week__c = 'Tuesday;Thursday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Tuesday;Thursday', Beat_Day__c = 'Tuesday;Thursday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 2, Description__c = 'South Delhi residential and market beat',
+    Pincode_Cluster__c = '110017;110023;110024',
     Assigned_User__c = userMap.containsKey('Anjali Reddy') ? userMap.get('Anjali Reddy') : UserInfo.getUserId()));
 
 // Mumbai beats
 beats.add(new Beat__c(Name = 'Mumbai Central Beat', Beat_Code__c = 'BT-MUM-001', Territory__c = terMap.get('TER-MUM-001'),
-    Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Monday;Wednesday;Friday', Beat_Day__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 1, Description__c = 'Mumbai central business district beat',
+    Pincode_Cluster__c = '400001;400002;400003',
     Assigned_User__c = userMap.containsKey('Karthik Nambiar') ? userMap.get('Karthik Nambiar') : UserInfo.getUserId()));
 beats.add(new Beat__c(Name = 'Mumbai Suburban Beat', Beat_Code__c = 'BT-MUM-002', Territory__c = terMap.get('TER-MUM-001'),
-    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Beat_Day__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 2, Description__c = 'Mumbai suburban retail corridor beat',
+    Pincode_Cluster__c = '400051;400052;400053',
     Assigned_User__c = userMap.containsKey('Meera Iyer') ? userMap.get('Meera Iyer') : UserInfo.getUserId()));
 
 // Bangalore beats
 beats.add(new Beat__c(Name = 'Bengaluru Main Beat', Beat_Code__c = 'BT-BLR-001', Territory__c = terMap.get('TER-BLR-001'),
-    Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Monday;Wednesday;Friday', Beat_Day__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 1, Description__c = 'Bengaluru main market and commercial beat',
+    Pincode_Cluster__c = '560001;560002;560003',
     Assigned_User__c = userMap.containsKey('Nikhil Rao') ? userMap.get('Nikhil Rao') : UserInfo.getUserId()));
 beats.add(new Beat__c(Name = 'Bengaluru South Beat', Beat_Code__c = 'BT-BLR-002', Territory__c = terMap.get('TER-BLR-001'),
-    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Beat_Day__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 2, Description__c = 'Bengaluru south zone neighbourhood beat',
+    Pincode_Cluster__c = '560029;560034;560041',
     Assigned_User__c = userMap.containsKey('Pooja Desai') ? userMap.get('Pooja Desai') : UserInfo.getUserId()));
 
 // Chennai beats
 beats.add(new Beat__c(Name = 'Chennai Central Beat', Beat_Code__c = 'BT-CHN-001', Territory__c = terMap.get('TER-CHN-001'),
-    Day_of_Week__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Monday;Wednesday;Friday', Beat_Day__c = 'Monday;Wednesday;Friday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 1, Description__c = 'Chennai central and T Nagar commercial beat',
+    Pincode_Cluster__c = '600001;600002;600017',
     Assigned_User__c = userMap.containsKey('Arjun Patel') ? userMap.get('Arjun Patel') : UserInfo.getUserId()));
 beats.add(new Beat__c(Name = 'Chennai South Beat', Beat_Code__c = 'BT-CHN-002', Territory__c = terMap.get('TER-CHN-001'),
-    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Is_Active__c = true,
+    Day_of_Week__c = 'Tuesday;Thursday;Saturday', Beat_Day__c = 'Tuesday;Thursday;Saturday', Frequency__c = 'Weekly', Beat_Frequency__c = 'Weekly',
+    Is_Active__c = true, Sequence__c = 2, Description__c = 'Chennai south residential and market beat',
+    Pincode_Cluster__c = '600020;600041;600042',
     Assigned_User__c = userMap.containsKey('Divya Joshi') ? userMap.get('Divya Joshi') : UserInfo.getUserId()));
 
 insert beats;

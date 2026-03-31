@@ -25,9 +25,12 @@ employees.add(new Employee__c(
     First_Name__c = 'Rajesh', Last_Name__c = 'Kapoor', Employee_Code__c = 'EMP-NSM-001',
     Email__c = 'rajesh.kapoor@freshfields.com', Phone__c = '9810000001',
     Department__c = 'Sales', Designation__c = 'National Sales Manager',
+    Band__c = 'L1',
     Date_of_Joining__c = Date.newInstance(2018, 4, 1), Is_Active__c = true,
     Zone__c = 'All India', Region__c = 'National',
-    Gross_Salary__c = 150000,
+    HQ_City__c = 'Delhi',
+    Address__c = '12, Janpath Road, Connaught Place, New Delhi - 110001',
+    Gross_Salary__c = 120000,
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 2
 ));
@@ -37,8 +40,11 @@ employees.add(new Employee__c(
     First_Name__c = 'Suresh', Last_Name__c = 'Menon', Employee_Code__c = 'EMP-RSM-001',
     Email__c = 'suresh.menon@freshfields.com', Phone__c = '9820000001',
     Department__c = 'Sales', Designation__c = 'Regional Sales Manager',
+    Band__c = 'L2',
     Date_of_Joining__c = Date.newInstance(2019, 6, 15), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
+    HQ_City__c = 'Mumbai',
+    Address__c = '45, Nariman Point, Fort, Mumbai - 400021',
     Gross_Salary__c = 80000,
     Territory__c = terMap.get('TER-MUM-001'),
     Week_Off_Days__c = 'Sunday',
@@ -48,8 +54,11 @@ employees.add(new Employee__c(
     First_Name__c = 'Priya', Last_Name__c = 'Sharma', Employee_Code__c = 'EMP-RSM-002',
     Email__c = 'priya.sharma@freshfields.com', Phone__c = '9810000002',
     Department__c = 'Sales', Designation__c = 'Regional Sales Manager',
+    Band__c = 'L2',
     Date_of_Joining__c = Date.newInstance(2019, 8, 1), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
+    HQ_City__c = 'Delhi',
+    Address__c = '8, Rajouri Garden, New Delhi - 110027',
     Gross_Salary__c = 80000,
     Territory__c = terMap.get('TER-DEL-001'),
     Week_Off_Days__c = 'Sunday',
@@ -61,8 +70,11 @@ employees.add(new Employee__c(
     First_Name__c = 'Amit', Last_Name__c = 'Patel', Employee_Code__c = 'EMP-ASM-001',
     Email__c = 'amit.patel@freshfields.com', Phone__c = '9820000002',
     Department__c = 'Sales', Designation__c = 'Area Sales Manager',
+    Band__c = 'L3',
     Date_of_Joining__c = Date.newInstance(2020, 3, 10), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
+    HQ_City__c = 'Mumbai',
+    Address__c = '22, Linking Road, Bandra West, Mumbai - 400050',
     Gross_Salary__c = 50000,
     Territory__c = terMap.get('TER-MUM-001'),
     Week_Off_Days__c = 'Sunday',
@@ -72,8 +84,11 @@ employees.add(new Employee__c(
     First_Name__c = 'Deepa', Last_Name__c = 'Nair', Employee_Code__c = 'EMP-ASM-002',
     Email__c = 'deepa.nair@freshfields.com', Phone__c = '9840000001',
     Department__c = 'Sales', Designation__c = 'Area Sales Manager',
+    Band__c = 'L3',
     Date_of_Joining__c = Date.newInstance(2020, 5, 20), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
+    HQ_City__c = 'Bangalore',
+    Address__c = '5, MG Road, Shivajinagar, Bangalore - 560001',
     Gross_Salary__c = 50000,
     Territory__c = terMap.get('TER-BLR-001'),
     Week_Off_Days__c = 'Sunday',
@@ -83,8 +98,11 @@ employees.add(new Employee__c(
     First_Name__c = 'Vikram', Last_Name__c = 'Singh', Employee_Code__c = 'EMP-ASM-003',
     Email__c = 'vikram.singh@freshfields.com', Phone__c = '9810000003',
     Department__c = 'Sales', Designation__c = 'Area Sales Manager',
+    Band__c = 'L3',
     Date_of_Joining__c = Date.newInstance(2020, 7, 1), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
+    HQ_City__c = 'Delhi',
+    Address__c = '17, Karol Bagh, New Delhi - 110005',
     Gross_Salary__c = 50000,
     Territory__c = terMap.get('TER-DEL-001'),
     Week_Off_Days__c = 'Sunday',
@@ -94,22 +112,28 @@ employees.add(new Employee__c(
     First_Name__c = 'Kavitha', Last_Name__c = 'Rajan', Employee_Code__c = 'EMP-ASM-004',
     Email__c = 'kavitha.rajan@freshfields.com', Phone__c = '9840000002',
     Department__c = 'Sales', Designation__c = 'Area Sales Manager',
+    Band__c = 'L3',
     Date_of_Joining__c = Date.newInstance(2021, 1, 5), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
+    HQ_City__c = 'Chennai',
+    Address__c = '3, Anna Salai, T. Nagar, Chennai - 600017',
     Gross_Salary__c = 50000,
     Territory__c = terMap.get('TER-CHN-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 10, SL_Balance__c = 6, EL_Balance__c = 13, CO_Balance__c = 2
 ));
 
-// Sales Representatives (8) - varied week-off patterns
+// Sales Representatives (8)
 employees.add(new Employee__c(
     First_Name__c = 'Rahul', Last_Name__c = 'Verma', Employee_Code__c = 'EMP-SR-001',
     Email__c = 'rahul.verma@freshfields.com', Phone__c = '9810000010',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2021, 6, 1), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Delhi',
+    Address__c = '34, Lajpat Nagar, New Delhi - 110024',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-DEL-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 6, SL_Balance__c = 3, EL_Balance__c = 8, CO_Balance__c = 1
@@ -118,20 +142,26 @@ employees.add(new Employee__c(
     First_Name__c = 'Sneha', Last_Name__c = 'Gupta', Employee_Code__c = 'EMP-SR-002',
     Email__c = 'sneha.gupta@freshfields.com', Phone__c = '9810000011',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2021, 8, 15), Is_Active__c = true,
     Zone__c = 'North', Region__c = 'North',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Delhi',
+    Address__c = '56, Pitampura, New Delhi - 110034',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-DEL-001'),
-    Week_Off_Days__c = 'Saturday;Sunday',
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 10, SL_Balance__c = 5, EL_Balance__c = 12, CO_Balance__c = 0
 ));
 employees.add(new Employee__c(
     First_Name__c = 'Arjun', Last_Name__c = 'Deshmukh', Employee_Code__c = 'EMP-SR-003',
     Email__c = 'arjun.deshmukh@freshfields.com', Phone__c = '9820000010',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2022, 1, 10), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Mumbai',
+    Address__c = '11, Andheri East, Mumbai - 400069',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-MUM-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 2
@@ -140,9 +170,12 @@ employees.add(new Employee__c(
     First_Name__c = 'Meera', Last_Name__c = 'Joshi', Employee_Code__c = 'EMP-SR-004',
     Email__c = 'meera.joshi@freshfields.com', Phone__c = '9820000011',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2022, 3, 1), Is_Active__c = true,
     Zone__c = 'West', Region__c = 'West',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Pune',
+    Address__c = '7, Koregaon Park, Pune - 411001',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-PUN-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 9, SL_Balance__c = 4, EL_Balance__c = 10, CO_Balance__c = 1
@@ -151,20 +184,26 @@ employees.add(new Employee__c(
     First_Name__c = 'Karthik', Last_Name__c = 'Iyer', Employee_Code__c = 'EMP-SR-005',
     Email__c = 'karthik.iyer@freshfields.com', Phone__c = '9840000010',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2022, 5, 15), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Bangalore',
+    Address__c = '9, Indiranagar, Bangalore - 560038',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-BLR-001'),
-    Week_Off_Days__c = 'Saturday;Sunday',
+    Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 11, SL_Balance__c = 6, EL_Balance__c = 14, CO_Balance__c = 0
 ));
 employees.add(new Employee__c(
     First_Name__c = 'Lakshmi', Last_Name__c = 'Sundaram', Employee_Code__c = 'EMP-SR-006',
     Email__c = 'lakshmi.sundaram@freshfields.com', Phone__c = '9840000011',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2022, 7, 1), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Chennai',
+    Address__c = '20, Adyar, Chennai - 600020',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-CHN-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 3
@@ -173,9 +212,12 @@ employees.add(new Employee__c(
     First_Name__c = 'Ankit', Last_Name__c = 'Agarwal', Employee_Code__c = 'EMP-SR-007',
     Email__c = 'ankit.agarwal@freshfields.com', Phone__c = '9830000010',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2023, 2, 1), Is_Active__c = true,
     Zone__c = 'East', Region__c = 'East',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Kolkata',
+    Address__c = '14, Park Street, Kolkata - 700016',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-KOL-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 8, SL_Balance__c = 5, EL_Balance__c = 9, CO_Balance__c = 0
@@ -184,9 +226,12 @@ employees.add(new Employee__c(
     First_Name__c = 'Divya', Last_Name__c = 'Reddy', Employee_Code__c = 'EMP-SR-008',
     Email__c = 'divya.reddy@freshfields.com', Phone__c = '9850000010',
     Department__c = 'Sales', Designation__c = 'Sales Representative',
+    Band__c = 'L4',
     Date_of_Joining__c = Date.newInstance(2023, 4, 15), Is_Active__c = true,
     Zone__c = 'South', Region__c = 'South',
-    Gross_Salary__c = 25000,
+    HQ_City__c = 'Hyderabad',
+    Address__c = '6, Banjara Hills, Hyderabad - 500034',
+    Gross_Salary__c = 30000,
     Territory__c = terMap.get('TER-HYD-001'),
     Week_Off_Days__c = 'Sunday',
     CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 1
@@ -225,4 +270,25 @@ updates.add(new Employee__c(Id = empMap.get('EMP-SR-008').Id, Reporting_Manager_
 
 update updates;
 System.debug('Updated reporting hierarchy: ' + updates.size());
+
+// Pass 3: Set L1 and L2 approvers based on reporting hierarchy
+// Re-query with Reporting_Manager's Reporting_Manager for L2 chain
+Map<String, Id> empManagerMap = new Map<String, Id>();   // empCode -> manager Id
+Map<Id, Id> idToManagerId = new Map<Id, Id>();           // empId -> manager Id
+for (Employee__c e : [SELECT Id, Employee_Code__c, Reporting_Manager__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
+    empManagerMap.put(e.Employee_Code__c, e.Reporting_Manager__c);
+    idToManagerId.put(e.Id, e.Reporting_Manager__c);
+}
+
+List<Employee__c> approverUpdates = new List<Employee__c>();
+for (Employee__c e : [SELECT Id, Employee_Code__c, Reporting_Manager__c FROM Employee__c WHERE Employee_Code__c LIKE 'EMP-%']) {
+    Id l1 = e.Reporting_Manager__c;
+    Id l2 = (l1 != null) ? idToManagerId.get(l1) : null;
+    if (l1 != null || l2 != null) {
+        approverUpdates.add(new Employee__c(Id = e.Id, L1_Approver__c = l1, L2_Approver__c = l2));
+    }
+}
+if (!approverUpdates.isEmpty()) update approverUpdates;
+System.debug('Updated L1/L2 approvers: ' + approverUpdates.size());
+
 System.debug('Employee setup complete. Total: ' + employees.size());

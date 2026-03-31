@@ -20,8 +20,10 @@ for (Beat__c b : [SELECT Id, Beat_Code__c, Day_of_Week__c, Name, Territory__c
     beatMap.put(b.Beat_Code__c, b);
 }
 
-// Use running user as salesperson
+// Resolve salesperson: prefer a test user, fall back to running user
 Id currentUserId = UserInfo.getUserId();
+List<User> testUsers = [SELECT Id FROM User WHERE IsActive = true AND Email LIKE '%@fmcg-test.com' ORDER BY FirstName LIMIT 1];
+Id salespersonId = testUsers.isEmpty() ? currentUserId : testUsers[0].Id;
 
 // Determine current month info
 Integer currentMonth = Date.today().month();
@@ -34,17 +36,18 @@ String monthName = monthNames[currentMonth];
 Date firstDay = Date.newInstance(currentYear, currentMonth, 1);
 Date lastDay = firstDay.addMonths(1).addDays(-1);
 
-// Create Journey Plans for Delhi and Mumbai territories
-// Each plan now tracks exclusion preferences used during generation
+// Create Journey Plans for Delhi, Mumbai, and Bengaluru territories
+// Each plan tracks exclusion preferences and assigns a salesperson user
 List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
     new Journey_Plan__c(
         Name = 'PJP - Delhi - ' + monthName + ' ' + currentYear,
         Month__c = monthName,
         Year__c = String.valueOf(currentYear),
         Territory__c = terMap.get('TER-DEL-001'),
-        Salesperson__c = currentUserId,
+        Salesperson__c = salespersonId,
+        User__c = salespersonId,
         Status__c = 'Active',
-        Plan_Date__c = firstDay,
+        Plan_Date__c = Date.today(),
         Effective_From__c = firstDay,
         Effective_To__c = lastDay,
         Exclude_Holidays__c = true,
@@ -56,11 +59,14 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Month__c = monthName,
         Year__c = String.valueOf(currentYear),
         Territory__c = terMap.get('TER-MUM-001'),
-        Salesperson__c = currentUserId,
+        Salesperson__c = salespersonId,
+        User__c = salespersonId,
         Status__c = 'Approved',
-        Plan_Date__c = firstDay,
+        Plan_Date__c = Date.today(),
         Effective_From__c = firstDay,
         Effective_To__c = lastDay,
+        Approval_Date__c = Date.today(),
+        Approved_By__c = currentUserId,
         Exclude_Holidays__c = true,
         Exclude_Leaves__c = true,
         Exclude_Week_Offs__c = true
@@ -70,9 +76,10 @@ List<Journey_Plan__c> plans = new List<Journey_Plan__c>{
         Month__c = monthName,
         Year__c = String.valueOf(currentYear),
         Territory__c = terMap.get('TER-BLR-001'),
-        Salesperson__c = currentUserId,
+        Salesperson__c = salespersonId,
+        User__c = salespersonId,
         Status__c = 'Draft',
-        Plan_Date__c = firstDay,
+        Plan_Date__c = Date.today(),
         Effective_From__c = firstDay,
         Effective_To__c = lastDay,
         Exclude_Holidays__c = true,
@@ -140,7 +147,9 @@ for (Id planId : planBeats.keySet()) {
                     Planned_Outlets__c = outletCount,
                     Visited_Outlets__c = 0,
                     Sequence_Order__c = seq,
-                    Status__c = d < Date.today() ? 'Completed' : 'Planned'
+                    Sequence__c = seq,
+                    Status__c = d < Date.today() ? 'Completed' : 'Planned',
+                    Notes__c = beat.Name + ' visit on ' + dayName + ' (' + weekNum + ')'
                 ));
                 seq++;
             }

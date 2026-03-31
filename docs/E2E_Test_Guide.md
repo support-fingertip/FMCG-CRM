@@ -11,42 +11,70 @@ This guide walks through the complete FMCG sales flow — from setting up produc
 Run these scripts in order via Developer Console (Execute Anonymous) or CLI:
 
 ```bash
+# ── Master Data (run in order) ──
 sf apex run --file scripts/00_delete_all.apex          # Clean slate (optional)
-sf apex run --file scripts/01_company_hierarchy.apex
-sf apex run --file scripts/02_territory_master.apex
-sf apex run --file scripts/03_product_category.apex
-sf apex run --file scripts/04a_uom_master.apex         # UOM + global conversions
-sf apex run --file scripts/04_products.apex
-sf apex run --file scripts/04b_uom_conversions.apex    # Product-specific conversions (after products)
-sf apex run --file scripts/05_batch_master.apex
-sf apex run --file scripts/06_tax_configuration.apex
-sf apex run --file scripts/07_price_list.apex
-sf apex run --file scripts/08_warehouse.apex
-sf apex run --file scripts/09_accounts.apex
-sf apex run --file scripts/10_beats_and_outlets.apex
-sf apex run --file scripts/11_schemes.apex
-sf apex run --file scripts/11a_must_sell_config.apex    # Priority Sell configs
-sf apex run --file scripts/13_employees.apex
-sf apex run --file scripts/13_target_periods.apex
-sf apex run --file scripts/14_target_criteria_and_actuals.apex
-sf apex run --file scripts/13_incentive_slabs.apex
-sf apex run --file scripts/15_test_team.apex
-sf apex run --file scripts/16_leave_policies.apex
+sf apex run --file scripts/01_company_hierarchy.apex    # Company → Division → Region
+sf apex run --file scripts/02_territory_master.apex     # 8 territories with geo-fencing
+sf apex run --file scripts/03_product_category.apex     # 4 L1 + 13 L2 categories
+sf apex run --file scripts/04a_uom_master.apex         # 10 UOMs + 5 global conversions
+sf apex run --file scripts/04_products.apex            # 30 products across all categories
+sf apex run --file scripts/04b_uom_conversions.apex    # 60 product-specific BOX/CSE conversions
+sf apex run --file scripts/05_batch_master.apex        # 60 batches (2 per product, 2 near-expiry)
+sf apex run --file scripts/06_tax_configuration.apex   # GST rates per product
+sf apex run --file scripts/07_price_list.apex          # 8 priority levels (Base → Customer)
+sf apex run --file scripts/08_warehouse.apex           # 5 warehouses (Central/Regional/Depot/C&F)
+
+# ── Accounts & Outlets ──
+sf apex run --file scripts/09_accounts.apex            # 20 accounts (3D + 2SS + 12R + 3MT)
+sf apex run --file scripts/10_beats_and_outlets.apex   # 8 beats + outlet mappings
+sf apex run --file scripts/11_schemes.apex             # 8 schemes + slabs + mappings
+sf apex run --file scripts/11a_must_sell_config.apex   # 30 Priority Sell configs
+
+# ── HR & Employees ──
+sf apex run --file scripts/13_employees.apex           # 15 employees (NSM→RSM→ASM→SR hierarchy)
+sf apex run --file scripts/14_holidays.apex            # 20 holidays (national/regional/company)
+sf apex run --file scripts/15_leave_requests.apex      # 10 leave requests (all statuses)
+sf apex run --file scripts/16_leave_policies.apex      # 8 leave policies + balances
+sf apex run --file scripts/16_journey_plans.apex       # 3 journey plans + daily plan entries
+
+# ── Targets & Incentives ──
+sf apex run --file scripts/12_targets.apex             # Territory targets (Rev/Col/Vol/Brand/Outlet)
+sf apex run --file scripts/13_target_periods.apex      # 17 periods (Annual→Quarterly→Monthly)
+sf apex run --file scripts/14_target_criteria_and_actuals.apex  # 6 criteria + sample actuals
+sf apex run --file scripts/13_incentive_slabs.apex     # 40+ slabs (4 profiles × multiple tiers)
+sf apex run --file scripts/15_test_team.apex           # 15 test users with FSCRM profiles
+
+# ── Transactional Data (run last) ──
+sf apex run --file scripts/seed_transactional_data.apex  # Attendance, visits, orders, collections
 ```
 
 After running, verify record counts:
 ```apex
-System.debug('Products: '   + [SELECT COUNT() FROM Product_Extension__c WHERE Is_Active__c = true]);   // 30
-System.debug('Accounts: '   + [SELECT COUNT() FROM Account]);                                          // 20
-System.debug('Territories: '+ [SELECT COUNT() FROM Territory_Master__c WHERE Is_Active__c = true]);     // 8
-System.debug('Periods: '    + [SELECT COUNT() FROM Target_Period__c WHERE Is_Active__c = true]);        // 17
-System.debug('Criteria: '   + [SELECT COUNT() FROM Target_Criteria__c WHERE Active__c = true]);         // 6
-System.debug('UOMs: '       + [SELECT COUNT() FROM UOM__c WHERE Is_Active__c = true]);                  // 10
-System.debug('UOM Conv: '   + [SELECT COUNT() FROM UOM_Conversion__c WHERE Is_Active__c = true]);       // 65+
-System.debug('Must Sell: '  + [SELECT COUNT() FROM Must_Sell_Config__c WHERE Is_Active__c = true]);     // 30
-System.debug('Schemes: '    + [SELECT COUNT() FROM Scheme__c WHERE Status__c = 'Active']);              // 7
-System.debug('Slabs: '      + [SELECT COUNT() FROM Incentive_Slab__c WHERE Is_Active__c = true]);       // 40+
+System.debug('Products: '     + [SELECT COUNT() FROM Product_Extension__c WHERE Is_Active__c = true]);    // 30
+System.debug('Accounts: '     + [SELECT COUNT() FROM Account]);                                            // 20
+System.debug('Territories: '  + [SELECT COUNT() FROM Territory_Master__c WHERE Is_Active__c = true]);      // 8
+System.debug('Warehouses: '   + [SELECT COUNT() FROM Warehouse__c WHERE Is_Active__c = true]);             // 5
+System.debug('Beats: '        + [SELECT COUNT() FROM Beat__c WHERE Is_Active__c = true]);                  // 8
+System.debug('Batches: '      + [SELECT COUNT() FROM Batch_Master__c WHERE Status__c = 'Active']);         // 60
+System.debug('Employees: '    + [SELECT COUNT() FROM Employee__c WHERE Is_Active__c = true]);              // 15
+System.debug('Holidays: '     + [SELECT COUNT() FROM Holiday__c WHERE Is_Active__c = true]);               // 20
+System.debug('Periods: '      + [SELECT COUNT() FROM Target_Period__c WHERE Is_Active__c = true]);         // 17
+System.debug('Criteria: '     + [SELECT COUNT() FROM Target_Criteria__c WHERE Active__c = true]);          // 6
+System.debug('UOMs: '         + [SELECT COUNT() FROM UOM__c WHERE Is_Active__c = true]);                   // 10
+System.debug('UOM Conv: '     + [SELECT COUNT() FROM UOM_Conversion__c WHERE Is_Active__c = true]);        // 65+
+System.debug('Must Sell: '    + [SELECT COUNT() FROM Must_Sell_Config__c WHERE Is_Active__c = true]);      // 30
+System.debug('Schemes: '      + [SELECT COUNT() FROM Scheme__c WHERE Status__c = 'Active']);               // 7
+System.debug('Slabs: '        + [SELECT COUNT() FROM Incentive_Slab__c WHERE Is_Active__c = true]);        // 40+
+System.debug('Targets: '      + [SELECT COUNT() FROM Target__c WHERE Status__c = 'Active']);               // 40
+System.debug('Journey Plans: '+ [SELECT COUNT() FROM Journey_Plan__c]);                                    // 3
+System.debug('Leave Requests: '+ [SELECT COUNT() FROM Leave_Request__c]);                                  // 10
+System.debug('Day Attendance: '+ [SELECT COUNT() FROM Day_Attendance__c]);                                 // 5
+System.debug('Visits: '       + [SELECT COUNT() FROM Visit__c]);                                           // 17+
+System.debug('Orders: '       + [SELECT COUNT() FROM Sales_Order__c]);                                     // 12+
+System.debug('Collections: '  + [SELECT COUNT() FROM Collection__c]);                                      // 7
 ```
+
+> **Note:** All scripts have cleanup code — they can be safely re-run anytime to reset data.
 
 ---
 
@@ -176,15 +204,83 @@ Go to **Priority Sell Config tab** (Must_Sell_Config__c):
 
 ---
 
-## Step 5: Create Sales Orders
+## Step 5: Verify Master Data
 
-### 5.1 Create a Visit
+### 5.1 Company Hierarchy
+Go to **Company Hierarchy tab**:
+```
+FreshFields FMCG Ltd (HC-FFMCG) — Parent Company
+├── Foods Division (HC-DIV-FOOD)
+│   ├── North Region (HC-REG-NORTH)
+│   ├── South Region (HC-REG-SOUTH)
+│   ├── West Region (HC-REG-WEST)
+│   └── East Region (HC-REG-EAST)
+├── Personal Care Division (HC-DIV-PCARE)
+└── Home Care Division (HC-DIV-HCARE)
+```
+
+### 5.2 Territory Coverage
+| Territory | Code | State | City | Geo-Fence | Warehouses |
+|---|---|---|---|---|---|
+| Delhi NCR | TER-DEL-001 | Delhi | New Delhi | 28.61°N, 77.21°E, 25km | WH-DEL (Regional) |
+| Mumbai Metro | TER-MUM-001 | Maharashtra | Mumbai | 19.08°N, 72.88°E, 25km | WH-MUM (Central) |
+| Bengaluru Urban | TER-BLR-001 | Karnataka | Bengaluru | 12.97°N, 77.59°E, 25km | WH-BLR (Regional) |
+| Chennai City | TER-CHN-001 | Tamil Nadu | Chennai | 13.08°N, 80.27°E, 25km | — |
+| Kolkata Metro | TER-KOL-001 | West Bengal | Kolkata | 22.57°N, 88.36°E, 25km | WH-KOL (Depot) |
+| Hyderabad City | TER-HYD-001 | Telangana | Hyderabad | 17.39°N, 78.49°E, 25km | — |
+| Pune Metro | TER-PUN-001 | Maharashtra | Pune | 18.52°N, 73.86°E, 25km | — |
+| Ahmedabad City | TER-AHM-001 | Gujarat | Ahmedabad | 23.02°N, 72.57°E, 25km | WH-AHM (C&F) |
+
+### 5.3 Employee Hierarchy
+```
+Rajesh Kapoor (NSM, L1, ₹1,20,000) — All India
+├── Priya Sharma (RSM North, L2, ₹80,000) — Delhi
+│   ├── Vikram Singh (ASM, L3, ₹50,000) — Delhi
+│   │   ├── Rahul Verma (SR, L4, ₹30,000) — Delhi
+│   │   └── Sneha Gupta (SR, L4, ₹30,000) — Delhi
+│   └── Kavitha Rajan (ASM, L3, ₹50,000) — Chennai
+│       ├── Pradeep Menon (SR, L4, ₹30,000) — Chennai
+│       └── Lakshmi Sundaram (SR, L4, ₹30,000) — Kolkata
+└── Suresh Menon (RSM West, L2, ₹80,000) — Mumbai
+    ├── Amit Patel (ASM, L3, ₹50,000) — Mumbai
+    │   ├── Arjun Deshmukh (SR, L4, ₹30,000) — Mumbai
+    │   └── Meera Joshi (SR, L4, ₹30,000) — Pune
+    └── Deepa Nair (ASM, L3, ₹50,000) — Bangalore
+        ├── Sanjay Kulkarni (SR, L4, ₹30,000) — Bangalore
+        └── Divya Mohan (SR, L4, ₹30,000) — Hyderabad
+```
+
+### 5.4 Beat Plan Coverage
+| Beat | Territory | Days | TSE | Outlets |
+|---|---|---|---|---|
+| BT-DEL-001 | Delhi | Mon/Wed | Rahul Kumar | Lakshmi General Store, Ganesh Provision |
+| BT-DEL-002 | Delhi | Tue/Thu | Anjali Reddy | — |
+| BT-MUM-001 | Mumbai | Mon/Wed/Fri | Karthik Nambiar | Kumar Kirana, Deepak Grocery |
+| BT-MUM-002 | Mumbai | Tue/Thu/Sat | Meera Iyer | — |
+| BT-BLR-001 | Bangalore | Mon/Wed/Fri | Nikhil Rao | Gupta Mart, Sri Balaji Store |
+| BT-BLR-002 | Bangalore | Tue/Thu/Sat | Pooja Desai | — |
+| BT-CHN-001 | Chennai | Mon/Wed/Fri | Arjun Patel | Modern Needs Store, Daily Fresh Mart |
+| BT-CHN-002 | Chennai | Tue/Thu/Sat | Divya Joshi | — |
+
+### 5.5 Account Distribution
+| Record Type | Count | Channel | Outlet Types |
+|---|---|---|---|
+| Distributor | 3 | GT | — |
+| Super Stockist | 2 | GT | — |
+| Retailer | 12 | GT | Grocery (7), General Store (3), Medical (1), Hardware (1) |
+| Modern Trade | 3 | MT | — |
+
+---
+
+## Step 6: Create Sales Orders
+
+### 6.1 Create a Visit
 1. Go to **Visit Manager tab**
 2. Start Day Attendance (check in)
 3. Select an account/outlet
 4. Check in to the visit
 
-### 5.2 Create Order During Visit
+### 6.2 Create Order During Visit
 1. From the visit, click **Create Order**
 2. Select products from seed data:
 
@@ -205,7 +301,7 @@ Go to **Priority Sell Config tab** (Must_Sell_Config__c):
 4. **Submit Order** → Status changes to "Submitted"
 5. **Approve Order** (as manager) → Status = "Approved"
 
-### 5.3 Create Multiple Orders
+### 6.3 Create Multiple Orders
 Create 5-10 orders across different accounts from seed data:
 
 | Order | Account (from seed) | Salesperson (from test team) | Territory | Approx Total |
@@ -218,9 +314,9 @@ Create 5-10 orders across different accounts from seed data:
 
 ---
 
-## Step 6: Configure Target Criteria
+## Step 7: Configure Target Criteria
 
-### 6.1 Verify Target Criteria
+### 7.1 Verify Target Criteria
 Go to **Target Criteria Manager tab**. Ensure these exist:
 
 | Criteria | Object | Operator | Field | Weight | Prerequisite |
@@ -232,16 +328,16 @@ Go to **Target Criteria Manager tab**. Ensure these exist:
 | Focus Brand | Sales_Order__c | SUM | Total_Net_Amount__c | 15% | Revenue ≥ 90% |
 | Outlet Expansion | Account | COUNT | Id | 15% | Revenue ≥ 90% |
 
-### 6.2 Set Filters
+### 7.2 Set Filters
 - **Revenue**: Filter = `Status__c IN ('Approved', 'Delivered')`
 - **Collection**: Filter = `Status__c = 'Confirmed'`
 - **Coverage**: Filter = `Visit_Status__c = 'Completed' AND Is_Productive__c = true`
 
 ---
 
-## Step 7: Set Targets via Target Allocation
+## Step 8: Set Targets via Target Allocation
 
-### 7.1 Allocate Manager Targets
+### 8.1 Allocate Manager Targets
 1. Go to **Target Allocation tab**
 2. Select current period and the NSM user
 3. Click **Add Target**
@@ -256,7 +352,7 @@ Go to **Target Criteria Manager tab**. Ensure these exist:
 | Focus Brand | ₹5,00,000 |
 | Outlet Expansion | 50 outlets |
 
-### 7.2 Distribute to RSMs
+### 8.2 Distribute to RSMs
 1. Select NSM user → Click **Distribute**
 2. Split targets across 2 RSMs:
 
@@ -265,23 +361,23 @@ Go to **Target Criteria Manager tab**. Ensure these exist:
 | Revenue | ₹15,00,000 | ₹15,00,000 |
 | Collection | ₹10,00,000 | ₹10,00,000 |
 
-### 7.3 Distribute RSM → ASMs → TSEs
+### 8.3 Distribute RSM → ASMs → TSEs
 Continue distributing down the hierarchy:
 - RSM North → ASM Delhi (₹8,00,000) + ASM Mumbai (₹7,00,000)
 - ASM Delhi → TSE Rahul (₹4,00,000) + TSE Anjali (₹4,00,000)
 
 ---
 
-## Step 8: Run Achievement Calculation
+## Step 9: Run Achievement Calculation
 
-### 8.1 Run Achievement Batch
+### 9.1 Run Achievement Batch
 In Developer Console:
 ```apex
 // Run achievement calculation for all active criteria
 Database.executeBatch(new TAM_Achievement_Batch(), 50);
 ```
 
-### 8.2 Verify Achievements
+### 9.2 Verify Achievements
 Go to **Target Allocation tab** and select a TSE:
 - Revenue target: ₹4,00,000
 - Revenue actual: Sum of approved orders for that TSE
@@ -289,7 +385,7 @@ Go to **Target Allocation tab** and select a TSE:
 
 Or check in **KPI Dashboard** → My KPIs view.
 
-### 8.3 How Achievement Calculation Works
+### 9.3 How Achievement Calculation Works
 ```
 1. TAM_Achievement_Batch queries all Target_Actual__c for active periods
 2. For each criteria:
@@ -302,9 +398,9 @@ Or check in **KPI Dashboard** → My KPIs view.
 
 ---
 
-## Step 9: Configure Incentive Slabs
+## Step 10: Configure Incentive Slabs
 
-### 9.1 Verify Slabs
+### 10.1 Verify Slabs
 Go to **Incentive Slab Manager tab**. The seed script creates slabs across all 4 FSCRM profiles:
 
 #### Universal Slabs (fallback — no criteria/profile):
@@ -336,7 +432,7 @@ Go to **Incentive Slab Manager tab**. The seed script creates slabs across all 4
 | Revenue Delhi TSE — 100-110% | FSCRM_TSE | Delhi | 100-110% | 20% salary |
 | Revenue Delhi TSE — 110%+ | FSCRM_TSE | Delhi | 110%+ | 22.5% salary |
 
-### 9.2 Slab Matching Priority
+### 10.2 Slab Matching Priority
 The incentive engine matches slabs in this order (most specific first):
 ```
 1. Criteria + Profile + Territory  (e.g., Revenue + FSCRM_TSE + Delhi)
@@ -347,9 +443,9 @@ The incentive engine matches slabs in this order (most specific first):
 
 ---
 
-## Step 10: Calculate Incentives
+## Step 11: Calculate Incentives
 
-### 10.1 Run Incentive Calculation
+### 11.1 Run Incentive Calculation
 Go to **Incentive Dashboard tab** → Select current period → Click **Run Calculation**
 
 Or in Developer Console:
@@ -362,7 +458,7 @@ Target_Period__c period = [
 Database.executeBatch(new TAM_IncentiveCalculation_Batch(period.Id), 50);
 ```
 
-### 10.2 Calculation Example
+### 11.2 Calculation Example
 
 **TSE Rahul Kumar** (Profile: FSCRM_TSE, Gross Salary: ₹30,000/month):
 
@@ -384,7 +480,7 @@ Database.executeBatch(new TAM_IncentiveCalculation_Batch(period.Id), 50);
 - Revenue at 105% → matches "Revenue Delhi TSE 100-110%" slab at 20% (vs standard 17.75%)
 - Payout: ₹30,000 × 20% × 1.0 × 60% = ₹3,600 (vs ₹3,195 at standard rate)
 
-### 10.3 Review in Dashboard
+### 11.3 Review in Dashboard
 1. **Incentive Dashboard** → Shows all calculated incentives
 2. Filter by: Period, Criteria, Profile, Territory
 3. Click a row → See calculation breakdown (Target → Achievement % → Slab → Multiplier → Payout)
@@ -392,21 +488,21 @@ Database.executeBatch(new TAM_IncentiveCalculation_Batch(period.Id), 50);
 
 ---
 
-## Step 11: Verify in KPI Dashboard
+## Step 12: Verify in KPI Dashboard
 
-### 11.1 Self View (as TSE)
+### 12.1 Self View (as TSE)
 Login as TSE user → **KPI Dashboard** → "My KPIs":
 - KPI cards with progress rings per criteria
 - Achievement % with color coding (green/amber/red)
 - Total incentive earned
 
-### 11.2 Team View (as ASM)
+### 12.2 Team View (as ASM)
 Login as ASM → **KPI Dashboard** → "Team":
 - Aggregated stats across subordinates
 - Per-user breakdown table with target, actual, %, incentive
 - Performance trend chart (last 6 months)
 
-### 11.3 Organization View (as NSM)
+### 12.3 Organization View (as NSM)
 Login as NSM → **KPI Dashboard** → "Organization":
 - Full hierarchy aggregation
 - All users with their performance
@@ -414,7 +510,7 @@ Login as NSM → **KPI Dashboard** → "Organization":
 
 ---
 
-## Step 12: Achievement Dashboard
+## Step 13: Achievement Dashboard
 
 Go to **Achievement Dashboard tab**:
 - Dynamic KPI cards (one per active criteria)
@@ -425,9 +521,9 @@ Go to **Achievement Dashboard tab**:
 
 ---
 
-## Step 13: Generate Reports
+## Step 14: Generate Reports
 
-### 13.1 Salesforce Reports
+### 14.1 Salesforce Reports
 Create reports on:
 
 **Order Performance Report:**
@@ -456,7 +552,7 @@ Create reports on:
 - Filter: Current Year
 - Group By: Employee
 
-### 13.2 Dashboard Components
+### 14.2 Dashboard Components
 Create a Salesforce Dashboard with:
 1. Revenue Target vs Actual (Bar Chart)
 2. Top 10 Performers (Horizontal Bar)

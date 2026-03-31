@@ -12,6 +12,7 @@ List<Company_Hierarchy__c> level1 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'FreshFields FMCG Ltd',
         Code__c = 'FFMCG',
+        Hierarchy_Code__c = 'HC-FFMCG',
         Level__c = 'Parent Company',
         Is_Active__c = true,
         Description__c = 'Parent holding company for all FMCG operations'
@@ -24,6 +25,7 @@ List<Company_Hierarchy__c> level2 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'Foods Division',
         Code__c = 'FOOD',
+        Hierarchy_Code__c = 'HC-DIV-FOOD',
         Level__c = 'Division',
         Parent_Hierarchy__c = level1[0].Id,
         Is_Active__c = true,
@@ -32,6 +34,7 @@ List<Company_Hierarchy__c> level2 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'Personal Care Division',
         Code__c = 'PCARE',
+        Hierarchy_Code__c = 'HC-DIV-PCARE',
         Level__c = 'Division',
         Parent_Hierarchy__c = level1[0].Id,
         Is_Active__c = true,
@@ -40,6 +43,7 @@ List<Company_Hierarchy__c> level2 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'Home Care Division',
         Code__c = 'HCARE',
+        Hierarchy_Code__c = 'HC-DIV-HCARE',
         Level__c = 'Division',
         Parent_Hierarchy__c = level1[0].Id,
         Is_Active__c = true,
@@ -53,6 +57,7 @@ List<Company_Hierarchy__c> level3 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'North Region',
         Code__c = 'NORTH',
+        Hierarchy_Code__c = 'HC-REG-NORTH',
         Level__c = 'Region',
         Parent_Hierarchy__c = level2[0].Id,
         Is_Active__c = true,
@@ -61,6 +66,7 @@ List<Company_Hierarchy__c> level3 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'South Region',
         Code__c = 'SOUTH',
+        Hierarchy_Code__c = 'HC-REG-SOUTH',
         Level__c = 'Region',
         Parent_Hierarchy__c = level2[0].Id,
         Is_Active__c = true,
@@ -69,6 +75,7 @@ List<Company_Hierarchy__c> level3 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'West Region',
         Code__c = 'WEST',
+        Hierarchy_Code__c = 'HC-REG-WEST',
         Level__c = 'Region',
         Parent_Hierarchy__c = level2[0].Id,
         Is_Active__c = true,
@@ -77,6 +84,7 @@ List<Company_Hierarchy__c> level3 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'East Region',
         Code__c = 'EAST',
+        Hierarchy_Code__c = 'HC-REG-EAST',
         Level__c = 'Region',
         Parent_Hierarchy__c = level2[0].Id,
         Is_Active__c = true,
