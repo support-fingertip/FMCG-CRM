@@ -4,6 +4,10 @@
 // Note: Leave_Request__c.Employee__c is a Lookup to User, not Employee__c
 //       The controller links leaves via the record Owner (running user)
 
+// Clean up existing leave requests
+delete [SELECT Id FROM Leave_Request__c];
+System.debug('Cleaned up Leave_Request__c');
+
 List<Leave_Request__c> leaves = new List<Leave_Request__c>();
 
 // Past approved leaves (already taken)

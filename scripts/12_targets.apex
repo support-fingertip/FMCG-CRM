@@ -2,6 +2,11 @@
 // Run: sf apex run -f scripts/12_targets.apex
 // Prerequisite: 02_territory_master.apex, 03_product_category.apex
 
+// Clean up (MasterDetail child first, then targets)
+delete [SELECT Id FROM Target_Line__c];
+delete [SELECT Id FROM Target__c];
+System.debug('Cleaned up Target__c and Target_Line__c');
+
 // Fetch territories
 Map<String, Id> terMap = new Map<String, Id>();
 for (Territory_Master__c t : [SELECT Id, Territory_Code__c, Name FROM Territory_Master__c WHERE Is_Active__c = true]) {

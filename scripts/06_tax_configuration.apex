@@ -2,6 +2,10 @@
 // Run: sf apex run -f scripts/06_tax_configuration.apex
 // Prerequisite: 04_products.apex
 
+// Clean up existing tax configs
+delete [SELECT Id FROM Tax_Configuration__c];
+System.debug('Cleaned up Tax_Configuration__c');
+
 // Map HSN prefix to GST rates [Total, CGST, SGST, IGST]
 Map<String, Decimal[]> hsnRates = new Map<String, Decimal[]>{
     '04' => new Decimal[]{5.0, 2.5, 2.5, 5.0},   // Dairy

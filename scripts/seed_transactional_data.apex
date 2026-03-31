@@ -4,6 +4,14 @@
  * Run via: Execute Anonymous in Developer Console
  */
 
+// ── Clean up existing transactional data ──
+delete [SELECT Id FROM Order_Line_Item__c];
+delete [SELECT Id FROM Sales_Order__c];
+delete [SELECT Id FROM Visit__c];
+delete [SELECT Id FROM Day_Attendance__c];
+delete [SELECT Id FROM Collection__c];
+System.debug('Cleaned up transactional data');
+
 // ── Prerequisites: Ensure accounts, products, territories, beats exist ──
 
 // Get or create test account

@@ -1,6 +1,11 @@
 // Script 03: Product Categories - 2-level tree
 // Run: sf apex run -f scripts/03_product_category.apex
 
+// Clean up (children first, then parents — self-referencing)
+delete [SELECT Id FROM Product_Category__c WHERE Level__c = 'Sub-Category'];
+delete [SELECT Id FROM Product_Category__c];
+System.debug('Cleaned up Product_Category__c');
+
 // Level 1 categories
 List<Product_Category__c> l1 = new List<Product_Category__c>{
     new Product_Category__c(Name = 'Foods', Category_Code__c = 'CAT-FOOD', Level__c = 'Category', Sort_Order__c = 1, Is_Active__c = true),

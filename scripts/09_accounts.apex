@@ -8,6 +8,11 @@
 //   Channel__c              = Sales Channel (GT, MT, E-Commerce)
 //   Outlet_Class__c         = Revenue Class (A, B, C, D)
 
+// Clean up existing accounts (delete child objects first)
+delete [SELECT Id FROM Beat_Outlet__c];
+delete [SELECT Id FROM Account WHERE Is_Active__c = true];
+System.debug('Cleaned up Accounts');
+
 // Fetch Record Type IDs
 Map<String, Id> rtMap = new Map<String, Id>();
 for (RecordType rt : [SELECT Id, DeveloperName FROM RecordType WHERE SObjectType = 'Account' AND IsActive = true]) {

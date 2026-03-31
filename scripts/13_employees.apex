@@ -2,6 +2,15 @@
 // Run: sf apex run -f scripts/13_employees.apex
 // Prerequisite: 02_territory_master.apex
 
+// Clean up (children with Restrict constraint first, then nullify self-refs)
+delete [SELECT Id FROM Leave_Balance__c];
+delete [SELECT Id FROM Expense__c WHERE Employee__c != null];
+List<Employee__c> empOld = [SELECT Id FROM Employee__c WHERE Reporting_Manager__c != null];
+for (Employee__c e : empOld) e.Reporting_Manager__c = null;
+if (!empOld.isEmpty()) update empOld;
+delete [SELECT Id FROM Employee__c];
+System.debug('Cleaned up Employee__c');
+
 // Fetch territories
 Map<String, Id> terMap = new Map<String, Id>();
 for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master__c WHERE Is_Active__c = true]) {

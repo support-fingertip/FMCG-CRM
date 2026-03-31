@@ -1,6 +1,10 @@
 // Script 14: Holiday Calendar - 2026 Indian holidays
 // Run: sf apex run -f scripts/14_holidays.apex
 
+// Clean up existing holidays
+delete [SELECT Id FROM Holiday__c];
+System.debug('Cleaned up Holiday__c');
+
 List<Holiday__c> holidays = new List<Holiday__c>{
     new Holiday__c(Name = 'Republic Day', Holiday_Date__c = Date.newInstance(2026, 1, 26), Type__c = 'National Holiday', Year__c = 2026, Is_Active__c = true, Description__c = 'Republic Day of India'),
     new Holiday__c(Name = 'Holi', Holiday_Date__c = Date.newInstance(2026, 3, 17), Type__c = 'National Holiday', Year__c = 2026, Is_Active__c = true, Description__c = 'Festival of Colors'),

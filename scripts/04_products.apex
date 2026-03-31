@@ -3,6 +3,14 @@
 // Prerequisite: 03_product_category.apex, UOM__c records must exist
 // Creates 30 products across all categories with full field data
 
+// Clean up existing products (delete children first)
+delete [SELECT Id FROM UOM_Conversion__c WHERE Product__c != null];
+delete [SELECT Id FROM Batch_Master__c];
+delete [SELECT Id FROM Tax_Configuration__c];
+delete [SELECT Id FROM Price_List__c];
+delete [SELECT Id FROM Product_Extension__c];
+System.debug('Cleaned up Product_Extension__c and children');
+
 // Fetch sub-categories by code
 Map<String, Id> catMap = new Map<String, Id>();
 for (Product_Category__c pc : [SELECT Id, Category_Code__c FROM Product_Category__c WHERE Level__c = 'Sub-Category']) {

@@ -1,6 +1,13 @@
 // Script 01: Company Hierarchy - 3 levels
 // Run: sf apex run -f scripts/01_company_hierarchy.apex
 
+// Clean up (nullify self-refs first, then delete)
+List<Company_Hierarchy__c> chOld = [SELECT Id FROM Company_Hierarchy__c WHERE Parent_Hierarchy__c != null];
+for (Company_Hierarchy__c c : chOld) c.Parent_Hierarchy__c = null;
+if (!chOld.isEmpty()) update chOld;
+delete [SELECT Id FROM Company_Hierarchy__c];
+System.debug('Cleaned up Company_Hierarchy__c');
+
 List<Company_Hierarchy__c> level1 = new List<Company_Hierarchy__c>{
     new Company_Hierarchy__c(
         Name = 'FreshFields FMCG Ltd',

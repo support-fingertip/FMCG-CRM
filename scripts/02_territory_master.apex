@@ -2,6 +2,10 @@
 // Run: sf apex run -f scripts/02_territory_master.apex
 // Prerequisite: 01_company_hierarchy.apex
 
+// Clean up existing territories
+delete [SELECT Id FROM Territory_Master__c];
+System.debug('Cleaned up Territory_Master__c');
+
 // Fetch region hierarchy records (Region__c is a Lookup to Company_Hierarchy__c)
 Map<String, Id> regionMap = new Map<String, Id>();
 for (Company_Hierarchy__c ch : [SELECT Id, Code__c FROM Company_Hierarchy__c WHERE Level__c = 'Region']) {

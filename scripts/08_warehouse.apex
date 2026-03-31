@@ -2,6 +2,11 @@
 // Run: sf apex run -f scripts/08_warehouse.apex
 // Prerequisite: 01_company_hierarchy.apex
 
+// Clean up (delete stock children first, then warehouses)
+delete [SELECT Id FROM Warehouse_Stock__c];
+delete [SELECT Id FROM Warehouse__c];
+System.debug('Cleaned up Warehouse__c');
+
 Map<String, Id> hierMap = new Map<String, Id>();
 for (Company_Hierarchy__c ch : [SELECT Id, Code__c FROM Company_Hierarchy__c WHERE Level__c = 'Region']) {
     hierMap.put(ch.Code__c, ch.Id);

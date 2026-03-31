@@ -2,6 +2,10 @@
 // Run: sf apex run -f scripts/05_batch_master.apex
 // Prerequisite: 04_products.apex
 
+// Clean up existing batches
+delete [SELECT Id FROM Batch_Master__c];
+System.debug('Cleaned up Batch_Master__c');
+
 List<Product_Extension__c> products = [
     SELECT Id, SKU_Code__c, Name
     FROM Product_Extension__c

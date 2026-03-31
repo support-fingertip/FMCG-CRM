@@ -2,6 +2,11 @@
 // Run: sf apex run -f scripts/16_journey_plans.apex
 // Prerequisite: 02_territory_master.apex, 10_beats_and_outlets.apex
 
+// Clean up (MasterDetail child first, then plans)
+delete [SELECT Id FROM Journey_Plan_Day__c];
+delete [SELECT Id FROM Journey_Plan__c];
+System.debug('Cleaned up Journey_Plan__c');
+
 // Fetch territories
 Map<String, Id> terMap = new Map<String, Id>();
 for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master__c WHERE Is_Active__c = true]) {
