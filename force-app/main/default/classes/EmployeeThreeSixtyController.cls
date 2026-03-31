@@ -224,11 +224,21 @@ public with sharing class EmployeeThreeSixtyController {
         }
         kpis.put('totalOutletsCovered', totalOutlets);
 
-        // ── Leave Balance ───────────────────────────────────────────
-        Decimal clBal = emp.CL_Balance__c != null ? emp.CL_Balance__c : 0;
-        Decimal slBal = emp.SL_Balance__c != null ? emp.SL_Balance__c : 0;
-        Decimal elBal = emp.EL_Balance__c != null ? emp.EL_Balance__c : 0;
-        Decimal coBal = emp.CO_Balance__c != null ? emp.CO_Balance__c : 0;
+        // ── Leave Balance (from Leave_Balance__c) ─────────────────
+        String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
+        Id empId = LeaveBalanceService.getEmployeeId(userId);
+        Decimal clBal = 0, slBal = 0, elBal = 0, coBal = 0;
+
+        if (empId != null) {
+            for (Leave_Balance__c lb : LeaveBalanceService.getBalancesForEmployee(empId, fiscalYear)) {
+                Decimal avail = lb.Available__c != null ? lb.Available__c : 0;
+                if (lb.Leave_Type__c == 'Casual Leave') clBal = avail;
+                else if (lb.Leave_Type__c == 'Sick Leave') slBal = avail;
+                else if (lb.Leave_Type__c == 'Earned Leave') elBal = avail;
+                else if (lb.Leave_Type__c == 'Compensatory Off') coBal = avail;
+            }
+        }
+
         kpis.put('clBalance', clBal);
         kpis.put('slBalance', slBal);
         kpis.put('elBalance', elBal);

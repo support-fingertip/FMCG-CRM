@@ -310,54 +310,40 @@
                             </div>
                         </template>
 
-                        <!-- Leave Balances Tab -->
+                        <!-- Leave Balances Tab (dynamic from Leave_Balance__c) -->
                         <template if:true={isLeaveTab}>
                             <div class="tab-content">
-                                <div class="leave-grid">
-                                    <div class="leave-card">
-                                        <div class="leave-card-header">
-                                            <span class="leave-card-title">Casual Leave (CL)</span>
-                                            <span class="leave-card-value">{clBalance}</span>
-                                        </div>
-                                        <div class="leave-progress-bar">
-                                            <div class="leave-progress-fill leave-progress-cl" style={clProgressStyle}></div>
-                                        </div>
-                                        <span class="leave-card-max">of 12 days</span>
+                                <template if:true={leaveBalanceCards.length}>
+                                    <div class="leave-grid">
+                                        <template for:each={leaveBalanceCards} for:item="card">
+                                            <div class="leave-card" key={card.key}>
+                                                <div class="leave-card-header">
+                                                    <span class="leave-card-title">{card.label}</span>
+                                                    <span class="leave-card-value">{card.available}</span>
+                                                </div>
+                                                <div class="leave-progress-bar">
+                                                    <div class="leave-progress-fill" style={card.progressStyle}></div>
+                                                </div>
+                                                <div class="leave-card-details">
+                                                    <span class="leave-detail">Entitled: {card.entitled}</span>
+                                                    <span class="leave-detail">Accrued: {card.accrued}</span>
+                                                    <span class="leave-detail">Used: {card.used}</span>
+                                                    <template if:true={card.pending}>
+                                                        <span class="leave-detail leave-pending">Pending: {card.pending}</span>
+                                                    </template>
+                                                    <template if:true={card.carryForward}>
+                                                        <span class="leave-detail">Carry Fwd: {card.carryForward}</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </div>
-
-                                    <div class="leave-card">
-                                        <div class="leave-card-header">
-                                            <span class="leave-card-title">Sick Leave (SL)</span>
-                                            <span class="leave-card-value">{slBalance}</span>
-                                        </div>
-                                        <div class="leave-progress-bar">
-                                            <div class="leave-progress-fill leave-progress-sl" style={slProgressStyle}></div>
-                                        </div>
-                                        <span class="leave-card-max">of 12 days</span>
+                                </template>
+                                <template if:false={leaveBalanceCards.length}>
+                                    <div class="slds-text-align_center slds-p-around_medium slds-text-color_weak">
+                                        No leave balances found. Run the yearly initialization first.
                                     </div>
-
-                                    <div class="leave-card">
-                                        <div class="leave-card-header">
-                                            <span class="leave-card-title">Earned Leave (EL)</span>
-                                            <span class="leave-card-value">{elBalance}</span>
-                                        </div>
-                                        <div class="leave-progress-bar">
-                                            <div class="leave-progress-fill leave-progress-el" style={elProgressStyle}></div>
-                                        </div>
-                                        <span class="leave-card-max">of 30 days</span>
-                                    </div>
-
-                                    <div class="leave-card">
-                                        <div class="leave-card-header">
-                                            <span class="leave-card-title">Comp Off (CO)</span>
-                                            <span class="leave-card-value">{coBalance}</span>
-                                        </div>
-                                        <div class="leave-progress-bar">
-                                            <div class="leave-progress-fill leave-progress-co" style={coProgressStyle}></div>
-                                        </div>
-                                        <span class="leave-card-max">of 5 days</span>
-                                    </div>
-                                </div>
+                                </template>
                             </div>
                         </template>
                     </div>

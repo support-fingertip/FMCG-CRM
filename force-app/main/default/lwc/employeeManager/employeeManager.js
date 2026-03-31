@@ -9,6 +9,7 @@ import deactivateEmployee from '@salesforce/apex/EmployeeController.deactivateEm
 import getDepartmentOptions from '@salesforce/apex/EmployeeController.getDepartmentOptions';
 import getDesignationOptions from '@salesforce/apex/EmployeeController.getDesignationOptions';
 import getDirectReports from '@salesforce/apex/EmployeeController.getDirectReports';
+import getEmployeeLeaveBalances from '@salesforce/apex/EmployeeController.getEmployeeLeaveBalances';
 
 const PAGE_SIZE = 15;
 
@@ -201,37 +202,68 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         return this.selectedEmployee.User__r ? this.selectedEmployee.User__r.Name : '-';
     }
 
-    // Leave balances
-    get clBalance() {
-        return this.selectedEmployee ? this.selectedEmployee.CL_Balance__c || 0 : 0;
+    // Leave balances — from Leave_Balance__c
+    @track leaveBalances = [];
+
+    async loadLeaveBalances() {
+        if (!this.selectedEmployee) return;
+        try {
+            this.leaveBalances = await getEmployeeLeaveBalances({ employeeId: this.selectedEmployee.Id }) || [];
+        } catch (e) {
+            this.leaveBalances = [];
+        }
     }
 
-    get slBalance() {
-        return this.selectedEmployee ? this.selectedEmployee.SL_Balance__c || 0 : 0;
+    get leaveBalanceCards() {
+        const colorMap = {
+            'Casual Leave': '#0176d3', 'Sick Leave': '#2e844a',
+            'Earned Leave': '#7b61ff', 'Compensatory Off': '#dd7a01'
+        };
+        return this.leaveBalances.map(lb => {
+            const accrued = lb.Accrued__c || 0;
+            const carry = lb.Carry_Forward__c || 0;
+            const pool = accrued + carry;
+            const available = lb.Available__c || 0;
+            const used = lb.Used__c || 0;
+            const pending = lb.Pending__c || 0;
+            const pct = pool > 0 ? Math.min(Math.round((available / pool) * 100), 100) : 0;
+            return {
+                key: lb.Leave_Type__c,
+                label: lb.Leave_Type__c,
+                available: available,
+                accrued: accrued,
+                carryForward: carry,
+                used: used,
+                pending: pending,
+                entitled: lb.Entitled__c || 0,
+                pool: pool,
+                percent: pct,
+                color: colorMap[lb.Leave_Type__c] || '#54698d',
+                progressStyle: 'width: ' + pct + '%; background: ' + (colorMap[lb.Leave_Type__c] || '#54698d')
+            };
+        });
     }
 
-    get elBalance() {
-        return this.selectedEmployee ? this.selectedEmployee.EL_Balance__c || 0 : 0;
-    }
+    // Legacy getters for backward compat (still used in some places)
+    get clBalance() { return this._getBalanceForType('Casual Leave'); }
+    get slBalance() { return this._getBalanceForType('Sick Leave'); }
+    get elBalance() { return this._getBalanceForType('Earned Leave'); }
+    get coBalance() { return this._getBalanceForType('Compensatory Off'); }
+    get clProgressStyle() { return this._getProgressForType('Casual Leave'); }
+    get slProgressStyle() { return this._getProgressForType('Sick Leave'); }
+    get elProgressStyle() { return this._getProgressForType('Earned Leave'); }
+    get coProgressStyle() { return this._getProgressForType('Compensatory Off'); }
 
-    get coBalance() {
-        return this.selectedEmployee ? this.selectedEmployee.CO_Balance__c || 0 : 0;
+    _getBalanceForType(type) {
+        const lb = this.leaveBalances.find(b => b.Leave_Type__c === type);
+        return lb ? (lb.Available__c || 0) : 0;
     }
-
-    get clProgressStyle() {
-        return 'width: ' + Math.min((this.clBalance / 12) * 100, 100) + '%';
-    }
-
-    get slProgressStyle() {
-        return 'width: ' + Math.min((this.slBalance / 12) * 100, 100) + '%';
-    }
-
-    get elProgressStyle() {
-        return 'width: ' + Math.min((this.elBalance / 30) * 100, 100) + '%';
-    }
-
-    get coProgressStyle() {
-        return 'width: ' + Math.min((this.coBalance / 5) * 100, 100) + '%';
+    _getProgressForType(type) {
+        const lb = this.leaveBalances.find(b => b.Leave_Type__c === type);
+        if (!lb) return 'width: 0%';
+        const pool = (lb.Accrued__c || 0) + (lb.Carry_Forward__c || 0);
+        const pct = pool > 0 ? Math.min(Math.round(((lb.Available__c || 0) / pool) * 100), 100) : 0;
+        return 'width: ' + pct + '%';
     }
 
     get directReportsCount() {
@@ -369,6 +401,7 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         try {
             const emp = await getEmployee({ employeeId: employeeId });
             this.selectedEmployee = emp;
+            this.loadLeaveBalances();
         } catch (error) {
             this.showToast('Error', 'Failed to load employee details: ' + this.reduceErrors(error), 'error');
         }

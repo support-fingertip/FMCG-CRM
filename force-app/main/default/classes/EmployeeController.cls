@@ -235,4 +235,12 @@ public with sharing class EmployeeController {
             ORDER BY First_Name__c
         ];
     }
+
+    // ── Get Leave Balances for Employee ───────────────────────────────────────
+
+    @AuraEnabled
+    public static List<Leave_Balance__c> getEmployeeLeaveBalances(Id employeeId) {
+        String fiscalYear = LeaveBalanceService.getCurrentFiscalYear();
+        return LeaveBalanceService.getBalancesForEmployee(employeeId, fiscalYear);
+    }
 }
