@@ -75,6 +75,16 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
         if (!completedVisits.isEmpty()) {
             updateProductiveCallCounts(completedVisits);
             calculateMustSellCompliance(completedVisits);
+
+            // Update Last_Visit_Date__c on Account
+            Set<Id> visitAccountIds = new Set<Id>();
+            for (Visit__c v : completedVisits) {
+                Id acctId = v.Account__c != null ? v.Account__c : v.Outlet__c;
+                if (acctId != null) visitAccountIds.add(acctId);
+            }
+            if (!visitAccountIds.isEmpty()) {
+                MDM_Account_TriggerHandler.updateLastVisitDate(visitAccountIds);
+            }
         }
         if (!skippedVisits.isEmpty()) {
             updateDayAttendanceTotals(skippedVisits);

@@ -835,7 +835,7 @@
 
 .oef-cart-table-wrap {
     max-height: 400px;
-    overflow: visible;
+    overflow-y: auto;
 }
 
 .oef-cart-table {

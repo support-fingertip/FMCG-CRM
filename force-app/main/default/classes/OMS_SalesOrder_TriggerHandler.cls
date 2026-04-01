@@ -133,6 +133,19 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
         if (!deliveredOrderIds.isEmpty()) {
             releaseCreditHold(deliveredOrderIds);
         }
+
+        // Update Last_Order_Date__c and Last_Order_Value__c on Account
+        Set<Id> accountIdsToUpdate = new Set<Id>();
+        for (Sales_Order__c rec : newRecords) {
+            Sales_Order__c oldRec = oldMap.get(rec.Id);
+            if (rec.Status__c != oldRec.Status__c && rec.Account__c != null
+                && (rec.Status__c == 'Approved' || rec.Status__c == 'Delivered')) {
+                accountIdsToUpdate.add(rec.Account__c);
+            }
+        }
+        if (!accountIdsToUpdate.isEmpty()) {
+            MDM_Account_TriggerHandler.updateLastOrderInfo(accountIdsToUpdate);
+        }
     }
 
     // ── Private helper methods ────────────────────────────────────────────────
