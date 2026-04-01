@@ -37,6 +37,8 @@ global without sharing class API_SalesOrder_Rest {
                 doCreateSalesOrder(req);
             } else if (path.endsWith('/summary')) {
                 doOrderSummary(req);
+            } else if (path.endsWith('/allorders')) {
+                doAllOrders(req);
             } else {
                 API_ResponseWrapper.sendError('Invalid endpoint.');
             }
@@ -263,5 +265,87 @@ global without sharing class API_SalesOrder_Rest {
             API_ResponseWrapper.sendServerError(e.getMessage());
         }
     }
+
+    // ── 3. All Orders for User/Visit/Account ──────────────────────────────
+    private static void doAllOrders(RestRequest req) {
+        try {
+            Map<String, Object> input = (Map<String, Object>) JSON.deserializeUntyped(req.requestBody.toString());
+
+            String userId = (String)input.get('userId');
+            if (String.isBlank(userId)) {
+                API_ResponseWrapper.sendError('userId is required.');
+                return;
+            }
+
+            String siteVisitId = (String)input.get('siteVisitId');
+            if (String.isBlank(siteVisitId)) {
+                API_ResponseWrapper.sendError('siteVisitId is required.');
+                return;
+            }
+
+            String accountId = (String)input.get('accountId');
+            if (String.isBlank(accountId)) {
+                API_ResponseWrapper.sendError('accountId is required.');
+                return;
+            }
+
+            // Validate employee
+            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            if (employees.isEmpty()) {
+                API_ResponseWrapper.sendError('Employee not found.');
+                return;
+            }
+
+            // Validate visit
+            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :siteVisitId LIMIT 1];
+            if (visits.isEmpty()) {
+                API_ResponseWrapper.sendError('Site Visit not found.');
+                return;
+            }
+            Visit__c visit = visits[0];
+
+            // Validate account
+            List<Account> accounts = [SELECT Id FROM Account WHERE Name = :accountId OR AccountNumber = :accountId LIMIT 1];
+            if (accounts.isEmpty()) {
+                API_ResponseWrapper.sendError('Account not found.');
+                return;
+            }
+            Account account = accounts[0];
+
+            List<Sales_Order__c> salesOrders = [
+                SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c,
+                       (SELECT Id FROM Order_Line_Items__r)
+                FROM Sales_Order__c
+                WHERE Visit__c = :visit.Id AND Account__c = :account.Id
+                ORDER BY Order_Date__c DESC
+            ];
+
+            List<Map<String, Object>> orders = new List<Map<String, Object>>();
+            for (Sales_Order__c so : salesOrders) {
+                Integer totalItems = (so.Order_Line_Items__r != null) ? so.Order_Line_Items__r.size() : 0;
+                String orderDate = (so.Order_Date__c != null)
+                    ? DateTime.newInstance(so.Order_Date__c, Time.newInstance(0,0,0,0)).format('yyyy-MM-dd\'T\'HH:mm:ss')
+                    : null;
+
+                orders.add(new Map<String, Object>{
+                    'orderId' => so.Name,
+                    'orderDate' => orderDate,
+                    'totalItems' => totalItems,
+                    'totalAmount' => so.Total_Net_Amount__c,
+                    'currency' => 'INR',
+                    'status' => so.Status__c
+                });
+            }
+
+            Map<String, Object> data = new Map<String, Object>{
+                'orders' => orders
+            };
+
+            API_ResponseWrapper.sendSuccess('Orders fetched successfully' + salesOrders.Size(), data);
+        } catch (Exception e) {
+            API_ResponseWrapper.sendServerError(e.getMessage());
+        }
+    }
 }
+
 
