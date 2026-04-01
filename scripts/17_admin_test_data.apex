@@ -18,19 +18,27 @@ Id adminUserId = UserInfo.getUserId();
 String adminName = UserInfo.getFirstName() + ' ' + UserInfo.getLastName();
 System.debug('Creating test data for admin user: ' + adminName + ' (' + adminUserId + ')');
 
-// ── Clean up existing admin data ──
-delete [SELECT Id FROM Order_Line_Item__c WHERE Sales_Order__r.Salesperson__c = :adminUserId];
+// ── Clean up existing admin data (bypass triggers to save SOQL) ──
 TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
-delete [SELECT Id FROM Sales_Order__c WHERE Salesperson__c = :adminUserId];
-TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
+TriggerHandler.bypass('OMS_OrderLineItem_TriggerHandler');
 TriggerHandler.bypass('OVE_Collection_TriggerHandler');
+TriggerHandler.bypass('OVE_Visit_TriggerHandler');
+TriggerHandler.bypass('BPM_DayAttendance_TriggerHandler');
+delete [SELECT Id FROM Order_Line_Item__c WHERE Sales_Order__r.Salesperson__c = :adminUserId];
+delete [SELECT Id FROM Sales_Order__c WHERE Salesperson__c = :adminUserId];
 delete [SELECT Id FROM Collection__c WHERE Collected_By__c = :adminUserId];
-TriggerHandler.clearBypass('OVE_Collection_TriggerHandler');
 delete [SELECT Id FROM Visit__c WHERE User__c = :adminUserId];
 delete [SELECT Id FROM Day_Attendance__c WHERE User__c = :adminUserId];
 delete [SELECT Id FROM Leave_Request__c WHERE Employee__c = :adminUserId];
 delete [SELECT Id FROM Target_Actual__c WHERE User__c = :adminUserId];
 System.debug('Cleaned up existing admin data');
+
+// Bypass ALL triggers to avoid SOQL limit (triggers add queries per record)
+TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
+TriggerHandler.bypass('OVE_Collection_TriggerHandler');
+TriggerHandler.bypass('OVE_Visit_TriggerHandler');
+TriggerHandler.bypass('OMS_OrderLineItem_TriggerHandler');
+TriggerHandler.bypass('BPM_DayAttendance_TriggerHandler');
 
 // ── Load prerequisite data ──
 Map<String, Id> terMap = new Map<String, Id>();
@@ -73,7 +81,7 @@ if (!whs.isEmpty()) primaryWarehouse = whs[0].Id;
 
 List<Day_Attendance__c> attendances = new List<Day_Attendance__c>();
 
-for (Integer i = 0; i < 7; i++) {
+for (Integer i = 0; i < 5; i++) {
     Date attDate = Date.today().addDays(-i);
     Boolean isToday = (i == 0);
     String dayName = DateTime.newInstance(attDate, Time.newInstance(0,0,0,0)).format('EEEE');
@@ -126,13 +134,13 @@ Integer acctIdx = 0;
 
 for (Day_Attendance__c da : attendances) {
     Boolean isToday = (da.Status__c == 'Started');
-    Integer visitsPerDay = isToday ? 1 : 5;
+    Integer visitsPerDay = isToday ? 1 : 3;
 
     for (Integer v = 0; v < visitsPerDay; v++) {
         Account acct = retailers[Math.mod(acctIdx, retailers.size())];
         Integer startHour = 9 + v;
         Integer durationMins = 25 + (v * 10);
-        Boolean isProductive = (v < 4);
+        Boolean isProductive = (v < 2); // first 2 productive, last non-productive
         String visitStatus;
         if (isToday && v == 0) {
             visitStatus = 'In Progress';
@@ -192,7 +200,6 @@ for (Visit__c v : allVisits) {
     }
 }
 
-TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
 
 List<Sales_Order__c> orders = new List<Sales_Order__c>();
 for (Integer i = 0; i < productiveVisits.size(); i++) {
@@ -220,7 +227,6 @@ for (Integer i = 0; i < productiveVisits.size(); i++) {
     ));
 }
 insert orders;
-TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
 System.debug('Created ' + orders.size() + ' Sales Orders');
 
 
@@ -302,7 +308,6 @@ for (Integer oi = 0; oi < orders.size(); oi++) {
 insert lineItems;
 
 // Update order totals
-TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
 List<Sales_Order__c> totalUpdates = new List<Sales_Order__c>();
 for (Sales_Order__c o : orders) {
     totalUpdates.add(new Sales_Order__c(
@@ -318,7 +323,6 @@ for (Sales_Order__c o : orders) {
     ));
 }
 update totalUpdates;
-TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
 System.debug('Created ' + lineItems.size() + ' Order Line Items');
 
 
@@ -373,7 +377,6 @@ collections.add(new Collection__c(
     Notes__c = 'Advance on-account payment'
 ));
 
-TriggerHandler.bypass('OVE_Collection_TriggerHandler');
 try {
     insert collections;
     System.debug('Created ' + collections.size() + ' Collections');
@@ -381,7 +384,6 @@ try {
     System.debug('WARNING: Collection insert failed: ' + e.getMessage());
     System.debug('Skipped — fix OMS Collection Ledger Entry Flow, then re-run.');
 }
-TriggerHandler.clearBypass('OVE_Collection_TriggerHandler');
 
 
 // ════════════════════════════════════════════════════════════
@@ -548,6 +550,13 @@ if (!periods.isEmpty()) {
     System.debug('WARNING: No active monthly period found. Skipping Target Actuals.');
 }
 
+
+// Clear all trigger bypasses
+TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
+TriggerHandler.clearBypass('OVE_Collection_TriggerHandler');
+TriggerHandler.clearBypass('OVE_Visit_TriggerHandler');
+TriggerHandler.clearBypass('OMS_OrderLineItem_TriggerHandler');
+TriggerHandler.clearBypass('BPM_DayAttendance_TriggerHandler');
 
 // ════════════════════════════════════════════════════════════
 // SUMMARY
