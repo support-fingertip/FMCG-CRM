@@ -50,11 +50,131 @@ List<Account> retailers = [SELECT Id, Name, Territory__c, Channel__c, Outlet_Typ
                             FROM Account WHERE Type = 'Retailer' AND Is_Active__c = true ORDER BY Name LIMIT 10];
 System.assert(!retailers.isEmpty(), 'No retailer accounts found. Run 09_accounts.apex first.');
 
-Map<String, Id> beatMap = new Map<String, Id>();
-for (Beat__c b : [SELECT Id, Beat_Code__c FROM Beat__c WHERE Is_Active__c = true]) {
-    beatMap.put(b.Beat_Code__c, b.Id);
+// ── Create admin-specific beats assigned to admin user ──
+// Delete old admin beats first
+delete [SELECT Id FROM Beat_Outlet__c WHERE Beat__r.Beat_Code__c LIKE 'BT-ADM-%'];
+delete [SELECT Id FROM Beat__c WHERE Beat_Code__c LIKE 'BT-ADM-%'];
+
+String todayDayName = DateTime.newInstance(Date.today(), Time.newInstance(0,0,0,0)).format('EEEE');
+
+List<Beat__c> adminBeats = new List<Beat__c>{
+    new Beat__c(
+        Name = 'Admin Beat - Delhi Central',
+        Beat_Code__c = 'BT-ADM-001',
+        Territory__c = terMap.get('TER-DEL-001'),
+        Assigned_User__c = adminUserId,
+        Day_of_Week__c = 'Monday;Tuesday;Wednesday;Thursday;Friday;Saturday',
+        Frequency__c = 'Weekly',
+        Is_Active__c = true,
+        Description__c = 'Admin test beat covering central Delhi retailers',
+        Sequence__c = 1
+    ),
+    new Beat__c(
+        Name = 'Admin Beat - Delhi South',
+        Beat_Code__c = 'BT-ADM-002',
+        Territory__c = terMap.get('TER-DEL-001'),
+        Assigned_User__c = adminUserId,
+        Day_of_Week__c = 'Monday;Wednesday;Friday',
+        Frequency__c = 'Weekly',
+        Is_Active__c = true,
+        Description__c = 'Admin test beat covering south Delhi retailers',
+        Sequence__c = 2
+    )
+};
+insert adminBeats;
+System.debug('Created ' + adminBeats.size() + ' Admin Beats');
+
+Id primaryBeat = adminBeats[0].Id;
+Id secondaryBeat = adminBeats[1].Id;
+
+// Map retailers to admin beats (first 4 to beat 1, next 4 to beat 2)
+List<Beat_Outlet__c> adminBeatOutlets = new List<Beat_Outlet__c>();
+for (Integer i = 0; i < Math.min(8, retailers.size()); i++) {
+    adminBeatOutlets.add(new Beat_Outlet__c(
+        Beat__c = (i < 4) ? primaryBeat : secondaryBeat,
+        Account__c = retailers[i].Id,
+        Visit_Sequence__c = Math.mod(i, 4) + 1,
+        Is_Active__c = true
+    ));
 }
-Id primaryBeat = beatMap.get('BT-DEL-001') != null ? beatMap.get('BT-DEL-001') : beatMap.values()[0];
+insert adminBeatOutlets;
+System.debug('Created ' + adminBeatOutlets.size() + ' Beat-Outlet mappings for admin');
+
+// ── Create Journey Plan for admin ──
+delete [SELECT Id FROM Journey_Plan_Day__c WHERE Journey_Plan__r.Name LIKE 'PJP - Admin%'];
+delete [SELECT Id FROM Journey_Plan__c WHERE Name LIKE 'PJP - Admin%'];
+
+Integer currentMonth = Date.today().month();
+Integer currentYear = Date.today().year();
+String[] monthNames = new String[]{'', 'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'};
+String monthName = monthNames[currentMonth];
+Date firstDay = Date.newInstance(currentYear, currentMonth, 1);
+Date lastDay = firstDay.addMonths(1).addDays(-1);
+
+Journey_Plan__c adminPlan = new Journey_Plan__c(
+    Name = 'PJP - Admin - ' + monthName + ' ' + currentYear,
+    Month__c = monthName,
+    Year__c = String.valueOf(currentYear),
+    Territory__c = terMap.get('TER-DEL-001'),
+    Salesperson__c = adminUserId,
+    User__c = adminUserId,
+    Status__c = 'Draft',
+    Plan_Date__c = Date.today(),
+    Effective_From__c = firstDay,
+    Effective_To__c = lastDay,
+    Exclude_Holidays__c = true,
+    Exclude_Leaves__c = true,
+    Exclude_Week_Offs__c = true
+);
+insert adminPlan;
+
+// Create plan days for admin beats
+List<Journey_Plan_Day__c> adminPlanDays = new List<Journey_Plan_Day__c>();
+Integer seq = 1;
+Date d = firstDay;
+while (d <= lastDay) {
+    String dayOfWeek = DateTime.newInstance(d, Time.newInstance(0,0,0,0)).format('EEEE');
+    if (dayOfWeek == 'Sunday') { d = d.addDays(1); continue; }
+
+    // Alternate beats: beat 1 on Mon/Tue/Wed/Thu, beat 2 on Fri/Sat
+    Id beatForDay = (dayOfWeek == 'Friday' || dayOfWeek == 'Saturday') ? secondaryBeat : primaryBeat;
+    String beatName = (beatForDay == primaryBeat) ? 'Admin Beat - Delhi Central' : 'Admin Beat - Delhi South';
+    Integer dayOfMonth = d.day();
+    String weekNum = dayOfMonth <= 7 ? 'Week 1' : dayOfMonth <= 14 ? 'Week 2' : dayOfMonth <= 21 ? 'Week 3' : 'Week 4';
+
+    adminPlanDays.add(new Journey_Plan_Day__c(
+        Journey_Plan__c = adminPlan.Id,
+        Beat__c = beatForDay,
+        Beat_Name__c = beatName,
+        Plan_Date__c = d,
+        Day_of_Week__c = dayOfWeek,
+        Week_Number__c = weekNum,
+        Planned_Outlets__c = 4,
+        Visited_Outlets__c = d < Date.today() ? 4 : 0,
+        Sequence_Order__c = seq,
+        Sequence__c = seq,
+        Status__c = d < Date.today() ? 'Completed' : 'Planned'
+    ));
+    seq++;
+    d = d.addDays(1);
+}
+insert adminPlanDays;
+
+// Advance plan: Draft → Submitted → Approved → Active
+adminPlan.Status__c = 'Submitted';
+update adminPlan;
+adminPlan.Status__c = 'Approved';
+adminPlan.Approval_Date__c = Date.today();
+adminPlan.Approved_By__c = adminUserId;
+update adminPlan;
+adminPlan.Status__c = 'Active';
+update adminPlan;
+adminPlan.Total_Planned_Days__c = adminPlanDays.size();
+adminPlan.Total_Planned_Visits__c = adminPlanDays.size() * 4;
+update adminPlan;
+
+System.debug('Created Admin Journey Plan: ' + adminPlanDays.size() + ' days, Status=Active');
 
 Map<String, Product_Extension__c> prodMap = new Map<String, Product_Extension__c>();
 for (Product_Extension__c p : [SELECT Id, SKU_Code__c, Name, Unit_Price__c, MRP__c, GST_Rate__c,
