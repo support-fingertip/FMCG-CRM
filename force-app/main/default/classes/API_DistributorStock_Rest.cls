@@ -2,6 +2,7 @@
  * @description REST API for Distributor Stock operations (Mobile App).
  *              Covers:
  *                - Create Distributor Stock entries for inventory tracking
+ *                - Stock Summary for a visit
  *
  * @author  Praveen Kumar
  * @date    2026
@@ -17,6 +18,8 @@ global with sharing class API_DistributorStock_Rest {
         try {
             if (path.endsWith('/create')) {
                 doCreateStock(req);
+            } else if (path.endsWith('/summary')) {
+                doStockSummary(req);
             } else {
                 API_ResponseWrapper.sendError('Invalid endpoint.');
             }
@@ -123,6 +126,7 @@ global with sharing class API_DistributorStock_Rest {
             stock.Opening_Stock__c = toDecimal(prod.get('openingStock'));
             stock.Closing_Stock__c = toDecimal(prod.get('closingStock'));
             stock.Damaged_Qty__c = toDecimal(prod.get('damagedStock'));
+            stock.Visit__c = resolvedVisitId;
             stock.Stock_Date__c = Date.today();
             stock.Is_Current__c = true;
 
@@ -134,6 +138,101 @@ global with sharing class API_DistributorStock_Rest {
         API_ResponseWrapper.sendSuccess('Distributor stock created successfully', new Map<String, Object>{
             'totalRecords' => stockRecords.size()
         });
+    }
+
+    // ── Stock Summary ─────────────────────────────────────────────────────
+
+    private static void doStockSummary(RestRequest req) {
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
+            req.requestBody.toString()
+        );
+
+        // Validate userId
+        String userId = (String) body.get('userId');
+        if (String.isBlank(userId)) {
+            API_ResponseWrapper.sendError('userId is required.');
+            return;
+        }
+
+        Id sfUserId = resolveUserId(userId);
+        if (sfUserId == null) {
+            API_ResponseWrapper.sendError('User not found.');
+            return;
+        }
+
+        // Validate siteVisitId
+        String siteVisitId = (String) body.get('siteVisitId');
+        if (String.isBlank(siteVisitId)) {
+            API_ResponseWrapper.sendError('siteVisitId is required.');
+            return;
+        }
+
+        List<Visit__c> visits = [SELECT Id, Name FROM Visit__c WHERE Name = :siteVisitId LIMIT 1];
+        if (visits.isEmpty()) {
+            API_ResponseWrapper.sendError('Site Visit not found.');
+            return;
+        }
+        Id resolvedVisitId = visits[0].Id;
+
+        // Validate accountId (accept both 'accountId' and 'accoutnId' for typo resilience)
+        String accountId = (String) body.get('accountId');
+        if (String.isBlank(accountId)) {
+            accountId = (String) body.get('accoutnId');
+        }
+        if (String.isBlank(accountId)) {
+            API_ResponseWrapper.sendError('accountId is required.');
+            return;
+        }
+
+        List<Account> accounts = [SELECT Id, Name FROM Account WHERE Id = :accountId LIMIT 1];
+        if (accounts.isEmpty()) {
+            API_ResponseWrapper.sendError('Account not found.');
+            return;
+        }
+        String accountName = accounts[0].Name;
+        Id resolvedAccountId = accounts[0].Id;
+
+        // Query Distributor Stock for the account and visit
+        List<Distributor_Stock__c> stockRecords = [
+            SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name,
+                   Opening_Stock__c, Closing_Stock__c, Damaged_Qty__c,
+                   Stock_Date__c, CreatedDate
+            FROM Distributor_Stock__c
+            WHERE Account__c = :resolvedAccountId
+              AND Visit__c = :resolvedVisitId
+            ORDER BY CreatedDate DESC
+        ];
+
+        // Build stock details response
+        List<Map<String, Object>> stockDetails = new List<Map<String, Object>>();
+        for (Distributor_Stock__c stock : stockRecords) {
+            Decimal opening = stock.Opening_Stock__c != null ? stock.Opening_Stock__c : 0;
+            Decimal closing = stock.Closing_Stock__c != null ? stock.Closing_Stock__c : 0;
+            Decimal damaged = stock.Damaged_Qty__c != null ? stock.Damaged_Qty__c : 0;
+
+            Decimal netStock = closing - opening;
+            Object variance = opening > 0 ? opening - (closing + damaged) : null;
+
+            Map<String, Object> detail = new Map<String, Object>();
+            detail.put('productId', stock.Product_Ext__c);
+            detail.put('productName', stock.Product_Ext__r != null ? stock.Product_Ext__r.Name : '');
+            detail.put('stockDateTime', stock.CreatedDate != null ? stock.CreatedDate.format('yyyy-MM-dd\'T\'HH:mm:ss') : null);
+            detail.put('openingStock', opening);
+            detail.put('closingStock', closing);
+            detail.put('damagedStock', damaged);
+            detail.put('netStock', netStock);
+            detail.put('variance', variance);
+
+            stockDetails.add(detail);
+        }
+
+        // Build response envelope
+        Map<String, Object> data = new Map<String, Object>();
+        data.put('accoutnName', accountName);
+        data.put('totalRecords', stockDetails.size());
+        data.put('stockDetails', stockDetails);
+
+        API_ResponseWrapper.sendSuccess('Stock details fetched successfully', data);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
