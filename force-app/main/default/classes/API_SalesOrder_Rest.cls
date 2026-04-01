@@ -1,32 +1,22 @@
 
 /**
  * @description  REST API for Sales Order operations in FMCG CRM.
- *               Provides endpoints to create sales orders and fetch order summaries.
+ *               Provides endpoints to create sales orders, fetch order summaries, and list all orders.
  * @author       Praveen Kumar
  * @date         2026-04-01
  *
  * Endpoints:
- *   POST /services/apexrest/salesorder/create   - Create a new Sales Order
- *   POST /services/apexrest/salesorder/summary  - Get Sales Order summary for a visit
+ *   POST /services/apexrest/salesorder/create    - Create a new Sales Order with line items
+ *   POST /services/apexrest/salesorder/summary   - Get Sales Order summary aggregated by outlets for a visit
+ *   POST /services/apexrest/salesorder/allorders - Get all orders as a list for user/visit/account
  */
 @RestResource(urlMapping='/salesorder/*')
 global without sharing class API_SalesOrder_Rest {
     /**
-     * @description Entry point for Sales Order REST API. Routes requests to appropriate handler.
+     * @description Main entry point for Sales Order REST API. Routes requests based on endpoint path.
+     *              Supported endpoints: /create, /summary, /allorders
      * @author Praveen Kumar
      */
-        /**
-         * @description Handles creation of a new Sales Order and its line items.
-         *              Validates input, looks up related records, and inserts order data.
-         * @param req   RestRequest containing order details in JSON format.
-         * @author Praveen Kumar
-         */
-        /**
-         * @description Returns a summary of all Sales Orders for a given site visit and user.
-         *              Aggregates order and outlet data for reporting.
-         * @param req   RestRequest containing userId and siteVisitId in JSON format.
-         * @author Praveen Kumar
-         */
     @HttpPost
     global static void doPost() {
         RestRequest req = RestContext.request;
@@ -48,6 +38,16 @@ global without sharing class API_SalesOrder_Rest {
     }
 
     // ── 1. Create Sales Order ──────────────────────────────────────────────
+    /**
+     * @description Creates a new Sales Order with line items from request payload.
+     *              Validates and lookups Account, Visit (optional), and Salesperson.
+     *              Inserts Order and its associated Order_Line_Item__c records.
+     * @param req RestRequest containing: accountName, orderDate, visitNumber (optional),
+     *            userId (optional), summary (subTotal, discountAmount, taxAmount, grandTotal),
+     *            items (productName, quantity, unit, pricePerKg, amount)
+     * @return 200 with orderId on success, 400 on validation error, 500 on exception
+     * @author Praveen Kumar
+     */
     private static void doCreateSalesOrder(RestRequest req) {
         try {
             Map<String, Object> input = (Map<String, Object>) JSON.deserializeUntyped(req.requestBody.toString());
@@ -146,6 +146,14 @@ global without sharing class API_SalesOrder_Rest {
     }
 
     // ── 2. Order Summary ──────────────────────────────────────────────────
+    /**
+     * @description Fetches Sales Order summary aggregated by outlet/account for a given visit.
+     *              Groups orders by Account and calculates totals (count, value) per outlet.
+     * @param req RestRequest containing: userId (Employee__c Name or User__c), 
+     *            siteVisitId (Visit__c Name)
+     * @return 200 with summaryData including summaryDate, employeName, summary totals, outlets array
+     * @author Praveen Kumar
+     */
     private static void doOrderSummary(RestRequest req) {
         try {
             Map<String, Object> input = (Map<String, Object>) JSON.deserializeUntyped(req.requestBody.toString());
@@ -267,6 +275,16 @@ global without sharing class API_SalesOrder_Rest {
     }
 
     // ── 3. All Orders for User/Visit/Account ──────────────────────────────
+    /**
+     * @description Fetches all Sales Orders as a list for a given user, visit, and account.
+     *              Returns orders with details: orderId, orderDate, totalItems, totalAmount, 
+     *              currency, and status.
+     * @param req RestRequest containing: userId (Employee__c Name or User__c),
+     *            siteVisitId (Visit__c Name),
+     *            accountId (Account Name or AccountNumber)
+     * @return 200 with orders array containing order details, 400 on validation error, 500 on exception
+     * @author Praveen Kumar
+     */
     private static void doAllOrders(RestRequest req) {
         try {
             Map<String, Object> input = (Map<String, Object>) JSON.deserializeUntyped(req.requestBody.toString());
