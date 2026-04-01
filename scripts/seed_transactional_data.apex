@@ -371,7 +371,9 @@ collections.add(new Collection__c(
     Notes__c = 'Advance payment on account'
 ));
 
+TriggerHandler.bypass('OVE_Collection_TriggerHandler');
 insert collections;
+TriggerHandler.clearBypass('OVE_Collection_TriggerHandler');
 System.debug('Created ' + collections.size() + ' Collection records');
 
 
