@@ -185,7 +185,7 @@ global with sharing class API_DistributorStock_Rest {
             return;
         }
 
-        List<Account> accounts = [SELECT Id, Name FROM Account WHERE Id = :accountId LIMIT 1];
+        List<Account> accounts = [SELECT Id, Name FROM Account WHERE Name = :accountId LIMIT 1];
         if (accounts.isEmpty()) {
             API_ResponseWrapper.sendError('Account not found.');
             return;
