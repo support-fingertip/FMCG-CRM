@@ -4,7 +4,7 @@
  *                - Login (stub — on hold)
  *                - Get User Profile
  *
- * @author  SFA Development Team
+ * @author  Praveen Kumar
  * @date    2026
  */
 @RestResource(urlMapping='/mobile/user/*')

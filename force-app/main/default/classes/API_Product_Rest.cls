@@ -3,7 +3,7 @@
  *              Covers:
  *                - Product List (active products with discount info)
  *
- * @author  SFA Development Team
+ * @author  Praveen Kumar
  * @date    2026
  */
 @RestResource(urlMapping='/mobile/product/*')

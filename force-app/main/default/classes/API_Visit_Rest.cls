@@ -5,7 +5,7 @@
  *                - Site Visit Detail
  *                - Add Site Visit
  *
- * @author  SFA Development Team
+ * @author  Praveen Kumar
  * @date    2026
  */
 @RestResource(urlMapping='/mobile/visit/*')

@@ -3,7 +3,7 @@
  *              Covers:
  *                - My Planner list (visits grouped by date)
  *
- * @author  SFA Development Team
+ * @author  Praveen Kumar
  * @date    2026
  */
 @RestResource(urlMapping='/mobile/planner/*')

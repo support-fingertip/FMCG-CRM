@@ -4,7 +4,7 @@
  *                - Home Screen KPI Dashboard (target summary, day summary,
  *                  leaderboard, productivity, expense timeline, today's visits)
  *
- * @author  SFA Development Team
+ * @author  Praveen Kumar
  * @date    2026
  */
 @RestResource(urlMapping='/mobile/dashboard/*')

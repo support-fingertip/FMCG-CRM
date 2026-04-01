@@ -4,7 +4,7 @@
  *                - Account List (active outlets)
  *                - Account Detail by Id
  *
- * @author  SFA Development Team
+ * @author  Praveen Kumar
  * @date    2026
  */
 @RestResource(urlMapping='/mobile/account/*')
