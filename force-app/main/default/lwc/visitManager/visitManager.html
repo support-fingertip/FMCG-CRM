@@ -205,8 +205,12 @@
                 </div>
             </template>
 
-            <!-- Confirm Beat Selection -->
+            <!-- Confirm Beat Selection / Ad-Hoc Visit -->
             <div class="vm-action-center">
+                <button class="vm-btn vm-btn-adhoc" onclick={handleAdHocClick}>
+                    <lightning-icon icon-name="utility:add" size="xx-small" variant="inverse"></lightning-icon>
+                    Ad-Hoc Visit
+                </button>
                 <button class="vm-btn vm-btn-start" disabled={selectBeatDisabled} onclick={handleBeatConfirm}>
                     <lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon>
                     Confirm Beat
