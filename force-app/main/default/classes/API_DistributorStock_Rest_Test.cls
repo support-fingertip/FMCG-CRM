@@ -56,6 +56,29 @@ private class API_DistributorStock_Rest_Test {
             Salesperson__c = testUser.Id
         );
         insert testVisit;
+
+        // Create Distributor Stock records linked to visit
+        Distributor_Stock__c stock1 = new Distributor_Stock__c(
+            Account__c = testAccount.Id,
+            Product_Ext__c = prodExt1.Id,
+            Visit__c = testVisit.Id,
+            Opening_Stock__c = 120,
+            Closing_Stock__c = 100,
+            Damaged_Qty__c = 5,
+            Stock_Date__c = Date.today(),
+            Is_Current__c = true
+        );
+        Distributor_Stock__c stock2 = new Distributor_Stock__c(
+            Account__c = testAccount.Id,
+            Product_Ext__c = prodExt2.Id,
+            Visit__c = testVisit.Id,
+            Opening_Stock__c = 50,
+            Closing_Stock__c = 40,
+            Damaged_Qty__c = 2,
+            Stock_Date__c = Date.today(),
+            Is_Current__c = true
+        );
+        insert new List<Distributor_Stock__c>{ stock1, stock2 };
     }
 
     @isTest
@@ -266,6 +289,121 @@ private class API_DistributorStock_Rest_Test {
 
         RestResponse res = RestContext.response;
         System.assertEquals(400, res.statusCode, 'Should return 400 for product not found');
+    }
+
+    // ── Stock Summary Tests ────────────────────────────────────────────────
+
+    @isTest
+    static void testStockSummarySuccess() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Distributor' LIMIT 1];
+        Visit__c visit = [SELECT Id, Name FROM Visit__c LIMIT 1];
+
+        Map<String, Object> requestBody = new Map<String, Object>();
+        requestBody.put('userId', 'USR001');
+        requestBody.put('siteVisitId', visit.Name);
+        requestBody.put('accountId', acc.Id);
+
+        RestRequest req = new RestRequest();
+        req.requestURI = '/services/apexrest/mobile/distributor-stock/summary';
+        req.httpMethod = 'POST';
+        req.requestBody = Blob.valueOf(JSON.serialize(requestBody));
+        RestContext.request = req;
+        RestContext.response = new RestResponse();
+
+        Test.startTest();
+        API_DistributorStock_Rest.handlePost();
+        Test.stopTest();
+
+        RestResponse res = RestContext.response;
+        Map<String, Object> responseBody = (Map<String, Object>) JSON.deserializeUntyped(
+            res.responseBody.toString()
+        );
+        System.assertEquals(200, res.statusCode, 'Should return 200');
+        System.assertEquals(true, responseBody.get('status'), 'Status should be true');
+
+        Map<String, Object> data = (Map<String, Object>) responseBody.get('data');
+        System.assertEquals('Test Distributor', data.get('accoutnName'), 'Account name should match');
+        System.assertEquals(2, (Integer) data.get('totalRecords'), 'Should have 2 stock records');
+
+        List<Object> stockDetails = (List<Object>) data.get('stockDetails');
+        System.assertEquals(2, stockDetails.size(), 'stockDetails should have 2 items');
+    }
+
+    @isTest
+    static void testStockSummaryMissingUserId() {
+        Map<String, Object> requestBody = new Map<String, Object>();
+        requestBody.put('userId', '');
+        requestBody.put('siteVisitId', 'VIS-00001');
+        requestBody.put('accountId', '001000000000001');
+
+        RestRequest req = new RestRequest();
+        req.requestURI = '/services/apexrest/mobile/distributor-stock/summary';
+        req.httpMethod = 'POST';
+        req.requestBody = Blob.valueOf(JSON.serialize(requestBody));
+        RestContext.request = req;
+        RestContext.response = new RestResponse();
+
+        Test.startTest();
+        API_DistributorStock_Rest.handlePost();
+        Test.stopTest();
+
+        RestResponse res = RestContext.response;
+        System.assertEquals(400, res.statusCode, 'Should return 400 for missing userId');
+    }
+
+    @isTest
+    static void testStockSummaryInvalidVisit() {
+        Map<String, Object> requestBody = new Map<String, Object>();
+        requestBody.put('userId', 'USR001');
+        requestBody.put('siteVisitId', 'VIS-INVALID');
+        requestBody.put('accountId', '001000000000001');
+
+        RestRequest req = new RestRequest();
+        req.requestURI = '/services/apexrest/mobile/distributor-stock/summary';
+        req.httpMethod = 'POST';
+        req.requestBody = Blob.valueOf(JSON.serialize(requestBody));
+        RestContext.request = req;
+        RestContext.response = new RestResponse();
+
+        Test.startTest();
+        API_DistributorStock_Rest.handlePost();
+        Test.stopTest();
+
+        RestResponse res = RestContext.response;
+        System.assertEquals(400, res.statusCode, 'Should return 400 for invalid visit');
+    }
+
+    @isTest
+    static void testStockSummaryNoStockRecords() {
+        Account acc = new Account(Name = 'Empty Distributor', Is_Active__c = true);
+        insert acc;
+
+        Visit__c visit = [SELECT Id, Name FROM Visit__c LIMIT 1];
+
+        Map<String, Object> requestBody = new Map<String, Object>();
+        requestBody.put('userId', 'USR001');
+        requestBody.put('siteVisitId', visit.Name);
+        requestBody.put('accountId', acc.Id);
+
+        RestRequest req = new RestRequest();
+        req.requestURI = '/services/apexrest/mobile/distributor-stock/summary';
+        req.httpMethod = 'POST';
+        req.requestBody = Blob.valueOf(JSON.serialize(requestBody));
+        RestContext.request = req;
+        RestContext.response = new RestResponse();
+
+        Test.startTest();
+        API_DistributorStock_Rest.handlePost();
+        Test.stopTest();
+
+        RestResponse res = RestContext.response;
+        Map<String, Object> responseBody = (Map<String, Object>) JSON.deserializeUntyped(
+            res.responseBody.toString()
+        );
+        System.assertEquals(200, res.statusCode, 'Should return 200 with empty stock');
+
+        Map<String, Object> data = (Map<String, Object>) responseBody.get('data');
+        System.assertEquals(0, (Integer) data.get('totalRecords'), 'Should have 0 stock records');
     }
 
     @isTest
