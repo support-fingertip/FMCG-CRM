@@ -20,6 +20,27 @@ for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master
 // Pass 1: Create all employees without Reporting_Manager
 List<Employee__c> employees = new List<Employee__c>();
 
+// Admin user — linked to current running user
+employees.add(new Employee__c(
+    First_Name__c = UserInfo.getFirstName(),
+    Last_Name__c = UserInfo.getLastName(),
+    Employee_Code__c = 'EMP-ADMIN-001',
+    Email__c = UserInfo.getUserEmail(),
+    Phone__c = '9800000000',
+    Department__c = 'Management',
+    Designation__c = 'Admin',
+    Band__c = 'Band 6',
+    Date_of_Joining__c = Date.newInstance(2017, 1, 1),
+    Is_Active__c = true,
+    Zone__c = 'All India',
+    Region__c = 'National',
+    HQ_City__c = 'Delhi',
+    Gross_Salary__c = 150000,
+    User__c = UserInfo.getUserId(),
+    Week_Off_Days__c = 'Sunday',
+    CL_Balance__c = 12, SL_Balance__c = 7, EL_Balance__c = 15, CO_Balance__c = 3
+));
+
 // National Sales Manager (1)
 employees.add(new Employee__c(
     First_Name__c = 'Rajesh', Last_Name__c = 'Kapoor', Employee_Code__c = 'EMP-NSM-001',
