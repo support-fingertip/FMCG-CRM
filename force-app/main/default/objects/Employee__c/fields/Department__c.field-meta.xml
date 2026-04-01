@@ -15,6 +15,7 @@
             <value><fullName>HR</fullName><default>false</default><label>HR</label></value>
             <value><fullName>IT</fullName><default>false</default><label>IT</label></value>
             <value><fullName>Supply Chain</fullName><default>false</default><label>Supply Chain</label></value>
+            <value><fullName>Management</fullName><default>false</default><label>Management</label></value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
