@@ -125,6 +125,7 @@ global with sharing class API_DistributorStock_Rest {
             stock.Damaged_Qty__c = toDecimal(prod.get('damagedStock'));
             stock.Stock_Date__c = Date.today();
             stock.Is_Current__c = true;
+            stock.Visit__c = resolvedVisitId;
 
             stockRecords.add(stock);
         }
