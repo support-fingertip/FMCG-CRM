@@ -371,10 +371,18 @@ collections.add(new Collection__c(
     Notes__c = 'Advance payment on account'
 ));
 
+// NOTE: Collection insert uses try-catch because the 'OMS - Collection Ledger Entry' Flow
+// may fail if Ledger_Entry__c.Entry_Type__c picklist doesn't include 'Credit'/'Debit'.
+// TriggerHandler.bypass only skips Apex triggers, not Flows.
 TriggerHandler.bypass('OVE_Collection_TriggerHandler');
-insert collections;
+try {
+    insert collections;
+    System.debug('Created ' + collections.size() + ' Collection records');
+} catch (Exception e) {
+    System.debug('WARNING: Collection insert failed (likely Flow issue): ' + e.getMessage());
+    System.debug('Collections skipped — fix the OMS Collection Ledger Entry Flow or Ledger_Entry__c.Entry_Type__c picklist, then re-run.');
+}
 TriggerHandler.clearBypass('OVE_Collection_TriggerHandler');
-System.debug('Created ' + collections.size() + ' Collection records');
 
 
 // ════════════════════════════════════════════════════════════
