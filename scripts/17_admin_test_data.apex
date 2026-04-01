@@ -18,6 +18,20 @@ Id adminUserId = UserInfo.getUserId();
 String adminName = UserInfo.getFirstName() + ' ' + UserInfo.getLastName();
 System.debug('Creating test data for admin user: ' + adminName + ' (' + adminUserId + ')');
 
+// ── Clean up existing admin data ──
+delete [SELECT Id FROM Order_Line_Item__c WHERE Sales_Order__r.Salesperson__c = :adminUserId];
+TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
+delete [SELECT Id FROM Sales_Order__c WHERE Salesperson__c = :adminUserId];
+TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
+TriggerHandler.bypass('OVE_Collection_TriggerHandler');
+delete [SELECT Id FROM Collection__c WHERE Collected_By__c = :adminUserId];
+TriggerHandler.clearBypass('OVE_Collection_TriggerHandler');
+delete [SELECT Id FROM Visit__c WHERE User__c = :adminUserId];
+delete [SELECT Id FROM Day_Attendance__c WHERE User__c = :adminUserId];
+delete [SELECT Id FROM Leave_Request__c WHERE Employee__c = :adminUserId];
+delete [SELECT Id FROM Target_Actual__c WHERE User__c = :adminUserId];
+System.debug('Cleaned up existing admin data');
+
 // ── Load prerequisite data ──
 Map<String, Id> terMap = new Map<String, Id>();
 for (Territory_Master__c t : [SELECT Id, Territory_Code__c FROM Territory_Master__c WHERE Is_Active__c = true]) {
