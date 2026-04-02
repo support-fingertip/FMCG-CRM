@@ -30,43 +30,45 @@ public with sharing class OrderEntryController {
             return new List<ProductSearchResult>();
         }
 
-        // Look up account channel for price resolution
+        // Look up account details for priority-based price resolution
         String channel = '';
+        Id acctTerritoryId = null;
+        Id acctIdResolved = null;
         if (String.isNotBlank(accountId)) {
             try {
-                Id acctId = Id.valueOf(accountId);
-                List<Account> accts = [SELECT Channel__c FROM Account WHERE Id = :acctId LIMIT 1];
-                if (!accts.isEmpty() && String.isNotBlank(accts[0].Channel__c)) {
-                    channel = accts[0].Channel__c;
+                acctIdResolved = Id.valueOf(accountId);
+                List<Account> accts = [SELECT Channel__c, Territory__c FROM Account WHERE Id = :acctIdResolved LIMIT 1];
+                if (!accts.isEmpty()) {
+                    if (String.isNotBlank(accts[0].Channel__c)) {
+                        channel = accts[0].Channel__c;
+                    }
+                    acctTerritoryId = accts[0].Territory__c;
                 }
             } catch (StringException e) {
-                // accountId is not a valid Salesforce Id — skip channel resolution
+                // accountId is not a valid Salesforce Id — skip account resolution
             }
         }
 
-        // Fetch active price list entries for found products
+        // Collect product IDs and category mappings for price resolution
         Set<Id> productIds = new Set<Id>();
+        Map<Id, Id> productCategoryMap = new Map<Id, Id>();
         for (Product_Extension__c p : products) {
             productIds.add(p.Id);
         }
 
-        Map<String, Price_List__c> priceListMap = new Map<String, Price_List__c>();
-        for (Price_List__c pl : [
-            SELECT Id, Product_Ext__c, Region__c, Channel__c, Unit_Price__c
-            FROM Price_List__c
-            WHERE Product_Ext__c IN :productIds
-              AND Is_Active__c = true
-              AND Effective_From__c <= TODAY
-              AND (Effective_To__c >= TODAY OR Effective_To__c = null)
-            ORDER BY Effective_From__c DESC
+        // Fetch product categories for priority-based pricing
+        for (Product_Extension__c pe : [
+            SELECT Id, Product_Category__c FROM Product_Extension__c WHERE Id IN :productIds
         ]) {
-            String regionVal = pl.Region__c != null ? String.valueOf(pl.Region__c) : '';
-            String channelVal = pl.Channel__c != null ? pl.Channel__c : '';
-            String key = String.valueOf(pl.Product_Ext__c) + '|' + regionVal + '|' + channelVal;
-            if (!priceListMap.containsKey(key)) {
-                priceListMap.put(key, pl);
+            if (pe.Product_Category__c != null) {
+                productCategoryMap.put(pe.Id, pe.Product_Category__c);
             }
         }
+
+        // Resolve prices using full priority hierarchy from Price_List__c
+        Map<Id, Decimal> resolvedPrices = resolvePricesByPriority(
+            productIds, acctIdResolved, acctTerritoryId, channel, productCategoryMap
+        );
 
         // Build results with resolved prices
         List<ProductSearchResult> results = new List<ProductSearchResult>();
@@ -78,8 +80,8 @@ public with sharing class OrderEntryController {
             r.MRP = p.MRP__c;
             r.GST_Rate = p.GST_Rate__c;
 
-            // Resolve price from price list: channel-specific > product-only > fallback to MRP
-            Decimal resolvedPrice = resolvePrice(p.Id, '', channel, priceListMap);
+            // Use priority-resolved price > product Unit_Price > MRP as fallback
+            Decimal resolvedPrice = resolvedPrices.get(p.Id);
             r.Unit_Price = resolvedPrice != null && resolvedPrice > 0
                 ? resolvedPrice
                 : (p.Unit_Price__c != null ? p.Unit_Price__c : p.MRP__c);
@@ -123,6 +125,100 @@ public with sharing class OrderEntryController {
             return priceListMap.get(key).Unit_Price__c;
         }
         return 0;
+    }
+
+    /**
+     * @description Resolves prices for a set of products using the full 8-level
+     *              priority hierarchy from Price_List__c records.
+     *              Priority levels (1=highest): Customer > Cat+Terr+Chan > Terr+Chan >
+     *              Cat+Terr > Territory > Channel > Category > Base.
+     *
+     * @param productIds Set of Product_Extension__c Ids to resolve prices for.
+     * @param accountId  The customer account Id (for customer-specific pricing).
+     * @param territoryId The territory Id from the account.
+     * @param channel    The sales channel from the account.
+     * @param productCategoryMap Map of productId to category Id.
+     * @return Map of productId to resolved unit price.
+     */
+    private static Map<Id, Decimal> resolvePricesByPriority(
+        Set<Id> productIds,
+        Id accountId,
+        Id territoryId,
+        String channel,
+        Map<Id, Id> productCategoryMap
+    ) {
+        Map<Id, Decimal> resolvedPrices = new Map<Id, Decimal>();
+        if (productIds == null || productIds.isEmpty()) {
+            return resolvedPrices;
+        }
+
+        // Fetch active price list entries ordered by priority (ascending = highest priority first)
+        List<Price_List__c> priceLists = [
+            SELECT Id, Product_Ext__c, Customer__c, Category__c,
+                   Territory__c, Channel__c, Priority__c,
+                   Unit_Price__c, Min_Qty__c
+            FROM Price_List__c
+            WHERE Product_Ext__c IN :productIds
+              AND Is_Active__c = true
+              AND Effective_From__c <= TODAY
+              AND (Effective_To__c >= TODAY OR Effective_To__c = null)
+            ORDER BY Priority__c ASC, Effective_From__c DESC
+        ];
+
+        // Group by product
+        Map<Id, List<Price_List__c>> pricesByProduct = new Map<Id, List<Price_List__c>>();
+        for (Price_List__c pl : priceLists) {
+            if (!pricesByProduct.containsKey(pl.Product_Ext__c)) {
+                pricesByProduct.put(pl.Product_Ext__c, new List<Price_List__c>());
+            }
+            pricesByProduct.get(pl.Product_Ext__c).add(pl);
+        }
+
+        // Resolve price for each product using priority-based matching
+        for (Id productId : productIds) {
+            List<Price_List__c> productPrices = pricesByProduct.get(productId);
+            if (productPrices == null || productPrices.isEmpty()) {
+                continue;
+            }
+
+            Id categoryId = productCategoryMap != null ? productCategoryMap.get(productId) : null;
+
+            for (Price_List__c pl : productPrices) {
+                Boolean matches = true;
+
+                // Customer dimension
+                if (pl.Customer__c != null) {
+                    if (accountId == null || pl.Customer__c != accountId) {
+                        matches = false;
+                    }
+                }
+                // Category dimension
+                if (matches && pl.Category__c != null) {
+                    if (categoryId == null || pl.Category__c != categoryId) {
+                        matches = false;
+                    }
+                }
+                // Territory dimension
+                if (matches && pl.Territory__c != null) {
+                    if (territoryId == null || pl.Territory__c != territoryId) {
+                        matches = false;
+                    }
+                }
+                // Channel dimension
+                if (matches && String.isNotBlank(pl.Channel__c)) {
+                    if (String.isBlank(channel) || pl.Channel__c != channel) {
+                        matches = false;
+                    }
+                }
+
+                if (matches) {
+                    resolvedPrices.put(productId, pl.Unit_Price__c);
+                    break;
+                }
+            }
+        }
+
+        return resolvedPrices;
     }
 
     @AuraEnabled
@@ -393,6 +489,27 @@ public with sharing class OrderEntryController {
             ORDER BY Classification__c, Product_Ext__r.Name
         ];
 
+        // Collect all candidate product IDs for price resolution
+        Set<Id> allMustSellProductIds = new Set<Id>();
+        for (Must_Sell_Config__c cfg : configs) {
+            allMustSellProductIds.add(cfg.Product_Ext__c);
+        }
+
+        // Fetch product categories for priority-based pricing
+        Map<Id, Id> msCategoryMap = new Map<Id, Id>();
+        for (Product_Extension__c pe : [
+            SELECT Id, Product_Category__c FROM Product_Extension__c WHERE Id IN :allMustSellProductIds
+        ]) {
+            if (pe.Product_Category__c != null) {
+                msCategoryMap.put(pe.Id, pe.Product_Category__c);
+            }
+        }
+
+        // Resolve prices using full priority hierarchy from Price_List__c
+        Map<Id, Decimal> msPriceMap = resolvePricesByPriority(
+            allMustSellProductIds, accountId, accountTerritoryId, accountChannel, msCategoryMap
+        );
+
         // Filter configs by account's territory, channel, and customer type
         Set<Id> seenProductIds = new Set<Id>();
         for (Must_Sell_Config__c cfg : configs) {
@@ -415,6 +532,12 @@ public with sharing class OrderEntryController {
             }
             seenProductIds.add(cfg.Product_Ext__c);
 
+            // Use priority-resolved price > product Unit_Price > MRP as fallback
+            Decimal resolvedUnitPrice = msPriceMap.get(cfg.Product_Ext__c);
+            Decimal unitPrice = (resolvedUnitPrice != null && resolvedUnitPrice > 0)
+                ? resolvedUnitPrice
+                : (cfg.Product_Ext__r.Unit_Price__c != null ? cfg.Product_Ext__r.Unit_Price__c : cfg.Product_Ext__r.MRP__c);
+
             Map<String, Object> item = new Map<String, Object>();
             item.put('productId', cfg.Product_Ext__c);
             item.put('productName', cfg.Product_Ext__r.Name);
@@ -430,7 +553,7 @@ public with sharing class OrderEntryController {
             item.put('orderingUOMs', cfg.Product_Ext__r.Ordering_UOMs__c);
             item.put('caseSize', cfg.Product_Ext__r.Case_Size__c);
             item.put('mrp', cfg.Product_Ext__r.MRP__c);
-            item.put('unitPrice', cfg.Product_Ext__r.Unit_Price__c);
+            item.put('unitPrice', unitPrice);
             item.put('gstRate', cfg.Product_Ext__r.GST_Rate__c);
             result.add(item);
         }
@@ -455,11 +578,43 @@ public with sharing class OrderEntryController {
             ORDER BY Priority__c
         ];
 
+        // Collect scheme product IDs for price resolution
+        Set<Id> schemeProductIds = new Set<Id>();
+        for (Scheme__c scheme : schemes) {
+            if (scheme.Scheme_Products__r == null) continue;
+            for (Scheme_Product__c sp : scheme.Scheme_Products__r) {
+                if (!seenProductIds.contains(sp.Product_Ext__c)) {
+                    schemeProductIds.add(sp.Product_Ext__c);
+                }
+            }
+        }
+
+        // Resolve prices for scheme products using priority hierarchy
+        Map<Id, Id> schemeProdCategoryMap = new Map<Id, Id>();
+        if (!schemeProductIds.isEmpty()) {
+            for (Product_Extension__c pe : [
+                SELECT Id, Product_Category__c FROM Product_Extension__c WHERE Id IN :schemeProductIds
+            ]) {
+                if (pe.Product_Category__c != null) {
+                    schemeProdCategoryMap.put(pe.Id, pe.Product_Category__c);
+                }
+            }
+        }
+        Map<Id, Decimal> schemePriceMap = resolvePricesByPriority(
+            schemeProductIds, accountId, accountTerritoryId, accountChannel, schemeProdCategoryMap
+        );
+
         for (Scheme__c scheme : schemes) {
             if (scheme.Scheme_Products__r == null) continue;
             for (Scheme_Product__c sp : scheme.Scheme_Products__r) {
                 if (seenProductIds.contains(sp.Product_Ext__c)) continue;
                 seenProductIds.add(sp.Product_Ext__c);
+
+                // Use priority-resolved price > product Unit_Price > MRP as fallback
+                Decimal spResolvedPrice = schemePriceMap.get(sp.Product_Ext__c);
+                Decimal spUnitPrice = (spResolvedPrice != null && spResolvedPrice > 0)
+                    ? spResolvedPrice
+                    : (sp.Product_Ext__r.Unit_Price__c != null ? sp.Product_Ext__r.Unit_Price__c : sp.Product_Ext__r.MRP__c);
 
                 Map<String, Object> item = new Map<String, Object>();
                 item.put('productId', sp.Product_Ext__c);
@@ -477,7 +632,7 @@ public with sharing class OrderEntryController {
                 item.put('orderingUOMs', sp.Product_Ext__r.Ordering_UOMs__c);
                 item.put('caseSize', sp.Product_Ext__r.Case_Size__c);
                 item.put('mrp', sp.Product_Ext__r.MRP__c);
-                item.put('unitPrice', sp.Product_Ext__r.Unit_Price__c);
+                item.put('unitPrice', spUnitPrice);
                 item.put('gstRate', sp.Product_Ext__r.GST_Rate__c);
                 result.add(item);
             }
@@ -490,6 +645,17 @@ public with sharing class OrderEntryController {
     public static List<ProductSearchResult> getTopSellingProducts(Id accountId) {
         // Get top selling products based on order frequency for this account's territory
         Set<Id> topProductIds = new Set<Id>();
+
+        // Fetch account details for price resolution
+        String tsChannel = '';
+        Id tsTerritoryId = null;
+        if (accountId != null) {
+            List<Account> accts = [SELECT Channel__c, Territory__c FROM Account WHERE Id = :accountId LIMIT 1];
+            if (!accts.isEmpty()) {
+                tsChannel = accts[0].Channel__c != null ? accts[0].Channel__c : '';
+                tsTerritoryId = accts[0].Territory__c;
+            }
+        }
 
         // First: top products ordered by this specific account
         for (AggregateResult ar : [
@@ -507,16 +673,11 @@ public with sharing class OrderEntryController {
 
         // If less than 10, supplement with territory-wide top sellers
         if (topProductIds.size() < 10) {
-            Id territoryId = null;
-            List<Account> accts = [SELECT Territory__c FROM Account WHERE Id = :accountId LIMIT 1];
-            if (!accts.isEmpty()) {
-                territoryId = accts[0].Territory__c;
-            }
-            if (territoryId != null) {
+            if (tsTerritoryId != null) {
                 for (AggregateResult ar : [
                     SELECT Product_Ext__c prodId, COUNT(Id) cnt
                     FROM Order_Line_Item__c
-                    WHERE Sales_Order__r.Account__r.Territory__c = :territoryId
+                    WHERE Sales_Order__r.Account__r.Territory__c = :tsTerritoryId
                       AND Sales_Order__r.Status__c != 'Cancelled'
                       AND Sales_Order__r.Order_Date__c >= :Date.today().addDays(-90)
                       AND Product_Ext__c NOT IN :topProductIds
@@ -535,15 +696,31 @@ public with sharing class OrderEntryController {
                 SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c,
                        Base_UOM__c, Base_UOM__r.UOM_Code__c, Base_UOM__r.Name,
                        Secondary_UOM__c, Secondary_UOM__r.UOM_Code__c, Secondary_UOM__r.Name,
-                       Ordering_UOMs__c, Case_Size__c
+                       Ordering_UOMs__c, Case_Size__c, Product_Category__c
                 FROM Product_Extension__c
                 WHERE Is_Active__c = true
                 ORDER BY CreatedDate DESC
                 LIMIT 10
             ];
+            Set<Id> fallbackIds = new Set<Id>();
+            Map<Id, Id> fallbackCatMap = new Map<Id, Id>();
+            for (Product_Extension__c p : fallbackProducts) {
+                fallbackIds.add(p.Id);
+                if (p.Product_Category__c != null) {
+                    fallbackCatMap.put(p.Id, p.Product_Category__c);
+                }
+            }
+            Map<Id, Decimal> fallbackPrices = resolvePricesByPriority(
+                fallbackIds, accountId, tsTerritoryId, tsChannel, fallbackCatMap
+            );
             List<ProductSearchResult> fallbackResults = new List<ProductSearchResult>();
             for (Product_Extension__c p : fallbackProducts) {
-                fallbackResults.add(buildProductSearchResult(p));
+                ProductSearchResult r = buildProductSearchResult(p);
+                Decimal resolved = fallbackPrices.get(p.Id);
+                if (resolved != null && resolved > 0) {
+                    r.Unit_Price = resolved;
+                }
+                fallbackResults.add(r);
             }
             return fallbackResults;
         }
@@ -552,14 +729,30 @@ public with sharing class OrderEntryController {
             SELECT Id, Name, SKU_Code__c, MRP__c, Unit_Price__c, GST_Rate__c, Unit_of_Measure__c,
                    Base_UOM__c, Base_UOM__r.UOM_Code__c, Base_UOM__r.Name,
                    Secondary_UOM__c, Secondary_UOM__r.UOM_Code__c, Secondary_UOM__r.Name,
-                   Ordering_UOMs__c, Case_Size__c
+                   Ordering_UOMs__c, Case_Size__c, Product_Category__c
             FROM Product_Extension__c
             WHERE Id IN :topProductIds AND Is_Active__c = true
         ];
 
+        // Resolve prices using full priority hierarchy
+        Map<Id, Id> tsCategoryMap = new Map<Id, Id>();
+        for (Product_Extension__c p : products) {
+            if (p.Product_Category__c != null) {
+                tsCategoryMap.put(p.Id, p.Product_Category__c);
+            }
+        }
+        Map<Id, Decimal> tsPriceMap = resolvePricesByPriority(
+            topProductIds, accountId, tsTerritoryId, tsChannel, tsCategoryMap
+        );
+
         List<ProductSearchResult> results = new List<ProductSearchResult>();
         for (Product_Extension__c p : products) {
-            results.add(buildProductSearchResult(p));
+            ProductSearchResult r = buildProductSearchResult(p);
+            Decimal resolved = tsPriceMap.get(p.Id);
+            if (resolved != null && resolved > 0) {
+                r.Unit_Price = resolved;
+            }
+            results.add(r);
         }
         return results;
     }
