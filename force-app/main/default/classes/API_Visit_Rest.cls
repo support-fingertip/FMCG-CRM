@@ -23,6 +23,10 @@ global with sharing class API_Visit_Rest {
                 doVisitDetail(req);
             } else if (path.endsWith('/add')) {
                 doAddVisit(req);
+            } else if (path.endsWith('/checkin')) {
+                doCheckInVisit(req);
+            } else if (path.endsWith('/checkout')) {
+                doCheckOutVisit(req);
             } else {
                 API_ResponseWrapper.sendError('Invalid endpoint.');
             }
@@ -210,6 +214,168 @@ global with sharing class API_Visit_Rest {
         insert newVisit;
 
         API_ResponseWrapper.sendSuccess('Site Visit Created Successfully', null);
+    }
+
+    // ── 7. Site Visit Check-In ─────────────────────────────────────────────────────────────────
+
+    private static void doCheckInVisit(RestRequest req) {
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(req.requestBody.toString());
+
+        String userId = (String) body.get('userId');
+        String visitId = (String) body.get('visitId');
+        String outletName = (String) body.get('outletName');
+        String checkInTimeStr = (String) body.get('checkInTime');
+        Decimal checkInLatitude = body.get('checkInlatitude') != null ? (Decimal) body.get('checkInlatitude') : null;
+        Decimal checkInLongitude = body.get('checkInlongitude') != null ? (Decimal) body.get('checkInlongitude') : null;
+        if (checkInLongitude == null && body.containsKey('CheckInlongitude')) {
+            checkInLongitude = body.get('CheckInlongitude') != null ? (Decimal) body.get('CheckInlongitude') : null;
+        }
+        Decimal checkInAccuracy = body.get('CheckInaccuracy') != null ? (Decimal) body.get('CheckInaccuracy') : null;
+        String status = (String) body.get('status');
+        Decimal distanceFromOutlet = body.get('distanceFromOutlet') != null ? (Decimal) body.get('distanceFromOutlet') : null;
+        Boolean isWithinGeofence = body.get('isWithinGeofence') != null ? (Boolean) body.get('isWithinGeofence') : false;
+        String geofenceMessage = (String) body.get('geofenceMessage');
+
+        if (String.isBlank(userId)) {
+            API_ResponseWrapper.sendError('userId is required.');
+            return;
+        }
+        if (String.isBlank(visitId)) {
+            API_ResponseWrapper.sendError('visitId is required.');
+            return;
+        }
+        if (String.isBlank(outletName)) {
+            API_ResponseWrapper.sendError('outletName is required.');
+            return;
+        }
+
+        Id sfUserId = resolveUserId(userId);
+        if (sfUserId == null) {
+            API_ResponseWrapper.sendError('User not found.');
+            return;
+        }
+
+        List<Visit__c> visits = [
+            SELECT Id, Account__r.Name, Visit_Status__c
+            FROM Visit__c
+            WHERE Name = :visitId
+              AND OwnerId = :sfUserId
+              AND Account__r.Name = :outletName
+            LIMIT 1
+        ];
+
+        if (visits.isEmpty()) {
+            API_ResponseWrapper.sendError('Visit not found for userId/account/outletName.');
+            return;
+        }
+
+        Visit__c visitRec = visits[0];
+
+        if (String.isNotBlank(checkInTimeStr)) {
+            try {
+                visitRec.Check_In_Time__c = DateTime.valueOf(checkInTimeStr);
+            } catch (Exception e) {
+                API_ResponseWrapper.sendError('Invalid checkInTime format. Use yyyy-MM-ddTHH:mm:ss');
+                return;
+            }
+        }
+
+        if (checkInLatitude != null) visitRec.Check_In_Latitude__c = checkInLatitude;
+        if (checkInLongitude != null) visitRec.Check_In_Longitude__c = checkInLongitude;
+        if (checkInAccuracy != null) visitRec.Check_In_Accuracy__c = checkInAccuracy;
+       // if (String.isNotBlank(status)) visitRec.Visit_Status__c = status;
+        if (distanceFromOutlet != null) visitRec.Distance_To_Outlet__c = distanceFromOutlet;
+        visitRec.Is_Geo_Fenced__c = isWithinGeofence;
+        if (String.isNotBlank(geofenceMessage)) visitRec.Geo_Fence_Override_Reason__c = geofenceMessage;
+
+        update visitRec;
+
+        API_ResponseWrapper.sendSuccess('Visit checked in successfully', null);
+    }
+
+    // ── 8. Site Visit Check-Out ─────────────────────────────────────────────────────────────────
+
+    private static void doCheckOutVisit(RestRequest req) {
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(req.requestBody.toString());
+
+        String userId = (String) body.get('userId');
+        String visitId = (String) body.get('visitId');
+        String accountName = (String) body.get('accountName');
+        if (String.isBlank(accountName)) {
+            accountName = (String) body.get('accoutName');
+        }
+
+        String checkOutTimeStr = (String) body.get('checkOutTime');
+        Decimal checkOutLatitude = body.get('checkOutlatitude') != null ? (Decimal) body.get('checkOutlatitude') : null;
+        if (checkOutLatitude == null && body.containsKey('lcheckOutongitude')) {
+            // fallback if the typo field indicates wrong key; no latitude available there
+            checkOutLatitude = body.get('checkOutlatitude') != null ? (Decimal) body.get('checkOutlatitude') : null;
+        }
+        Decimal checkOutLongitude = body.get('checkOutlongitude') != null ? (Decimal) body.get('checkOutlongitude') : null;
+        if (checkOutLongitude == null && body.containsKey('lcheckOutongitude')) {
+            checkOutLongitude = body.get('lcheckOutongitude') != null ? (Decimal) body.get('lcheckOutongitude') : null;
+        }
+
+        String comments = (String) body.get('comments');
+
+        if (String.isBlank(userId)) {
+            API_ResponseWrapper.sendError('userId is required.');
+            return;
+        }
+        if (String.isBlank(visitId)) {
+            API_ResponseWrapper.sendError('visitId is required.');
+            return;
+        }
+        if (String.isBlank(accountName)) {
+            API_ResponseWrapper.sendError('accountName is required.');
+            return;
+        }
+
+        Id sfUserId = resolveUserId(userId);
+        if (sfUserId == null) {
+            API_ResponseWrapper.sendError('User not found.');
+            return;
+        }
+
+        List<Visit__c> visits = [
+            SELECT Id, Account__r.Name
+            FROM Visit__c
+            WHERE Name = :visitId
+              AND OwnerId = :sfUserId
+              AND Account__r.Name = :accountName
+            LIMIT 1
+        ];
+
+        if (visits.isEmpty()) {
+            API_ResponseWrapper.sendError('Visit not found for userId/accountName/visitId.');
+            return;
+        }
+
+        Visit__c visitRec = visits[0];
+
+        if (String.isNotBlank(checkOutTimeStr)) {
+            try {
+                visitRec.Check_Out_Time__c = DateTime.valueOf(checkOutTimeStr);
+            } catch (Exception e) {
+                API_ResponseWrapper.sendError('Invalid checkOutTime format. Use yyyy-MM-ddTHH:mm:ss');
+                return;
+            }
+        }
+/*
+        if (checkOutLatitude != null) {
+          //  visitRec.Check_Out_Lat__c = checkOutLatitude;
+        }
+        if (checkOutLongitude != null) {
+          //  visitRec.Check_Out_Long__c = checkOutLongitude;
+        }
+        */
+        if (String.isNotBlank(comments)) {
+            visitRec.Notes__c = comments;
+        }
+
+        update visitRec;
+
+        API_ResponseWrapper.sendSuccess('Visit checked out successfully', null);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

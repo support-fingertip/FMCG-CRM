@@ -180,6 +180,31 @@ global with sharing class API_Dashboard_Rest {
     private static List<Map<String, Object>> buildLeaderboard() {
         List<Map<String, Object>> board = new List<Map<String, Object>>();
 
+        // Static leaderboard values (requested by user)
+        board.add(new Map<String, Object>{
+            'id' => 'a2C000001ABC123',
+            'rank' => 1,
+            'name' => 'Amal Perera',
+            'region' => 'Western',
+            'achieved' => 520000,
+            'target' => 400000,
+            'rankChange' => 2,
+            'month' => '2026-04'
+        });
+
+        board.add(new Map<String, Object>{
+            'id' => 'a2C000001ABC456',
+            'rank' => 2,
+            'name' => 'Kamal Silva',
+            'region' => 'Central',
+            'achieved' => 465000,
+            'target' => 400000,
+            'rankChange' => 0,
+            'month' => '2026-04'
+        });
+
+        // Previous dynamic leaderboard logic retained as comment for future reference
+        /*
         Date today = Date.today();
         String monthStr = getMonthName(today.month());
         String yearStr = String.valueOf(today.year());
@@ -202,6 +227,7 @@ global with sharing class API_Dashboard_Rest {
             entry.put('achievementPercentage', t.Achievement_Percent__c);
             board.add(entry);
         }
+        */
 
         return board;
     }
