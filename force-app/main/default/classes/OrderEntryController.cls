@@ -653,6 +653,8 @@ public with sharing class OrderEntryController {
         Decimal factor = UOM_Conversion_Service.getConversionFactor(productId, fromUomCode, toUomCode);
         result.put('conversionFactor', factor);
         result.put('convertedQuantity', quantity != null ? quantity * factor : 0);
+        // Flag: 1 = valid conversion found, 0 = defaulted to 1 (no rule)
+        result.put('hasConversion', (fromUomCode == toUomCode || factor != 1) ? 1 : 0);
         return result;
     }
 

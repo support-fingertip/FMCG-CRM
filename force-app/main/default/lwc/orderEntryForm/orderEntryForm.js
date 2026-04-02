@@ -1205,8 +1205,23 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 convFactor = result.conversionFactor || 1;
                 baseQty = result.convertedQuantity || item.quantity;
                 baseQtyLabel = '= ' + baseQty + ' ' + baseUOMCode;
+
+                // Warn if no conversion rule was found
+                if (!result.hasConversion) {
+                    this.showToast(
+                        'Warning',
+                        'No UOM conversion rule found from ' + newUOMCode + ' to ' + baseUOMCode +
+                        ' for ' + item.productName + '. Please set up a conversion rule to get accurate pricing.',
+                        'warning'
+                    );
+                }
             } catch (error) {
                 console.error('UOM conversion error:', error);
+                this.showToast(
+                    'Error',
+                    'UOM conversion failed: ' + (error.body ? error.body.message : error.message || 'Unknown error'),
+                    'error'
+                );
                 convFactor = 1;
                 baseQty = item.quantity;
             }
@@ -1251,6 +1266,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         // Unit price is per base UOM, so pricing must use base quantity
         const grossAmount = baseQuantity * item.rate;
 
+        // Effective rate per selected UOM (for display purposes)
+        const effectiveRate = item.rate * convFactor;
+
         // Use base quantity for scheme discount calculation (UOM-aware)
         const effectiveQtyForScheme = scheme ? this.convertQtyForScheme(item.quantity, { ...item, baseQuantity }, scheme) : baseQuantity;
         const discountAmount = scheme ? this.calculateSchemeDiscount(grossAmount, effectiveQtyForScheme, scheme) : 0;
@@ -1265,6 +1283,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             baseQuantityLabel: baseQuantityLabel,
             freeQty: freeQty,
             grossAmount: grossAmount,
+            rateFormatted: this.formatCurrency(effectiveRate),
             discountAmount: discountAmount,
             discountFormatted: this.formatCurrency(discountAmount),
             taxAmount: taxAmount,
