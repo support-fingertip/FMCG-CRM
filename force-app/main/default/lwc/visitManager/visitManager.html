@@ -509,52 +509,6 @@
             <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
 
-        <!-- AD-HOC MODAL -->
-        <template if:true={showAdHocModal}>
-            <section class="slds-modal slds-fade-in-open">
-                <div class="slds-modal__container">
-                    <header class="slds-modal__header">
-                        <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
-                            class="slds-modal__close" onclick={handleAdHocClose}></lightning-button-icon>
-                        <h2 class="slds-modal__title">Ad-Hoc Visit</h2>
-                    </header>
-                    <div class="slds-modal__content slds-p-around_medium">
-                        <p class="slds-m-bottom_small">Search by customer name or customer code:</p>
-                        <div class="vm-search-wrapper">
-                            <lightning-input label="Search Outlet" value={adHocSearchTerm}
-                                placeholder="Customer name or code..." onchange={handleAdHocSearch}></lightning-input>
-                            <template if:true={showAdHocDropdown}>
-                                <div class="vm-dropdown vm-dropdown-modal">
-                                    <template for:each={adHocSearchResults} for:item="outlet">
-                                        <div key={outlet.id} class="vm-dropdown-item" data-id={outlet.id} onclick={handleAdHocSelect}>
-                                            <span class="vm-dropdown-name">{outlet.name}</span>
-                                            <span class="vm-dropdown-sub">{outlet.code} - {outlet.address}</span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                        <template if:true={adHocSelectedAccount}>
-                            <div class="vm-selected-box slds-m-top_small">
-                                <span class="vm-selected-name">{adHocSelectedAccount.name}</span>
-                                <span class="vm-selected-sub">{adHocSelectedAccount.code} - {adHocSelectedAccount.address}</span>
-                            </div>
-                        </template>
-                        <div class="slds-m-top_small">
-                            <lightning-combobox label="Reason" value={adHocReason}
-                                options={adHocReasonOptions} onchange={handleAdHocReasonChange}
-                                placeholder="Select reason..."></lightning-combobox>
-                        </div>
-                    </div>
-                    <footer class="slds-modal__footer">
-                        <button class="slds-button slds-button_neutral" onclick={handleAdHocClose}>Cancel</button>
-                        <button class="slds-button slds-button_brand" onclick={handleAdHocConfirm} disabled={adHocSubmitDisabled}>Check In</button>
-                    </footer>
-                </div>
-            </section>
-            <div class="slds-backdrop slds-backdrop_open"></div>
-        </template>
-
         <!-- END DAY MODAL -->
         <template if:true={showEndDayModal}>
             <section class="slds-modal slds-fade-in-open">
@@ -1483,6 +1437,52 @@
                 </div>
             </template>
         </div>
+    </template>
+
+    <!-- AD-HOC MODAL (global — accessible from any screen) -->
+    <template if:true={showAdHocModal}>
+        <section class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close" variant="bare-inverse"
+                        class="slds-modal__close" onclick={handleAdHocClose}></lightning-button-icon>
+                    <h2 class="slds-modal__title">Ad-Hoc Visit</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p class="slds-m-bottom_small">Search by customer name or customer code:</p>
+                    <div class="vm-search-wrapper">
+                        <lightning-input label="Search Outlet" value={adHocSearchTerm}
+                            placeholder="Customer name or code..." onchange={handleAdHocSearch}></lightning-input>
+                        <template if:true={showAdHocDropdown}>
+                            <div class="vm-dropdown vm-dropdown-modal">
+                                <template for:each={adHocSearchResults} for:item="outlet">
+                                    <div key={outlet.id} class="vm-dropdown-item" data-id={outlet.id} onclick={handleAdHocSelect}>
+                                        <span class="vm-dropdown-name">{outlet.name}</span>
+                                        <span class="vm-dropdown-sub">{outlet.code} - {outlet.address}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <template if:true={adHocSelectedAccount}>
+                        <div class="vm-selected-box slds-m-top_small">
+                            <span class="vm-selected-name">{adHocSelectedAccount.name}</span>
+                            <span class="vm-selected-sub">{adHocSelectedAccount.code} - {adHocSelectedAccount.address}</span>
+                        </div>
+                    </template>
+                    <div class="slds-m-top_small">
+                        <lightning-combobox label="Reason" value={adHocReason}
+                            options={adHocReasonOptions} onchange={handleAdHocReasonChange}
+                            placeholder="Select reason..."></lightning-combobox>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={handleAdHocClose}>Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={handleAdHocConfirm} disabled={adHocSubmitDisabled}>Check In</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
     <!-- Spinner Overlay -->
