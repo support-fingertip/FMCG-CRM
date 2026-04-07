@@ -57,10 +57,6 @@ global without sharing class API_Collection_Rest {
                 API_ResponseWrapper.sendError('visitId is required.');
                 return;
             }
-            if (String.isBlank(collectionDateStr)) {
-                API_ResponseWrapper.sendError('collectionDate is required.');
-                return;
-            }
 
             if (totalAmount == null || totalAmount <= 0) {
                 API_ResponseWrapper.sendError('totalAmount must be greater than zero.');
@@ -72,7 +68,7 @@ global without sharing class API_Collection_Rest {
             }
 
             // Resolve employee
-            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
             if (employees.isEmpty()) {
                 API_ResponseWrapper.sendError('Employee not found.');
                 return;
@@ -88,7 +84,7 @@ global without sharing class API_Collection_Rest {
             Account account = accounts[0];
 
             // Resolve visit
-            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :visitId AND Account__c = :account.Id LIMIT 1];
+            List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :visitId ];
             if (visits.isEmpty()) {
                 API_ResponseWrapper.sendError('Visit not found for this account.');
                 return;
@@ -105,14 +101,14 @@ global without sharing class API_Collection_Rest {
             }
 
             Collection__c collection = new Collection__c();
-            collection.Account__c = account.Id;
+            collection.Account__c = visit.Account__c;
             collection.Visit__c = visit.Id;
             collection.Collection_Date__c = collectionDateTime.date();
             collection.Amount__c = totalAmount;
             collection.Payment_Mode__c = paymentMode;
             collection.Receipt_Number__c = referenceNumber;
             collection.Notes__c = remarks;
-            collection.Salesperson__c = emp.Id;
+            collection.Salesperson__c = emp.User__c;
             collection.Status__c = 'Collected';
             insert collection;
 
@@ -131,18 +127,20 @@ global without sharing class API_Collection_Rest {
 
                 Map<String, Sales_Order__c> orderMap = new Map<String, Sales_Order__c>();
                 if (!orderNames.isEmpty()) {
+                    System.debug(orderNames);
                     for (Sales_Order__c so : [
                         SELECT Id, Name, Account__c, Visit__c
                         FROM Sales_Order__c
                         WHERE Name IN :orderNames
-                          AND Account__c = :account.Id
+                          AND Account__c = :visit.Account__c
                           AND Visit__c = :visit.Id
                     ]) {
                         orderMap.put(so.Name, so);
                     }
                 }
-
+                System.debug(invoiceList + ' - ' + orderMap + ' - ' + visit.Account__c + ' - ' + visit.Id);
                 for (Object invObj : invoiceList) {
+                    System.debug('Processing invoice object: ' + invObj);
                     Map<String, Object> invMap = (Map<String, Object>)invObj;
                     String orderName = (String)invMap.get('orderId');
                     String invoiceDateStr = (String)invMap.get('invoiceDate');
@@ -150,26 +148,27 @@ global without sharing class API_Collection_Rest {
                     Decimal paidAmount = (invMap.containsKey('paidAmount') && invMap.get('paidAmount') != null) ? (Decimal)invMap.get('paidAmount') : null;
 
                     if (String.isBlank(orderName) || String.isBlank(invoiceDateStr) || invoiceAmount == null || paidAmount == null) {
-                        continue;
+                       continue;
                     }
 
                     if (!orderMap.containsKey(orderName)) {
-                        continue;
+                       continue;
                     }
-
+                        System.debug('Found matching order for invoice: ' + orderName);
                     Sales_Order__c linkedOrder = orderMap.get(orderName);
-
+                    System.debug('Linking invoice to order: ' + linkedOrder.Id);
                     Invoice__c invoice = new Invoice__c();
                     invoice.Account__c = account.Id;
                     invoice.Sales_Order__c = linkedOrder.Id;
+                    invoice.Collection__c = collection.Id;
                     invoice.Invoice_Date__c = Date.valueOf(invoiceDateStr);
                     invoice.Total_Amount__c = invoiceAmount;
                     invoice.Balance_Due__c = invoiceAmount - paidAmount;
-                    invoice.Status__c = (invoice.Balance_Due__c != null && invoice.Balance_Due__c == 0) ? 'Fully Paid' : 'Partially Paid';
+                   // invoice.Status__c = (invoice.Balance_Due__c != null && invoice.Balance_Due__c == 0) ? 'Fully Paid' : 'Partially Paid';
                     invoice.Net_Amount__c = paidAmount;
                     invoicesToInsert.add(invoice);
                 }
-
+                System.debug('Prepared ' + invoicesToInsert.size() + ' invoices to insert.');
                 if (!invoicesToInsert.isEmpty()) {
                     insert invoicesToInsert;
                 }
@@ -217,7 +216,7 @@ try {
             return;
         }
 
-        List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+        List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
         if (employees.isEmpty()) {
             API_ResponseWrapper.sendError('Employee not found.');
             return;
@@ -231,7 +230,7 @@ try {
         }
         Id accId = accounts[0].Id;
 
-        List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :siteVisitId AND Account__c = :accId LIMIT 1];
+        List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :siteVisitId  LIMIT 1];
         if (visits.isEmpty()) {
             API_ResponseWrapper.sendError('Visit not found.');
             return;
@@ -241,9 +240,9 @@ try {
         List<Collection__c> collections = [
             SELECT Id, Name, Amount__c, Collection_Date__c, Payment_Mode__c, Receipt_Number__c, Status__c,CreatedDAte
             FROM Collection__c
-            WHERE Account__c = :accId
+            WHERE Account__c = :visits[0].Account__c
               AND Visit__c = :visitRecId
-              AND Salesperson__c = :empId
+              AND Salesperson__c = :employees[0].User__c
             ORDER BY Collection_Date__c DESC
         ];
 
