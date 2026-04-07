@@ -78,7 +78,7 @@ global without sharing class API_Ticket_Rest {
             }
             
 
-            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
             if (employees.isEmpty()) {
                 API_ResponseWrapper.sendError('Employee not found for userId.');
                 return;
@@ -92,7 +92,7 @@ global without sharing class API_Ticket_Rest {
             }
             Id accountId = accounts[0].Id;
 
-            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :visitId AND Account__c = :accountId LIMIT 1];
+            List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :visitId  LIMIT 1];
             if (visits.isEmpty()) {
                 API_ResponseWrapper.sendError('Visit not found for visitId.');
                 return;
@@ -100,8 +100,8 @@ global without sharing class API_Ticket_Rest {
             Id visitRecordId = visits[0].Id;
 
             Ticket__c ticket = new Ticket__c(
-               Reported_By__c = employeeId,
-                Account__c = accountId,
+               Reported_By__c = employees[0].User__c,
+                Account__c = visits[0].Account__c,
                 Visit__c = visitRecordId,
                 Subject__c = subject,
                 Category__c = category,
@@ -142,7 +142,7 @@ global without sharing class API_Ticket_Rest {
                 return;
             }
 
-            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
             if (employees.isEmpty()) {
                 API_ResponseWrapper.sendError('Employee not found.');
                 return;
@@ -156,7 +156,7 @@ global without sharing class API_Ticket_Rest {
             }
             Id accId = accounts[0].Id;
 
-            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :siteVisitId AND Account__c = :accId LIMIT 1];
+            List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :siteVisitId  LIMIT 1];
             if (visits.isEmpty()) {
                 API_ResponseWrapper.sendError('Visit not found.');
                 return;
@@ -166,8 +166,8 @@ global without sharing class API_Ticket_Rest {
             List<Ticket__c> tickets = [
                 SELECT Id, Name, Subject__c, Category__c, Priority__c, Status__c, CreatedDate
                 FROM Ticket__c
-                WHERE Reported_By__c = :empId
-                  AND Account__c = :accId
+                WHERE Reported_By__c = :employees[0].User__c
+                  AND Account__c = :visits[0].Account__c
                   AND Visit__c = :visitRecId
                 ORDER BY CreatedDate DESC
             ];
