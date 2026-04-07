@@ -311,9 +311,9 @@ global with sharing class API_Visit_Rest {
 
         String userId = (String) body.get('userId');
         String visitId = (String) body.get('visitId');
-        String accountName = (String) body.get('accountName');
-        if (String.isBlank(accountName)) {
-            accountName = (String) body.get('accoutName');
+        String outletName = (String) body.get('outletName');
+        if (String.isBlank(outletName)) {
+            outletName = (String) body.get('outletName');
         }
 
         String checkOutTimeStr = (String) body.get('checkOutTime');
@@ -337,8 +337,8 @@ global with sharing class API_Visit_Rest {
             API_ResponseWrapper.sendError('visitId is required.');
             return;
         }
-        if (String.isBlank(accountName)) {
-            API_ResponseWrapper.sendError('accountName is required.');
+        if (String.isBlank(outletName)) {
+            API_ResponseWrapper.sendError('outletName is required.');
             return;
         }
 
@@ -353,12 +353,12 @@ global with sharing class API_Visit_Rest {
             FROM Visit__c
             WHERE Name = :visitId
               AND OwnerId = :sfUserId
-              AND Account__r.Name = :accountName
+              AND Account__r.Name = :outletName
             LIMIT 1
         ];
 
         if (visits.isEmpty()) {
-            API_ResponseWrapper.sendError('Visit not found for userId/accountName/visitId.');
+            API_ResponseWrapper.sendError('Visit not found for userId/outletName/visitId.');
             return;
         }
 

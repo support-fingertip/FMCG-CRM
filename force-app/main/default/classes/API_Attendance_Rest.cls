@@ -52,7 +52,7 @@ global without sharing class API_Attendance_Rest {
             }
 
             // Validate Employee
-            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
             if (employees.isEmpty()) {
                 API_ResponseWrapper.sendError('Employee not found.');
                 return;
@@ -61,7 +61,7 @@ global without sharing class API_Attendance_Rest {
 
             // Create Day Attendance record
             Day_Attendance__c da = new Day_Attendance__c();
-            da.Companion__c = emp.Id;
+            da.Salesperson__c = emp.User__c;
             da.Attendance_Date__c = Date.valueOf((String)input.get('date'));
             //da.Is_Late__c = (Boolean)input.get('isLate');
             //da.Late_By_Minutes__c = (Decimal)input.get('lateByMinutes');
@@ -105,7 +105,7 @@ global without sharing class API_Attendance_Rest {
             }
 
             // Validate Employee
-            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
             if (employees.isEmpty()) {
                 API_ResponseWrapper.sendError('Employee not found.');
                 return;
@@ -113,7 +113,7 @@ global without sharing class API_Attendance_Rest {
             Employee__c emp = employees[0];
 
             // Fetch Day Attendance record
-            List<Day_Attendance__c> attendances = [SELECT Id FROM Day_Attendance__c WHERE Id = :attendanceId AND Companion__c = :emp.Id LIMIT 1];
+            List<Day_Attendance__c> attendances = [SELECT Id FROM Day_Attendance__c WHERE Id = :attendanceId AND Salesperson__c = :emp.User__c LIMIT 1];
             if (attendances.isEmpty()) {
                 API_ResponseWrapper.sendError('Attendance record not found.');
                 return;
