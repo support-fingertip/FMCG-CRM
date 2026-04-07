@@ -308,20 +308,21 @@ global without sharing class API_SalesOrder_Rest {
             }
 
             // Validate employee
-            List<Employee__c> employees = [SELECT Id FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
+            List<Employee__c> employees = [SELECT Id,User__c FROM Employee__c WHERE Name = :userId OR User__c = :userId LIMIT 1];
             if (employees.isEmpty()) {
                 API_ResponseWrapper.sendError('Employee not found.');
                 return;
             }
 
             // Validate visit
-            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :siteVisitId LIMIT 1];
+            List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :siteVisitId AND OwnerId = :employees[0].User__c
+              AND Account__r.Name = :accountId LIMIT 1];
             if (visits.isEmpty()) {
                 API_ResponseWrapper.sendError('Site Visit not found.');
                 return;
             }
             Visit__c visit = visits[0];
-
+            System.debug('Found visit: ' + visit.Id);
             // Validate account
             List<Account> accounts = [SELECT Id FROM Account WHERE Name = :accountId OR AccountNumber = :accountId LIMIT 1];
             if (accounts.isEmpty()) {
@@ -329,12 +330,12 @@ global without sharing class API_SalesOrder_Rest {
                 return;
             }
             Account account = accounts[0];
-
+            System.debug('Found account: ' + account.Id);
             List<Sales_Order__c> salesOrders = [
                 SELECT Id, Name, Order_Date__c, Total_Net_Amount__c, Status__c,
                        (SELECT Id FROM Order_Line_Items__r)
                 FROM Sales_Order__c
-                WHERE Visit__c = :visit.Id AND Account__c = :account.Id
+                WHERE Visit__c = :visit.Id AND Account__c = :visit.Account__c
                 ORDER BY Order_Date__c DESC
             ];
 
@@ -359,7 +360,7 @@ global without sharing class API_SalesOrder_Rest {
                 'orders' => orders
             };
 
-            API_ResponseWrapper.sendSuccess('Orders fetched successfully' + salesOrders.Size(), data);
+            API_ResponseWrapper.sendSuccess('Orders fetched successfully', data);
         } catch (Exception e) {
             API_ResponseWrapper.sendServerError(e.getMessage());
         }
