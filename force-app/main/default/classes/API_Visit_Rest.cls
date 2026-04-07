@@ -89,7 +89,8 @@ global with sharing class API_Visit_Rest {
         List<Map<String, Object>> dataList = new List<Map<String, Object>>();
         for (Visit__c v : visits) {
             Map<String, Object> item = new Map<String, Object>();
-            item.put('AccoutName', v.Account__r != null ? v.Account__r.Name : '');
+            item.put('accoutName', v.Account__r != null ? v.Account__r.Name : '');
+            item.put('siteVisitId', v.Name != null ? v.Name : '');
             item.put('status', v.Visit_Status__c);
             item.put('scheduleDate', v.Visit_Date__c != null ? String.valueOf(v.Visit_Date__c) : '');
             dataList.add(item);
@@ -205,11 +206,11 @@ global with sharing class API_Visit_Rest {
         newVisit.Salesperson__c = sfUserId;
         newVisit.Account__c = accountId;
         newVisit.Visit_Date__c = Date.today();
-        newVisit.Visit_Status__c = 'Pending';
+        newVisit.Visit_Status__c = 'Planned';
         newVisit.Is_Planned__c = false;
         newVisit.Is_Ad_Hoc__c = true;
         newVisit.Notes__c = notes;
-        newVisit.Ad_Hoc_Reason__c = purpose;
+        newVisit.Purpose__c = purpose;
 
         insert newVisit;
 
@@ -224,7 +225,17 @@ global with sharing class API_Visit_Rest {
         String userId = (String) body.get('userId');
         String visitId = (String) body.get('visitId');
         String outletName = (String) body.get('outletName');
-        String checkInTimeStr = (String) body.get('checkInTime');
+        DateTime checkInTimeStr = null;
+        String checkInTimeRaw = (String)body.get('checkInTime');
+        if (String.isNotBlank(checkInTimeRaw)) {
+            try {
+                // Parse ISO 8601 format: "2026-04-06T15:30:00Z"
+                String formatted = checkInTimeRaw.replace('Z', '').replace('T', ' ');
+                checkInTimeStr = DateTime.valueOfGmt(formatted);
+            } catch (Exception e) {
+                checkInTimeStr = null;
+            }
+        }
         Decimal checkInLatitude = body.get('checkInlatitude') != null ? (Decimal) body.get('checkInlatitude') : null;
         Decimal checkInLongitude = body.get('checkInlongitude') != null ? (Decimal) body.get('checkInlongitude') : null;
         if (checkInLongitude == null && body.containsKey('CheckInlongitude')) {
@@ -271,9 +282,9 @@ global with sharing class API_Visit_Rest {
 
         Visit__c visitRec = visits[0];
 
-        if (String.isNotBlank(checkInTimeStr)) {
+        if (checkInTimeStr!=null) {
             try {
-                visitRec.Check_In_Time__c = DateTime.valueOf(checkInTimeStr);
+                visitRec.Check_In_Time__c = checkInTimeStr;
             } catch (Exception e) {
                 API_ResponseWrapper.sendError('Invalid checkInTime format. Use yyyy-MM-ddTHH:mm:ss');
                 return;
@@ -355,9 +366,11 @@ global with sharing class API_Visit_Rest {
 
         if (String.isNotBlank(checkOutTimeStr)) {
             try {
-                visitRec.Check_Out_Time__c = DateTime.valueOf(checkOutTimeStr);
+                // Parse ISO 8601 format: "2026-04-06T15:30:00Z"
+                String formatted = checkOutTimeStr.replace('Z', '').replace('T', ' ');
+                visitRec.Check_Out_Time__c = DateTime.valueOfGmt(formatted);
             } catch (Exception e) {
-                API_ResponseWrapper.sendError('Invalid checkOutTime format. Use yyyy-MM-ddTHH:mm:ss');
+                API_ResponseWrapper.sendError('Invalid checkOutTime format. Use ISO 8601 format (yyyy-MM-ddTHH:mm:ssZ)');
                 return;
             }
         }
