@@ -276,120 +276,294 @@ Rajesh Kapoor (NSM, L1, ₹1,20,000) — All India
 
 ---
 
-## Step 6: Create Sales Orders
+## Step 6: Verify Price List Priority Pricing
 
-### 6.1 Create a Visit
+Before creating orders, verify the 8-level price list priority system is working correctly.
+
+### 6.1 How Price Resolution Works
+The system resolves prices in this priority order (lowest number = highest priority):
+
+| Priority | Level | Price Rule | Example |
+|---|---|---|---|
+| 1 | Customer-wise | Specific distributor/account | Sharma Distributors → 50% of MRP |
+| 2 | Category + Territory + Channel | 3-dimension match | Snacks + Delhi + GT → 58% of MRP |
+| 3 | Territory + Channel | 2-dimension match | Delhi GT → 72%, Mumbai MT → 55% |
+| 4 | Category + Territory | 2-dimension match | Snacks + Delhi → 62% of MRP |
+| 5 | Territory-wise | Territory only | Delhi → 73.5%, Mumbai → 68% |
+| 6 | Channel-wise | Channel only | MT → 60%, E-Commerce → 100% |
+| 7 | Category-wise | Category only | Snacks → 65% of MRP |
+| 8 | Base price | No dimensions (fallback) | All products → 70% of MRP |
+
+### 6.2 Verify with Example Product
+Take **Crispy Masala Chips 150g** (MRP ₹30, Unit_Price ₹21):
+
+| Scenario | Account | Expected Price | Why |
+|---|---|---|---|
+| GT Retailer in Delhi | Lakshmi General Store | ₹17.40 (58%) | Priority 2: Snacks + Delhi + GT |
+| MT Store in Mumbai | HyperBazaar Mumbai | ₹16.50 (55%) | Priority 3: Mumbai + MT |
+| GT Retailer in Bangalore | Gupta Mart | ₹21.00 (70%) | Priority 8: Base price (no territory/channel rule) |
+| Distributor (Delhi) | Sharma Distributors | ₹15.00 (50%) | Priority 1: Customer-wise |
+
+**How to test:** Search for the product in Order Entry on each account — the displayed price should match the above.
+
+> **Note:** Prices come from `Price_List__c` records. If no matching price list entry exists, the system falls back to `product.Unit_Price__c`, then `product.MRP__c`.
+
+---
+
+## Step 7: Create Sales Orders
+
+### 7.1 Create a Visit
 1. Go to **Visit Manager tab**
-2. Start Day Attendance (check in)
-3. Select an account/outlet
-4. Check in to the visit
+2. Click **Start Day** → Attendance record created with GPS, time
+3. Select beat **BT-DEL-001** (Delhi) → Click **Confirm Beat**
+4. On the Visit Board, find a planned outlet (e.g., **Lakshmi General Store**)
+5. Click **Check In** → Visit starts with GPS capture
+6. Alternatively, click **Ad-Hoc Visit** to visit an outlet outside the beat plan
 
-### 6.2 Create Order During Visit
-1. From the visit, click **Create Order**
-2. Select products from seed data:
+### 7.2 Create Order 1 — GT Retailer in Delhi (Must-Sell + Scheme Test)
+Account: **Lakshmi General Store** (GT, Delhi, Grocery, Class A)
 
-| Product | SKU | UOM | Qty | Unit Price | Line Total |
+From the active visit, click **Create Order** and add these products:
+
+| # | Product | SKU | UOM | Qty | Base Qty | Unit Price | GST | Line Total |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Crispy Masala Chips 150g | FF-SNK-001 | BOX | 2 | 96 PCS | ₹21.00 | 12% | ₹2,016.00 |
+| 2 | Classic Cream Biscuits 200g | FF-BIS-001 | PCS | 24 | 24 PCS | ₹17.50 | 18% | ₹420.00 |
+| 3 | Instant Noodles Masala 70g | FF-NDL-001 | PCS | 24 | 24 PCS | ₹9.80 | 18% | ₹235.20 |
+| 4 | Fresh Mint Toothpaste 150g | FF-ORL-001 | PCS | 12 | 12 PCS | ₹45.50 | 28% | ₹546.00 |
+| 5 | Power Wash Detergent 1kg | FF-DET-001 | PCS | 6 | 6 PCS | ₹94.50 | 18% | ₹567.00 |
+| 6 | Fresh Mango Juice 1L | FF-JUC-001 | PCS | 6 | 6 PCS | ₹84.00 | 12% | ₹504.00 |
+
+**Verify these auto-calculations:**
+
+**UOM Conversion (Line 1):**
+- Order UOM: BOX, Qty: 2
+- Product-specific conversion: 1 BOX = 48 PCS (from `Case_Size__c = 48`)
+- Base Quantity = 2 × 48 = **96 PCS**
+- Line Total = 96 × ₹21.00 = ₹2,016.00
+- Label shows "= 96 PCS" below the UOM dropdown
+
+**Must-Sell Compliance:**
+- National must-sell products in this order: Chips (✓ 96 ≥ 12), Biscuits (✓ 24 ≥ 12), Noodles (✓ 24 ≥ 24), Toothpaste (✓ 12 ≥ 6), Detergent (✓ 6 ≥ 6)
+- All 5 national must-sell products included with min qty met → **100% compliance**
+
+**Scheme Evaluation:**
+- **SCH-2026-003** "Snacks & Noodles 3% Off": Chips + Noodles qualify → 3% off on ₹2,251.20 = **-₹67.54**
+- **SCH-2026-001** "Chips Buy 3 Get 1 Free": Base qty 96 ≥ min 3 → slab 50-999 gives **12 free** Classic Salted Chips 75g
+- **SCH-2026-006** "Juice Qty Reward Points": 6 packs of juice ≥ min 6 → **300 reward points**
+
+**Tax Calculation:**
+| Line | Taxable Amount | GST Rate | CGST | SGST | Tax |
 |---|---|---|---|---|---|
-| Crispy Masala Chips 150g | FF-SNK-001 | BOX | 2 | ₹21 × 48 | ₹2,016 |
-| Classic Cream Biscuits 200g | FF-BIS-001 | PCS | 24 | ₹17.50 | ₹420 |
-| Power Wash Detergent 1kg | FF-DET-001 | PCS | 12 | ₹95 | ₹1,140 |
-| Fresh Mango Juice 1L | FF-JUC-001 | PCS | 6 | ₹55 | ₹330 |
+| Chips | ₹2,016.00 | 12% | ₹120.96 | ₹120.96 | ₹241.92 |
+| Biscuits | ₹420.00 | 18% | ₹37.80 | ₹37.80 | ₹75.60 |
+| Noodles | ₹235.20 | 18% | ₹21.17 | ₹21.17 | ₹42.34 |
+| Toothpaste | ₹546.00 | 28% | ₹76.44 | ₹76.44 | ₹152.88 |
+| Detergent | ₹567.00 | 18% | ₹51.03 | ₹51.03 | ₹102.06 |
+| Juice | ₹504.00 | 12% | ₹30.24 | ₹30.24 | ₹60.48 |
+| **Total** | **₹4,288.20** | | | | **₹675.28** |
 
-3. Verify auto-calculations:
-   - **Base Quantity**: BOX(2) × 48 = 96 PCS for Chips (product-specific conversion)
-   - **Scheme Applied**: "Chips Buy 3 Get 1 Free" checks min qty 3 on Chips product
-   - **Must-Sell Check**: Chips, Biscuits, Detergent are national must-sell → compliance tracked
-   - **Tax**: GST auto-calculated (12% for Chips, 18% for Biscuits, 18% for Detergent)
-   - **Total Net Amount**: Sum of all line totals after discount + tax
+**Order Summary:**
+- Gross Amount: ₹4,288.20
+- Scheme Discount: -₹67.54
+- Net Taxable: ₹4,220.66
+- Total Tax: ~₹665 (recalculated on net)
+- **Order Total: ~₹4,886**
+- Free Qty: 12 PCS (Classic Salted Chips 75g)
+- Reward Points: 300
 
-4. **Submit Order** → Status changes to "Submitted"
-5. **Approve Order** (as manager) → Status = "Approved"
+**Submit Order** → Status = "Submitted" → **Approve** → Status = "Approved"
 
-### 6.3 Create Multiple Orders
-Create 5-10 orders across different accounts from seed data:
+### 7.3 Create Order 2 — GT Retailer in Mumbai (UOM + Invoice Scheme Test)
+Account: **Kumar Kirana** (GT, Mumbai, Grocery, Class A)
 
-| Order | Account (from seed) | Salesperson (from test team) | Territory | Approx Total |
-|---|---|---|---|---|
-| ORD-001 | Lakshmi General Store | Rahul Kumar (TSE) | Delhi | ~₹15,000 |
-| ORD-002 | Ganesh Provision Store | Anjali Reddy (TSE) | Delhi | ~₹22,000 |
-| ORD-003 | Kumar Kirana | Karthik Nambiar (TSE) | Mumbai | ~₹18,000 |
-| ORD-004 | Deepak Grocery | Meera Iyer (TSE) | Mumbai | ~₹31,000 |
-| ORD-005 | Gupta Mart | Nikhil Rao (TSE) | Bangalore | ~₹12,500 |
+| # | Product | SKU | UOM | Qty | Base Qty | Unit Price | GST | Line Total |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Power Wash Detergent 1kg | FF-DET-001 | BOX | 1 | 12 PCS | ₹94.50 | 18% | ₹1,134.00 |
+| 2 | Power Wash Detergent 500g | FF-DET-003 | PCS | 12 | 12 PCS | ₹50.40 | 18% | ₹604.80 |
+| 3 | Anti-Dandruff Shampoo 200ml | FF-HAR-002 | PCS | 12 | 12 PCS | ₹122.50 | 28% | ₹1,470.00 |
+| 4 | Neem Face Wash 100ml | FF-SKN-001 | PCS | 12 | 12 PCS | ₹59.50 | 28% | ₹714.00 |
+
+**Verify:**
+
+**UOM Conversion (Line 1):**
+- 1 BOX of Detergent 1kg → 1 × 12 (Case_Size = 12) = **12 PCS**
+- Line Total = 12 × ₹94.50 = ₹1,134.00
+
+**Scheme Evaluation:**
+- **SCH-2026-004** "Detergent Invoice Qty Discount": Total detergent = 12 + 12 = 24 PCS ≥ 10 KG threshold → **₹200 discount**
+- **SCH-2026-007** "Personal Care Volume Discount": Shampoo ₹1,470 + Face Wash ₹714 = ₹2,184 → slab ₹1,000-₹4,999 = **5% off** = -₹109.20
+
+**Order Total: ~₹4,500** (after discounts + tax)
+
+### 7.4 Create Order 3 — MT Store (Channel-Specific Pricing + Invoice Value Scheme)
+Account: **HyperBazaar Mumbai** (MT, Mumbai, Class A)
+
+| # | Product | SKU | UOM | Qty | Unit Price | GST | Line Total |
+|---|---|---|---|---|---|---|---|
+| 1 | Crispy Masala Chips 150g | FF-SNK-001 | CSE | 1 | ₹21.00 | 12% | ₹10,080.00 |
+| 2 | Classic Cream Biscuits 200g | FF-BIS-001 | BOX | 2 | ₹17.50 | 18% | ₹2,100.00 |
+| 3 | Fresh Mango Juice 1L | FF-JUC-001 | BOX | 2 | ₹84.00 | 12% | ₹2,016.00 |
+
+**Verify:**
+
+**UOM Conversions:**
+- 1 CSE of Chips → 1 × 10 (CSE→BOX) × 48 (BOX→PCS) = **480 PCS** — ₹480 × ₹21 = ₹10,080
+- 2 BOX of Biscuits → 2 × 60 = **120 PCS** — ₹120 × ₹17.50 = ₹2,100
+- 2 BOX of Juice → 2 × 12 = **24 PCS** — ₹24 × ₹84 = ₹2,016
+
+**Price List Note:** MT channel → Price List Priority 3 (Mumbai + MT) gives 55% of MRP.
+Chips: 55% of ₹30 = ₹16.50/PCS. If this price list entry exists, the price column should show ₹16.50, not ₹21.00.
+
+**Scheme Evaluation:**
+- **SCH-2026-005** "Invoice Value Reward Points": Invoice total ~₹14,196 ≥ ₹10,000 → slab ₹10,000+ = **750 reward points**
+
+### 7.5 Create Orders 4-8 (Spread Across Territories)
+Create additional orders to build achievement data:
+
+| Order | Account | Territory | Channel | Products Focus | Approx Total |
+|---|---|---|---|---|---|
+| ORD-004 | Ganesh Provision Store | Delhi | GT | Biscuits, Noodles, Tea | ~₹3,200 |
+| ORD-005 | Deepak Grocery | Mumbai | GT | Detergent, Cleaners, Chips | ~₹5,800 |
+| ORD-006 | Gupta Mart | Bangalore | GT | Juice, Soda, Confectionery | ~₹2,900 |
+| ORD-007 | Modern Needs Store | Chennai | GT | Hair Care, Skin Care, Oral | ~₹4,100 |
+| ORD-008 | SuperMart Central Delhi | Delhi | MT | Mixed (large qty) | ~₹18,000 |
+
+> **Tip:** Each order should include at least 3 must-sell products to test compliance tracking.
+
+### 7.6 Create Collections Against Orders
+After orders are approved/delivered, record payments:
+
+| Collection | Account | Amount | Mode | Receipt | Notes |
+|---|---|---|---|---|---|
+| COL-001 | Lakshmi General Store | ₹2,443 (50%) | Cash | RCP-2026-0001 | Partial payment |
+| COL-002 | Kumar Kirana | ₹3,375 (75%) | Cheque | RCP-2026-0002 | Cheque #10000001, SBI, +7 days |
+| COL-003 | HyperBazaar Mumbai | ₹16,000 (100%) | NEFT | RCP-2026-0003 | HDFC Bank transfer |
+| COL-004 | Ganesh Provision Store | ₹1,600 (50%) | UPI | RCP-2026-0004 | UPI reference auto-generated |
+| COL-005 | Deepak Grocery | ₹4,350 (75%) | Cash | RCP-2026-0005 | — |
+| COL-006 | Gupta Mart | ₹2,900 (100%) | UPI | RCP-2026-0006 | — |
+| COL-007 | (On-Account Advance) | ₹10,000 | Cash | RCP-2026-ADV-001 | Advance, not tied to order |
+
+**Total Collected:** ~₹40,668
 
 ---
 
-## Step 7: Configure Target Criteria
+## Step 8: Configure Target Criteria
 
-### 7.1 Verify Target Criteria
-Go to **Target Criteria Manager tab**. Ensure these exist:
+### 8.1 Verify Target Criteria
+Go to **Target Criteria Manager tab** (created by `14_target_criteria_and_actuals.apex`). Ensure these 6 criteria exist:
 
-| Criteria | Object | Operator | Field | Weight | Prerequisite |
-|---|---|---|---|---|---|
-| Revenue | Sales_Order__c | SUM | Total_Net_Amount__c | 60% | None |
-| Collection | Collection__c | SUM | Amount__c | 10% | None |
-| Volume | Sales_Order__c | COUNT | Id | — | None |
-| Coverage | Visit__c | COUNT | Id | — | None |
-| Focus Brand | Sales_Order__c | SUM | Total_Net_Amount__c | 15% | Revenue ≥ 90% |
-| Outlet Expansion | Account | COUNT | Id | 15% | Revenue ≥ 90% |
+| Criteria | Object | Operator | Field | Category | Weight | Prerequisite |
+|---|---|---|---|---|---|---|
+| Revenue | Sales_Order__c | SUM | Total_Net_Amount__c | Revenue | 60% | None |
+| Collection | Collection__c | SUM | Amount__c | Collection | 10% | None |
+| Volume | Sales_Order__c | COUNT | Id | Activity | 20% | None |
+| Coverage | Visit__c | COUNT | Id | Coverage | — | Visit completed & productive |
+| Focus Brand | Sales_Order__c | SUM | Total_Net_Amount__c | Revenue | 15% | Revenue ≥ 90% |
+| Outlet Expansion | Account | COUNT | Id | Coverage | 15% | Revenue ≥ 90% |
 
-### 7.2 Set Filters
-- **Revenue**: Filter = `Status__c IN ('Approved', 'Delivered')`
-- **Collection**: Filter = `Status__c = 'Confirmed'`
-- **Coverage**: Filter = `Visit_Status__c = 'Completed' AND Is_Productive__c = true`
+### 8.2 Verify Filters
+- **Revenue**: `Status__c IN ('Approved', 'Delivered')`
+- **Collection**: `Status__c = 'Confirmed'`
+- **Coverage**: `Visit_Status__c = 'Completed' AND Is_Productive__c = true`
+
+### 8.3 How Prerequisite Works
+Focus Brand and Outlet Expansion have **Revenue ≥ 90%** as prerequisite:
+- If TSE achieves Revenue = 95% → Focus Brand and Outlet Expansion are calculated normally
+- If TSE achieves Revenue = 85% → Focus Brand and Outlet Expansion payout = **₹0** (prerequisite not met)
 
 ---
 
-## Step 8: Set Targets via Target Allocation
+## Step 9: Verify Targets (from 12_targets.apex)
 
-### 8.1 Allocate Manager Targets
+### 9.1 Territory Revenue Targets (Current Month)
+Go to **Target__c** records. The seed script creates 5 target types per territory:
+
+| Territory | Code | Revenue | Collection (90%) | Volume | Productive Calls | New Outlets |
+|---|---|---|---|---|---|---|
+| Delhi NCR | TER-DEL-001 | ₹5,00,000 | ₹4,50,000 | 2,000 | 9,00,000 (annual) | 10 |
+| Mumbai Metro | TER-MUM-001 | ₹7,50,000 | ₹6,75,000 | 3,000 | 13,50,000 (annual) | 10 |
+| Bengaluru Urban | TER-BLR-001 | ₹4,00,000 | ₹3,60,000 | 1,600 | 7,20,000 (annual) | 10 |
+| Chennai City | TER-CHN-001 | ₹3,50,000 | ₹3,15,000 | 1,400 | 6,30,000 (annual) | 10 |
+| Kolkata Metro | TER-KOL-001 | ₹3,00,000 | ₹2,70,000 | 1,200 | 5,40,000 (annual) | 10 |
+| Hyderabad City | TER-HYD-001 | ₹3,50,000 | ₹3,15,000 | 1,400 | 6,30,000 (annual) | 10 |
+| Pune Metro | TER-PUN-001 | ₹2,50,000 | ₹2,25,000 | 1,000 | 4,50,000 (annual) | 10 |
+| Ahmedabad City | TER-AHM-001 | ₹2,80,000 | ₹2,52,000 | 1,120 | 5,04,000 (annual) | 10 |
+
+**KPI Weights:** Revenue 40%, Collection 30%, Volume 20%, Productive Calls 15%, New Outlets 10%
+
+### 9.2 Target Line Breakdown (Revenue by Category)
+Each revenue target is broken into 4 category target lines:
+
+| Category | Code | Split % | Avg Price/Case | Delhi Target | Delhi Qty |
+|---|---|---|---|---|---|
+| Foods | CAT-FOOD | 40% | ₹320 | ₹2,00,000 | 625 cases |
+| Beverages | CAT-BEV | 20% | ₹180 | ₹1,00,000 | 556 cases |
+| Personal Care | CAT-PC | 25% | ₹450 | ₹1,25,000 | 278 cases |
+| Home Care | CAT-HC | 15% | ₹280 | ₹75,000 | 268 cases |
+
+### 9.3 Seed Achievement Values
+The script pre-populates **35% achievement** for all targets to simulate a mid-month state:
+
+| Target Type | Delhi Target | Pre-seeded Achievement | % |
+|---|---|---|---|
+| Revenue | ₹5,00,000 | ₹1,75,000 | 35% |
+| Collection | ₹4,50,000 | ₹1,40,000 | 31% |
+| Volume | 2,000 | 700 | 35% |
+| New Outlets | 10 | 3 | 30% |
+
+### 9.4 Allocate Targets via Target Allocation Tab
+To distribute from NSM → RSM → ASM → TSE:
+
 1. Go to **Target Allocation tab**
-2. Select current period and the NSM user
-3. Click **Add Target**
-4. Set targets for each criteria:
+2. Select current period and NSM user (Rajesh Kapoor)
+3. Set NSM targets:
 
 | Criteria | NSM Target |
 |---|---|
-| Revenue | ₹30,00,000 |
-| Collection | ₹20,00,000 |
-| Volume | 500 orders |
-| Coverage | 300 visits |
-| Focus Brand | ₹5,00,000 |
-| Outlet Expansion | 50 outlets |
+| Revenue | ₹31,80,000 (sum of all territories) |
+| Collection | ₹28,62,000 |
 
-### 8.2 Distribute to RSMs
-1. Select NSM user → Click **Distribute**
-2. Split targets across 2 RSMs:
+4. Click **Distribute** to split across RSMs:
 
-| Criteria | RSM North | RSM South |
+| Criteria | RSM West (Suresh Menon) | RSM North (Priya Sharma) |
 |---|---|---|
-| Revenue | ₹15,00,000 | ₹15,00,000 |
-| Collection | ₹10,00,000 | ₹10,00,000 |
+| Revenue | ₹16,80,000 | ₹15,00,000 |
+| Collection | ₹15,12,000 | ₹13,50,000 |
 
-### 8.3 Distribute RSM → ASMs → TSEs
-Continue distributing down the hierarchy:
-- RSM North → ASM Delhi (₹8,00,000) + ASM Mumbai (₹7,00,000)
-- ASM Delhi → TSE Rahul (₹4,00,000) + TSE Anjali (₹4,00,000)
+5. Continue distributing down:
+- RSM West → ASM Mumbai (Amit Patel: ₹7,50,000) + ASM Bangalore (Deepa Nair: ₹7,50,000)
+- RSM North → ASM Delhi (Vikram Singh: ₹5,00,000) + ASM Chennai (Kavitha Rajan: ₹3,50,000)
+- ASM Delhi → TSE Rahul (₹2,50,000) + TSE Sneha (₹2,50,000)
 
 ---
 
-## Step 9: Run Achievement Calculation
+## Step 10: Run Achievement Calculation
 
-### 9.1 Run Achievement Batch
+### 10.1 Run Achievement Batch
 In Developer Console:
 ```apex
 // Run achievement calculation for all active criteria
 Database.executeBatch(new TAM_Achievement_Batch(), 50);
 ```
 
-### 9.2 Verify Achievements
-Go to **Target Allocation tab** and select a TSE:
-- Revenue target: ₹4,00,000
-- Revenue actual: Sum of approved orders for that TSE
-- Achievement %: auto-calculated
+### 10.2 Verify Achievements
+Go to **Target Allocation tab** and select TSE Rahul Verma:
+
+Using the orders created in Step 7 (ORD-001 through ORD-008):
+
+| Criteria | Target | Actual (from orders) | Achievement % |
+|---|---|---|---|
+| Revenue | ₹2,50,000 | ₹1,75,000 + new orders | Recalculated |
+| Collection | ₹2,25,000 | ~₹40,668 from Step 7.6 | ~18% |
+| Volume | 1,000 | 8 orders created | 0.8% |
+| Coverage | — | 17+ visits (seed) + new | — |
+
+> **Note:** The seed data pre-populates 35% achievement. Your manually created orders ADD to these values. After running the batch, totals will be higher.
 
 Or check in **KPI Dashboard** → My KPIs view.
 
-### 9.3 How Achievement Calculation Works
+### 10.3 How Achievement Calculation Works
 ```
 1. TAM_Achievement_Batch queries all Target_Actual__c for active periods
 2. For each criteria:
@@ -400,14 +574,26 @@ Or check in **KPI Dashboard** → My KPIs view.
 3. TAM_Rollup_Service aggregates child achievements to parent (TSE→ASM→RSM→NSM)
 ```
 
+### 10.4 Sample Achievement Actuals (from 14_target_criteria_and_actuals.apex)
+The seed script also creates sample Target_Actual__c records for the current period:
+
+| Criteria | Target Value | Achievement Value | Achievement % |
+|---|---|---|---|
+| Revenue | ₹5,00,000 | ₹4,60,000 | 92% |
+| Collection | ₹3,00,000 | ₹2,64,000 | 88% |
+| Volume | 200 units | 210 units | 105% |
+| Coverage | 150 visits | 112 visits | 75% |
+| Focus Brand | ₹1,00,000 | ₹95,000 | 95% |
+| Outlet Expansion | 20 outlets | 22 outlets | 110% |
+
 ---
 
-## Step 10: Configure Incentive Slabs
+## Step 11: Configure Incentive Slabs
 
-### 10.1 Verify Slabs
-Go to **Incentive Slab Manager tab**. The seed script creates slabs across all 4 FSCRM profiles:
+### 11.1 Verify Slabs (from 13_incentive_slabs.apex)
+Go to **Incentive Slab Manager tab**. The seed script creates **80+ slabs** across all 4 FSCRM profiles:
 
-#### Universal Slabs (fallback — no criteria/profile):
+#### 1. Universal Slabs (fallback — no criteria/profile — 5 slabs):
 | Slab Name | Range | Payout Type | Value | Multiplier |
 |---|---|---|---|---|
 | Universal — Below Threshold | 0% – 89.99% | Fixed Amount | ₹0 | 0 |
@@ -416,27 +602,44 @@ Go to **Incentive Slab Manager tab**. The seed script creates slabs across all 4
 | Universal — Achiever | 100% – 109.99% | Percentage | 15% | 1.0 |
 | Universal — Super Achiever | 110%+ | Percentage | 15% | 1.3 |
 
-#### Revenue Slabs — Salary-Based by Profile:
-| Profile | 90-95% | 95-100% | 100-110% | 110%+ |
-|---|---|---|---|---|
-| FSCRM_TSE | 4.5% | 10% | 17.75% | 20% |
-| FSCRM_ASM | 3.75% | 8.25% | 14.5% | 17% |
-| FSCRM_RSM | 3% | 7% | 12% | 15% |
-| FSCRM_NSM | 2.5% | 5.5% | 10% | 12.5% |
+#### 2. Revenue Slabs — Salary-Based by Profile (4 profiles × 5 ranges = 20 slabs):
+| Profile | Below 90% | 90-95% | 95-100% | 100-110% | 110%+ |
+|---|---|---|---|---|---|
+| FSCRM_TSE (₹30,000) | 0% | 4.5% | 10% | 17.75% | 20% |
+| FSCRM_ASM (₹50,000) | 0% | 3.75% | 8.25% | 14.5% | 17% |
+| FSCRM_RSM (₹80,000) | 0% | 3% | 7% | 12% | 15% |
+| FSCRM_NSM (₹1,20,000) | 0% | 2.5% | 5.5% | 10% | 12.5% |
 
-#### Fixed Amount Slabs (Collection & Volume — same for all profiles):
-| Criteria | 70-90% | 90-100% | 100%+ |
+#### 3. Collection Slabs (Fixed amounts — 4 slabs, all profiles):
+| Range | Payout Type | Value | Multiplier |
 |---|---|---|---|
-| Collection | ₹1,000 | ₹2,500 | ₹5,000 |
-| Volume | — | ₹1,500 (80%+) | ₹3,000 (×1.5) |
+| Below 70% | Fixed Amount | ₹0 | 0 |
+| 70% – 89.99% | Fixed Amount | ₹1,000 | 1.0 |
+| 90% – 99.99% | Fixed Amount | ₹2,500 | 1.0 |
+| 100%+ | Fixed Amount | ₹5,000 | 1.0 |
 
-#### Territory-Specific (Delhi premium):
+#### 4. Volume Slabs (Fixed amounts with multiplier — 3 slabs):
+| Range | Payout Type | Value | Multiplier |
+|---|---|---|---|
+| Below 80% | Fixed Amount | ₹0 | 0 |
+| 80% – 99.99% | Fixed Amount | ₹1,500 | 1.0 |
+| 100%+ | Fixed Amount | ₹3,000 | 1.5 |
+
+#### 5. S&D Parameter Slabs (5 criteria × 2 profiles × 4 ranges = 40 slabs):
+Criteria: Focus Brand, Outlet Expansion, S&D, Visibility, New Outlets
+
+| Profile | Below 90% | 90-95% | 95-100% | 100%+ |
+|---|---|---|---|---|
+| FSCRM_TSE | 0% | 4.5% salary | 10% salary | 17.75% salary |
+| FSCRM_ASM | 0% | 3.75% salary | 8.25% salary | 14.5% salary |
+
+#### 6. Territory-Specific Slabs (Delhi premium — 2 slabs):
 | Slab | Profile | Territory | Range | Payout |
 |---|---|---|---|---|
-| Revenue Delhi TSE — 100-110% | FSCRM_TSE | Delhi | 100-110% | 20% salary |
-| Revenue Delhi TSE — 110%+ | FSCRM_TSE | Delhi | 110%+ | 22.5% salary |
+| Revenue Delhi TSE — 100-110% | FSCRM_TSE | Delhi NCR | 100-110% | 20% salary |
+| Revenue Delhi TSE — 110%+ | FSCRM_TSE | Delhi NCR | 110%+ | 22.5% salary |
 
-### 10.2 Slab Matching Priority
+### 11.2 Slab Matching Priority
 The incentive engine matches slabs in this order (most specific first):
 ```
 1. Criteria + Profile + Territory  (e.g., Revenue + FSCRM_TSE + Delhi)
@@ -445,11 +648,16 @@ The incentive engine matches slabs in this order (most specific first):
 4. Universal                       (fallback for all)
 ```
 
+**Example:** TSE Rahul Verma achieves Revenue = 105% in Delhi:
+- Engine first checks: Revenue + FSCRM_TSE + Delhi → **Matches** "Revenue Delhi TSE 100-110%" at **20%**
+- This overrides the standard Revenue + FSCRM_TSE slab which would give 17.75%
+- Delhi premium = 20% vs 17.75% = **2.25% extra incentive**
+
 ---
 
-## Step 11: Calculate Incentives
+## Step 12: Calculate Incentives
 
-### 11.1 Run Incentive Calculation
+### 12.1 Run Incentive Calculation
 Go to **Incentive Dashboard tab** → Select current period → Click **Run Calculation**
 
 Or in Developer Console:
@@ -462,126 +670,195 @@ Target_Period__c period = [
 Database.executeBatch(new TAM_IncentiveCalculation_Batch(period.Id), 50);
 ```
 
-### 11.2 Calculation Example
+### 12.2 Worked Example — TSE Rahul Verma (Delhi)
 
-**TSE Rahul Kumar** (Profile: FSCRM_TSE, Gross Salary: ₹30,000/month):
+**Profile:** FSCRM_TSE | **Gross Salary:** ₹30,000/month | **Territory:** Delhi NCR
 
-| Criteria | Weight | Target | Actual | % | Slab Matched | Payout Calculation |
+Using the sample achievement actuals from the seed data:
+
+| Criteria | Weight | Target | Actual | Ach% | Slab Matched | Payout Calculation |
 |---|---|---|---|---|---|---|
-| Revenue | 60% | ₹4,00,000 | ₹3,80,000 | 95% | Revenue TSE 95-100% (10%) | ₹30,000 × 10% × 1.0 × 60% = **₹1,800** |
-| Focus Brand | 15% | ₹80,000 | ₹76,000 | 95% | Revenue TSE 95-100% (10%) | ₹30,000 × 10% × 1.0 × 15% = **₹450** |
-| Outlet Expansion | 15% | 10 | 11 | 110% | Revenue TSE 110%+ (20%) | ₹30,000 × 20% × 1.0 × 15% = **₹900** |
-| Collection | 10% | ₹2,80,000 | ₹2,50,000 | 89% | Below Threshold (₹0) | **₹0** |
-| | | | | | **Total Monthly** | **₹3,150** |
+| Revenue | 60% | ₹5,00,000 | ₹4,60,000 | 92% | Revenue TSE 90-95% (4.5%) | ₹30,000 × 4.5% × 1.0 × 60% = **₹810** |
+| Collection | 10% | ₹3,00,000 | ₹2,64,000 | 88% | Collection 70-90% (₹1,000) | ₹1,000 × 1.0 × 10% = **₹100** |
+| Volume | 20% | 200 | 210 | 105% | Volume 100%+ (₹3,000 × 1.5) | ₹4,500 × 20% = **₹900** |
+| Focus Brand | 15% | ₹1,00,000 | ₹95,000 | 95% | Revenue TSE 95-100% (10%) | ₹30,000 × 10% × 1.0 × 15% = **₹450** |
+| Outlet Expansion | 15% | 20 | 22 | 110% | TSE 100%+ (17.75%) | ₹30,000 × 17.75% × 1.0 × 15% = **₹799** |
+| | | | | | **Total Monthly** | **₹3,059** |
 
 **PBIS Payout Formula:** `Gross Salary × Slab% × Multiplier × KPI Weight`
 
 **Prerequisite Check:**
-- Revenue = 95% (≥ 90%) → Focus Brand and Outlet Expansion qualify ✓
-- If Revenue was 85% → Focus Brand and Outlet Expansion would be ₹0 (prerequisite not met)
+- Revenue = 92% (≥ 90%) → Focus Brand and Outlet Expansion **qualify** ✓
+- If Revenue was 85% → Focus Brand and Outlet Expansion payout = **₹0** (prerequisite not met)
 
-**Territory Premium Example** (if Rahul is in Delhi):
-- Revenue at 105% → matches "Revenue Delhi TSE 100-110%" slab at 20% (vs standard 17.75%)
-- Payout: ₹30,000 × 20% × 1.0 × 60% = ₹3,600 (vs ₹3,195 at standard rate)
+### 12.3 Worked Example — TSE Rahul with Delhi Premium (105% Revenue)
 
-### 11.3 Review in Dashboard
-1. **Incentive Dashboard** → Shows all calculated incentives
+If Revenue achievement is boosted to 105%:
+
+| Criteria | Ach% | Standard Slab | Delhi Premium Slab | Payout |
+|---|---|---|---|---|
+| Revenue | 105% | TSE 100-110%: 17.75% | **Delhi TSE 100-110%: 20%** | ₹30,000 × 20% × 1.0 × 60% = **₹3,600** |
+
+Standard payout would be: ₹30,000 × 17.75% × 1.0 × 60% = ₹3,195
+Delhi premium payout: **₹3,600** (+₹405 extra)
+
+### 12.4 Worked Example — ASM Vikram Singh (Delhi)
+
+**Profile:** FSCRM_ASM | **Gross Salary:** ₹50,000/month
+
+| Criteria | Weight | Target | Actual | Ach% | Slab | Payout |
+|---|---|---|---|---|---|---|
+| Revenue | 60% | ₹5,00,000 | ₹4,60,000 | 92% | ASM 90-95% (3.75%) | ₹50,000 × 3.75% × 60% = **₹1,125** |
+| Collection | 10% | ₹4,50,000 | ₹4,05,000 | 90% | 90-100% (₹2,500) | ₹2,500 × 10% = **₹250** |
+| Volume | 20% | 2,000 | 1,800 | 90% | 80-100% (₹1,500) | ₹1,500 × 20% = **₹300** |
+| | | | | | **Total** | **₹1,675** |
+
+### 12.5 Review in Dashboard
+1. **Incentive Dashboard** → Shows all calculated incentives per employee
 2. Filter by: Period, Criteria, Profile, Territory
-3. Click a row → See calculation breakdown (Target → Achievement % → Slab → Multiplier → Payout)
+3. Click a row → See full calculation breakdown:
+   - Target Value → Achievement Value → Achievement %
+   - Slab Matched (name, range, payout type)
+   - Multiplier applied → Final Payout Amount
 4. **Submit for Approval** → **Approve** → **Mark as Paid**
 
 ---
 
-## Step 12: Verify in KPI Dashboard
+## Step 13: Verify in KPI Dashboard
 
-### 12.1 Self View (as TSE)
+### 13.1 Self View (as TSE — Rahul Verma)
 Login as TSE user → **KPI Dashboard** → "My KPIs":
-- KPI cards with progress rings per criteria
-- Achievement % with color coding (green/amber/red)
-- Total incentive earned
 
-### 12.2 Team View (as ASM)
+Expected view with seed + manual data:
+| KPI Card | Target | Actual | % | Color |
+|---|---|---|---|---|
+| Revenue | ₹2,50,000 | ₹1,75,000+ | ~70%+ | Red/Amber |
+| Collection | ₹2,25,000 | ~₹40,668 | ~18% | Red |
+| Volume | 1,000 | 700+ | ~70%+ | Amber |
+| New Outlets | 5 | 3 | 60% | Red |
+
+- KPI cards with progress rings per criteria
+- Achievement % with color coding (green ≥100%, amber 80-99%, red <80%)
+- Total incentive earned at bottom
+
+### 13.2 Team View (as ASM — Vikram Singh)
 Login as ASM → **KPI Dashboard** → "Team":
-- Aggregated stats across subordinates
+- Aggregated stats across subordinates (Rahul Verma + Sneha Gupta)
 - Per-user breakdown table with target, actual, %, incentive
 - Performance trend chart (last 6 months)
 
-### 12.3 Organization View (as NSM)
+### 13.3 Organization View (as NSM — Rajesh Kapoor)
 Login as NSM → **KPI Dashboard** → "Organization":
-- Full hierarchy aggregation
+- Full hierarchy aggregation (2 RSMs → 4 ASMs → 8 TSEs)
 - All users with their performance
-- Total incentive pool
+- Total incentive pool (sum of all calculated incentives)
 
 ---
 
-## Step 13: Achievement Dashboard
+## Step 14: Achievement Dashboard
 
 Go to **Achievement Dashboard tab**:
-- Dynamic KPI cards (one per active criteria)
-- Monthly trend chart (Chart.js bar chart — real data)
-- KPI distribution doughnut chart
-- Team performance table
-- Top performers leaderboard (top 20 by achievement)
+- **Dynamic KPI cards**: One card per active criteria (Revenue, Collection, Volume, Coverage, Focus Brand, Outlet Expansion)
+- **Monthly trend chart**: Chart.js bar chart showing actual vs target for last 6 months
+- **KPI distribution doughnut**: Breakdown of achievement by criteria weight
+- **Team performance table**: All team members with target, actual, %
+- **Top performers leaderboard**: Top 20 by achievement %
 
 ---
 
-## Step 14: Generate Reports
+## Step 15: Generate Reports
 
-### 14.1 Salesforce Reports
-Create reports on:
+### 15.1 Order Performance Report
+- **Object:** Sales_Order__c
+- **Columns:** Order Date, Account, Salesperson, Total Net Amount, Status, Must_Sell_Compliance__c
+- **Filter:** Status = 'Approved' OR 'Delivered', Current Month
+- **Group By:** Salesperson → Territory
+- **Summary:** SUM(Total_Net_Amount__c), COUNT(Id)
+- **Expected:** 12+ seed orders + 8 manual orders = 20+ rows
 
-**Order Performance Report:**
-- Object: Sales_Order__c
-- Columns: Order Date, Account, Salesperson, Total Net Amount, Status
-- Filter: Status = Approved, Current Month
-- Group By: Salesperson
-- Summary: SUM(Total_Net_Amount__c)
+### 15.2 Target vs Achievement Report
+- **Object:** Target_Actual__c
+- **Columns:** User, Criteria, Target Value, Achievement Value, Achievement %
+- **Filter:** Current Period, Active Criteria
+- **Group By:** User → Criteria
+- **Expected:** 6 criteria × number of users with targets
 
-**Target vs Achievement Report:**
-- Object: Target_Actual__c
-- Columns: User, Criteria, Target Value, Achievement Value, Achievement %
-- Filter: Current Period, Active Criteria
-- Group By: User → Criteria
+### 15.3 Incentive Payout Report
+- **Object:** Incentive__c
+- **Columns:** Salesperson, Profile, Criteria, Achievement %, Slab Name, Calculated Amount, Status
+- **Filter:** Current Period
+- **Group By:** Salesperson
+- **Summary:** SUM(Calculated_Amount__c)
 
-**Incentive Payout Report:**
-- Object: Incentive__c
-- Columns: Salesperson, Criteria, Achievement %, Slab, Calculated Amount, Status
-- Filter: Current Period
-- Group By: Salesperson
-- Summary: SUM(Calculated_Amount__c)
+**Expected sample output from Step 12 calculations:**
+| Salesperson | Profile | Revenue Inc | Collection Inc | Volume Inc | Total |
+|---|---|---|---|---|---|
+| Rahul Verma | TSE | ₹810 | ₹100 | ₹900 | ₹3,059 |
+| Vikram Singh | ASM | ₹1,125 | ₹250 | ₹300 | ₹1,675 |
 
-**Leave Balance Report:**
-- Object: Leave_Balance__c
-- Columns: Employee, Leave Type, Entitled, Accrued, Used, Pending, Available
-- Filter: Current Year
-- Group By: Employee
+### 15.4 Scheme Performance Report
+- **Object:** Sales_Order__c + Order_Line_Item__c
+- **Columns:** Scheme Name, Orders Applied, Total Discount Given, Free Qty Issued, Budget Used
+- **Filter:** Current Month, Scheme_Applied__c != null
+- **Group By:** Scheme__c
 
-### 14.2 Dashboard Components
+### 15.5 Must-Sell Compliance Report
+- **Object:** Sales_Order__c
+- **Columns:** Account, Salesperson, Must_Sell_Compliance__c, Total Items
+- **Filter:** Current Month
+- **Group By:** Salesperson
+- **Summary:** AVG(Must_Sell_Compliance__c)
+
+### 15.6 Collection Outstanding Report
+- **Object:** Sales_Order__c + Collection__c
+- **Columns:** Account, Order Total, Collected Amount, Outstanding
+- **Filter:** Status = 'Delivered', Collection partial
+- **Cross-reference:** Total order value vs total collected per account
+
+### 15.7 Leave Balance Report
+- **Object:** Leave_Balance__c
+- **Columns:** Employee, Leave Type, Entitled, Accrued, Used, Pending, Available
+- **Filter:** Current Year
+- **Group By:** Employee
+
+### 15.8 Dashboard Components
 Create a Salesforce Dashboard with:
-1. Revenue Target vs Actual (Bar Chart)
-2. Top 10 Performers (Horizontal Bar)
-3. Incentive Status Distribution (Donut)
-4. Team Achievement Heat Map (Table)
-5. Leave Balance Summary (Table)
+1. **Revenue Target vs Actual** (Bar Chart) — per territory
+2. **Top 10 Performers** (Horizontal Bar) — by achievement %
+3. **Incentive Status Distribution** (Donut) — Pending/Approved/Paid
+4. **Team Achievement Heat Map** (Table) — color-coded by %
+5. **Scheme ROI Summary** (Table) — discount given vs revenue generated
+6. **Must-Sell Compliance Trend** (Line) — daily compliance %
+7. **Collection Efficiency** (Gauge) — collected vs outstanding
 
 ---
 
 ## Appendix A: Data Flow Diagram
 
 ```
-Products → Price List → Order Line Items
-                              ↓
-Schemes → Scheme Engine → Discounts applied
-                              ↓
-Must Sell → Compliance Check → Order validated
-                              ↓
-Visits → Orders → Sales_Order__c (Approved)
-                              ↓
-Target_Criteria__c → Achievement Batch → Target_Actual__c
-                              ↓
-Incentive_Slab__c → Incentive Calculation → Incentive__c
-                              ↓
-KPI Dashboard ← Incentive Dashboard → Approval → Payment
+Products → Price List (8-level priority) → Order Line Items
+                                                ↓
+UOM_Conversion__c → Base Quantity calculation    ↓
+                                                ↓
+Schemes → Scheme Engine → Discounts/Free Goods applied
+                                                ↓
+Must Sell Config → Compliance Check → Order validated
+                                                ↓
+Visits → Orders → Sales_Order__c (Submitted → Approved → Delivered)
+                                                ↓
+              ┌─────────────────────────────────┤
+              ↓                                 ↓
+Target_Criteria__c                    Collection__c (payments)
+              ↓                                 ↓
+TAM_Achievement_Batch → Target_Actual__c (per user per criteria)
+              ↓
+TAM_Rollup_Service → Aggregates TSE→ASM→RSM→NSM
+              ↓
+Incentive_Slab__c (priority: Criteria+Profile+Territory > Criteria+Profile > Universal)
+              ↓
+TAM_IncentiveCalculation_Batch → Incentive__c (per user per criteria)
+              ↓
+KPI Dashboard ← Incentive Dashboard → Submit → Approve → Mark as Paid
 ```
 
 ## Appendix B: Key Formulas
@@ -594,6 +871,97 @@ KPI Dashboard ← Incentive Dashboard → Approval → Payment
 
 **Incentive (Fixed)** = Slab Value × Multiplier × KPI Weight
 
+**Base Quantity** = Order Quantity × UOM Conversion Factor
+
+**UOM Price** = Base UOM Price × Conversion Factor (displayed per selected UOM)
+
+**Price Resolution** = First match in: Customer → Cat+Terr+Chan → Terr+Chan → Cat+Terr → Territory → Channel → Category → Base
+
 **Available Leave** = Accrued + Carry Forward − Used − Pending
 
 **Annual Bonus** = Average of best 3 out of 4 quarterly incentives
+
+## Appendix C: Target Period Hierarchy (from 13_target_periods.apex)
+
+```
+FY 2025-2026 (Annual: Apr 1 – Mar 31, Cumulative)
+├── Q1 FY2025 (Apr 1 – Jun 30, Cumulative)
+│   ├── April (Monthly, Is_Default if current)
+│   ├── May
+│   └── June
+├── Q2 FY2025 (Jul 1 – Sep 30)
+│   ├── July
+│   ├── August
+│   └── September
+├── Q3 FY2025 (Oct 1 – Dec 31)
+│   ├── October
+│   ├── November
+│   └── December
+└── Q4 FY2025 (Jan 1 – Mar 31)
+    ├── January
+    ├── February
+    └── March
+```
+
+**17 periods total:** 1 Annual + 4 Quarterly + 12 Monthly
+**Current month** has `Is_Default__c = true` (used by incentive batch)
+
+## Appendix D: Complete Product Catalog (from 04_products.apex)
+
+| # | Product | SKU | Category | MRP | Unit Price | GST | Case Size | Min Qty | Base UOM |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Crispy Masala Chips 150g | FF-SNK-001 | Snacks | ₹30 | ₹21.00 | 12% | 48 | 12 | PCS |
+| 2 | Tangy Tomato Chips 150g | FF-SNK-002 | Snacks | ₹30 | ₹21.00 | 12% | 48 | 12 | PCS |
+| 3 | Classic Salted Chips 75g | FF-SNK-003 | Snacks | ₹15 | ₹10.50 | 12% | 96 | 24 | PCS |
+| 4 | Classic Cream Biscuits 200g | FF-BIS-001 | Biscuits | ₹25 | ₹17.50 | 18% | 60 | 12 | PCS |
+| 5 | Digestive Wheat Biscuits 250g | FF-BIS-002 | Biscuits | ₹35 | ₹24.50 | 18% | 48 | 12 | PCS |
+| 6 | Chocolate Cream Biscuits 150g | FF-BIS-003 | Biscuits | ₹20 | ₹14.00 | 18% | 72 | 12 | PCS |
+| 7 | Instant Noodles Masala 70g | FF-NDL-001 | Noodles | ₹14 | ₹9.80 | 18% | 120 | 24 | PCS |
+| 8 | Instant Noodles Chicken 70g | FF-NDL-002 | Noodles | ₹16 | ₹11.20 | 18% | 120 | 24 | PCS |
+| 9 | Daily Fresh Milk 500ml | FF-DRY-001 | Dairy | ₹28 | ₹22.40 | 5% | 20 | 10 | PCS |
+| 10 | Curd Cup 200g | FF-DRY-002 | Dairy | ₹20 | ₹16.00 | 5% | 24 | 12 | PCS |
+| 11 | Mango Toffees 200g | FF-CNF-001 | Confectionery | ₹50 | ₹35.00 | 18% | 60 | 12 | PCS |
+| 12 | Fruit Drops 100g | FF-CNF-002 | Confectionery | ₹30 | ₹21.00 | 18% | 80 | 24 | PCS |
+| 13 | Fresh Mango Juice 1L | FF-JUC-001 | Juices | ₹120 | ₹84.00 | 12% | 12 | 6 | PCS |
+| 14 | Mixed Fruit Juice 1L | FF-JUC-002 | Juices | ₹110 | ₹77.00 | 12% | 12 | 6 | PCS |
+| 15 | Orange Juice 200ml | FF-JUC-003 | Juices | ₹25 | ₹17.50 | 12% | 36 | 12 | PCS |
+| 16 | Cola Fizz 300ml | FF-SOD-001 | Soft Drinks | ₹20 | ₹14.00 | 12% | 24 | 24 | PCS |
+| 17 | Lemon Soda 300ml | FF-SOD-002 | Soft Drinks | ₹20 | ₹14.00 | 12% | 24 | 24 | PCS |
+| 18 | Premium Assam Tea 250g | FF-TEA-001 | Tea & Coffee | ₹180 | ₹126.00 | 5% | 24 | 6 | PCS |
+| 19 | Instant Coffee 50g | FF-TEA-002 | Tea & Coffee | ₹120 | ₹84.00 | 5% | 36 | 6 | PCS |
+| 20 | Coconut Hair Oil 200ml | FF-HAR-001 | Hair Care | ₹95 | ₹66.50 | 28% | 36 | 6 | PCS |
+| 21 | Anti-Dandruff Shampoo 200ml | FF-HAR-002 | Hair Care | ₹175 | ₹122.50 | 28% | 24 | 6 | PCS |
+| 22 | Neem Face Wash 100ml | FF-SKN-001 | Skin Care | ₹85 | ₹59.50 | 28% | 36 | 6 | PCS |
+| 23 | Aloe Moisturizer 100ml | FF-SKN-002 | Skin Care | ₹120 | ₹84.00 | 28% | 36 | 6 | PCS |
+| 24 | Fresh Mint Toothpaste 150g | FF-ORL-001 | Oral Care | ₹65 | ₹45.50 | 28% | 48 | 12 | PCS |
+| 25 | Herbal Toothpaste 100g | FF-ORL-002 | Oral Care | ₹55 | ₹38.50 | 28% | 48 | 12 | PCS |
+| 26 | Power Wash Detergent 1kg | FF-DET-001 | Detergents | ₹135 | ₹94.50 | 18% | 12 | 6 | PCS |
+| 27 | Liquid Dish Wash 500ml | FF-DET-002 | Detergents | ₹89 | ₹62.30 | 18% | 24 | 6 | PCS |
+| 28 | Power Wash Detergent 500g | FF-DET-003 | Detergents | ₹72 | ₹50.40 | 18% | 24 | 6 | PCS |
+| 29 | Floor Cleaner Pine 500ml | FF-CLN-001 | Cleaners | ₹99 | ₹69.30 | 18% | 24 | 6 | PCS |
+| 30 | Glass Cleaner 250ml | FF-CLN-002 | Cleaners | ₹65 | ₹45.50 | 18% | 36 | 6 | PCS |
+
+## Appendix E: Account Directory (from 09_accounts.apex)
+
+| # | Account Name | Type | Territory | Channel | Outlet Type | Class | Credit Limit |
+|---|---|---|---|---|---|---|---|
+| 1 | Sharma Distributors Pvt Ltd | Distributor | Delhi | GT | — | — | ₹5,00,000 |
+| 2 | Patel Trading Company | Distributor | Mumbai | GT | — | — | ₹7,50,000 |
+| 3 | Reddy & Sons Distribution | Distributor | Bangalore | GT | — | — | ₹4,00,000 |
+| 4 | National FMCG Stockists | Super Stockist | Delhi | GT | — | — | ₹10,00,000 |
+| 5 | Western Hub Stockists | Super Stockist | Mumbai | GT | — | — | ₹8,00,000 |
+| 6 | Lakshmi General Store | Retailer | Delhi | GT | Grocery | A | ₹25,000 |
+| 7 | Ganesh Provision Store | Retailer | Delhi | GT | General Store | B | ₹25,000 |
+| 8 | Kumar Kirana | Retailer | Mumbai | GT | Grocery | A | ₹25,000 |
+| 9 | Deepak Grocery | Retailer | Mumbai | GT | General Store | C | ₹25,000 |
+| 10 | Gupta Mart | Retailer | Bangalore | GT | Grocery | B | ₹25,000 |
+| 11 | Sri Balaji Store | Retailer | Bangalore | GT | General Store | A | ₹25,000 |
+| 12 | Modern Needs Store | Retailer | Chennai | GT | Grocery | B | ₹25,000 |
+| 13 | Daily Fresh Mart | Retailer | Chennai | GT | Medical | C | ₹25,000 |
+| 14 | City Grocery Point | Retailer | Kolkata | GT | Grocery | A | ₹25,000 |
+| 15 | Family Store Corner | Retailer | Hyderabad | GT | Hardware | B | ₹25,000 |
+| 16 | Quick Shop Express | Retailer | Pune | GT | General Store | C | ₹25,000 |
+| 17 | New India Provisions | Retailer | Ahmedabad | GT | Grocery | B | ₹25,000 |
+| 18 | SuperMart Central Delhi | Modern Trade | Delhi | MT | — | A | ₹2,00,000 |
+| 19 | HyperBazaar Mumbai | Modern Trade | Mumbai | MT | — | A | ₹3,00,000 |
+| 20 | MegaStore Bengaluru | Modern Trade | Bangalore | MT | — | A | ₹2,50,000 |
