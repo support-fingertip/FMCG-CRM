@@ -503,7 +503,6 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
     handleHierarchyNodeClick(event) {
         const employeeId = event.detail.employeeId;
         if (employeeId) {
-            this.activeTab = 'details';
             this.loadEmployeeDetail(employeeId);
             this.loadDirectReports(employeeId);
             this.employees = this.employees.map(e => ({
