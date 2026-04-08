@@ -69,7 +69,7 @@ global without sharing class API_Competitor_Rest {
             }
             Id accId = accounts[0].Id;
 
-            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :visitId AND Account__c = :accId LIMIT 1];
+            List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :visitId  LIMIT 1];
             if (visits.isEmpty()) {
                 API_ResponseWrapper.sendError('Visit not found.');
                 return;
@@ -95,7 +95,7 @@ global without sharing class API_Competitor_Rest {
                     return;
                 }
 
-                List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c WHERE Name = :productId LIMIT 1];
+                List<Product_Extension__c> products = [SELECT Id FROM Product_Extension__c WHERE HSN_SAC_Code__c = :productId LIMIT 1];
                 if (products.isEmpty()) {
                     API_ResponseWrapper.sendError('Product not found for productId: ' + productId);
                     return;
@@ -103,7 +103,7 @@ global without sharing class API_Competitor_Rest {
                 Id prodId = products[0].Id;
 
                 Competitor__c compRec = new Competitor__c(
-                    Account__c = accId,
+                    Account__c = visits[0].Account__c,
                    // Employee__c = empId,
                     Visit__c = visitRecId,
                     Name = competitorName,
@@ -168,7 +168,7 @@ global without sharing class API_Competitor_Rest {
             }
             Id accId = accounts[0].Id;
 
-            List<Visit__c> visits = [SELECT Id FROM Visit__c WHERE Name = :siteVisitId AND Account__c = :accId LIMIT 1];
+            List<Visit__c> visits = [SELECT Id,Account__c FROM Visit__c WHERE Name = :siteVisitId  LIMIT 1];
             if (visits.isEmpty()) {
                 API_ResponseWrapper.sendError('Visit not found.');
                 return;
@@ -178,7 +178,7 @@ global without sharing class API_Competitor_Rest {
             List<Competitor__c> competitors = [
                 SELECT Id, Name, Own_Product_Ext__r.Name, Shelf_Percent__c, Competitor_Price__c, Notes__c, CreatedDate
                 FROM Competitor__c
-                WHERE  Account__c = :accId
+                WHERE  Account__c = :visits[0].Account__c
                   AND Visit__c = :visitRecId
                 ORDER BY CreatedDate DESC
             ];
