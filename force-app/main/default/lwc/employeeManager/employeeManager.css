@@ -723,3 +723,10 @@
     align-items: flex-end;
     padding-bottom: 4px;
 }
+
+/* ── Org Hierarchy Tree ─────────────────────────────────── */
+.org-tree {
+    padding: 4px 0;
+    max-height: 500px;
+    overflow-y: auto;
+}

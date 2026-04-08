@@ -10,6 +10,7 @@ import getDepartmentOptions from '@salesforce/apex/EmployeeController.getDepartm
 import getDesignationOptions from '@salesforce/apex/EmployeeController.getDesignationOptions';
 import getDirectReports from '@salesforce/apex/EmployeeController.getDirectReports';
 import getEmployeeLeaveBalances from '@salesforce/apex/EmployeeController.getEmployeeLeaveBalances';
+import getOrgHierarchy from '@salesforce/apex/EmployeeController.getOrgHierarchy';
 
 const PAGE_SIZE = 15;
 
@@ -49,6 +50,7 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
     @track employees = [];
     @track selectedEmployee = null;
     @track directReports = [];
+    @track hierarchyTree = [];
     @track departmentOptions = [];
     @track designationOptions = [];
     isLoading = false;
@@ -317,12 +319,24 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         return this.activeTab === 'leave';
     }
 
+    get isHierarchyTab() {
+        return this.activeTab === 'hierarchy';
+    }
+
+    get hasHierarchyData() {
+        return this.hierarchyTree.length > 0;
+    }
+
     get detailsTabClass() {
         return this.activeTab === 'details' ? 'tab-btn tab-btn-active' : 'tab-btn';
     }
 
     get teamTabClass() {
         return this.activeTab === 'team' ? 'tab-btn tab-btn-active' : 'tab-btn';
+    }
+
+    get hierarchyTabClass() {
+        return this.activeTab === 'hierarchy' ? 'tab-btn tab-btn-active' : 'tab-btn';
     }
 
     get leaveTabClass() {
@@ -466,6 +480,37 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
 
     handleTabClick(event) {
         this.activeTab = event.currentTarget.dataset.tab;
+        if (this.activeTab === 'hierarchy' && this.hierarchyTree.length === 0) {
+            this.loadHierarchy();
+        }
+    }
+
+    async loadHierarchy() {
+        try {
+            const tree = await getOrgHierarchy();
+            this.hierarchyTree = tree || [];
+        } catch (error) {
+            console.error('Error loading hierarchy:', error);
+            this.hierarchyTree = [];
+        }
+    }
+
+    handleRefreshHierarchy() {
+        this.hierarchyTree = [];
+        this.loadHierarchy();
+    }
+
+    handleHierarchyNodeClick(event) {
+        const employeeId = event.detail.employeeId;
+        if (employeeId) {
+            this.activeTab = 'details';
+            this.loadEmployeeDetail(employeeId);
+            this.loadDirectReports(employeeId);
+            this.employees = this.employees.map(e => ({
+                ...e,
+                rowClass: e.Id === employeeId ? 'employee-row employee-row-selected' : 'employee-row'
+            }));
+        }
     }
 
     // ── Pagination ──────────────────────────────────────────────

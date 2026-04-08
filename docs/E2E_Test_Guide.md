@@ -232,27 +232,85 @@ FreshFields FMCG Ltd (HC-FFMCG) — Parent Company
 | Ahmedabad City | TER-AHM-001 | Gujarat | Ahmedabad | 23.02°N, 72.57°E, 25km | WH-AHM (C&F) |
 
 ### 5.3 Employee Hierarchy (13_employees.apex)
+
+The Employee__c records form a hierarchy via the `Reporting_Manager__c` self-referencing lookup.
+This hierarchy drives target rollup (TSE→ASM→RSM→NSM) and incentive calculations.
+
 ```
-Rajesh Kapoor (NSM, L1, ₹1,20,000) — All India
-├── Suresh Menon (RSM West, L2, ₹80,000) — Mumbai
-│   ├── Amit Patel (ASM, L3, ₹50,000) — Mumbai
-│   │   ├── Arjun Deshmukh (SR, L4, ₹30,000) — Mumbai
-│   │   └── Meera Joshi (SR, L4, ₹30,000) — Pune
-│   └── Deepa Nair (ASM, L3, ₹50,000) — Bangalore
-│       ├── Karthik Iyer (SR, L4, ₹30,000) — Bangalore
-│       └── Divya Reddy (SR, L4, ₹30,000) — Hyderabad
-└── Priya Sharma (RSM North, L2, ₹80,000) — Delhi
-    ├── Vikram Singh (ASM, L3, ₹50,000) — Delhi
-    │   ├── Rahul Verma (SR, L4, ₹30,000) — Delhi
-    │   └── Sneha Gupta (SR, L4, ₹30,000) — Delhi
-    └── Kavitha Rajan (ASM, L3, ₹50,000) — Chennai
-        ├── Pradeep Menon (SR, L4, ₹30,000) — Chennai
-        └── Ankit Agarwal (SR, L4, ₹30,000) — Kolkata
+Rajesh Kapoor (NSM, Band 1, ₹1,20,000) — All India
+├── Suresh Menon (RSM West, Band 2, ₹80,000) — Mumbai
+│   ├── Amit Patel (ASM, Band 3, ₹50,000) — Mumbai
+│   │   ├── Arjun Deshmukh (SR, Band 4, ₹30,000) — Mumbai
+│   │   └── Meera Joshi (SR, Band 4, ₹30,000) — Pune
+│   └── Deepa Nair (ASM, Band 3, ₹50,000) — Bangalore
+│       ├── Karthik Iyer (SR, Band 4, ₹30,000) — Bangalore
+│       └── Divya Reddy (SR, Band 4, ₹30,000) — Hyderabad
+└── Priya Sharma (RSM North, Band 2, ₹80,000) — Delhi
+    ├── Vikram Singh (ASM, Band 3, ₹50,000) — Delhi
+    │   ├── Rahul Verma (SR, Band 4, ₹30,000) — Delhi
+    │   └── Sneha Gupta (SR, Band 4, ₹30,000) — Delhi
+    └── Kavitha Rajan (ASM, Band 3, ₹50,000) — Chennai
+        ├── Pradeep Menon (SR, Band 4, ₹30,000) — Chennai
+        └── Ankit Agarwal (SR, Band 4, ₹30,000) — Kolkata
 ```
 
-> **Note:** 15_test_team.apex creates a separate set of 15 test Users with FSCRM profiles
-> (`@fmcg-test.com` emails, `TEST-xxx` employee codes) for login/permission testing.
-> 13_employees.apex creates the Employee__c hierarchy (`EMP-xxx` codes) for operational data.
+**Full Employee Directory:**
+
+| # | Name | Code | Designation | Band | Salary | Territory | Reports To |
+|---|---|---|---|---|---|---|---|
+| 1 | Rajesh Kapoor | EMP-001 | National Sales Manager | Band 1 | ₹1,20,000 | All India | — |
+| 2 | Suresh Menon | EMP-002 | Regional Sales Manager | Band 2 | ₹80,000 | Mumbai | Rajesh Kapoor |
+| 3 | Priya Sharma | EMP-003 | Regional Sales Manager | Band 2 | ₹80,000 | Delhi | Rajesh Kapoor |
+| 4 | Amit Patel | EMP-004 | Area Sales Manager | Band 3 | ₹50,000 | Mumbai | Suresh Menon |
+| 5 | Deepa Nair | EMP-005 | Area Sales Manager | Band 3 | ₹50,000 | Bangalore | Suresh Menon |
+| 6 | Vikram Singh | EMP-006 | Area Sales Manager | Band 3 | ₹50,000 | Delhi | Priya Sharma |
+| 7 | Kavitha Rajan | EMP-007 | Area Sales Manager | Band 3 | ₹50,000 | Chennai | Priya Sharma |
+| 8 | Arjun Deshmukh | EMP-008 | Sales Representative | Band 4 | ₹30,000 | Mumbai | Amit Patel |
+| 9 | Meera Joshi | EMP-009 | Sales Representative | Band 4 | ₹30,000 | Pune | Amit Patel |
+| 10 | Karthik Iyer | EMP-010 | Sales Representative | Band 4 | ₹30,000 | Bangalore | Deepa Nair |
+| 11 | Divya Reddy | EMP-011 | Sales Representative | Band 4 | ₹30,000 | Hyderabad | Deepa Nair |
+| 12 | Rahul Verma | EMP-012 | Sales Representative | Band 4 | ₹30,000 | Delhi | Vikram Singh |
+| 13 | Sneha Gupta | EMP-013 | Sales Representative | Band 4 | ₹30,000 | Delhi | Vikram Singh |
+| 14 | Pradeep Menon | EMP-014 | Sales Representative | Band 4 | ₹30,000 | Chennai | Kavitha Rajan |
+| 15 | Ankit Agarwal | EMP-015 | Sales Representative | Band 4 | ₹30,000 | Kolkata | Kavitha Rajan |
+
+### 5.3a Verify Hierarchy in Employee Manager
+
+1. Go to **HR & Expense** → **Employee Manager**
+2. Select any employee (e.g., Suresh Menon)
+3. Click the **Hierarchy** tab → see the full org tree with:
+   - Color-coded levels (Blue=NSM, Green=RSM, Purple=ASM, Orange=SR)
+   - Expand/collapse branches
+   - Current employee highlighted
+   - Click any node → navigates to that employee's detail
+4. Click the **Team** tab → see flat direct reports only (e.g., Amit Patel, Deepa Nair)
+5. Verify **Reports To** in the Details tab shows the correct manager
+
+### 5.3b User ↔ Employee Mapping (15_test_team.apex)
+
+The `15_test_team.apex` script creates 15 test **User** records with FSCRM permission set profiles.
+These are separate from the Employee__c records above but can be linked via `Employee__c.User__c`.
+
+| # | User Name | Username | Profile | Employee Code |
+|---|---|---|---|---|
+| 1 | Test NSM User | nsm@fmcg-test.com | FSCRM_NSM | TEST-001 |
+| 2 | Test RSM West | rsm.west@fmcg-test.com | FSCRM_RSM | TEST-002 |
+| 3 | Test RSM North | rsm.north@fmcg-test.com | FSCRM_RSM | TEST-003 |
+| 4 | Test ASM Mumbai | asm.mumbai@fmcg-test.com | FSCRM_ASM | TEST-004 |
+| 5 | Test ASM Bangalore | asm.blr@fmcg-test.com | FSCRM_ASM | TEST-005 |
+| 6 | Test ASM Delhi | asm.delhi@fmcg-test.com | FSCRM_ASM | TEST-006 |
+| 7 | Test ASM Chennai | asm.chennai@fmcg-test.com | FSCRM_ASM | TEST-007 |
+| 8-15 | Test TSE [City] | tse.[city]@fmcg-test.com | FSCRM_TSE | TEST-008..015 |
+
+**Profile → PBIS Incentive Mapping:**
+- **FSCRM_TSE** → Revenue slabs: 4.5%/10%/17.75%/20% of salary
+- **FSCRM_ASM** → Revenue slabs: 3.75%/8.25%/14.5%/17% of salary
+- **FSCRM_RSM** → Revenue slabs: 3%/7%/12%/15% of salary
+- **FSCRM_NSM** → Revenue slabs: 2.5%/5.5%/10%/12.5% of salary
+
+> **Important:** Employee__c records (EMP-xxx) hold operational data (hierarchy, salary, territory).
+> User records (TEST-xxx) control login, permissions, and dashboard access.
+> Link them via `Employee__c.User__c` lookup to connect the two.
 
 ### 5.4 Beat Plan Coverage
 | Beat | Territory | Days | TSE | Outlets |

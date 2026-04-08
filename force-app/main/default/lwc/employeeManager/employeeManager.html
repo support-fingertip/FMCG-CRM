@@ -176,6 +176,10 @@
                                 <lightning-icon icon-name="utility:groups" size="xx-small" class="tab-icon"></lightning-icon>
                                 Team
                             </button>
+                            <button class={hierarchyTabClass} data-tab="hierarchy" onclick={handleTabClick}>
+                                <lightning-icon icon-name="utility:hierarchy" size="xx-small" class="tab-icon"></lightning-icon>
+                                Hierarchy
+                            </button>
                             <button class={leaveTabClass} data-tab="leave" onclick={handleTabClick}>
                                 <lightning-icon icon-name="utility:date_time" size="xx-small" class="tab-icon"></lightning-icon>
                                 Leave Balances
@@ -305,6 +309,35 @@
                                     <div class="empty-state-small">
                                         <lightning-icon icon-name="utility:groups" size="small" class="empty-icon"></lightning-icon>
                                         <p class="slds-m-top_small slds-text-color_weak">No direct reports found.</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Hierarchy Tab -->
+                        <template if:true={isHierarchyTab}>
+                            <div class="tab-content">
+                                <div class="team-header">
+                                    <h3 class="detail-section-title">Organization Hierarchy</h3>
+                                    <lightning-button variant="base" label="Refresh" icon-name="utility:refresh"
+                                        onclick={handleRefreshHierarchy} class="slds-m-left_small"></lightning-button>
+                                </div>
+                                <template if:true={hasHierarchyData}>
+                                    <div class="org-tree">
+                                        <template for:each={hierarchyTree} for:item="node">
+                                            <c-employee-hierarchy-node
+                                                key={node.id}
+                                                node={node}
+                                                highlighted-id={selectedEmployee.Id}
+                                                onemployeeclick={handleHierarchyNodeClick}>
+                                            </c-employee-hierarchy-node>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template if:false={hasHierarchyData}>
+                                    <div class="empty-state-small">
+                                        <lightning-icon icon-name="utility:hierarchy" size="small" class="empty-icon"></lightning-icon>
+                                        <p class="slds-m-top_small slds-text-color_weak">Loading hierarchy...</p>
                                     </div>
                                 </template>
                             </div>
