@@ -1022,12 +1022,153 @@ List<String> errors = DKD_MetricRegistry.validateMetric(test);
 System.debug('Validation errors: ' + errors);  // Should be empty
 ```
 
-### 16.5 What's Next (Sprint 2+)
-- **Sprint 2**: `DKD_QueryEngine_Service` — executes these metric definitions and returns aggregated data
+### 16.5 What's Next (Sprint 3+)
 - **Sprint 3**: `dynamicKpiDashboard` LWC shell with filter panel
 - **Sprint 4**: KPI card and chart widgets
 - **Sprint 5**: Forecast engine and forecast widget
 - **Sprint 6**: Saved dashboard views (Dashboard_View__c)
+
+---
+
+## Step 17: Dynamic KPI Dashboard — Query Engine (Sprint 2)
+
+`DKD_QueryEngine_Service` takes any metric definition from Step 16 and returns
+aggregated data based on filters, date range, grouping, and user scope. It is
+the bridge between metric metadata and live dashboard values.
+
+### 17.1 Public API
+
+| Method | Returns | Purpose |
+|---|---|---|
+| `queryMetric(key, filtersJson, groupBy, dateFrom, dateTo, userScope)` | `List<Map<String,Object>>` | Single metric with optional grouping. Used for KPI cards and charts. |
+| `queryMultipleMetrics(keys, filtersJson, dateFrom, dateTo, userScope)` | `Map<String,Decimal>` | Bulk query for KPI card grids (1 filter → N cards). |
+| `queryTimeSeries(key, filtersJson, dateFrom, dateTo, interval, userScope)` | `List<Map<String,Object>>` | Time-bucketed series for trend charts and forecasts. |
+
+**User Scopes:**
+- `self` — Only the current user's records (default)
+- `team` — Current user + all subordinates via User.ManagerId hierarchy
+- `org` — No user filter (all records)
+
+**Time Intervals (for `queryTimeSeries`):** `DAY`, `WEEK`, `MONTH`, `QUARTER`, `YEAR`
+
+### 17.2 How the WHERE Clause is Built
+
+For each query, the engine combines four filter sources into one SOQL WHERE clause:
+
+```
+WHERE
+  (Date Field >= dateFrom AND Date Field <= dateTo)    ← Date range
+  AND (Default Filter from KPI_Metric__c)               ← Metric-level filter
+  AND (User-provided filters via TAM_FilterEngine)      ← Dashboard filter panel
+  AND (User Scope clause via TAM_RoleHierarchy)         ← self/team/org
+```
+
+### 17.3 Test in Developer Console
+
+First make sure you have orders in the current period (run `seed_transactional_data.apex` or create some).
+
+```apex
+// ── Test 1: Scalar KPI card value ──
+List<Map<String, Object>> result = DKD_QueryEngine_Service.queryMetric(
+    'revenue_total',
+    null,                          // no additional filters
+    null,                          // no grouping
+    Date.today().toStartOfMonth(),
+    Date.today(),
+    'self'
+);
+System.debug('Revenue this month: ' + result[0].get('value'));
+
+// ── Test 2: Multi-metric for KPI grid ──
+Map<String, Decimal> kpis = DKD_QueryEngine_Service.queryMultipleMetrics(
+    new List<String>{ 'revenue_total', 'order_count', 'avg_order_value' },
+    null,
+    Date.today().toStartOfMonth(),
+    Date.today(),
+    'self'
+);
+System.debug('Revenue: ' + kpis.get('revenue_total'));
+System.debug('Orders:  ' + kpis.get('order_count'));
+System.debug('AOV:     ' + kpis.get('avg_order_value'));
+
+// ── Test 3: Grouped result (for bar chart) ──
+List<Map<String, Object>> byStatus = DKD_QueryEngine_Service.queryMetric(
+    'order_count',
+    null,
+    'Status__c',                   // group by status
+    Date.today().addMonths(-3),
+    Date.today(),
+    'org'
+);
+for (Map<String, Object> row : byStatus) {
+    System.debug(row.get('groupKey') + ': ' + row.get('value'));
+}
+
+// ── Test 4: Time series (for trend chart) ──
+List<Map<String, Object>> trend = DKD_QueryEngine_Service.queryTimeSeries(
+    'revenue_total',
+    null,
+    Date.today().addMonths(-6),
+    Date.today(),
+    'MONTH',
+    'team'
+);
+for (Map<String, Object> row : trend) {
+    System.debug(row.get('label') + ' (' + row.get('period') + '): ' + row.get('value'));
+}
+
+// ── Test 5: With additional filter (only high-value orders) ──
+String filters = '{"filters":[{"id":1,"field":"Total_Net_Amount__c","operator":">","value":5000,"type":"Number"}]}';
+List<Map<String, Object>> highValue = DKD_QueryEngine_Service.queryMetric(
+    'revenue_total', filters, null,
+    Date.today().addMonths(-1), Date.today(), 'self'
+);
+System.debug('High-value revenue: ' + highValue[0].get('value'));
+```
+
+### 17.4 Result Format Reference
+
+**Scalar result (no `groupBy`):**
+```json
+[
+  { "label": "Total Revenue", "value": 248500, "count": 42, "groupKey": null }
+]
+```
+
+**Grouped result (with `groupBy`):**
+```json
+[
+  { "label": "Approved",  "value": 180000, "count": 28, "groupKey": "Approved"  },
+  { "label": "Delivered", "value": 68500,  "count": 14, "groupKey": "Delivered" }
+]
+```
+
+**Time series:**
+```json
+[
+  { "period": 1, "label": "Jan", "value": 45000, "count": 12 },
+  { "period": 2, "label": "Feb", "value": 62000, "count": 15 },
+  { "period": 3, "label": "Mar", "value": 78000, "count": 18 }
+]
+```
+
+### 17.5 Error Handling
+
+The engine throws `DKD_QueryEngine_Service.DKD_QueryException` for:
+- Unknown metric key
+- Unsupported aggregation
+- SUM/AVG/MIN/MAX without an Aggregate Field
+- Invalid field names (SOQL injection protection — only `[A-Za-z0-9_.]` allowed)
+- Invalid time interval
+- SOQL query failures (with underlying error and generated SOQL in the message)
+
+`queryMultipleMetrics` is **fail-soft** — if one metric errors, it returns `0` for that key and continues with the rest. This keeps a bad metric from breaking the entire dashboard.
+
+### 17.6 What's Next (Sprint 3+)
+- **Sprint 3**: `dynamicKpiDashboard` LWC shell + `dkdFilterPanel` reusable filter component
+- **Sprint 4**: `dkdKpiCard` and `dkdChartWidget` widgets powered by this query engine
+- **Sprint 5**: `DKD_Forecast_Service` for linear regression on time series
+- **Sprint 6**: `Dashboard_View__c` for saving custom dashboard layouts
 
 ---
 
