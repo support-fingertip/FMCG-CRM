@@ -196,6 +196,51 @@
                             </div>
                             <span class="hp-quick-label">Catalog</span>
                         </div>
+                        <div class="hp-quick-card" data-target="Dynamic_KPI_Dashboard" onclick={navigateTo}>
+                            <div class="hp-quick-icon hp-icon-blue">
+                                <lightning-icon icon-name="utility:chart" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <span class="hp-quick-label">KPI Dashboard</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics & Insights -->
+                <div class="hp-section">
+                    <h2 class="hp-section-title">Analytics & Insights</h2>
+                    <div class="hp-nav-grid">
+                        <div class="hp-nav-card" data-target="Dynamic_KPI_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:dashboard" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Dynamic KPI Dashboard</h3>
+                                <p class="hp-nav-desc">Pick any metric, filter by any dimension, analyse trends and forecasts</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Achievement_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-teal">
+                                <lightning-icon icon-name="standard:performance" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Achievement Dashboard</h3>
+                                <p class="hp-nav-desc">Individual KPIs, monthly trends, and leaderboard</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="KPI_Metric__c" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:metrics" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">KPI Metrics</h3>
+                                <p class="hp-nav-desc">Define reusable metrics for the Dynamic KPI Dashboard</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -629,6 +674,28 @@
                             <div class="hp-nav-info">
                                 <h3 class="hp-nav-title">Achievement Dashboard</h3>
                                 <p class="hp-nav-desc">Individual KPIs, monthly trends, and leaderboard</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="Dynamic_KPI_Dashboard" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-blue">
+                                <lightning-icon icon-name="standard:dashboard" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">Dynamic KPI Dashboard</h3>
+                                <p class="hp-nav-desc">Configurable dashboard with metric picker, filters, and trends</p>
+                            </div>
+                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
+                        </div>
+
+                        <div class="hp-nav-card" data-target="KPI_Metric__c" onclick={navigateTo}>
+                            <div class="hp-nav-icon hp-icon-orange">
+                                <lightning-icon icon-name="standard:metrics" size="medium"></lightning-icon>
+                            </div>
+                            <div class="hp-nav-info">
+                                <h3 class="hp-nav-title">KPI Metrics Registry</h3>
+                                <p class="hp-nav-desc">Create and manage reusable KPI metric definitions</p>
                             </div>
                             <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
                         </div>

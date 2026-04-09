@@ -106,6 +106,9 @@
     <classAccesses><apexClass>LeaveAccrualBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeaveAccrualScheduler</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeavePolicyController</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_MetricRegistry</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_QueryEngine_Service</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_Dashboard_Controller</apexClass><enabled>true</enabled></classAccesses>
     <custom>true</custom>
     <fieldPermissions>
         <editable>false</editable>
@@ -417,6 +420,7 @@
     </objectPermissions>
     <objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>KPI_Metric__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <tabVisibilities>
         <tab>Achievement_Dashboard</tab>
         <visibility>DefaultOn</visibility>
@@ -615,6 +619,8 @@
     </tabVisibilities>
     <tabVisibilities><tab>Leave_Policy__c</tab><visibility>DefaultOff</visibility></tabVisibilities>
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOff</visibility></tabVisibilities>
+    <tabVisibilities><tab>Dynamic_KPI_Dashboard</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>KPI_Metric__c</tab><visibility>DefaultOff</visibility></tabVisibilities>
     <userLicense>Salesforce</userLicense>
     <userPermissions>
         <enabled>true</enabled>

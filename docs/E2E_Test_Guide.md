@@ -1164,11 +1164,149 @@ The engine throws `DKD_QueryEngine_Service.DKD_QueryException` for:
 
 `queryMultipleMetrics` is **fail-soft** — if one metric errors, it returns `0` for that key and continues with the rest. This keeps a bad metric from breaking the entire dashboard.
 
-### 17.6 What's Next (Sprint 3+)
-- **Sprint 3**: `dynamicKpiDashboard` LWC shell + `dkdFilterPanel` reusable filter component
-- **Sprint 4**: `dkdKpiCard` and `dkdChartWidget` widgets powered by this query engine
+### 17.6 What's Next (Sprint 4+)
+- **Sprint 4**: Chart.js-powered widgets (line/bar/pie/doughnut)
 - **Sprint 5**: `DKD_Forecast_Service` for linear regression on time series
 - **Sprint 6**: `Dashboard_View__c` for saving custom dashboard layouts
+
+---
+
+## Step 18: Dynamic KPI Dashboard — UI & Permissions (Sprint 3)
+
+Sprint 3 delivers the first **visible** piece of the Dynamic KPI Dashboard: a
+working LWC with filter panel, KPI cards, and a simple breakdown chart, wired
+up to the query engine from Sprint 2 and available from the home page.
+
+### 18.1 Component Structure
+
+| File | Purpose |
+|---|---|
+| `lwc/dynamicKpiDashboard/dynamicKpiDashboard.js` | State, filter handling, Apex calls, KPI card builder |
+| `lwc/dynamicKpiDashboard/dynamicKpiDashboard.html` | Header, filter panel, KPI grid, chart widget |
+| `lwc/dynamicKpiDashboard/dynamicKpiDashboard.css` | Responsive layout with gradient header and card styling |
+| `lwc/dynamicKpiDashboard/dynamicKpiDashboard.js-meta.xml` | Exposed for `lightning__Tab`, `lightning__AppPage`, `lightning__HomePage` |
+| `classes/DKD_Dashboard_Controller.cls` | Init data, KPI values, metric data, time series, previous period |
+| `tabs/Dynamic_KPI_Dashboard.tab-meta.xml` | Custom tab that hosts the LWC |
+
+### 18.2 Features Delivered in Sprint 3
+
+**Filter Panel:**
+- **User Scope**: Self / My Team / Organization (auto-default to Team if manager)
+- **Period presets**: Today / Yesterday / This Week / MTD / Last Month / QTD / YTD / Last 30 / Last 90 / Custom
+- **Custom date range** with from/to date pickers (when preset = Custom)
+- **Category filter**: Sales / Visits / Collections / Outlets / Schemes / Custom
+- **Metric picker**: Click-to-toggle multi-select list, filtered by category
+- **Apply / Reset** buttons
+
+**KPI Card Grid:**
+- One card per selected metric
+- Shows current value (formatted by metric type: Currency/Number/Percent/Duration)
+- **vs Previous Period** comparison with up/down/flat trend indicator and % change
+- Color-coded left border using the metric's configured Color__c
+- Icon from metric's Icon__c
+
+**Breakdown Chart:**
+- Horizontal bar chart showing selected metric grouped by `Status__c`
+- Metric picker to switch the charted metric
+- Bars scaled to max value for easy comparison
+
+**Active Filter Chips:**
+- Visual chips at the top showing Scope, Period, and Category in effect
+
+**Responsive Layout:**
+- 280px fixed filter panel + flex canvas on desktop
+- Collapses to single column on mobile (<900px)
+- KPI grid adapts from 4+ columns → 2 → 1
+
+### 18.3 Access Points
+
+The Dynamic KPI Dashboard is available from **three** entry points:
+
+| Entry Point | Location | Visibility |
+|---|---|---|
+| 1. **App Tab** | `Field Sales CRM` → `Dynamic KPI Dashboard` tab | All FSCRM profiles |
+| 2. **Home Page Quick Action** | Home Page → Dashboard tab → Quick Actions → "KPI Dashboard" card | All FSCRM profiles |
+| 3. **Home Page Analytics Section** | Home Page → Dashboard tab → "Analytics & Insights" section | All FSCRM profiles |
+| 4. **Home Page Admin Section** | Home Page → Admin tab → "Administration & Configuration" | Admins only |
+
+**KPI Metrics Registry** (for admins to create/edit metric definitions):
+- App Launcher → "KPI Metrics" tab
+- Home Page → Admin tab → "KPI Metrics Registry" card
+
+### 18.4 Permissions Matrix
+
+Permissions applied via profile updates in Sprint 3:
+
+| Profile | DKD Apex Classes | KPI_Metric__c | Dynamic_KPI_Dashboard tab | KPI_Metric__c tab |
+|---|---|---|---|---|
+| **FSCRM_TSE** | Enabled | Read | DefaultOn | DefaultOff |
+| **FSCRM_ASM** | Enabled | Read/Create/Edit | DefaultOn | DefaultOn |
+| **FSCRM_RSM** | Enabled | Read/Create/Edit | DefaultOn | DefaultOn |
+| **FSCRM_NSM** | Enabled | Full CRUD + Modify All | DefaultOn | DefaultOn |
+| **FSCRM_Admin** (perm set) | Enabled | Full CRUD + Modify All | Visible | Visible |
+
+**Apex classes granted:**
+- `DKD_MetricRegistry`
+- `DKD_QueryEngine_Service`
+- `DKD_Dashboard_Controller`
+
+### 18.5 Walkthrough — First Time User
+
+1. **Login as a TSE** (e.g., Rahul Verma / FSCRM_TSE)
+2. Go to **App Launcher** → **Field Sales CRM** app
+3. Click the **Dynamic KPI Dashboard** tab (or from Home → Quick Actions → "KPI Dashboard")
+4. On first load, the dashboard auto-selects:
+   - **User Scope**: Self (or Team if you have subordinates)
+   - **Period**: Month to Date
+   - **Metrics**: First 4 Sales category metrics (Total Revenue, Order Count, Avg Order Value, Discount Given)
+5. **KPI Cards** appear showing current values with vs-previous-period comparisons
+6. **Breakdown chart** appears below showing Revenue grouped by Order Status
+
+### 18.6 Walkthrough — Changing Filters
+
+1. Click **Filters** in the header (if panel is collapsed)
+2. Change **User Scope** to `My Team` — the dashboard reloads with aggregated team data
+3. Change **Period** to `Last 30 Days` — dates auto-populate
+4. Change **Category** to `Visits` — metric list filters to only Visit metrics
+5. Click a metric row (e.g., `Total Visits`) to toggle it on/off — the check icon highlights
+6. Click **Apply Filters** — KPI cards refresh with the new selection
+7. Click **Reset** to return to defaults
+
+### 18.7 Walkthrough — Admin Creates a New Metric
+
+1. **Login as NSM** (Rajesh Kapoor / FSCRM_NSM) or use the Admin permission set
+2. Go to **Home Page → Admin tab → "KPI Metrics Registry"** card
+3. Click **New**, fill in:
+   - Name: `Outstanding Collections`
+   - Metric Key: `outstanding_collections`
+   - Label: `Outstanding Collections`
+   - Source Object: `Sales_Order__c`
+   - Aggregation: `SUM`
+   - Aggregate Field: `Total_Net_Amount__c`
+   - Date Field: `Order_Date__c`
+   - User Field: `Salesperson__c`
+   - Default Filter: `Status__c = 'Delivered' AND Total_Amount__c > Total_Collected__c`
+   - Format: `Currency`
+   - Icon: `utility:moneybag`
+   - Color: `#dd7a01`
+   - Category: `Collections`
+   - Is Active: checked
+4. **Save**
+5. Go to the **Dynamic KPI Dashboard** tab
+6. In the filter panel, change Category to **Collections**
+7. Click on **Outstanding Collections** in the metric list
+8. Click **Apply Filters**
+9. The new KPI card appears — zero code deployment needed!
+
+### 18.8 Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| "Failed to load dashboard: Method not callable" | Apex class permission missing | Enable DKD_* classes on the user's profile |
+| Empty KPI cards | No data in selected period/scope | Widen the date range or switch to Org scope |
+| "Metric not found" error | Metric is inactive or the key doesn't exist | Check KPI_Metric__c.Is_Active__c |
+| Breakdown chart empty | Grouping field `Status__c` doesn't exist on the source object | Check that the metric's source object has a Status field |
+| Tab not visible in app | Tab visibility `DefaultOff` or not in app's tabs list | Verify profile tabVisibilities and Field_Sales_CRM.app-meta.xml |
 
 ---
 

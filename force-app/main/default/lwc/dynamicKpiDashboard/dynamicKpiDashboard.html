@@ -1,0 +1,229 @@
+<template>
+    <div class="dkd-container">
+
+        <!-- ═════════ HEADER ═════════ -->
+        <div class="dkd-header">
+            <div class="dkd-header-left">
+                <lightning-icon icon-name="standard:dashboard" size="small" class="dkd-header-icon"></lightning-icon>
+                <div class="dkd-header-titles">
+                    <h1 class="dkd-title">Dynamic KPI Dashboard</h1>
+                    <p class="dkd-subtitle">
+                        Pick any metric, filter by any dimension, analyse trends.
+                        <template if:true={lastUpdatedLabel}>
+                            <span class="dkd-last-updated"> &bull; {lastUpdatedLabel}</span>
+                        </template>
+                    </p>
+                </div>
+            </div>
+            <div class="dkd-header-actions">
+                <button class="dkd-btn dkd-btn-ghost" onclick={handleToggleFilterPanel} title="Toggle filter panel">
+                    <lightning-icon icon-name={toggleFilterIcon} size="xx-small"></lightning-icon>
+                    Filters
+                </button>
+                <button class="dkd-btn dkd-btn-primary" onclick={handleRefresh} title="Refresh data">
+                    <lightning-icon icon-name="utility:refresh" size="xx-small" variant="inverse"></lightning-icon>
+                    Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Active filter chips -->
+        <div class="dkd-chips-row">
+            <template for:each={activeFilterChips} for:item="chip">
+                <span class="dkd-chip" key={chip.key}>{chip.label}</span>
+            </template>
+        </div>
+
+        <!-- Initialization error -->
+        <template if:true={initError}>
+            <div class="dkd-error">
+                <lightning-icon icon-name="utility:error" size="small" variant="error"></lightning-icon>
+                <span>{initError}</span>
+            </div>
+        </template>
+
+        <!-- ═════════ BODY (filter panel + canvas) ═════════ -->
+        <div class={bodyClass}>
+
+            <!-- ────── FILTER PANEL ────── -->
+            <template if:true={showFilterPanel}>
+                <aside class={filterPanelClass}>
+                    <div class="dkd-panel-header">
+                        <h3 class="dkd-panel-title">Filters</h3>
+                    </div>
+
+                    <div class="dkd-filter-group">
+                        <label class="dkd-filter-label">User Scope</label>
+                        <lightning-combobox
+                            variant="label-hidden"
+                            value={userScope}
+                            options={userScopeOptions}
+                            onchange={handleScopeChange}>
+                        </lightning-combobox>
+                    </div>
+
+                    <div class="dkd-filter-group">
+                        <label class="dkd-filter-label">Period</label>
+                        <lightning-combobox
+                            variant="label-hidden"
+                            value={datePreset}
+                            options={datePresetOptions}
+                            onchange={handleDatePresetChange}>
+                        </lightning-combobox>
+                    </div>
+
+                    <template if:true={isCustomRange}>
+                        <div class="dkd-filter-group">
+                            <label class="dkd-filter-label">From</label>
+                            <lightning-input
+                                type="date"
+                                variant="label-hidden"
+                                value={dateFrom}
+                                onchange={handleDateFromChange}>
+                            </lightning-input>
+                        </div>
+                        <div class="dkd-filter-group">
+                            <label class="dkd-filter-label">To</label>
+                            <lightning-input
+                                type="date"
+                                variant="label-hidden"
+                                value={dateTo}
+                                onchange={handleDateToChange}>
+                            </lightning-input>
+                        </div>
+                    </template>
+
+                    <div class="dkd-filter-group">
+                        <label class="dkd-filter-label">Category</label>
+                        <lightning-combobox
+                            variant="label-hidden"
+                            value={selectedCategory}
+                            options={categoryOptions}
+                            onchange={handleCategoryChange}>
+                        </lightning-combobox>
+                    </div>
+
+                    <div class="dkd-filter-group">
+                        <label class="dkd-filter-label">
+                            Metrics
+                            <span class="dkd-filter-hint">({selectedMetricKeys.length} selected)</span>
+                        </label>
+                        <div class="dkd-metric-list">
+                            <template for:each={filteredMetricOptions} for:item="opt">
+                                <div class="dkd-metric-row"
+                                     key={opt.value}
+                                     data-metric-key={opt.value}
+                                     onclick={handleMetricToggle}>
+                                    <lightning-icon
+                                        icon-name="utility:check"
+                                        size="xx-small"
+                                        class="dkd-metric-check"></lightning-icon>
+                                    <span class="dkd-metric-row-label">{opt.label}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="dkd-filter-actions">
+                        <button class="dkd-btn dkd-btn-primary dkd-btn-full" onclick={handleApplyFilters}>
+                            Apply Filters
+                        </button>
+                        <button class="dkd-btn dkd-btn-ghost dkd-btn-full" onclick={handleResetFilters}>
+                            Reset
+                        </button>
+                    </div>
+                </aside>
+            </template>
+
+            <!-- ────── MAIN CANVAS ────── -->
+            <main class="dkd-canvas">
+
+                <!-- Loading spinner -->
+                <template if:true={isLoading}>
+                    <div class="dkd-loading">
+                        <lightning-spinner alternative-text="Loading dashboard..." size="medium"></lightning-spinner>
+                    </div>
+                </template>
+
+                <template if:false={isLoading}>
+                    <!-- KPI Card Grid -->
+                    <section class="dkd-section">
+                        <h2 class="dkd-section-title">Key Metrics</h2>
+                        <template if:true={hasKpiCards}>
+                            <div class="dkd-kpi-grid">
+                                <template for:each={kpiCards} for:item="card">
+                                    <article class="dkd-kpi-card" key={card.key} style={card.cardStyle}>
+                                        <div class="dkd-kpi-head">
+                                            <div class="dkd-kpi-icon" style={card.iconStyle}>
+                                                <lightning-icon icon-name={card.icon} size="small"></lightning-icon>
+                                            </div>
+                                            <span class="dkd-kpi-category">{card.category}</span>
+                                        </div>
+                                        <div class="dkd-kpi-body">
+                                            <p class="dkd-kpi-label">{card.label}</p>
+                                            <p class="dkd-kpi-value">{card.formattedValue}</p>
+                                            <template if:true={card.hasComparison}>
+                                                <div class={card.trendClass}>
+                                                    <lightning-icon
+                                                        icon-name={card.trendIcon}
+                                                        size="xx-small"></lightning-icon>
+                                                    <span>{card.deltaPct}</span>
+                                                    <span class="dkd-kpi-prev">vs {card.formattedPrevValue}</span>
+                                                </div>
+                                            </template>
+                                            <template if:false={card.hasComparison}>
+                                                <div class="dkd-trend dkd-trend-flat">
+                                                    <span class="dkd-kpi-prev">No previous data</span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </article>
+                                </template>
+                            </div>
+                        </template>
+                        <template if:false={hasKpiCards}>
+                            <div class="dkd-empty">
+                                <lightning-icon icon-name="utility:chart" size="medium"></lightning-icon>
+                                <p>No metrics selected. Pick one or more metrics from the filter panel.</p>
+                            </div>
+                        </template>
+                    </section>
+
+                    <!-- Chart widget -->
+                    <section class="dkd-section">
+                        <div class="dkd-section-head">
+                            <h2 class="dkd-section-title">Breakdown by Status</h2>
+                            <div class="dkd-section-control">
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedChartMetric}
+                                    options={chartMetricOptions}
+                                    onchange={handleChartMetricChange}
+                                    placeholder="Select metric...">
+                                </lightning-combobox>
+                            </div>
+                        </div>
+                        <template if:true={hasChartData}>
+                            <div class="dkd-chart">
+                                <template for:each={chartData} for:item="bar">
+                                    <div class="dkd-chart-row" key={bar.label}>
+                                        <span class="dkd-chart-row-label">{bar.label}</span>
+                                        <div class="dkd-chart-bar-wrap">
+                                            <div class="dkd-chart-bar" style={bar.barStyle}></div>
+                                        </div>
+                                        <span class="dkd-chart-row-value">{bar.formattedValue}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template if:false={hasChartData}>
+                            <div class="dkd-empty">
+                                <p>No breakdown data for the selected metric.</p>
+                            </div>
+                        </template>
+                    </section>
+                </template>
+            </main>
+        </div>
+    </div>
+</template>
