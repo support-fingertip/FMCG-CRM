@@ -109,6 +109,7 @@
     <classAccesses><apexClass>DKD_MetricRegistry</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_QueryEngine_Service</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_Dashboard_Controller</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_Forecast_Service</apexClass><enabled>true</enabled></classAccesses>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>KPI_Metric__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <custom>true</custom>
     <fieldPermissions>

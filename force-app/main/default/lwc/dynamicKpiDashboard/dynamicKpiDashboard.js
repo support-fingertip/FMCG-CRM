@@ -6,6 +6,7 @@ import getKpiValues from '@salesforce/apex/DKD_Dashboard_Controller.getKpiValues
 import getMetricData from '@salesforce/apex/DKD_Dashboard_Controller.getMetricData';
 import getTimeSeries from '@salesforce/apex/DKD_Dashboard_Controller.getTimeSeries';
 import getPreviousPeriodValues from '@salesforce/apex/DKD_Dashboard_Controller.getPreviousPeriodValues';
+import getForecast from '@salesforce/apex/DKD_Dashboard_Controller.getForecast';
 
 const USER_SCOPES = [
     { label: 'Self', value: 'self' },
@@ -58,6 +59,15 @@ export default class DynamicKpiDashboard extends LightningElement {
     @track trendLabels = [];
     @track trendDatasets = [];
 
+    // Forecast chart
+    @track selectedForecastMetric = '';
+    @track selectedForecastInterval = 'MONTH';
+    @track selectedForecastHorizon = 6;
+    @track forecastLabels = [];
+    @track forecastDatasets = [];
+    @track forecastInsight = '';
+    @track forecastStats = null;
+
     // UI state
     @track showFilterPanel = true;
     @track lastUpdated;
@@ -96,6 +106,9 @@ export default class DynamicKpiDashboard extends LightningElement {
             if (this.selectedMetricKeys.length > 0) {
                 this.selectedChartMetric = this.selectedMetricKeys[0];
                 this.selectedTrendMetric = this.selectedMetricKeys[0];
+                // For the forecast, prefer a metric with Allow_Forecast__c = true
+                const forecastable = this.allMetrics.find(m => m.allowForecast);
+                this.selectedForecastMetric = forecastable ? forecastable.key : this.selectedMetricKeys[0];
             }
 
             await this.refreshData();
@@ -211,6 +224,62 @@ export default class DynamicKpiDashboard extends LightningElement {
         const intv = this.trendIntervalOptions.find(i => i.value === this.selectedTrendInterval);
         const intvLabel = intv ? intv.label : 'Time';
         return label + ' — ' + intvLabel + ' Trend';
+    }
+
+    // Forecast widget options
+    get forecastMetricOptions() {
+        return this.allMetrics
+            .filter(m => m.allowForecast)
+            .map(m => ({ label: m.label, value: m.key }));
+    }
+
+    get forecastHorizonOptions() {
+        return [
+            { label: 'Next 3 Periods', value: 3 },
+            { label: 'Next 6 Periods', value: 6 },
+            { label: 'Next 12 Periods', value: 12 }
+        ];
+    }
+
+    get forecastChartFormat() {
+        const metric = this.allMetrics.find(m => m.key === this.selectedForecastMetric);
+        return metric ? metric.format : 'Number';
+    }
+
+    get forecastChartTitle() {
+        const metric = this.allMetrics.find(m => m.key === this.selectedForecastMetric);
+        const label = metric ? metric.label : 'Metric';
+        const intv = this.trendIntervalOptions.find(i => i.value === this.selectedForecastInterval);
+        const intvLabel = intv ? intv.label : 'Time';
+        return label + ' — ' + intvLabel + ' Forecast';
+    }
+
+    get hasForecastData() {
+        return this.forecastDatasets && this.forecastDatasets.length > 0;
+    }
+
+    get forecastStatsItems() {
+        if (!this.forecastStats) return [];
+        return [
+            {
+                key: 'growth',
+                label: 'Historical Growth',
+                value: this.forecastStats.growthRatePercent + '%',
+                positive: this.forecastStats.growthRatePercent >= 0
+            },
+            {
+                key: 'slope',
+                label: 'Trend Slope',
+                value: this.formatValue(this.forecastStats.slope, this.selectedForecastMetric) + '/period',
+                positive: this.forecastStats.slope >= 0
+            },
+            {
+                key: 'confidence',
+                label: 'Fit (R²)',
+                value: (this.forecastStats.rSquared * 100).toFixed(0) + '%',
+                positive: this.forecastStats.rSquared >= 0.5
+            }
+        ];
     }
 
     get activeFilterChips() {
@@ -350,6 +419,21 @@ export default class DynamicKpiDashboard extends LightningElement {
         this.loadTrendChart();
     }
 
+    handleForecastMetricChange(event) {
+        this.selectedForecastMetric = event.detail.value;
+        this.loadForecastChart();
+    }
+
+    handleForecastIntervalChange(event) {
+        this.selectedForecastInterval = event.detail.value;
+        this.loadForecastChart();
+    }
+
+    handleForecastHorizonChange(event) {
+        this.selectedForecastHorizon = parseInt(event.detail.value, 10);
+        this.loadForecastChart();
+    }
+
     handleToggleFilterPanel() {
         this.showFilterPanel = !this.showFilterPanel;
     }
@@ -397,7 +481,8 @@ export default class DynamicKpiDashboard extends LightningElement {
             // Load charts in parallel after KPI cards are ready
             await Promise.all([
                 this.selectedChartMetric ? this.loadBreakdownChart() : Promise.resolve(),
-                this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve()
+                this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve(),
+                this.selectedForecastMetric ? this.loadForecastChart() : Promise.resolve()
             ]);
 
             const now = new Date();
@@ -468,11 +553,15 @@ export default class DynamicKpiDashboard extends LightningElement {
     }
 
     extendedTrendStart() {
-        // For trends, we extend the window backwards to show history
+        return this.extendedWindowStart(this.selectedTrendInterval);
+    }
+
+    extendedWindowStart(interval) {
+        // For trends/forecasts, extend the window backwards to provide enough history
         if (!this.dateTo) return this.dateFrom;
         const end = new Date(this.dateTo);
         let start;
-        switch (this.selectedTrendInterval) {
+        switch (interval) {
             case 'DAY':
                 start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 30);
                 break;
@@ -492,6 +581,103 @@ export default class DynamicKpiDashboard extends LightningElement {
                 start = new Date(end.getFullYear(), end.getMonth() - 5, 1);
         }
         return this.toISODate(start);
+    }
+
+    async loadForecastChart() {
+        if (!this.selectedForecastMetric) return;
+        try {
+            const fromDate = this.extendedWindowStart(this.selectedForecastInterval);
+            const result = await getForecast({
+                metricKey: this.selectedForecastMetric,
+                filtersJson: null,
+                dateFrom: fromDate,
+                dateTo: this.dateTo,
+                interval: this.selectedForecastInterval,
+                forecastPeriods: this.selectedForecastHorizon,
+                userScope: this.userScope
+            });
+
+            const metric = this.allMetrics.find(m => m.key === this.selectedForecastMetric);
+            const color = metric ? metric.color : '#0176d3';
+
+            const historical = result.historical || [];
+            const forecast = result.forecast || [];
+
+            // Build combined X-axis labels (historical + forecast)
+            const labels = [
+                ...historical.map(h => h.label || ''),
+                ...forecast.map(f => f.label || '')
+            ];
+
+            // Historical dataset: actual values, null for forecast positions
+            const histValues = historical.map(h => Number(h.value) || 0);
+            const histData = [...histValues, ...forecast.map(() => null)];
+
+            // Forecast dataset: null for historical positions, then projected values
+            // Include one transition point (last historical value) so the line connects
+            const fcData = historical.map(() => null);
+            if (histValues.length > 0 && forecast.length > 0) {
+                // Replace the last historical null with the actual last value to connect lines
+                fcData[fcData.length - 1] = histValues[histValues.length - 1];
+            }
+            forecast.forEach(f => fcData.push(Number(f.value) || 0));
+
+            // Upper confidence band
+            const upperData = historical.map(() => null);
+            if (histValues.length > 0 && forecast.length > 0) {
+                upperData[upperData.length - 1] = histValues[histValues.length - 1];
+            }
+            forecast.forEach(f => upperData.push(Number(f.upper) || 0));
+
+            // Lower confidence band
+            const lowerData = historical.map(() => null);
+            if (histValues.length > 0 && forecast.length > 0) {
+                lowerData[lowerData.length - 1] = histValues[histValues.length - 1];
+            }
+            forecast.forEach(f => lowerData.push(Number(f.lower) || 0));
+
+            this.forecastLabels = labels;
+            this.forecastDatasets = [
+                {
+                    label: 'Upper Bound',
+                    data: upperData,
+                    color: color,
+                    bandUpper: true
+                },
+                {
+                    label: 'Lower Bound',
+                    data: lowerData,
+                    color: color,
+                    bandLower: true
+                },
+                {
+                    label: 'Historical',
+                    data: histData,
+                    color: color
+                },
+                {
+                    label: 'Forecast',
+                    data: fcData,
+                    color: color,
+                    dashed: true,
+                    fill: false
+                }
+            ];
+
+            this.forecastInsight = result.insight || '';
+            this.forecastStats = {
+                slope: Number(result.slope) || 0,
+                rSquared: Number(result.rSquared) || 0,
+                growthRatePercent: Number(result.growthRatePercent) || 0,
+                standardError: Number(result.standardError) || 0
+            };
+        } catch (error) {
+            console.error('Forecast load failed', error);
+            this.forecastLabels = [];
+            this.forecastDatasets = [];
+            this.forecastInsight = 'Unable to generate forecast: ' + this.reduceError(error);
+            this.forecastStats = null;
+        }
     }
 
     // ── KPI card builder ─────────────────────────────────────────

@@ -124,17 +124,36 @@ export default class DkdChartWidget extends LightningElement {
                 };
             }
             if (this.chartType === 'line') {
-                return {
+                const lineDs = {
                     label: ds.label || '',
                     data: ds.data || [],
                     borderColor: color,
-                    backgroundColor: this.hexToRgba(color, 0.12),
-                    fill: true,
+                    backgroundColor: ds.fill === false ? 'transparent' : this.hexToRgba(color, 0.12),
+                    fill: ds.fill !== false,
                     tension: 0.3,
-                    pointRadius: 4,
+                    pointRadius: ds.pointRadius !== undefined ? ds.pointRadius : 4,
                     pointBackgroundColor: color,
                     borderWidth: 2
                 };
+                // Dashed line support (for forecast/projection datasets)
+                if (ds.dashed) {
+                    lineDs.borderDash = [6, 6];
+                }
+                // Confidence band datasets typically use no points and no fill
+                // Expected order: Upper bound (bandUpper), then Lower bound (bandLower).
+                // Lower fills back to the previous dataset (-1 = Upper) to shade the band.
+                if (ds.bandUpper) {
+                    lineDs.fill = false;
+                    lineDs.borderWidth = 0;
+                    lineDs.pointRadius = 0;
+                }
+                if (ds.bandLower) {
+                    lineDs.fill = '-1';  // fill to previous dataset (the Upper bound)
+                    lineDs.backgroundColor = this.hexToRgba(color, 0.1);
+                    lineDs.borderWidth = 0;
+                    lineDs.pointRadius = 0;
+                }
+                return lineDs;
             }
             // Bar / horizontal bar
             return {

@@ -301,6 +301,64 @@
 .dkd-ctrl-groupby { min-width: 150px; }
 .dkd-ctrl-type { min-width: 130px; }
 
+/* Forecast section */
+.dkd-section-forecast {
+    border: 1px solid #e0edff;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.dkd-title-icon {
+    margin-right: 6px;
+    --sds-c-icon-color-foreground-default: var(--dkd-primary);
+}
+
+.dkd-forecast-stats {
+    display: flex;
+    gap: 10px;
+    margin: 12px 0 16px 0;
+    flex-wrap: wrap;
+}
+
+.dkd-forecast-stat {
+    flex: 1;
+    min-width: 130px;
+    background: #fff;
+    border: 1px solid var(--dkd-border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dkd-forecast-stat-label {
+    font-size: 10px;
+    color: var(--dkd-text-weak);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+.dkd-forecast-stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--dkd-text);
+}
+
+.dkd-forecast-insight {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #eef4ff;
+    border-left: 3px solid var(--dkd-primary);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--dkd-text);
+    line-height: 1.5;
+}
+
 @media (max-width: 700px) {
     .dkd-section-head {
         flex-direction: column;

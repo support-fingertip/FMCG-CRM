@@ -1406,11 +1406,171 @@ The Dynamic KPI Dashboard now has **two chart widgets** below the KPI cards:
 - **Metric/dimension changes DO re-query**: Because the grouping is done server-side in SOQL
 - **Chart instance reuse**: Chart.js instances are destroyed before re-rendering to prevent canvas conflicts
 
-### 19.7 What's Next (Sprint 5+)
-- **Sprint 5**: `DKD_Forecast_Service` for linear regression on time series + forecast widget
+### 19.7 What's Next (Sprint 6+)
 - **Sprint 6**: `Dashboard_View__c` for saving custom dashboard layouts per user
 - **Sprint 7**: Drill-down, export to PDF/CSV, auto-refresh toggle
 - **Sprint 8**: Smart insights and anomaly detection
+
+---
+
+## Step 20: Dynamic KPI Dashboard — Forecast Engine (Sprint 5)
+
+Sprint 5 adds **future growth analysis** to the Dynamic KPI Dashboard using
+ordinary least squares (OLS) linear regression on historical time-series
+data. Users can see projected values, confidence intervals, and automatic
+insight text describing the trend.
+
+### 20.1 New Apex Class: `DKD_Forecast_Service`
+
+| Method | Purpose |
+|---|---|
+| `forecast(historical, forecastPeriods)` | Core algorithm — takes a historical time-series and projects N future periods. |
+| `forecastMetric(metricKey, filters, dateFrom, dateTo, interval, periods, scope)` | Convenience endpoint that queries the metric then forecasts in one call. |
+
+**Returned data:**
+
+```json
+{
+  "historical":       [{ period, label, value, count }],
+  "forecast":         [{ periodIndex, label, value, upper, lower }],
+  "slope":            42.5,
+  "intercept":        1200,
+  "rSquared":         0.89,
+  "growthRatePercent": 28.5,
+  "standardError":    125.3,
+  "insight":          "Trend: increasing (up 28.5% over the observed window). Forecast confidence: high (R²=0.89). Projected change over forecast horizon: 35.2%."
+}
+```
+
+### 20.2 The Math (Linear Regression)
+
+For historical points `(x₁, y₁), (x₂, y₂), ..., (xₙ, yₙ)` where x is the time index:
+
+```
+slope (m)     = Σ((xᵢ - x̄)(yᵢ - ȳ)) / Σ((xᵢ - x̄)²)
+intercept (b) = ȳ - m·x̄
+forecast:       y(x) = m·x + b
+```
+
+**Goodness of fit** — R² (coefficient of determination):
+```
+SS_total    = Σ((yᵢ - ȳ)²)
+SS_residual = Σ((yᵢ - ŷᵢ)²)
+R² = 1 - (SS_residual / SS_total)
+```
+- R² = 1.0 → perfect fit
+- R² ≥ 0.85 → high confidence
+- R² 0.5 – 0.85 → moderate confidence
+- R² < 0.5 → low confidence (noisy data)
+
+**95% confidence interval** — using standard error of the estimate:
+```
+SE = √(SS_residual / (n - 2))
+upper = prediction + 1.96 × SE
+lower = max(0, prediction - 1.96 × SE)
+```
+
+Negative values are floored at 0 since metrics like revenue, visits, and
+counts can't be negative.
+
+### 20.3 New Apex Endpoint: `DKD_Dashboard_Controller.getForecast`
+
+```apex
+@AuraEnabled
+public static Map<String, Object> getForecast(
+    String metricKey,
+    String filtersJson,
+    Date dateFrom,
+    Date dateTo,
+    String interval,            // DAY / WEEK / MONTH / QUARTER / YEAR
+    Integer forecastPeriods,    // 3, 6, or 12 typical
+    String userScope            // self / team / org
+)
+```
+
+### 20.4 Chart Widget Enhancement
+
+The `dkdChartWidget` now supports three new dataset properties:
+
+| Property | Effect |
+|---|---|
+| `dashed: true` | Draws the line with a dashed stroke (`borderDash: [6, 6]`) |
+| `fill: false` | Disables the gradient fill below the line |
+| `bandUpper: true` | Upper bound of a confidence band (no line, no fill) |
+| `bandLower: true` | Lower bound filled back to the previous dataset (creates the shaded band) |
+
+### 20.5 Dashboard Integration
+
+The Dynamic KPI Dashboard now has a **"Future Growth Forecast"** section below
+the Trend Analysis section with:
+
+**Controls:**
+- **Metric** — filtered to only metrics with `Allow_Forecast__c = true`
+- **Interval** — Daily / Weekly / Monthly / Quarterly / Yearly
+- **Horizon** — Next 3 / 6 / 12 periods
+
+**Stats strip (3 cards):**
+- **Historical Growth** — `(last - first) / first × 100%`
+- **Trend Slope** — `metric units per period`
+- **Fit (R²)** — confidence of the regression (0 – 100%)
+
+**Chart:**
+- **Historical** (solid line with gradient fill) — actual values
+- **Forecast** (dashed line, no fill) — projected values
+- **Confidence band** (shaded area) — 95% CI around the forecast
+
+**Insight strip:**
+- Auto-generated narrative (e.g., "Trend: increasing (up 28.5% over the observed window). Forecast confidence: high (R²=0.89). Projected change over forecast horizon: 35.2%.")
+
+### 20.6 Walkthrough
+
+1. Open **Dynamic KPI Dashboard**
+2. Scroll to the **Future Growth Forecast** section
+3. Select metric: `Total Revenue`
+4. Select interval: `Monthly`
+5. Select horizon: `Next 6 Periods`
+6. Observe:
+   - Stats strip showing growth/slope/R²
+   - Historical months as a solid blue line with gradient
+   - Next 6 months as a dashed line (forecast)
+   - Faint shaded band showing 95% confidence range
+   - Insight text below the chart
+7. Change interval to `Quarterly` → chart reloads with quarterly buckets
+8. Change metric to `Total Visits` (another forecast-enabled metric) → fresh forecast
+
+### 20.7 When Forecasts Are Reliable
+
+| Situation | Reliability |
+|---|---|
+| Steady growth/decline with R² ≥ 0.85 | **High** — linear projection is accurate |
+| Noisy but linear data (0.5 ≤ R² < 0.85) | **Moderate** — use the confidence band as the likely range |
+| Random/cyclical data (R² < 0.5) | **Low** — linear regression isn't the right model; look at historical range instead |
+| Only 2 – 3 historical points | **Low** — too few points for meaningful statistics |
+| Seasonal business with strong monthly swings | **Limited** — consider switching interval to Quarterly or Yearly |
+
+### 20.8 Use Cases
+
+| Question | Setup |
+|---|---|
+| Will I hit my quarterly revenue target? | Revenue × Monthly × Next 3 Periods → compare last forecast to target |
+| Is our visit productivity trending down? | Productive Visits × Weekly × Next 6 Periods → check if slope is negative |
+| How many new outlets next month? | New Outlets × Monthly × Next 3 Periods |
+| Projected year-end collections | Total Collections × Monthly × Next 12 Periods |
+
+### 20.9 Enabling Forecast on a New Metric
+
+Only metrics with `Allow_Forecast__c = true` appear in the forecast picker.
+To enable forecasting on a custom metric:
+
+1. Go to the **KPI Metrics** tab
+2. Open or create the metric
+3. Check the **Allow Forecast** checkbox
+4. Save
+5. Return to the Dynamic KPI Dashboard — the metric now appears in the forecast Metric dropdown
+
+> **Tip:** Only enable Allow Forecast on metrics that represent a **continuous
+> trendable value** (revenue, visits, collections). It makes less sense for
+> distributions like "largest single order" or "discount %".
 
 ---
 

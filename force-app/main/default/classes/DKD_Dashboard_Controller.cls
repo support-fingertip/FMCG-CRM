@@ -153,4 +153,33 @@ public with sharing class DKD_Dashboard_Controller {
             metricKeys, filtersJson, prevStart, prevEnd, userScope
         );
     }
+
+    /**
+     * @description Runs a forecast for the given metric using linear
+     *              regression on historical time-series data. Returns the
+     *              historical series plus N future projected periods with
+     *              confidence intervals and an insight string.
+     *
+     * @param metricKey       Metric_Key__c of the KPI_Metric__c to forecast.
+     * @param filtersJson     Optional filter JSON (TAM_FilterEngine format).
+     * @param dateFrom        Start of historical window.
+     * @param dateTo          End of historical window.
+     * @param interval        DAY / WEEK / MONTH / QUARTER / YEAR.
+     * @param forecastPeriods Number of future periods to project (default 6).
+     * @param userScope       'self' | 'team' | 'org'.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getForecast(
+        String metricKey,
+        String filtersJson,
+        Date dateFrom,
+        Date dateTo,
+        String interval,
+        Integer forecastPeriods,
+        String userScope
+    ) {
+        return DKD_Forecast_Service.forecastMetric(
+            metricKey, filtersJson, dateFrom, dateTo, interval, forecastPeriods, userScope
+        );
+    }
 }

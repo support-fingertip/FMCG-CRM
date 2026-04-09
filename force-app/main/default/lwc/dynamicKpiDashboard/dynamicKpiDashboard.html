@@ -262,6 +262,70 @@
                             height="300">
                         </c-dkd-chart-widget>
                     </section>
+
+                    <!-- Forecast widget -->
+                    <section class="dkd-section dkd-section-forecast">
+                        <div class="dkd-section-head">
+                            <h2 class="dkd-section-title">
+                                <lightning-icon icon-name="utility:trending" size="xx-small" class="dkd-title-icon"></lightning-icon>
+                                Future Growth Forecast
+                            </h2>
+                            <div class="dkd-chart-controls">
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedForecastMetric}
+                                    options={forecastMetricOptions}
+                                    onchange={handleForecastMetricChange}
+                                    placeholder="Metric..."
+                                    class="dkd-ctrl-metric">
+                                </lightning-combobox>
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedForecastInterval}
+                                    options={trendIntervalOptions}
+                                    onchange={handleForecastIntervalChange}
+                                    placeholder="Interval..."
+                                    class="dkd-ctrl-type">
+                                </lightning-combobox>
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedForecastHorizon}
+                                    options={forecastHorizonOptions}
+                                    onchange={handleForecastHorizonChange}
+                                    placeholder="Horizon..."
+                                    class="dkd-ctrl-type">
+                                </lightning-combobox>
+                            </div>
+                        </div>
+
+                        <!-- Forecast stats strip -->
+                        <template if:true={forecastStats}>
+                            <div class="dkd-forecast-stats">
+                                <template for:each={forecastStatsItems} for:item="stat">
+                                    <div class="dkd-forecast-stat" key={stat.key}>
+                                        <span class="dkd-forecast-stat-label">{stat.label}</span>
+                                        <span class="dkd-forecast-stat-value">{stat.value}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <c-dkd-chart-widget
+                            chart-type="line"
+                            labels={forecastLabels}
+                            datasets={forecastDatasets}
+                            title={forecastChartTitle}
+                            format={forecastChartFormat}
+                            height="320">
+                        </c-dkd-chart-widget>
+
+                        <template if:true={forecastInsight}>
+                            <div class="dkd-forecast-insight">
+                                <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+                                <span>{forecastInsight}</span>
+                            </div>
+                        </template>
+                    </section>
                 </template>
             </main>
         </div>
