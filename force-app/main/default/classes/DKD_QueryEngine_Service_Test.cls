@@ -443,4 +443,80 @@ private class DKD_QueryEngine_Service_Test {
         Test.stopTest();
         System.assert(thrown, 'Malicious groupBy should be rejected');
     }
+
+    // ── Sprint 7: Drill-down ─────────────────────────────────────────────
+
+    @IsTest
+    static void testDrillDown_Basic() {
+        Test.startTest();
+        Map<String, Object> result = DKD_QueryEngine_Service.drillDownRecords(
+            'test_revenue', null, null, null,
+            Date.today().addDays(-1), Date.today().addDays(1),
+            'self', 50
+        );
+        Test.stopTest();
+
+        List<Map<String, Object>> rows = (List<Map<String, Object>>) result.get('rows');
+        List<Map<String, Object>> cols = (List<Map<String, Object>>) result.get('columns');
+        System.assert(rows.size() >= 3, 'Should return at least 3 approved orders');
+        System.assert(cols.size() >= 2, 'Should have multiple columns');
+        System.assertEquals('Test Revenue', result.get('metricLabel'));
+        System.assertEquals('Sales_Order__c', result.get('sourceObject'));
+    }
+
+    @IsTest
+    static void testDrillDown_GroupFilter() {
+        Test.startTest();
+        Map<String, Object> result = DKD_QueryEngine_Service.drillDownRecords(
+            'test_revenue', null, 'Status__c', 'Approved',
+            Date.today().addDays(-1), Date.today().addDays(1),
+            'self', 50
+        );
+        Test.stopTest();
+
+        Integer count = (Integer) result.get('recordCount');
+        System.assert(count >= 3, 'Should return approved orders');
+    }
+
+    @IsTest
+    static void testDrillDown_LimitClamp() {
+        Test.startTest();
+        // Pass a huge limit — should be clamped to 500
+        Map<String, Object> result = DKD_QueryEngine_Service.drillDownRecords(
+            'test_revenue', null, null, null,
+            Date.today().addDays(-1), Date.today().addDays(1),
+            'self', 9999
+        );
+        Test.stopTest();
+        // Just verify no exception
+        System.assertNotEquals(null, result.get('rows'));
+    }
+
+    @IsTest
+    static void testDrillDown_MetricNotFound() {
+        Boolean thrown = false;
+        Test.startTest();
+        try {
+            DKD_QueryEngine_Service.drillDownRecords(
+                'nope', null, null, null,
+                Date.today(), Date.today(), 'self', 50
+            );
+        } catch (DKD_QueryEngine_Service.DKD_QueryException e) {
+            thrown = true;
+        }
+        Test.stopTest();
+        System.assert(thrown);
+    }
+
+    @IsTest
+    static void testDrillDown_NullLimitDefault() {
+        Test.startTest();
+        Map<String, Object> result = DKD_QueryEngine_Service.drillDownRecords(
+            'test_revenue', null, null, null,
+            Date.today().addDays(-1), Date.today().addDays(1),
+            'self', null
+        );
+        Test.stopTest();
+        System.assertNotEquals(null, result.get('rows'));
+    }
 }

@@ -1712,9 +1712,188 @@ When a user saves a view, the current dashboard state is serialized as JSON:
 **Note:** Users don't need tab visibility to use saved views — all CRUD is
 done through the Dynamic KPI Dashboard LWC. The tab is for admin/debug only.
 
-### 21.10 What's Next (Sprint 7+)
-- **Sprint 7**: Drill-down on chart clicks, export to PDF/Excel, auto-refresh toggle
-- **Sprint 8**: Smart insights and anomaly detection
+### 21.10 What's Next
+- **Sprint 7** ✅: Drill-down on chart clicks, CSV export, print-to-PDF, auto-refresh
+- **Sprint 8** ✅: Smart insights and anomaly detection
+
+---
+
+## Step 22: Dynamic KPI Dashboard — Drill-Down, Export, Auto-Refresh (Sprint 7)
+
+Sprint 7 turns the dashboard from a passive viewer into an interactive analysis
+tool. Users can click any KPI card or chart segment to see the underlying
+records, export any view to CSV, print to PDF, and keep the dashboard
+auto-refreshing in the background.
+
+### 22.1 Drill-Down
+
+**How it works:**
+- Every KPI card is now clickable — click to see all records behind the number
+- Charts (breakdown, trend) open a drill-down filtered to the clicked segment
+- A modal opens with a sortable table showing the raw records
+- Columns are derived automatically from the metric definition:
+  - Always: `Id`, `Name` (if object has one), `Date Field`, `Aggregate Field`, `User Field`, `Status__c` (if exists)
+
+**New Apex:**
+- `DKD_Dashboard_Controller.drillDown(metricKey, filters, groupBy, groupKey, dateFrom, dateTo, userScope, limit)`
+- Delegates to `DKD_QueryEngine_Service.drillDownRecords()` which builds a dynamic SELECT based on the metric definition
+
+**Security:**
+- Respects the same user scope (self/team/org) as the parent metric
+- Uses the same default filters from the metric
+- SOQL injection protection via `sanitizeField()` regex
+
+**Walkthrough:**
+1. On the dashboard, click any **KPI card** (e.g., Total Revenue)
+2. A modal opens showing the 100 most recent approved orders
+3. Click **Export CSV** to download the records
+4. Click **Close** to return to the dashboard
+
+### 22.2 CSV Export
+
+Two export entry points:
+
+| Button | Exports | Filename |
+|---|---|---|
+| **CSV** (header toolbar) | Current KPI cards | `kpi-dashboard-YYYYMMDD-HHMM.csv` |
+| **Export CSV** (drill-down modal footer) | Drill-down record table | `drill-down-YYYYMMDD-HHMM.csv` |
+
+**Implementation:**
+- Client-side only — no Apex round-trip
+- Uses `Blob` + `URL.createObjectURL()` + a dynamically-created `<a>` element
+- Handles CSV escaping for commas, quotes, and newlines
+
+### 22.3 Print to PDF
+
+Click **Print** in the header toolbar → browser's native print dialog opens.
+
+The dashboard uses `@media print` CSS rules to:
+- Hide the header, filter panel, views toolbar, and buttons
+- Remove card shadows and reduce chrome
+- Add `page-break-inside: avoid` to keep KPI cards on single pages
+
+Users can **Save as PDF** from the print dialog in any modern browser.
+
+### 22.4 Auto-Refresh
+
+**New control in the header** — a picker with 4 options:
+- **Off** (default)
+- **Every 30 seconds**
+- **Every 1 minute**
+- **Every 5 minutes**
+
+When enabled, the dashboard silently re-runs `refreshData()` on the interval.
+Uses `setInterval` + `clearInterval` with proper cleanup in
+`disconnectedCallback()`.
+
+**Smart behavior:** The timer skips a refresh if one is already in progress
+(`isLoading` check), preventing stacked/overlapping API calls.
+
+---
+
+## Step 23: Dynamic KPI Dashboard — Smart Insights (Sprint 8)
+
+Sprint 8 adds **auto-generated narrative insights** at the top of the dashboard,
+surfacing trends, anomalies, and top performers without the user having to
+interpret the charts.
+
+### 23.1 Insight Types
+
+| Type | Trigger | Severity | Example Message |
+|---|---|---|---|
+| `trend_up` | Period-over-period >= +5% | success | "Total Revenue is up 12.3% vs previous period (₹4.2L vs ₹3.7L)" |
+| `trend_down` | Period-over-period >= -5% | warning (>-25%) or critical (<-25%) | "Order Count is down 28% vs previous period (42 vs 58)" |
+| `anomaly_high` | Current > mean + 2σ of 6-month trend | success | "Revenue is significantly higher than the 6-month trend (2.3σ from mean)" |
+| `anomaly_low` | Current < mean - 2σ | critical | "Visits are significantly lower than the 6-month trend (-2.1σ from mean)" |
+| `top_performer` | Team/org scope, first currency metric | info | "Vikram Singh leads with ₹4,85,000 in Total Revenue" |
+
+### 23.2 Algorithms
+
+**Period-over-period:**
+- Current period values (from `dateFrom` to `dateTo`)
+- Previous period = same length immediately before `dateFrom`
+- `deltaPct = (current - previous) / |previous| * 100`
+- Changes below 5% are suppressed as noise
+
+**Year-over-year:**
+- Compares `dateFrom..dateTo` to `dateFrom.addYears(-1)..dateTo.addYears(-1)`
+- Only generated when year-ago data exists
+
+**Anomaly detection (z-score):**
+- Only runs on metrics with `Allow_Forecast__c = true`
+- Pulls 6 months of historical monthly buckets (prior to current period)
+- Computes mean μ and standard deviation σ
+- Flags if `|(current - μ) / σ| ≥ 2.0`
+
+**Top performer:**
+- Only for team/org scopes
+- Picks the first Currency-format metric from the selected set
+- Groups by `User_Field__c`, finds the row with the highest value
+- Resolves the user's name via `[SELECT Name FROM User]`
+
+### 23.3 UI
+
+New **Smart Insights** section at the top of the dashboard:
+- Gradient purple background with Einstein icon
+- Cards in a responsive grid (min 320px wide)
+- Each card shows icon + title + message
+- Color-coded left border by severity:
+  - Green (#2e844a) — success / trend up
+  - Yellow (#dd7a01) — warning / moderate decline
+  - Red (#ba0517) — critical / large decline / low anomaly
+  - Purple (#7b61ff) — info / top performer
+- Hide/Show toggle in the section header
+
+Up to **8 insights** per refresh (to avoid visual clutter).
+
+### 23.4 Walkthrough
+
+1. Open the Dynamic KPI Dashboard
+2. Pick 3-4 metrics (e.g., Revenue, Order Count, Visits, Collections)
+3. Set scope to `My Team` or `Organization`
+4. The **Smart Insights** section appears above Key Metrics with 2-5 cards:
+   - "Revenue is up X% vs previous period"
+   - "Total Visits is down Y% vs previous period"
+   - "Vikram Singh leads with ₹X,XX,XXX in Total Revenue" (team/org only)
+5. Change the period (e.g., to YTD) and click Apply — insights refresh with new narratives
+6. Click **Hide** to collapse the section without losing the data
+
+### 23.5 Anomaly Detection Example
+
+To see anomaly detection in action:
+1. Run `scripts/seed_transactional_data.apex` to get baseline data
+2. Create a batch of unusually high/low orders for the current month via Developer Console:
+
+```apex
+TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
+try {
+    List<Sales_Order__c> spike = new List<Sales_Order__c>();
+    for (Integer i = 0; i < 20; i++) {
+        spike.add(new Sales_Order__c(
+            Account__c = [SELECT Id FROM Account LIMIT 1].Id,
+            Order_Date__c = Date.today(),
+            Status__c = 'Approved',
+            Salesperson__c = UserInfo.getUserId(),
+            Total_Net_Amount__c = 50000
+        ));
+    }
+    insert spike;
+} finally {
+    TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
+}
+```
+
+3. Reload the dashboard — you should see "Outperformance detected" for Revenue with a σ score > 2.0.
+
+### 23.6 Permissions
+
+| Profile | DKD_Insights_Service Access |
+|---|---|
+| FSCRM_TSE / ASM / RSM / NSM | Enabled |
+| FSCRM_Admin perm set | Enabled |
+
+No new objects — the insights engine reuses existing KPI_Metric__c and
+DKD_QueryEngine_Service.
 
 ---
 

@@ -374,6 +374,146 @@ public with sharing class DKD_QueryEngine_Service {
         return output;
     }
 
+    // ── Drill-Down ───────────────────────────────────────────────────────────
+
+    /**
+     * @description Fetches the raw records behind a metric value with all
+     *              the metric's filters applied, optionally narrowed to a
+     *              single group key. Returns a list of row maps plus column
+     *              metadata for rendering a drill-down table.
+     */
+    public static Map<String, Object> drillDownRecords(
+        String metricKey,
+        String filtersJson,
+        String groupBy,
+        String groupKey,
+        Date dateFrom,
+        Date dateTo,
+        String userScope,
+        Integer recordLimit
+    ) {
+        KPI_Metric__c metric = DKD_MetricRegistry.getMetric(metricKey);
+        if (metric == null) {
+            throw new DKD_QueryException('Metric not found: ' + metricKey);
+        }
+
+        // Build a safe SELECT list based on the source object
+        List<String> fieldList = buildDrillDownFieldList(metric);
+        String whereClause = buildWhereClause(metric, filtersJson, dateFrom, dateTo, userScope);
+
+        // Add groupKey narrow filter if present
+        if (String.isNotBlank(groupBy) && groupKey != null) {
+            String safeGroupBy = sanitizeField(groupBy);
+            if (groupKey == '(blank)' || groupKey == '') {
+                whereClause += ' AND ' + safeGroupBy + ' = null';
+            } else {
+                String safeValue = String.escapeSingleQuotes(groupKey);
+                whereClause += ' AND ' + safeGroupBy + ' = \'' + safeValue + '\'';
+            }
+        }
+
+        String orderBy = String.isNotBlank(metric.Date_Field__c)
+            ? ' ORDER BY ' + sanitizeField(metric.Date_Field__c) + ' DESC'
+            : '';
+
+        Integer safeLimit = (recordLimit != null && recordLimit > 0 && recordLimit <= 500)
+            ? recordLimit : 100;
+
+        String query = 'SELECT ' + String.join(fieldList, ', ') +
+                       ' FROM ' + metric.Source_Object__c +
+                       ' WHERE ' + whereClause +
+                       orderBy +
+                       ' LIMIT ' + safeLimit;
+
+        List<SObject> records;
+        try {
+            records = Database.query(query);
+        } catch (Exception e) {
+            throw new DKD_QueryException(
+                'Drill-down query failed: ' + e.getMessage() + ' (SOQL: ' + query + ')'
+            );
+        }
+
+        // Serialize each record as a map of {field: value}
+        List<Map<String, Object>> rows = new List<Map<String, Object>>();
+        for (SObject r : records) {
+            Map<String, Object> row = new Map<String, Object>();
+            for (String f : fieldList) {
+                try {
+                    row.put(f, r.get(f));
+                } catch (Exception e) {
+                    row.put(f, null);
+                }
+            }
+            row.put('_id', r.Id);
+            rows.add(row);
+        }
+
+        // Column metadata for the front-end table
+        List<Map<String, Object>> columns = new List<Map<String, Object>>();
+        for (String f : fieldList) {
+            Map<String, Object> col = new Map<String, Object>();
+            col.put('field', f);
+            col.put('label', humanLabel(f));
+            columns.add(col);
+        }
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('rows', rows);
+        result.put('columns', columns);
+        result.put('recordCount', rows.size());
+        result.put('metricLabel', metric.Label__c);
+        result.put('sourceObject', metric.Source_Object__c);
+        return result;
+    }
+
+    private static List<String> buildDrillDownFieldList(KPI_Metric__c metric) {
+        List<String> fields = new List<String>{ 'Id' };
+        Set<String> seen = new Set<String>{ 'id' };
+
+        if (String.isNotBlank(metric.Date_Field__c) && !seen.contains(metric.Date_Field__c.toLowerCase())) {
+            fields.add(sanitizeField(metric.Date_Field__c));
+            seen.add(metric.Date_Field__c.toLowerCase());
+        }
+        if (String.isNotBlank(metric.Aggregate_Field__c) && !seen.contains(metric.Aggregate_Field__c.toLowerCase())) {
+            fields.add(sanitizeField(metric.Aggregate_Field__c));
+            seen.add(metric.Aggregate_Field__c.toLowerCase());
+        }
+        if (String.isNotBlank(metric.User_Field__c) && !seen.contains(metric.User_Field__c.toLowerCase())) {
+            fields.add(sanitizeField(metric.User_Field__c));
+            seen.add(metric.User_Field__c.toLowerCase());
+        }
+
+        // Add "Name" if the object supports it (most standard + custom do)
+        Schema.SObjectType sobj = Schema.getGlobalDescribe().get(metric.Source_Object__c);
+        if (sobj != null) {
+            Map<String, Schema.SObjectField> objFields = sobj.getDescribe().fields.getMap();
+            if (objFields.containsKey('name') && !seen.contains('name')) {
+                fields.add(0, 'Name'); // Insert after Id
+                seen.add('name');
+            }
+            // Status__c is ubiquitous across FMCG transactional objects
+            if (objFields.containsKey('status__c') && !seen.contains('status__c')) {
+                fields.add('Status__c');
+                seen.add('status__c');
+            }
+        }
+        return fields;
+    }
+
+    private static String humanLabel(String field) {
+        if (String.isBlank(field)) return '';
+        String cleaned = field.replace('__c', '').replace('__r', '').replace('_', ' ');
+        // Title case the first letter of each word
+        List<String> words = cleaned.split(' ');
+        List<String> titled = new List<String>();
+        for (String w : words) {
+            if (String.isBlank(w)) continue;
+            titled.add(w.substring(0, 1).toUpperCase() + (w.length() > 1 ? w.substring(1) : ''));
+        }
+        return String.join(titled, ' ');
+    }
+
     // ── Safety Helpers ───────────────────────────────────────────────────────
 
     /**

@@ -182,4 +182,56 @@ public with sharing class DKD_Dashboard_Controller {
             metricKey, filtersJson, dateFrom, dateTo, interval, forecastPeriods, userScope
         );
     }
+
+    /**
+     * @description Returns the raw records behind a metric value, optionally
+     *              filtered to a specific group key (e.g., "all Approved
+     *              orders" or "all visits by Salesperson X"). Used by chart
+     *              drill-down to show underlying data.
+     *
+     * @param metricKey   Metric_Key__c of the KPI_Metric__c.
+     * @param filtersJson Optional user filter JSON.
+     * @param groupBy     Optional field whose value the user clicked.
+     * @param groupKey    The clicked value (e.g., "Approved") — null for no filter.
+     * @param dateFrom    Start date.
+     * @param dateTo      End date.
+     * @param userScope   'self' | 'team' | 'org'.
+     * @param recordLimit Max rows to return (default 100, max 500).
+     */
+    @AuraEnabled
+    public static Map<String, Object> drillDown(
+        String metricKey,
+        String filtersJson,
+        String groupBy,
+        String groupKey,
+        Date dateFrom,
+        Date dateTo,
+        String userScope,
+        Integer recordLimit
+    ) {
+        if (recordLimit == null || recordLimit <= 0) recordLimit = 100;
+        if (recordLimit > 500) recordLimit = 500;
+        return DKD_QueryEngine_Service.drillDownRecords(
+            metricKey, filtersJson, groupBy, groupKey, dateFrom, dateTo, userScope, recordLimit
+        );
+    }
+
+    /**
+     * @description Bundled multi-metric query for the smart insights engine.
+     *              Returns current period, previous period, and same-period-
+     *              last-year values in one call. Also returns anomaly flags
+     *              when the current value deviates significantly from trend.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getInsights(
+        List<String> metricKeys,
+        String filtersJson,
+        Date dateFrom,
+        Date dateTo,
+        String userScope
+    ) {
+        return DKD_Insights_Service.generateInsights(
+            metricKeys, filtersJson, dateFrom, dateTo, userScope
+        );
+    }
 }

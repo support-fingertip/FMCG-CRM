@@ -7,6 +7,8 @@ import getMetricData from '@salesforce/apex/DKD_Dashboard_Controller.getMetricDa
 import getTimeSeries from '@salesforce/apex/DKD_Dashboard_Controller.getTimeSeries';
 import getPreviousPeriodValues from '@salesforce/apex/DKD_Dashboard_Controller.getPreviousPeriodValues';
 import getForecast from '@salesforce/apex/DKD_Dashboard_Controller.getForecast';
+import drillDown from '@salesforce/apex/DKD_Dashboard_Controller.drillDown';
+import getInsights from '@salesforce/apex/DKD_Dashboard_Controller.getInsights';
 
 // Saved views (Sprint 6)
 import getMyViews from '@salesforce/apex/DKD_DashboardView_Controller.getMyViews';
@@ -84,6 +86,22 @@ export default class DynamicKpiDashboard extends LightningElement {
     @track showSaveModal = false;
     @track saveModalMode = 'new'; // 'new' or 'edit'
     @track isSaving = false;
+
+    // Sprint 7: Drill-down
+    @track showDrillDown = false;
+    @track drillDownTitle = '';
+    @track drillDownRows = [];
+    @track drillDownColumns = [];
+    @track drillDownRecordCount = 0;
+    @track drillDownLoading = false;
+
+    // Sprint 7: Auto-refresh
+    @track autoRefreshInterval = 'off';
+    _autoRefreshTimer = null;
+
+    // Sprint 8: Insights
+    @track insights = [];
+    @track showInsights = true;
 
     // UI state
     @track showFilterPanel = true;
@@ -577,6 +595,219 @@ export default class DynamicKpiDashboard extends LightningElement {
 
     handleRefresh() { this.refreshData(); }
 
+    // ── Auto-Refresh (Sprint 7) ──────────────────────────────────
+
+    get autoRefreshOptions() {
+        return [
+            { label: 'Off', value: 'off' },
+            { label: 'Every 30 seconds', value: '30' },
+            { label: 'Every 1 minute', value: '60' },
+            { label: 'Every 5 minutes', value: '300' }
+        ];
+    }
+
+    get autoRefreshLabel() {
+        if (this.autoRefreshInterval === 'off') return 'Auto-refresh: Off';
+        return 'Auto-refresh: every ' + this.autoRefreshInterval + 's';
+    }
+
+    handleAutoRefreshChange(event) {
+        this.autoRefreshInterval = event.detail.value;
+        this._restartAutoRefresh();
+    }
+
+    _restartAutoRefresh() {
+        if (this._autoRefreshTimer) {
+            clearInterval(this._autoRefreshTimer);
+            this._autoRefreshTimer = null;
+        }
+        if (this.autoRefreshInterval === 'off') return;
+        const seconds = parseInt(this.autoRefreshInterval, 10);
+        if (isNaN(seconds) || seconds <= 0) return;
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._autoRefreshTimer = setInterval(() => {
+            if (!this.isLoading) this.refreshData();
+        }, seconds * 1000);
+    }
+
+    disconnectedCallback() {
+        if (this._autoRefreshTimer) {
+            clearInterval(this._autoRefreshTimer);
+            this._autoRefreshTimer = null;
+        }
+    }
+
+    // ── Drill-Down (Sprint 7) ────────────────────────────────────
+
+    async handleChartClick(event) {
+        const groupKey = event.currentTarget.dataset.groupKey;
+        const label = event.currentTarget.dataset.label;
+        if (!this.selectedChartMetric) return;
+        await this._openDrillDown(
+            this.selectedChartMetric, this.selectedGroupBy, groupKey, label
+        );
+    }
+
+    async handleKpiCardClick(event) {
+        const metricKey = event.currentTarget.dataset.metricKey;
+        if (!metricKey) return;
+        await this._openDrillDown(metricKey, null, null, null);
+    }
+
+    async _openDrillDown(metricKey, groupBy, groupKey, groupLabel) {
+        this.drillDownLoading = true;
+        this.showDrillDown = true;
+        const metric = this.allMetrics.find(m => m.key === metricKey);
+        const metricLabel = metric ? metric.label : metricKey;
+        this.drillDownTitle = groupLabel
+            ? metricLabel + ' — ' + groupLabel
+            : metricLabel + ' — All records';
+        try {
+            const result = await drillDown({
+                metricKey: metricKey,
+                filtersJson: null,
+                groupBy: groupBy || null,
+                groupKey: groupKey || null,
+                dateFrom: this.dateFrom,
+                dateTo: this.dateTo,
+                userScope: this.userScope,
+                recordLimit: 200
+            });
+            this.drillDownColumns = (result.columns || []).map(c => ({
+                field: c.field,
+                label: c.label
+            }));
+            this.drillDownRows = (result.rows || []).map(r => {
+                const cells = this.drillDownColumns.map(c => ({
+                    field: c.field,
+                    value: this._formatCell(r[c.field])
+                }));
+                return { id: r._id, cells };
+            });
+            this.drillDownRecordCount = result.recordCount || 0;
+        } catch (error) {
+            this.showToast('Drill-down failed', this.reduceError(error), 'error');
+            this.drillDownRows = [];
+            this.drillDownColumns = [];
+            this.drillDownRecordCount = 0;
+        } finally {
+            this.drillDownLoading = false;
+        }
+    }
+
+    handleCloseDrillDown() {
+        this.showDrillDown = false;
+        this.drillDownRows = [];
+        this.drillDownColumns = [];
+    }
+
+    _formatCell(value) {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'number') {
+            return new Intl.NumberFormat('en-IN').format(value);
+        }
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+            // ISO date
+            try {
+                return new Date(value).toLocaleDateString('en-IN', {
+                    day: '2-digit', month: 'short', year: 'numeric'
+                });
+            } catch (e) { return value; }
+        }
+        return String(value);
+    }
+
+    // ── Export (Sprint 7) ────────────────────────────────────────
+
+    handleExportKpis() {
+        if (!this.kpiCards || !this.kpiCards.length) {
+            this.showToast('Nothing to export', 'Add some KPI cards first.', 'warning');
+            return;
+        }
+        const header = ['Category', 'Metric', 'Current Value', 'Previous Value', 'Change %'];
+        const rows = this.kpiCards.map(c => [
+            c.category,
+            c.label,
+            c.value,
+            c.prevValue,
+            c.hasComparison ? (c.delta >= 0 ? '+' : '-') + c.deltaPct : ''
+        ]);
+        this._downloadCsv('kpi-dashboard-' + this._timestamp() + '.csv', header, rows);
+    }
+
+    handleExportDrillDown() {
+        if (!this.drillDownRows.length) return;
+        const header = this.drillDownColumns.map(c => c.label);
+        const rows = this.drillDownRows.map(r => r.cells.map(c => c.value));
+        this._downloadCsv('drill-down-' + this._timestamp() + '.csv', header, rows);
+    }
+
+    _downloadCsv(filename, header, rows) {
+        const esc = v => {
+            if (v === null || v === undefined) return '';
+            const s = String(v).replace(/"/g, '""');
+            return /[",\n]/.test(s) ? '"' + s + '"' : s;
+        };
+        const lines = [header.map(esc).join(',')];
+        rows.forEach(r => lines.push(r.map(esc).join(',')));
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showToast('Exported', filename, 'success');
+    }
+
+    handlePrintDashboard() {
+        // Trigger browser print — CSS @media print controls the layout
+        window.print();
+    }
+
+    _timestamp() {
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) +
+               '-' + pad(d.getHours()) + pad(d.getMinutes());
+    }
+
+    // ── Insights (Sprint 8) ──────────────────────────────────────
+
+    get hasInsights() { return this.insights && this.insights.length > 0; }
+
+    get insightCards() {
+        return (this.insights || []).map(i => ({
+            ...i,
+            cardStyle: 'border-left-color: ' + (i.color || '#0176d3') + ';',
+            iconStyle: 'background: ' + (i.color || '#0176d3') + '1a; color: ' + (i.color || '#0176d3') + ';'
+        }));
+    }
+
+    handleToggleInsights() {
+        this.showInsights = !this.showInsights;
+    }
+
+    async loadInsights() {
+        if (!this.selectedMetricKeys || !this.selectedMetricKeys.length) {
+            this.insights = [];
+            return;
+        }
+        try {
+            const result = await getInsights({
+                metricKeys: this.selectedMetricKeys,
+                filtersJson: null,
+                dateFrom: this.dateFrom,
+                dateTo: this.dateTo,
+                userScope: this.userScope
+            });
+            this.insights = (result && result.insights) ? result.insights : [];
+        } catch (error) {
+            console.error('Insights load failed', error);
+            this.insights = [];
+        }
+    }
+
     // ── Saved View Handlers (Sprint 6) ──────────────────────────
 
     async handleViewSelect(event) {
@@ -712,11 +943,12 @@ export default class DynamicKpiDashboard extends LightningElement {
 
             this.kpiCards = this.buildKpiCards(current, previous);
 
-            // Load charts in parallel after KPI cards are ready
+            // Load charts + insights in parallel after KPI cards are ready
             await Promise.all([
                 this.selectedChartMetric ? this.loadBreakdownChart() : Promise.resolve(),
                 this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve(),
-                this.selectedForecastMetric ? this.loadForecastChart() : Promise.resolve()
+                this.selectedForecastMetric ? this.loadForecastChart() : Promise.resolve(),
+                this.loadInsights()
             ]);
 
             const now = new Date();

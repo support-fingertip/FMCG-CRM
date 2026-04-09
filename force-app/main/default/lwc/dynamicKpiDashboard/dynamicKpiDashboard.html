@@ -16,6 +16,23 @@
                 </div>
             </div>
             <div class="dkd-header-actions">
+                <div class="dkd-auto-refresh">
+                    <lightning-combobox
+                        variant="label-hidden"
+                        value={autoRefreshInterval}
+                        options={autoRefreshOptions}
+                        onchange={handleAutoRefreshChange}
+                        class="dkd-auto-refresh-picker">
+                    </lightning-combobox>
+                </div>
+                <button class="dkd-btn dkd-btn-ghost" onclick={handleExportKpis} title="Export KPI cards to CSV">
+                    <lightning-icon icon-name="utility:download" size="xx-small"></lightning-icon>
+                    CSV
+                </button>
+                <button class="dkd-btn dkd-btn-ghost" onclick={handlePrintDashboard} title="Print / save as PDF">
+                    <lightning-icon icon-name="utility:print" size="xx-small"></lightning-icon>
+                    Print
+                </button>
                 <button class="dkd-btn dkd-btn-ghost" onclick={handleToggleFilterPanel} title="Toggle filter panel">
                     <lightning-icon icon-name={toggleFilterIcon} size="xx-small"></lightning-icon>
                     Filters
@@ -182,13 +199,46 @@
                 </template>
 
                 <template if:false={isLoading}>
+                    <!-- Smart Insights (Sprint 8) -->
+                    <template if:true={hasInsights}>
+                        <section class="dkd-section dkd-insights-section">
+                            <div class="dkd-section-head">
+                                <h2 class="dkd-section-title">
+                                    <lightning-icon icon-name="utility:einstein" size="x-small" class="dkd-insight-head-icon"></lightning-icon>
+                                    Smart Insights
+                                </h2>
+                                <button class="dkd-btn-mini" onclick={handleToggleInsights}>
+                                    <template if:true={showInsights}>Hide</template>
+                                    <template if:false={showInsights}>Show</template>
+                                </button>
+                            </div>
+                            <template if:true={showInsights}>
+                                <div class="dkd-insight-grid">
+                                    <template for:each={insightCards} for:item="ins">
+                                        <div class="dkd-insight-card" key={ins.id} style={ins.cardStyle}>
+                                            <div class="dkd-insight-icon" style={ins.iconStyle}>
+                                                <lightning-icon icon-name={ins.icon} size="x-small"></lightning-icon>
+                                            </div>
+                                            <div class="dkd-insight-body">
+                                                <p class="dkd-insight-title">{ins.title}</p>
+                                                <p class="dkd-insight-message">{ins.message}</p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </section>
+                    </template>
+
                     <!-- KPI Card Grid -->
                     <section class="dkd-section">
                         <h2 class="dkd-section-title">Key Metrics</h2>
                         <template if:true={hasKpiCards}>
                             <div class="dkd-kpi-grid">
                                 <template for:each={kpiCards} for:item="card">
-                                    <article class="dkd-kpi-card" key={card.key} style={card.cardStyle}>
+                                    <article class="dkd-kpi-card dkd-kpi-card-clickable" key={card.key} style={card.cardStyle}
+                                             data-metric-key={card.key} onclick={handleKpiCardClick}
+                                             title="Click for drill-down">
                                         <div class="dkd-kpi-head">
                                             <div class="dkd-kpi-icon" style={card.iconStyle}>
                                                 <lightning-icon icon-name={card.icon} size="small"></lightning-icon>
@@ -375,6 +425,70 @@
                 onsave={handleSaveView}
                 oncancel={handleCancelSave}>
             </c-dkd-save-view-modal>
+        </template>
+
+        <!-- Drill-Down Modal (Sprint 7) -->
+        <template if:true={showDrillDown}>
+            <section class="slds-modal slds-fade-in-open dkd-drilldown-modal">
+                <div class="slds-modal__container dkd-drilldown-container">
+                    <header class="slds-modal__header">
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            variant="bare-inverse"
+                            class="slds-modal__close"
+                            onclick={handleCloseDrillDown}></lightning-button-icon>
+                        <h2 class="slds-modal__title">{drillDownTitle}</h2>
+                        <p class="slds-text-body_small dkd-drilldown-count">{drillDownRecordCount} records</p>
+                    </header>
+                    <div class="slds-modal__content dkd-drilldown-content">
+                        <template if:true={drillDownLoading}>
+                            <div class="dkd-loading">
+                                <lightning-spinner alternative-text="Loading records..." size="small"></lightning-spinner>
+                            </div>
+                        </template>
+                        <template if:false={drillDownLoading}>
+                            <template if:true={drillDownRecordCount}>
+                                <div class="dkd-drilldown-table-wrap">
+                                    <table class="dkd-drilldown-table">
+                                        <thead>
+                                            <tr>
+                                                <template for:each={drillDownColumns} for:item="col">
+                                                    <th key={col.field}>{col.label}</th>
+                                                </template>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={drillDownRows} for:item="row">
+                                                <tr key={row.id}>
+                                                    <template for:each={row.cells} for:item="cell">
+                                                        <td key={cell.field}>{cell.value}</td>
+                                                    </template>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                            <template if:false={drillDownRecordCount}>
+                                <div class="dkd-empty">
+                                    <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                    <p>No records found for this selection.</p>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick={handleCloseDrillDown}>
+                            Close
+                        </button>
+                        <button class="slds-button slds-button_brand" onclick={handleExportDrillDown}>
+                            <lightning-icon icon-name="utility:download" size="xx-small" variant="inverse"></lightning-icon>
+                            Export CSV
+                        </button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
     </div>
 </template>
