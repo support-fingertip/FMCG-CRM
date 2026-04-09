@@ -189,38 +189,78 @@
                         </template>
                     </section>
 
-                    <!-- Chart widget -->
+                    <!-- Breakdown chart widget -->
                     <section class="dkd-section">
                         <div class="dkd-section-head">
-                            <h2 class="dkd-section-title">Breakdown by Status</h2>
-                            <div class="dkd-section-control">
+                            <h2 class="dkd-section-title">Breakdown</h2>
+                            <div class="dkd-chart-controls">
                                 <lightning-combobox
                                     variant="label-hidden"
                                     value={selectedChartMetric}
                                     options={chartMetricOptions}
                                     onchange={handleChartMetricChange}
-                                    placeholder="Select metric...">
+                                    placeholder="Metric..."
+                                    class="dkd-ctrl-metric">
+                                </lightning-combobox>
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedGroupBy}
+                                    options={groupByOptions}
+                                    onchange={handleGroupByChange}
+                                    placeholder="Group by..."
+                                    class="dkd-ctrl-groupby">
+                                </lightning-combobox>
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={breakdownChartType}
+                                    options={chartTypeOptions}
+                                    onchange={handleChartTypeChange}
+                                    placeholder="Chart type..."
+                                    class="dkd-ctrl-type">
                                 </lightning-combobox>
                             </div>
                         </div>
-                        <template if:true={hasChartData}>
-                            <div class="dkd-chart">
-                                <template for:each={chartData} for:item="bar">
-                                    <div class="dkd-chart-row" key={bar.label}>
-                                        <span class="dkd-chart-row-label">{bar.label}</span>
-                                        <div class="dkd-chart-bar-wrap">
-                                            <div class="dkd-chart-bar" style={bar.barStyle}></div>
-                                        </div>
-                                        <span class="dkd-chart-row-value">{bar.formattedValue}</span>
-                                    </div>
-                                </template>
+                        <c-dkd-chart-widget
+                            chart-type={breakdownChartType}
+                            labels={breakdownLabels}
+                            datasets={breakdownDatasets}
+                            title={breakdownChartTitle}
+                            format={breakdownChartFormat}
+                            height="320">
+                        </c-dkd-chart-widget>
+                    </section>
+
+                    <!-- Trend chart widget -->
+                    <section class="dkd-section">
+                        <div class="dkd-section-head">
+                            <h2 class="dkd-section-title">Trend Analysis</h2>
+                            <div class="dkd-chart-controls">
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedTrendMetric}
+                                    options={chartMetricOptions}
+                                    onchange={handleTrendMetricChange}
+                                    placeholder="Metric..."
+                                    class="dkd-ctrl-metric">
+                                </lightning-combobox>
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={selectedTrendInterval}
+                                    options={trendIntervalOptions}
+                                    onchange={handleTrendIntervalChange}
+                                    placeholder="Interval..."
+                                    class="dkd-ctrl-type">
+                                </lightning-combobox>
                             </div>
-                        </template>
-                        <template if:false={hasChartData}>
-                            <div class="dkd-empty">
-                                <p>No breakdown data for the selected metric.</p>
-                            </div>
-                        </template>
+                        </div>
+                        <c-dkd-chart-widget
+                            chart-type="line"
+                            labels={trendLabels}
+                            datasets={trendDatasets}
+                            title={trendChartTitle}
+                            format={trendChartFormat}
+                            height="300">
+                        </c-dkd-chart-widget>
                     </section>
                 </template>
             </main>

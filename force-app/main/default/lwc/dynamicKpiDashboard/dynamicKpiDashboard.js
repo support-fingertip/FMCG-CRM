@@ -4,6 +4,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getInitData from '@salesforce/apex/DKD_Dashboard_Controller.getInitData';
 import getKpiValues from '@salesforce/apex/DKD_Dashboard_Controller.getKpiValues';
 import getMetricData from '@salesforce/apex/DKD_Dashboard_Controller.getMetricData';
+import getTimeSeries from '@salesforce/apex/DKD_Dashboard_Controller.getTimeSeries';
 import getPreviousPeriodValues from '@salesforce/apex/DKD_Dashboard_Controller.getPreviousPeriodValues';
 
 const USER_SCOPES = [
@@ -43,8 +44,19 @@ export default class DynamicKpiDashboard extends LightningElement {
     @track territoryOptions = [];
     @track currentUser;
     @track kpiCards = [];
-    @track chartData = [];
+
+    // Breakdown chart (by dimension)
     @track selectedChartMetric = '';
+    @track selectedGroupBy = 'Status__c';
+    @track breakdownChartType = 'bar';
+    @track breakdownLabels = [];
+    @track breakdownDatasets = [];
+
+    // Trend chart (time series)
+    @track selectedTrendMetric = '';
+    @track selectedTrendInterval = 'MONTH';
+    @track trendLabels = [];
+    @track trendDatasets = [];
 
     // UI state
     @track showFilterPanel = true;
@@ -83,6 +95,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             this.selectedMetricKeys = data.defaultMetricKeys || [];
             if (this.selectedMetricKeys.length > 0) {
                 this.selectedChartMetric = this.selectedMetricKeys[0];
+                this.selectedTrendMetric = this.selectedMetricKeys[0];
             }
 
             await this.refreshData();
@@ -116,7 +129,89 @@ export default class DynamicKpiDashboard extends LightningElement {
     }
 
     get hasKpiCards() { return this.kpiCards.length > 0; }
-    get hasChartData() { return this.chartData.length > 0; }
+
+    get chartTypeOptions() {
+        return [
+            { label: 'Bar', value: 'bar' },
+            { label: 'Horizontal Bar', value: 'horizontalBar' },
+            { label: 'Line', value: 'line' },
+            { label: 'Pie', value: 'pie' },
+            { label: 'Doughnut', value: 'doughnut' }
+        ];
+    }
+
+    get groupByOptions() {
+        // Options depend on the source object of the selected chart metric.
+        const metric = this.allMetrics.find(m => m.key === this.selectedChartMetric);
+        const obj = metric ? metric.sourceObject : '';
+        const base = [
+            { label: 'Status', value: 'Status__c' }
+        ];
+        if (obj === 'Sales_Order__c') {
+            return [
+                { label: 'Status', value: 'Status__c' },
+                { label: 'Channel', value: 'Channel__c' },
+                { label: 'Territory', value: 'Territory__c' },
+                { label: 'Order Type', value: 'Order_Type__c' }
+            ];
+        }
+        if (obj === 'Visit__c') {
+            return [
+                { label: 'Status', value: 'Visit_Status__c' },
+                { label: 'Is Productive', value: 'Is_Productive__c' },
+                { label: 'Is Ad-Hoc', value: 'Is_Ad_Hoc__c' }
+            ];
+        }
+        if (obj === 'Collection__c') {
+            return [
+                { label: 'Payment Mode', value: 'Payment_Mode__c' },
+                { label: 'Status', value: 'Status__c' }
+            ];
+        }
+        if (obj === 'Account') {
+            return [
+                { label: 'Type', value: 'Type' },
+                { label: 'Channel', value: 'Channel__c' }
+            ];
+        }
+        return base;
+    }
+
+    get trendIntervalOptions() {
+        return [
+            { label: 'Daily', value: 'DAY' },
+            { label: 'Weekly', value: 'WEEK' },
+            { label: 'Monthly', value: 'MONTH' },
+            { label: 'Quarterly', value: 'QUARTER' },
+            { label: 'Yearly', value: 'YEAR' }
+        ];
+    }
+
+    get breakdownChartFormat() {
+        const metric = this.allMetrics.find(m => m.key === this.selectedChartMetric);
+        return metric ? metric.format : 'Number';
+    }
+
+    get trendChartFormat() {
+        const metric = this.allMetrics.find(m => m.key === this.selectedTrendMetric);
+        return metric ? metric.format : 'Number';
+    }
+
+    get breakdownChartTitle() {
+        const metric = this.allMetrics.find(m => m.key === this.selectedChartMetric);
+        const label = metric ? metric.label : 'Metric';
+        const dim = this.groupByOptions.find(g => g.value === this.selectedGroupBy);
+        const dimLabel = dim ? dim.label : this.selectedGroupBy;
+        return label + ' by ' + dimLabel;
+    }
+
+    get trendChartTitle() {
+        const metric = this.allMetrics.find(m => m.key === this.selectedTrendMetric);
+        const label = metric ? metric.label : 'Metric';
+        const intv = this.trendIntervalOptions.find(i => i.value === this.selectedTrendInterval);
+        const intvLabel = intv ? intv.label : 'Time';
+        return label + ' — ' + intvLabel + ' Trend';
+    }
 
     get activeFilterChips() {
         const chips = [];
@@ -233,7 +328,26 @@ export default class DynamicKpiDashboard extends LightningElement {
 
     handleChartMetricChange(event) {
         this.selectedChartMetric = event.detail.value;
-        this.loadChartData();
+        this.loadBreakdownChart();
+    }
+
+    handleGroupByChange(event) {
+        this.selectedGroupBy = event.detail.value;
+        this.loadBreakdownChart();
+    }
+
+    handleChartTypeChange(event) {
+        this.breakdownChartType = event.detail.value;
+    }
+
+    handleTrendMetricChange(event) {
+        this.selectedTrendMetric = event.detail.value;
+        this.loadTrendChart();
+    }
+
+    handleTrendIntervalChange(event) {
+        this.selectedTrendInterval = event.detail.value;
+        this.loadTrendChart();
     }
 
     handleToggleFilterPanel() {
@@ -280,9 +394,11 @@ export default class DynamicKpiDashboard extends LightningElement {
 
             this.kpiCards = this.buildKpiCards(current, previous);
 
-            if (this.selectedChartMetric) {
-                await this.loadChartData();
-            }
+            // Load charts in parallel after KPI cards are ready
+            await Promise.all([
+                this.selectedChartMetric ? this.loadBreakdownChart() : Promise.resolve(),
+                this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve()
+            ]);
 
             const now = new Date();
             this.lastUpdated = now.toLocaleTimeString();
@@ -293,28 +409,89 @@ export default class DynamicKpiDashboard extends LightningElement {
         }
     }
 
-    async loadChartData() {
+    async loadBreakdownChart() {
         if (!this.selectedChartMetric) return;
         try {
             const rows = await getMetricData({
                 metricKey: this.selectedChartMetric,
                 filtersJson: null,
-                groupBy: 'Status__c',
+                groupBy: this.selectedGroupBy,
                 dateFrom: this.dateFrom,
                 dateTo: this.dateTo,
                 userScope: this.userScope
             });
-            const max = rows.reduce((m, r) => Math.max(m, Number(r.value) || 0), 0) || 1;
-            this.chartData = rows.map(r => ({
-                label: r.label,
-                value: r.value,
-                formattedValue: this.formatValue(r.value, this.selectedChartMetric),
-                barStyle: 'width: ' + Math.round((Number(r.value) / max) * 100) + '%;'
-            }));
+            const metric = this.allMetrics.find(m => m.key === this.selectedChartMetric);
+            const color = metric ? metric.color : '#0176d3';
+            const labels = rows.map(r => r.label || '(blank)');
+            const data = rows.map(r => Number(r.value) || 0);
+            this.breakdownLabels = labels;
+            this.breakdownDatasets = [{
+                label: metric ? metric.label : 'Value',
+                data: data,
+                color: color
+            }];
         } catch (error) {
-            console.error('Chart load failed', error);
-            this.chartData = [];
+            console.error('Breakdown chart load failed', error);
+            this.breakdownLabels = [];
+            this.breakdownDatasets = [];
         }
+    }
+
+    async loadTrendChart() {
+        if (!this.selectedTrendMetric) return;
+        try {
+            // Use a longer window for trends so there's enough data to see the pattern
+            const trendFrom = this.extendedTrendStart();
+            const rows = await getTimeSeries({
+                metricKey: this.selectedTrendMetric,
+                filtersJson: null,
+                dateFrom: trendFrom,
+                dateTo: this.dateTo,
+                interval: this.selectedTrendInterval,
+                userScope: this.userScope
+            });
+            const metric = this.allMetrics.find(m => m.key === this.selectedTrendMetric);
+            const color = metric ? metric.color : '#0176d3';
+            const labels = rows.map(r => r.label || '');
+            const data = rows.map(r => Number(r.value) || 0);
+            this.trendLabels = labels;
+            this.trendDatasets = [{
+                label: metric ? metric.label : 'Value',
+                data: data,
+                color: color
+            }];
+        } catch (error) {
+            console.error('Trend chart load failed', error);
+            this.trendLabels = [];
+            this.trendDatasets = [];
+        }
+    }
+
+    extendedTrendStart() {
+        // For trends, we extend the window backwards to show history
+        if (!this.dateTo) return this.dateFrom;
+        const end = new Date(this.dateTo);
+        let start;
+        switch (this.selectedTrendInterval) {
+            case 'DAY':
+                start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 30);
+                break;
+            case 'WEEK':
+                start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 84);
+                break;
+            case 'MONTH':
+                start = new Date(end.getFullYear(), end.getMonth() - 11, 1);
+                break;
+            case 'QUARTER':
+                start = new Date(end.getFullYear() - 2, 0, 1);
+                break;
+            case 'YEAR':
+                start = new Date(end.getFullYear() - 4, 0, 1);
+                break;
+            default:
+                start = new Date(end.getFullYear(), end.getMonth() - 5, 1);
+        }
+        return this.toISODate(start);
     }
 
     // ── KPI card builder ─────────────────────────────────────────

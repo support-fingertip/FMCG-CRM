@@ -292,6 +292,31 @@
     min-width: 200px;
 }
 
+.dkd-chart-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.dkd-ctrl-metric { min-width: 200px; }
+.dkd-ctrl-groupby { min-width: 150px; }
+.dkd-ctrl-type { min-width: 130px; }
+
+@media (max-width: 700px) {
+    .dkd-section-head {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .dkd-chart-controls {
+        flex-direction: column;
+    }
+    .dkd-ctrl-metric,
+    .dkd-ctrl-groupby,
+    .dkd-ctrl-type {
+        min-width: 100%;
+    }
+}
+
 /* KPI cards */
 .dkd-kpi-grid {
     display: grid;

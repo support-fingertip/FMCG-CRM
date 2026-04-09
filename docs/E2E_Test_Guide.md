@@ -1310,6 +1310,110 @@ Permissions applied via profile updates in Sprint 3:
 
 ---
 
+## Step 19: Dynamic KPI Dashboard — Chart Widgets (Sprint 4)
+
+Sprint 4 replaces the simple HTML bar chart from Sprint 3 with proper Chart.js
+widgets and adds a trend (time-series) chart. Users can now switch between
+bar, line, pie, doughnut, and horizontal bar chart types, pick grouping
+dimensions, and drill into metric trends over time.
+
+### 19.1 New Component: `dkdChartWidget`
+
+A **universal** child LWC that wraps Chart.js. It accepts:
+
+| Property | Type | Description |
+|---|---|---|
+| `chart-type` | String | `bar` / `horizontalBar` / `line` / `pie` / `doughnut` |
+| `labels` | Array | X-axis labels (or pie slice labels) |
+| `datasets` | Array | `[{label, data, color}, ...]` |
+| `title` | String | Chart title |
+| `height` | Number | Canvas height in pixels (default 300) |
+| `format` | String | `Currency` / `Number` / `Percent` / `Duration` |
+| `show-legend` | Boolean | Show/hide legend |
+
+**Features:**
+- Lazy-loads Chart.js static resource (cached after first use)
+- Destroys previous chart instance before re-rendering (prevents memory leaks)
+- Custom tooltips with formatted values based on metric format
+- Auto-generated color palette when dataset colors aren't provided
+- Responsive with `maintainAspectRatio: false`
+- Empty state overlay when no data
+
+### 19.2 Integration in the Dashboard
+
+The Dynamic KPI Dashboard now has **two chart widgets** below the KPI cards:
+
+**Breakdown Chart:**
+- Groups the selected metric by a chosen dimension (Status, Channel, Territory, etc.)
+- Chart type selector: Bar / Horizontal Bar / Line / Pie / Doughnut
+- Grouping dimensions are **dynamically** filtered by the metric's source object:
+  - `Sales_Order__c` → Status, Channel, Territory, Order Type
+  - `Visit__c` → Status, Is Productive, Is Ad-Hoc
+  - `Collection__c` → Payment Mode, Status
+  - `Account` → Type, Channel
+
+**Trend Chart:**
+- Line chart showing metric values over time
+- Interval selector: Daily / Weekly / Monthly / Quarterly / Yearly
+- Automatically extends the date window backwards based on interval:
+  - Daily → last 30 days
+  - Weekly → last 84 days (~12 weeks)
+  - Monthly → last 12 months
+  - Quarterly → last 3 years
+  - Yearly → last 5 years
+- Uses the metric's configured color
+
+### 19.3 Walkthrough — Chart Types
+
+1. Open **Dynamic KPI Dashboard**
+2. Scroll to the **Breakdown** section
+3. Use the three controls to configure the chart:
+   - **Metric dropdown**: Select `Total Revenue`
+   - **Group by dropdown**: Select `Channel`
+   - **Chart type dropdown**: Try each option:
+     - `Bar` → Vertical bars per channel
+     - `Horizontal Bar` → Best for long channel names
+     - `Line` → Shows values as connected points
+     - `Pie` → Proportions (best for < 6 categories)
+     - `Doughnut` → Same as pie with center hole (cleaner for percentages)
+4. The chart re-renders instantly without a server round-trip (data already loaded)
+5. Hover over any bar/slice to see the formatted tooltip (e.g., "Approved: ₹1.8L")
+
+### 19.4 Walkthrough — Trend Analysis
+
+1. Scroll to the **Trend Analysis** section
+2. **Metric dropdown**: Select `Order Count`
+3. **Interval dropdown**: Select `Monthly`
+4. Line chart appears showing order count for each of the last 12 months
+5. Change interval to `Weekly` → chart reloads showing last 12 weeks
+6. Change metric to `Total Collections` → chart recolors with that metric's color
+
+### 19.5 Use Cases
+
+| Question | Setup |
+|---|---|
+| Which channel drives the most revenue? | Breakdown: `Total Revenue` × `Channel` × Pie |
+| How are orders distributed by status? | Breakdown: `Order Count` × `Status__c` × Doughnut |
+| Is revenue trending up or down? | Trend: `Total Revenue` × Monthly |
+| Compare productive vs skipped visits | Breakdown: `Total Visits` × `Visit_Status__c` × Horizontal Bar |
+| What's my daily visit pattern? | Trend: `Total Visits` × Daily |
+| Which territory is dominating sales? | Breakdown: `Total Revenue` × `Territory__c` × Bar |
+
+### 19.6 Performance Notes
+
+- **Parallel loading**: KPI cards, breakdown chart, and trend chart all load in parallel via `Promise.all()`
+- **Client-side chart type switching**: Changing chart type (bar→line→pie) does NOT re-query the server — only re-renders the existing data
+- **Metric/dimension changes DO re-query**: Because the grouping is done server-side in SOQL
+- **Chart instance reuse**: Chart.js instances are destroyed before re-rendering to prevent canvas conflicts
+
+### 19.7 What's Next (Sprint 5+)
+- **Sprint 5**: `DKD_Forecast_Service` for linear regression on time series + forecast widget
+- **Sprint 6**: `Dashboard_View__c` for saving custom dashboard layouts per user
+- **Sprint 7**: Drill-down, export to PDF/CSV, auto-refresh toggle
+- **Sprint 8**: Smart insights and anomaly detection
+
+---
+
 ## Appendix A: Data Flow Diagram
 
 ```
