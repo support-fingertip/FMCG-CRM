@@ -43,6 +43,7 @@ sf apex run --file scripts/13_target_periods.apex      # 17 periods (Annual→Qu
 sf apex run --file scripts/14_target_criteria_and_actuals.apex  # 6 criteria + sample actuals
 sf apex run --file scripts/13_incentive_slabs.apex     # 40+ slabs (4 profiles × multiple tiers)
 sf apex run --file scripts/15_test_team.apex           # 15 test users with FSCRM profiles
+sf apex run --file scripts/18_kpi_metrics.apex         # 15 KPI metrics for Dynamic KPI Dashboard
 
 # ── Transactional Data (run last) ──
 sf apex run --file scripts/seed_transactional_data.apex  # Attendance, visits, orders, collections
@@ -72,6 +73,7 @@ System.debug('Day Attendance: '+ [SELECT COUNT() FROM Day_Attendance__c]);      
 System.debug('Visits: '       + [SELECT COUNT() FROM Visit__c]);                                           // 17+
 System.debug('Orders: '       + [SELECT COUNT() FROM Sales_Order__c]);                                     // 12+
 System.debug('Collections: '  + [SELECT COUNT() FROM Collection__c]);                                      // 7
+System.debug('KPI Metrics: ' + [SELECT COUNT() FROM KPI_Metric__c WHERE Is_Active__c = true]);              // 15
 ```
 
 > **Note:** All scripts have cleanup code — they can be safely re-run anytime to reset data.
@@ -888,6 +890,144 @@ Create a Salesforce Dashboard with:
 5. **Scheme ROI Summary** (Table) — discount given vs revenue generated
 6. **Must-Sell Compliance Trend** (Line) — daily compliance %
 7. **Collection Efficiency** (Gauge) — collected vs outstanding
+
+---
+
+## Step 16: Dynamic KPI Dashboard — Metric Registry (Sprint 1)
+
+The Dynamic KPI Dashboard is driven by reusable **KPI Metric** definitions.
+Each metric declares how to aggregate data from a source object. Admins can
+create/edit metrics from the **KPI Metrics tab** without any code changes.
+
+### 16.1 Verify the KPI Metric Object
+Go to **Setup → Object Manager → KPI Metric** (or open the **KPI Metrics** tab
+from the app launcher). Verify these 15 fields are present:
+
+| Field | Type | Purpose |
+|---|---|---|
+| Metric Key | Text (unique) | Code identifier (e.g., `revenue_total`) |
+| Label | Text | Display name on dashboard |
+| Description | Long Text Area | What the metric measures |
+| Source Object | Text | API name of source object |
+| Aggregation | Picklist | SUM / COUNT / AVG / MIN / MAX |
+| Aggregate Field | Text | Field to aggregate (optional for COUNT) |
+| Date Field | Text | Field used for date range filtering |
+| User Field | Text | Field holding owner User Id |
+| Default Filter | Long Text Area | Always-applied SOQL WHERE snippet |
+| Format | Picklist | Currency / Number / Percent / Duration |
+| Icon | Text | SLDS icon name |
+| Color | Text | Hex accent color |
+| Category | Picklist | Sales / Visits / Collections / Outlets / Schemes / Inventory / Custom |
+| Allow Forecast | Checkbox | Eligible for the forecast widget |
+| Is Active | Checkbox | Hide from picker when off |
+| Sort Order | Number | Display order within category |
+
+### 16.2 Verify Seed Metrics (from 18_kpi_metrics.apex)
+Open the **KPI Metrics** tab → **All KPI Metrics** list view. You should see 15 active records:
+
+**Sales (5):**
+| Metric Key | Label | Aggregation | Source | Format |
+|---|---|---|---|---|
+| `revenue_total` | Total Revenue | SUM of Total_Net_Amount__c | Sales_Order__c | Currency |
+| `order_count` | Order Count | COUNT | Sales_Order__c | Number |
+| `avg_order_value` | Average Order Value | AVG of Total_Net_Amount__c | Sales_Order__c | Currency |
+| `discount_given` | Total Discount Given | SUM of Total_Discount__c | Sales_Order__c | Currency |
+| `max_order_value` | Largest Single Order | MAX of Total_Net_Amount__c | Sales_Order__c | Currency |
+
+**Visits (4):**
+| Metric Key | Label | Aggregation | Source | Format |
+|---|---|---|---|---|
+| `visit_count` | Total Visits | COUNT | Visit__c | Number |
+| `productive_visit_count` | Productive Visits | COUNT | Visit__c | Number |
+| `avg_visit_duration` | Avg Visit Duration | AVG of Duration_Minutes__c | Visit__c | Duration |
+| `skipped_visit_count` | Skipped Visits | COUNT | Visit__c | Number |
+
+**Collections (3):**
+| Metric Key | Label | Aggregation | Source | Format |
+|---|---|---|---|---|
+| `collection_total` | Total Collections | SUM of Amount__c | Collection__c | Currency |
+| `collection_count` | Collection Transactions | COUNT | Collection__c | Number |
+| `avg_collection` | Avg Collection Amount | AVG of Amount__c | Collection__c | Currency |
+
+**Outlets (2):**
+| Metric Key | Label | Aggregation | Source | Format |
+|---|---|---|---|---|
+| `new_outlets` | New Outlets Added | COUNT | Account | Number |
+| `active_outlets` | Active Outlets | COUNT | Account | Number |
+
+**Schemes (1):**
+| Metric Key | Label | Aggregation | Source | Format |
+|---|---|---|---|---|
+| `scheme_discount` | Scheme Discount Given | SUM of Scheme_Discount__c | Sales_Order__c | Currency |
+
+### 16.3 Create a Custom Metric (Admin Walkthrough)
+
+Let's create a "Must-Sell Compliance Rate" metric from scratch:
+
+1. Go to **KPI Metrics** tab → Click **New**
+2. Fill in the form:
+   - **KPI Metric Name**: `Must-Sell Compliance`
+   - **Metric Key**: `must_sell_compliance`
+   - **Label**: `Must-Sell Compliance %`
+   - **Description**: `Average must-sell product compliance across all orders.`
+   - **Source Object**: `Sales_Order__c`
+   - **Aggregation**: `AVG`
+   - **Aggregate Field**: `Must_Sell_Compliance__c`
+   - **Date Field**: `Order_Date__c`
+   - **User Field**: `Salesperson__c`
+   - **Default Filter**: `Status__c IN ('Approved','Delivered')`
+   - **Format**: `Percent`
+   - **Icon**: `utility:check`
+   - **Color**: `#2e844a`
+   - **Category**: `Sales`
+   - **Allow Forecast**: unchecked
+   - **Is Active**: checked
+   - **Sort Order**: `6`
+3. Click **Save**
+
+Once saved, this metric is **immediately available** to the Dynamic KPI Dashboard (Sprint 3+) via `DKD_MetricRegistry.getMetric('must_sell_compliance')`.
+
+### 16.4 Test the Apex Registry (Developer Console)
+
+```apex
+// List all active metrics
+List<KPI_Metric__c> all = DKD_MetricRegistry.getAllMetrics();
+System.debug('Active metrics: ' + all.size());
+
+// Fetch a specific metric by key
+KPI_Metric__c rev = DKD_MetricRegistry.getMetric('revenue_total');
+System.debug('Revenue metric: ' + rev.Label__c + ' (' + rev.Aggregation__c + ')');
+
+// Get catalog for LWC picker
+List<Map<String, Object>> catalog = DKD_MetricRegistry.getCatalog();
+System.debug('Catalog entries: ' + catalog.size());
+
+// Filter by category
+List<Map<String, Object>> sales = DKD_MetricRegistry.getMetricsByCategory('Sales');
+System.debug('Sales metrics: ' + sales.size());
+
+// List distinct categories
+System.debug('Categories: ' + DKD_MetricRegistry.getCategories());
+
+// Validate a metric before saving (admin use)
+KPI_Metric__c test = new KPI_Metric__c(
+    Metric_Key__c = 'test',
+    Label__c = 'Test',
+    Source_Object__c = 'Sales_Order__c',
+    Aggregation__c = 'SUM',
+    Aggregate_Field__c = 'Total_Net_Amount__c',
+    Date_Field__c = 'Order_Date__c'
+);
+List<String> errors = DKD_MetricRegistry.validateMetric(test);
+System.debug('Validation errors: ' + errors);  // Should be empty
+```
+
+### 16.5 What's Next (Sprint 2+)
+- **Sprint 2**: `DKD_QueryEngine_Service` — executes these metric definitions and returns aggregated data
+- **Sprint 3**: `dynamicKpiDashboard` LWC shell with filter panel
+- **Sprint 4**: KPI card and chart widgets
+- **Sprint 5**: Forecast engine and forecast widget
+- **Sprint 6**: Saved dashboard views (Dashboard_View__c)
 
 ---
 
