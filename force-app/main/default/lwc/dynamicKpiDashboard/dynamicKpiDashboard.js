@@ -8,6 +8,15 @@ import getTimeSeries from '@salesforce/apex/DKD_Dashboard_Controller.getTimeSeri
 import getPreviousPeriodValues from '@salesforce/apex/DKD_Dashboard_Controller.getPreviousPeriodValues';
 import getForecast from '@salesforce/apex/DKD_Dashboard_Controller.getForecast';
 
+// Saved views (Sprint 6)
+import getMyViews from '@salesforce/apex/DKD_DashboardView_Controller.getMyViews';
+import getDefaultView from '@salesforce/apex/DKD_DashboardView_Controller.getDefaultView';
+import createView from '@salesforce/apex/DKD_DashboardView_Controller.createView';
+import updateView from '@salesforce/apex/DKD_DashboardView_Controller.updateView';
+import deleteView from '@salesforce/apex/DKD_DashboardView_Controller.deleteView';
+import setDefaultView from '@salesforce/apex/DKD_DashboardView_Controller.setDefaultView';
+import clearDefaultView from '@salesforce/apex/DKD_DashboardView_Controller.clearDefaultView';
+
 const USER_SCOPES = [
     { label: 'Self', value: 'self' },
     { label: 'My Team', value: 'team' },
@@ -68,6 +77,14 @@ export default class DynamicKpiDashboard extends LightningElement {
     @track forecastInsight = '';
     @track forecastStats = null;
 
+    // Saved views (Sprint 6)
+    @track savedViews = [];
+    @track activeViewId = null;
+    @track activeViewName = '';
+    @track showSaveModal = false;
+    @track saveModalMode = 'new'; // 'new' or 'edit'
+    @track isSaving = false;
+
     // UI state
     @track showFilterPanel = true;
     @track lastUpdated;
@@ -111,6 +128,13 @@ export default class DynamicKpiDashboard extends LightningElement {
                 this.selectedForecastMetric = forecastable ? forecastable.key : this.selectedMetricKeys[0];
             }
 
+            // Load saved views + apply default if present
+            await this.loadSavedViews();
+            const defaultView = await getDefaultView();
+            if (defaultView && defaultView.Configuration_JSON__c) {
+                this.applyViewConfig(defaultView);
+            }
+
             await this.refreshData();
         } catch (error) {
             this.initError = this.reduceError(error);
@@ -118,6 +142,68 @@ export default class DynamicKpiDashboard extends LightningElement {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    async loadSavedViews() {
+        try {
+            this.savedViews = await getMyViews() || [];
+        } catch (e) {
+            console.error('Failed to load saved views', e);
+            this.savedViews = [];
+        }
+    }
+
+    applyViewConfig(view) {
+        try {
+            const config = typeof view.Configuration_JSON__c === 'string'
+                ? JSON.parse(view.Configuration_JSON__c)
+                : (view.configuration ? JSON.parse(view.configuration) : null);
+            if (!config) return;
+
+            if (config.userScope) this.userScope = config.userScope;
+            if (config.datePreset) {
+                this.datePreset = config.datePreset;
+                if (config.datePreset !== 'custom') {
+                    this.applyDatePreset(config.datePreset);
+                }
+            }
+            if (config.dateFrom) this.dateFrom = config.dateFrom;
+            if (config.dateTo) this.dateTo = config.dateTo;
+            if (config.selectedCategory !== undefined) this.selectedCategory = config.selectedCategory;
+            if (Array.isArray(config.selectedMetricKeys)) this.selectedMetricKeys = [...config.selectedMetricKeys];
+            if (config.selectedChartMetric) this.selectedChartMetric = config.selectedChartMetric;
+            if (config.selectedGroupBy) this.selectedGroupBy = config.selectedGroupBy;
+            if (config.breakdownChartType) this.breakdownChartType = config.breakdownChartType;
+            if (config.selectedTrendMetric) this.selectedTrendMetric = config.selectedTrendMetric;
+            if (config.selectedTrendInterval) this.selectedTrendInterval = config.selectedTrendInterval;
+            if (config.selectedForecastMetric) this.selectedForecastMetric = config.selectedForecastMetric;
+            if (config.selectedForecastInterval) this.selectedForecastInterval = config.selectedForecastInterval;
+            if (config.selectedForecastHorizon) this.selectedForecastHorizon = config.selectedForecastHorizon;
+
+            this.activeViewId = view.Id || view.id;
+            this.activeViewName = view.Name || view.name || '';
+        } catch (e) {
+            console.error('Failed to parse view configuration', e);
+        }
+    }
+
+    buildCurrentConfig() {
+        return {
+            userScope: this.userScope,
+            datePreset: this.datePreset,
+            dateFrom: this.dateFrom,
+            dateTo: this.dateTo,
+            selectedCategory: this.selectedCategory,
+            selectedMetricKeys: [...this.selectedMetricKeys],
+            selectedChartMetric: this.selectedChartMetric,
+            selectedGroupBy: this.selectedGroupBy,
+            breakdownChartType: this.breakdownChartType,
+            selectedTrendMetric: this.selectedTrendMetric,
+            selectedTrendInterval: this.selectedTrendInterval,
+            selectedForecastMetric: this.selectedForecastMetric,
+            selectedForecastInterval: this.selectedForecastInterval,
+            selectedForecastHorizon: this.selectedForecastHorizon
+        };
     }
 
     // ── Getters ──────────────────────────────────────────────────
@@ -280,6 +366,47 @@ export default class DynamicKpiDashboard extends LightningElement {
                 positive: this.forecastStats.rSquared >= 0.5
             }
         ];
+    }
+
+    // Saved views (Sprint 6) ─────────────────────────────────────
+
+    get viewPickerOptions() {
+        const opts = [{ label: '— Default Layout —', value: '' }];
+        (this.savedViews || []).forEach(v => {
+            const prefix = v.isDefault ? '★ ' : (v.isShared && !v.isOwn ? '🌐 ' : '');
+            opts.push({
+                label: prefix + v.name,
+                value: v.id
+            });
+        });
+        return opts;
+    }
+
+    get hasActiveView() {
+        return !!this.activeViewId;
+    }
+
+    get activeView() {
+        if (!this.activeViewId) return null;
+        return this.savedViews.find(v => v.id === this.activeViewId) || null;
+    }
+
+    get canEditActiveView() {
+        const v = this.activeView;
+        return v && v.isOwn;
+    }
+
+    get isActiveViewDefault() {
+        const v = this.activeView;
+        return v && v.isDefault === true;
+    }
+
+    get setDefaultButtonLabel() {
+        return this.isActiveViewDefault ? 'Unset Default' : 'Set as Default';
+    }
+
+    get isEditSaveMode() {
+        return this.saveModalMode === 'edit';
     }
 
     get activeFilterChips() {
@@ -449,6 +576,113 @@ export default class DynamicKpiDashboard extends LightningElement {
     }
 
     handleRefresh() { this.refreshData(); }
+
+    // ── Saved View Handlers (Sprint 6) ──────────────────────────
+
+    async handleViewSelect(event) {
+        const viewId = event.detail.value;
+        if (!viewId) {
+            // "Default Layout" selected — clear the active view
+            this.activeViewId = null;
+            this.activeViewName = '';
+            return;
+        }
+        const view = this.savedViews.find(v => v.id === viewId);
+        if (!view) return;
+        this.applyViewConfig({
+            Id: view.id,
+            Name: view.name,
+            configuration: view.configuration
+        });
+        await this.refreshData();
+        this.showToast('View Loaded', 'Switched to: ' + view.name, 'success');
+    }
+
+    handleOpenSaveModal() {
+        this.saveModalMode = 'new';
+        this.showSaveModal = true;
+    }
+
+    handleOpenEditModal() {
+        if (!this.canEditActiveView) return;
+        this.saveModalMode = 'edit';
+        this.showSaveModal = true;
+    }
+
+    handleCancelSave() {
+        this.showSaveModal = false;
+        this.isSaving = false;
+    }
+
+    async handleSaveView(event) {
+        const { name, description, isShared } = event.detail;
+        const configJson = JSON.stringify(this.buildCurrentConfig());
+        this.isSaving = true;
+        try {
+            let saved;
+            if (this.saveModalMode === 'edit' && this.activeViewId) {
+                saved = await updateView({
+                    viewId: this.activeViewId,
+                    name: name,
+                    description: description,
+                    configurationJson: configJson,
+                    isShared: isShared,
+                    icon: null
+                });
+                this.showToast('View Updated', name + ' has been updated.', 'success');
+            } else {
+                saved = await createView({
+                    name: name,
+                    description: description,
+                    configurationJson: configJson,
+                    isShared: isShared,
+                    icon: null
+                });
+                this.activeViewId = saved.Id;
+                this.activeViewName = name;
+                this.showToast('View Saved', name + ' saved to your views.', 'success');
+            }
+            this.showSaveModal = false;
+            await this.loadSavedViews();
+        } catch (error) {
+            this.showToast('Save Failed', this.reduceError(error), 'error');
+        } finally {
+            this.isSaving = false;
+        }
+    }
+
+    async handleDeleteView() {
+        if (!this.canEditActiveView || !this.activeViewId) return;
+        // eslint-disable-next-line no-alert
+        if (!confirm('Delete "' + this.activeViewName + '"? This cannot be undone.')) {
+            return;
+        }
+        try {
+            await deleteView({ viewId: this.activeViewId });
+            this.showToast('View Deleted', this.activeViewName + ' has been deleted.', 'success');
+            this.activeViewId = null;
+            this.activeViewName = '';
+            await this.loadSavedViews();
+        } catch (error) {
+            this.showToast('Delete Failed', this.reduceError(error), 'error');
+        }
+    }
+
+    async handleToggleDefault() {
+        if (!this.canEditActiveView || !this.activeViewId) return;
+        try {
+            if (this.isActiveViewDefault) {
+                await clearDefaultView();
+                this.showToast('Default Cleared', 'No default view set.', 'success');
+            } else {
+                await setDefaultView({ viewId: this.activeViewId });
+                this.showToast('Default Set', this.activeViewName + ' is now your default view.', 'success');
+            }
+            await this.loadSavedViews();
+        } catch (error) {
+            this.showToast('Update Failed', this.reduceError(error), 'error');
+        }
+    }
 
     // ── Data loading ─────────────────────────────────────────────
 

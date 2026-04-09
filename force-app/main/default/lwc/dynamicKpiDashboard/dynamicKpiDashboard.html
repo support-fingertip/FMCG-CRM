@@ -27,6 +27,42 @@
             </div>
         </div>
 
+        <!-- Saved Views Toolbar -->
+        <div class="dkd-views-toolbar">
+            <div class="dkd-views-left">
+                <lightning-icon icon-name="utility:preview" size="x-small" class="dkd-views-icon"></lightning-icon>
+                <span class="dkd-views-label">View:</span>
+                <lightning-combobox
+                    variant="label-hidden"
+                    value={activeViewId}
+                    options={viewPickerOptions}
+                    onchange={handleViewSelect}
+                    placeholder="Select a saved view..."
+                    class="dkd-views-picker">
+                </lightning-combobox>
+            </div>
+            <div class="dkd-views-right">
+                <button class="dkd-btn-mini" onclick={handleOpenSaveModal} title="Save current layout as a new view">
+                    <lightning-icon icon-name="utility:save" size="xx-small"></lightning-icon>
+                    Save As New
+                </button>
+                <template if:true={canEditActiveView}>
+                    <button class="dkd-btn-mini" onclick={handleOpenEditModal} title="Update the active view">
+                        <lightning-icon icon-name="utility:edit" size="xx-small"></lightning-icon>
+                        Update
+                    </button>
+                    <button class="dkd-btn-mini" onclick={handleToggleDefault} title="Mark as default view">
+                        <lightning-icon icon-name="utility:pinned" size="xx-small"></lightning-icon>
+                        {setDefaultButtonLabel}
+                    </button>
+                    <button class="dkd-btn-mini dkd-btn-mini-danger" onclick={handleDeleteView} title="Delete this view">
+                        <lightning-icon icon-name="utility:delete" size="xx-small"></lightning-icon>
+                        Delete
+                    </button>
+                </template>
+            </div>
+        </div>
+
         <!-- Active filter chips -->
         <div class="dkd-chips-row">
             <template for:each={activeFilterChips} for:item="chip">
@@ -329,5 +365,16 @@
                 </template>
             </main>
         </div>
+
+        <!-- Save View Modal -->
+        <template if:true={showSaveModal}>
+            <c-dkd-save-view-modal
+                view-name={activeViewName}
+                is-edit={isEditSaveMode}
+                is-saving={isSaving}
+                onsave={handleSaveView}
+                oncancel={handleCancelSave}>
+            </c-dkd-save-view-modal>
+        </template>
     </div>
 </template>

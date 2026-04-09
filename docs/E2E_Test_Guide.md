@@ -1406,8 +1406,7 @@ The Dynamic KPI Dashboard now has **two chart widgets** below the KPI cards:
 - **Metric/dimension changes DO re-query**: Because the grouping is done server-side in SOQL
 - **Chart instance reuse**: Chart.js instances are destroyed before re-rendering to prevent canvas conflicts
 
-### 19.7 What's Next (Sprint 6+)
-- **Sprint 6**: `Dashboard_View__c` for saving custom dashboard layouts per user
+### 19.7 What's Next (Sprint 7+)
 - **Sprint 7**: Drill-down, export to PDF/CSV, auto-refresh toggle
 - **Sprint 8**: Smart insights and anomaly detection
 
@@ -1571,6 +1570,151 @@ To enable forecasting on a custom metric:
 > **Tip:** Only enable Allow Forecast on metrics that represent a **continuous
 > trendable value** (revenue, visits, collections). It makes less sense for
 > distributions like "largest single order" or "discount %".
+
+---
+
+## Step 21: Dynamic KPI Dashboard — Saved Views (Sprint 6)
+
+Sprint 6 lets users save their dashboard configuration as a named **view**
+that can be reloaded later, shared with the team, or set as the default
+layout. This turns the dashboard from a throwaway analysis tool into a
+persistent, shareable report.
+
+### 21.1 New Custom Object: `Dashboard_View__c`
+
+| Field | Type | Purpose |
+|---|---|---|
+| Name | Text | Display name (e.g., "Delhi Sales Performance") |
+| Description__c | Long Text Area | What the view shows |
+| Configuration_JSON__c | Long Text Area (32K) | Serialized dashboard state |
+| Owner_User__c | Lookup(User) | Who created the view |
+| Is_Shared__c | Checkbox | If true, all users can see it |
+| Is_Default__c | Checkbox | Owner's default view (auto-load on open) |
+| Icon__c | Text | Optional SLDS icon |
+
+### 21.2 Configuration JSON Schema
+
+When a user saves a view, the current dashboard state is serialized as JSON:
+
+```json
+{
+  "userScope": "team",
+  "datePreset": "mtd",
+  "dateFrom": "2026-04-01",
+  "dateTo": "2026-04-30",
+  "selectedCategory": "Sales",
+  "selectedMetricKeys": ["revenue_total", "order_count", "avg_order_value"],
+  "selectedChartMetric": "revenue_total",
+  "selectedGroupBy": "Territory__c",
+  "breakdownChartType": "pie",
+  "selectedTrendMetric": "revenue_total",
+  "selectedTrendInterval": "MONTH",
+  "selectedForecastMetric": "revenue_total",
+  "selectedForecastInterval": "MONTH",
+  "selectedForecastHorizon": 6
+}
+```
+
+### 21.3 New Apex Class: `DKD_DashboardView_Controller`
+
+| Method | Purpose |
+|---|---|
+| `getMyViews()` | All views visible to current user (own + shared). Returns simplified map with `isOwn`, `isDefault`, icon, etc. |
+| `getDefaultView()` | Current user's default view (or null). |
+| `createView(name, description, configJson, isShared, icon)` | Creates a new view owned by current user. |
+| `updateView(id, name, description, configJson, isShared, icon)` | Updates own view. Throws if user isn't the owner. |
+| `deleteView(id)` | Deletes own view. Throws if user isn't the owner. |
+| `setDefaultView(id)` | Marks as default and unsets any previous default for the user. |
+| `clearDefaultView()` | Removes default flag from user's current default. |
+| `duplicateView(id, newName)` | Clones any accessible view into a new record owned by current user. |
+
+**Visibility rules:**
+- Users see their own views + all shared views
+- Users can only edit/delete views they own
+- Default flag only affects the owner's experience (not other users)
+- Shared views loaded by another user do not become their default automatically
+
+### 21.4 Dashboard UI Changes
+
+**New Views Toolbar** (below the header):
+- **View picker** — dropdown showing all accessible views
+  - `★` prefix marks your default view
+  - `🌐` prefix marks views shared by other users
+  - First option is "— Default Layout —" (no saved view)
+- **Save As New** — opens the save modal to create a new view
+- **Update** — saves current state back to the active view (owner only)
+- **Set/Unset Default** — toggles the active view as your default (owner only)
+- **Delete** — removes the active view (owner only)
+
+**Save Modal** (`dkdSaveViewModal`):
+- Name (required)
+- Description (optional)
+- "Share with all users" checkbox
+- Save / Cancel buttons
+
+### 21.5 Walkthrough — Save Your First View
+
+1. Open the **Dynamic KPI Dashboard**
+2. Configure filters as desired:
+   - Set scope to `My Team`
+   - Period to `Quarter to Date`
+   - Category to `Sales`
+   - Select metrics: `Total Revenue`, `Order Count`, `Average Order Value`
+   - Set breakdown to `Revenue × Territory × Pie`
+   - Set trend to `Total Revenue × Monthly`
+3. Click **Save As New** in the views toolbar
+4. Fill in:
+   - Name: `Team Sales Q[X]`
+   - Description: `Quarterly team sales with territory breakdown`
+   - Leave "Share with all users" unchecked (private for now)
+5. Click **Save View**
+6. The view appears in the picker and is marked as active
+7. Click **Set as Default** to load this automatically next time
+
+### 21.6 Walkthrough — Share a View With the Team
+
+1. Open an existing private view (that you own)
+2. Click **Update**
+3. Check the **Share with all users** box
+4. Click **Update View**
+5. Your teammates now see the view in their picker (with `🌐` prefix)
+6. They can load and use it, but cannot edit or delete it
+7. They CAN duplicate it via Apex (`duplicateView`) to create their own editable copy — this is for Sprint 7
+
+### 21.7 Walkthrough — Load a Default View on Open
+
+1. Save a view and mark it as **default**
+2. Navigate away from the dashboard and come back
+3. The dashboard auto-loads with your default view's configuration:
+   - Scope, period, category, metrics, chart types — everything restored
+4. To stop auto-loading the default, click **Unset Default** on that view
+
+### 21.8 Use Cases
+
+| User | Typical Saved Views |
+|---|---|
+| **TSE (Rahul)** | "My Daily Numbers" (Self, Today, Revenue+Visits), "This Month vs Target" (Self, MTD, with forecast) |
+| **ASM (Vikram)** | "Team Performance" (Team, MTD, with breakdowns), "New Outlet Drive" (Team, QTD, Outlets + Visits) |
+| **RSM (Priya)** | "Regional Health Check" (Team, MTD, all key metrics), "Quarterly Review" (Team, QTD, focus on trends) |
+| **NSM (Rajesh)** | "Executive Dashboard" (Org, MTD, revenue+collections+outlets), "Forecast Review" (Org, YTD + forecast) |
+| **Admin** | "Compliance Tracker" (Org, MTD, Must-Sell + Coverage), shared with all managers |
+
+### 21.9 Permissions
+
+| Profile | Dashboard_View__c CRUD | Tab Visibility |
+|---|---|---|
+| FSCRM_TSE | Create/Read/Edit/Delete (own records) | DefaultOff (accessed via LWC) |
+| FSCRM_ASM | Create/Read/Edit/Delete (own records) | DefaultOff |
+| FSCRM_RSM | Create/Read/Edit/Delete (own records) | DefaultOff |
+| FSCRM_NSM | Full CRUD + Modify All | DefaultOn |
+| FSCRM_Admin (perm set) | Full CRUD + Modify All | Visible |
+
+**Note:** Users don't need tab visibility to use saved views — all CRUD is
+done through the Dynamic KPI Dashboard LWC. The tab is for admin/debug only.
+
+### 21.10 What's Next (Sprint 7+)
+- **Sprint 7**: Drill-down on chart clicks, export to PDF/Excel, auto-refresh toggle
+- **Sprint 8**: Smart insights and anomaly detection
 
 ---
 

@@ -110,7 +110,9 @@
     <classAccesses><apexClass>DKD_QueryEngine_Service</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_Dashboard_Controller</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_Forecast_Service</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_DashboardView_Controller</apexClass><enabled>true</enabled></classAccesses>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>KPI_Metric__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Dashboard_View__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <custom>true</custom>
     <fieldPermissions>
         <editable>true</editable>
@@ -622,6 +624,7 @@
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Dynamic_KPI_Dashboard</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>KPI_Metric__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>Dashboard_View__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <userLicense>Salesforce</userLicense>
     <userPermissions>
         <enabled>true</enabled>
