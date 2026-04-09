@@ -143,6 +143,8 @@
             </value>
         </filters>
         <outputReference>RelatedOrders</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Total_Net_Amount__c</queriedFields>
     </recordLookups>
     <recordLookups>
         <name>Get_Related_Collections</name>
@@ -162,6 +164,8 @@
             </value>
         </filters>
         <outputReference>RelatedCollections</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Amount__c</queriedFields>
     </recordLookups>
     <recordLookups>
         <name>Get_Day_Attendance</name>
