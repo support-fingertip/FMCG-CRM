@@ -42,8 +42,8 @@ export default class DkdChartWidget extends LightningElement {
     }
 
     @api
-    get datasets() { return this._datasets; }
-    set datasets(value) {
+    get chartDatasets() { return this._datasets; }
+    set chartDatasets(value) {
         this._datasets = value || [];
         this.scheduleRender();
     }
