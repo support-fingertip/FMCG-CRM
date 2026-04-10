@@ -166,9 +166,12 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
                 rec.Order_Date__c = Date.today();
             }
 
-            // Default sales rep to current user
+            // Default sales rep and salesperson to current user
             if (rec.Sales_Rep__c == null) {
                 rec.Sales_Rep__c = UserInfo.getUserId();
+            }
+            if (rec.Salesperson__c == null) {
+                rec.Salesperson__c = UserInfo.getUserId();
             }
 
             // Initialise amounts
