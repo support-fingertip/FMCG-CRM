@@ -209,9 +209,17 @@ export default class DkdChartWidget extends LightningElement {
         }
 
         try {
+            // Deep-clone data to strip LWC Proxy wrappers — Chart.js
+            // needs to set _chartjs on arrays via defineProperty which
+            // fails on read-only LWC Proxies.
+            const chartData = JSON.parse(JSON.stringify({
+                labels: this._labels,
+                datasets
+            }));
+
             this.chartInstance = new window.Chart(ctx, {
                 type: actualType,
-                data: { labels: [...this._labels], datasets },
+                data: chartData,
                 options
             });
         } catch (e) {
