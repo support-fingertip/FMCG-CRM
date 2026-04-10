@@ -924,54 +924,48 @@ export default class DynamicKpiDashboard extends LightningElement {
             return;
         }
         this.isLoading = true;
+        let current = {};
+        let previous = {};
         try {
-            // Primary KPI values — both calls must succeed for cards to render
-            let current = {};
-            let previous = {};
-            try {
-                [current, previous] = await Promise.all([
-                    getKpiValues({
-                        metricKeys: this.selectedMetricKeys,
-                        filtersJson: null,
-                        dateFrom: this.dateFrom,
-                        dateTo: this.dateTo,
-                        userScope: this.userScope
-                    }),
-                    getPreviousPeriodValues({
-                        metricKeys: this.selectedMetricKeys,
-                        filtersJson: null,
-                        dateFrom: this.dateFrom,
-                        dateTo: this.dateTo,
-                        userScope: this.userScope
-                    })
-                ]);
-            } catch (kpiErr) {
-                console.error('KPI values load failed', kpiErr);
-                current = {};
-                previous = {};
-            }
-
-            this.kpiCards = this.buildKpiCards(current, previous);
-
-            // Secondary widgets — each is independent and fail-safe
-            const safeCall = (fn) => fn().catch(err => {
-                console.error('Widget load failed', err);
-            });
-
-            await Promise.all([
-                this.selectedChartMetric ? safeCall(() => this.loadBreakdownChart()) : Promise.resolve(),
-                this.selectedTrendMetric ? safeCall(() => this.loadTrendChart()) : Promise.resolve(),
-                this.selectedForecastMetric ? safeCall(() => this.loadForecastChart()) : Promise.resolve(),
-                safeCall(() => this.loadInsights())
+            const kpiResults = await Promise.allSettled([
+                getKpiValues({
+                    metricKeys: this.selectedMetricKeys,
+                    filtersJson: null,
+                    dateFrom: this.dateFrom,
+                    dateTo: this.dateTo,
+                    userScope: this.userScope
+                }),
+                getPreviousPeriodValues({
+                    metricKeys: this.selectedMetricKeys,
+                    filtersJson: null,
+                    dateFrom: this.dateFrom,
+                    dateTo: this.dateTo,
+                    userScope: this.userScope
+                })
             ]);
-
-            const now = new Date();
-            this.lastUpdated = now.toLocaleTimeString();
-        } catch (error) {
-            this.showToast('Error', 'Failed to refresh data: ' + this.reduceError(error), 'error');
-        } finally {
-            this.isLoading = false;
+            current = kpiResults[0].status === 'fulfilled' ? kpiResults[0].value : {};
+            previous = kpiResults[1].status === 'fulfilled' ? kpiResults[1].value : {};
+        } catch (e) {
+            console.error('KPI load error', e);
         }
+
+        this.kpiCards = this.buildKpiCards(current || {}, previous || {});
+
+        // Secondary widgets — each independent, all fail-safe via allSettled
+        try {
+            await Promise.allSettled([
+                this.selectedChartMetric ? this.loadBreakdownChart() : Promise.resolve(),
+                this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve(),
+                this.selectedForecastMetric ? this.loadForecastChart() : Promise.resolve(),
+                this.loadInsights()
+            ]);
+        } catch (e) {
+            console.error('Widget load error', e);
+        }
+
+        const now = new Date();
+        this.lastUpdated = now.toLocaleTimeString();
+        this.isLoading = false;
     }
 
     async loadBreakdownChart() {
