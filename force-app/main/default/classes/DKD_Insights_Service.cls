@@ -333,6 +333,7 @@ public with sharing class DKD_Insights_Service {
     private static String formatIndianNumber(Decimal value) {
         if (value == null) return '0';
         Long rounded = Math.round(value.doubleValue());
+        if (rounded == 0) return '0';
         String str = String.valueOf(rounded);
         Boolean negative = str.startsWith('-');
         if (negative) str = str.substring(1);
@@ -344,14 +345,13 @@ public with sharing class DKD_Insights_Service {
         // Format as Indian lakhs/crores: last 3 digits, then groups of 2
         String last3 = str.substring(str.length() - 3);
         String rest = str.substring(0, str.length() - 3);
-        List<String> groups = new List<String>();
+        String result = '';
         while (rest.length() > 2) {
-            groups.add(0, rest.substring(rest.length() - 2));
+            result = ',' + rest.substring(rest.length() - 2) + result;
             rest = rest.substring(0, rest.length() - 2);
         }
-        if (rest.length() > 0) groups.add(0, rest);
-        String formatted = String.join(groups, ',') + ',' + last3;
-        return (negative ? '-' : '') + formatted;
+        result = rest + result + ',' + last3;
+        return (negative ? '-' : '') + result;
     }
 
     private static Decimal toDecimal(Object value) {
