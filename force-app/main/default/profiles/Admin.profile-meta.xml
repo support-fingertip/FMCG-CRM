@@ -795,15 +795,48 @@
     <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Pending__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Used__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Leave_Balance__c.Available__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Metric_Key__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Label__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Description__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Source_Object__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Aggregation__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Aggregate_Field__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Date_Field__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.User_Field__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Default_Filter__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Format__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Icon__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Color__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Category__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Allow_Forecast__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Sort_Order__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Description__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Configuration_JSON__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Owner_User__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Is_Shared__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Is_Default__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Icon__c</field><readable>true</readable></fieldPermissions>
     <layoutAssignments><layout>Leave_Policy__c-Leave Policy Layout</layout></layoutAssignments>
     <layoutAssignments><layout>Leave_Balance__c-Leave Balance Layout</layout></layoutAssignments>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>KPI_Metric__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Dashboard_View__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <tabVisibilities><tab>Leave_Policy__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>Dynamic_KPI_Dashboard</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>KPI_Metric__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>Dashboard_View__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <classAccesses><apexClass>LeaveBalanceService</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeaveYearlyResetBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeaveAccrualBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeaveAccrualScheduler</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeavePolicyController</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_MetricRegistry</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_QueryEngine_Service</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_Dashboard_Controller</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_Forecast_Service</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_DashboardView_Controller</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>DKD_Insights_Service</apexClass><enabled>true</enabled></classAccesses>
 </Profile>
