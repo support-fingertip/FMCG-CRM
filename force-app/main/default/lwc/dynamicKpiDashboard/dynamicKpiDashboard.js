@@ -920,35 +920,49 @@ export default class DynamicKpiDashboard extends LightningElement {
     async refreshData() {
         if (!this.selectedMetricKeys.length) {
             this.kpiCards = [];
+            this.isLoading = false;
             return;
         }
         this.isLoading = true;
         try {
-            const [current, previous] = await Promise.all([
-                getKpiValues({
-                    metricKeys: this.selectedMetricKeys,
-                    filtersJson: null,
-                    dateFrom: this.dateFrom,
-                    dateTo: this.dateTo,
-                    userScope: this.userScope
-                }),
-                getPreviousPeriodValues({
-                    metricKeys: this.selectedMetricKeys,
-                    filtersJson: null,
-                    dateFrom: this.dateFrom,
-                    dateTo: this.dateTo,
-                    userScope: this.userScope
-                })
-            ]);
+            // Primary KPI values — both calls must succeed for cards to render
+            let current = {};
+            let previous = {};
+            try {
+                [current, previous] = await Promise.all([
+                    getKpiValues({
+                        metricKeys: this.selectedMetricKeys,
+                        filtersJson: null,
+                        dateFrom: this.dateFrom,
+                        dateTo: this.dateTo,
+                        userScope: this.userScope
+                    }),
+                    getPreviousPeriodValues({
+                        metricKeys: this.selectedMetricKeys,
+                        filtersJson: null,
+                        dateFrom: this.dateFrom,
+                        dateTo: this.dateTo,
+                        userScope: this.userScope
+                    })
+                ]);
+            } catch (kpiErr) {
+                console.error('KPI values load failed', kpiErr);
+                current = {};
+                previous = {};
+            }
 
             this.kpiCards = this.buildKpiCards(current, previous);
 
-            // Load charts + insights in parallel after KPI cards are ready
+            // Secondary widgets — each is independent and fail-safe
+            const safeCall = (fn) => fn().catch(err => {
+                console.error('Widget load failed', err);
+            });
+
             await Promise.all([
-                this.selectedChartMetric ? this.loadBreakdownChart() : Promise.resolve(),
-                this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve(),
-                this.selectedForecastMetric ? this.loadForecastChart() : Promise.resolve(),
-                this.loadInsights()
+                this.selectedChartMetric ? safeCall(() => this.loadBreakdownChart()) : Promise.resolve(),
+                this.selectedTrendMetric ? safeCall(() => this.loadTrendChart()) : Promise.resolve(),
+                this.selectedForecastMetric ? safeCall(() => this.loadForecastChart()) : Promise.resolve(),
+                safeCall(() => this.loadInsights())
             ]);
 
             const now = new Date();
