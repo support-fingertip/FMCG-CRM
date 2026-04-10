@@ -3,9 +3,7 @@
     <fullName>All_Orders</fullName>
     <columns>NAME</columns>
     <columns>Account__c</columns>
-    <columns>Order_Date__c</columns>
-    <columns>Order_Status__c</columns>
-    <columns>Total_Amount__c</columns>
+    <columns>Order_Date__c</columns>    <columns>Total_Amount__c</columns>
     <columns>Salesperson__c</columns>
     <columns>Channel__c</columns>
     <filterScope>Everything</filterScope>

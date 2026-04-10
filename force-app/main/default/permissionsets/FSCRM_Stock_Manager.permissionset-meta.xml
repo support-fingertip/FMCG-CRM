@@ -942,11 +942,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Sales_Order__c.Order_Status__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Sales_Order__c.Order_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>

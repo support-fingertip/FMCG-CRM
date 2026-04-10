@@ -51,11 +51,6 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
         Map<Id, Sales_Order__c> oldMap = (Map<Id, Sales_Order__c>) Trigger.oldMap;
         validateStatusTransitions(newRecords, oldMap);
 
-        // Keep Order_Status__c in sync with Status__c on every update
-        for (Sales_Order__c rec : newRecords) {
-            rec.Order_Status__c = rec.Status__c;
-        }
-
         // Validate must-sell compliance when submitting orders
         List<Sales_Order__c> submittedOrders = new List<Sales_Order__c>();
         for (Sales_Order__c rec : newRecords) {
@@ -165,8 +160,6 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
             if (String.isBlank(rec.Status__c)) {
                 rec.Status__c = 'Draft';
             }
-            // Keep Order_Status__c in sync with Status__c
-            rec.Order_Status__c = rec.Status__c;
 
             // Default order date
             if (rec.Order_Date__c == null) {

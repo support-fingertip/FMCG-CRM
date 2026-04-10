@@ -2,9 +2,7 @@
 <ListView xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Todays_Orders</fullName>
     <columns>NAME</columns>
-    <columns>Account__c</columns>
-    <columns>Order_Status__c</columns>
-    <columns>Total_Amount__c</columns>
+    <columns>Account__c</columns>    <columns>Total_Amount__c</columns>
     <columns>Salesperson__c</columns>
     <filterScope>Everything</filterScope>
     <filters>
