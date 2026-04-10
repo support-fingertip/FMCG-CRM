@@ -217,11 +217,14 @@ public with sharing class DKD_QueryEngine_Service {
             groupByClause = ' GROUP BY ' + safeGroupBy;
         }
 
+        // LIMIT only allowed on grouped aggregate queries
+        String limitClause = String.isNotBlank(groupByClause) ? ' LIMIT 2000' : '';
+
         return selectClause +
                ' FROM ' + metric.Source_Object__c +
                ' WHERE ' + whereClause +
                groupByClause +
-               ' LIMIT 2000';
+               limitClause;
     }
 
     private static String buildAggregateExpression(KPI_Metric__c metric) {
