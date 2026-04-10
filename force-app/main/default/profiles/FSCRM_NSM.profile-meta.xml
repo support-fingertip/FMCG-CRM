@@ -112,8 +112,6 @@
     <classAccesses><apexClass>DKD_Forecast_Service</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_DashboardView_Controller</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_Insights_Service</apexClass><enabled>true</enabled></classAccesses>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>KPI_Metric__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Dashboard_View__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <custom>true</custom>
     <fieldPermissions>
         <editable>true</editable>
@@ -425,6 +423,8 @@
     </objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Leave_Balance__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>KPI_Metric__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Dashboard_View__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <tabVisibilities>
         <tab>Achievement_Dashboard</tab>
         <visibility>DefaultOn</visibility>

@@ -104,8 +104,8 @@ public with sharing class DKD_Insights_Service {
         // (keep current order — frontend can handle sorting if needed)
 
         // Limit to top 8 to avoid cluttering the UI
-        if (insights.size() > 8) {
-            insights = new List<Map<String, Object>>(insights).subList(0, 8);
+        while (insights.size() > 8) {
+            insights.remove(insights.size() - 1);
         }
 
         result.put('insights', insights);

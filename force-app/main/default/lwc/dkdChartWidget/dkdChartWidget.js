@@ -26,7 +26,7 @@ export default class DkdChartWidget extends LightningElement {
     @api title = '';
     @api height = 300;
     @api format = 'Number';          // Currency | Number | Percent | Duration
-    @api showLegend = true;
+    @api showLegend = false;
 
     _labels = [];
     _datasets = [];
