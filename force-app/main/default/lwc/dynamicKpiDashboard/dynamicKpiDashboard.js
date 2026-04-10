@@ -950,22 +950,21 @@ export default class DynamicKpiDashboard extends LightningElement {
         }
 
         this.kpiCards = this.buildKpiCards(current || {}, previous || {});
-
-        // Secondary widgets — each independent, all fail-safe via allSettled
-        try {
-            await Promise.allSettled([
-                this.selectedChartMetric ? this.loadBreakdownChart() : Promise.resolve(),
-                this.selectedTrendMetric ? this.loadTrendChart() : Promise.resolve(),
-                this.selectedForecastMetric ? this.loadForecastChart() : Promise.resolve(),
-                this.loadInsights()
-            ]);
-        } catch (e) {
-            console.error('Widget load error', e);
-        }
-
-        const now = new Date();
-        this.lastUpdated = now.toLocaleTimeString();
+        this.lastUpdated = new Date().toLocaleTimeString();
         this.isLoading = false;
+
+        // Fire-and-forget: load secondary widgets AFTER spinner stops.
+        // Each has its own try/catch so failures are silent.
+        if (this.selectedChartMetric) {
+            this.loadBreakdownChart().catch(e => console.error('Breakdown error', e));
+        }
+        if (this.selectedTrendMetric) {
+            this.loadTrendChart().catch(e => console.error('Trend error', e));
+        }
+        if (this.selectedForecastMetric) {
+            this.loadForecastChart().catch(e => console.error('Forecast error', e));
+        }
+        this.loadInsights().catch(e => console.error('Insights error', e));
     }
 
     async loadBreakdownChart() {
