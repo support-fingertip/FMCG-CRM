@@ -795,19 +795,12 @@
     <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Pending__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Leave_Balance__c.Used__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Leave_Balance__c.Available__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Metric_Key__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Label__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Description__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Source_Object__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Aggregation__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Aggregate_Field__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Date_Field__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.User_Field__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Default_Filter__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Format__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Icon__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Color__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Category__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Allow_Forecast__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>KPI_Metric__c.Sort_Order__c</field><readable>true</readable></fieldPermissions>
