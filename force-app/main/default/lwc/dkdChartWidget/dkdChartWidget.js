@@ -68,12 +68,22 @@ export default class DkdChartWidget extends LightningElement {
         if (this._renderTimer) {
             clearTimeout(this._renderTimer);
         }
-        if (!this.chartJsLoaded || !this._isConnected) return;
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this._renderTimer = setTimeout(() => {
-            this._renderTimer = null;
-            this._safeRender();
-        }, 150);
+        this._pendingRender = true;
+        // Don't schedule a timer — wait for renderedCallback to confirm
+        // the canvas is in the DOM, then render from there.
+    }
+
+    renderedCallback() {
+        if (this._pendingRender && this.chartJsLoaded && this._isConnected) {
+            this._pendingRender = false;
+            // Small delay to let LWC finish all DOM mutations
+            if (this._renderTimer) clearTimeout(this._renderTimer);
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            this._renderTimer = setTimeout(() => {
+                this._renderTimer = null;
+                this._safeRender();
+            }, 200);
+        }
     }
 
     _destroyChart() {
@@ -92,6 +102,10 @@ export default class DkdChartWidget extends LightningElement {
 
         const canvas = this.template.querySelector('canvas');
         if (!canvas) return;
+
+        // Verify canvas is actually in the DOM and has dimensions
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
         this._destroyChart();
 
@@ -186,7 +200,7 @@ export default class DkdChartWidget extends LightningElement {
         }
 
         try {
-            this.chartInstance = new window.Chart(canvas.getContext('2d'), {
+            this.chartInstance = new window.Chart(ctx, {
                 type: actualType,
                 data: { labels: [...this._labels], datasets },
                 options
