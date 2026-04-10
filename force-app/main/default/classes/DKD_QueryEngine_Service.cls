@@ -254,11 +254,12 @@ public with sharing class DKD_QueryEngine_Service {
 
         // 1. Date range filter (always applied)
         String dateField = sanitizeField(metric.Date_Field__c);
+        Boolean isDateTimeField = isDateTimeType(metric.Source_Object__c, metric.Date_Field__c);
         if (dateFrom != null) {
-            clauses.add(dateField + ' >= ' + formatDateLiteral(dateFrom));
+            clauses.add(dateField + ' >= ' + formatDateLiteral(dateFrom, isDateTimeField));
         }
         if (dateTo != null) {
-            clauses.add(dateField + ' <= ' + formatDateLiteral(dateTo));
+            clauses.add(dateField + ' <= ' + formatDateLiteral(dateTo, isDateTimeField));
         }
 
         // 2. Metric default filter (from KPI_Metric__c.Default_Filter__c)
@@ -535,12 +536,23 @@ public with sharing class DKD_QueryEngine_Service {
         return trimmed;
     }
 
-    private static String formatDateLiteral(Date d) {
-        // SOQL date literal format: YYYY-MM-DD (no quotes)
+    private static String formatDateLiteral(Date d, Boolean asDateTime) {
         Integer y = d.year();
         Integer m = d.month();
         Integer day = d.day();
-        return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+        String datePart = y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+        // DateTime fields require ISO 8601 format: YYYY-MM-DDT00:00:00Z
+        return asDateTime ? datePart + 'T00:00:00Z' : datePart;
+    }
+
+    private static Boolean isDateTimeType(String objectName, String fieldName) {
+        if (String.isBlank(objectName) || String.isBlank(fieldName)) return false;
+        Schema.SObjectType sobj = Schema.getGlobalDescribe().get(objectName);
+        if (sobj == null) return false;
+        Schema.SObjectField fld = sobj.getDescribe().fields.getMap().get(fieldName.toLowerCase());
+        if (fld == null) return false;
+        Schema.DisplayType dt = fld.getDescribe().getType();
+        return dt == Schema.DisplayType.DATETIME;
     }
 
     // ── Custom Exception ─────────────────────────────────────────────────────
