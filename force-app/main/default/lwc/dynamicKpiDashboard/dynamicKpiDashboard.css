@@ -634,8 +634,21 @@
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
-/* Drill-down modal */
+/* Drill-down modal — position:fixed to break out of any parent container */
 .dkd-drilldown-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9001;
+}
+.dkd-drilldown-modal + .slds-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 9000;
 }
 .dkd-drilldown-container {
