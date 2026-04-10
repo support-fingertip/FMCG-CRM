@@ -100,16 +100,25 @@ export default class DkdChartWidget extends LightningElement {
     _safeRender() {
         if (!this._isConnected || !this.chartJsLoaded || !window.Chart) return;
 
-        const canvas = this.template.querySelector('canvas');
-        if (!canvas) return;
-
-        // Verify canvas is actually in the DOM and has dimensions
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
         this._destroyChart();
 
         if (!this._datasets.length || !this._labels.length) return;
+
+        // lwc:dom="manual" container — we create the canvas ourselves
+        const container = this.template.querySelector('.dkd-chart-canvas-wrap');
+        if (!container) return;
+
+        // Remove old canvas if any
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+
+        // Create a fresh canvas element
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
         const isPie = this.chartType === 'pie' || this.chartType === 'doughnut';
         const isHorizontal = this.chartType === 'horizontalBar';
@@ -206,7 +215,7 @@ export default class DkdChartWidget extends LightningElement {
                 options
             });
         } catch (e) {
-            console.error('Chart render error', e);
+            console.error('Chart render error:', e.message || e);
             this.chartInstance = null;
         }
     }
