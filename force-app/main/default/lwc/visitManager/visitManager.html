@@ -47,67 +47,69 @@
                 </div>
             </div>
 
-            <!-- Selfie -->
-            <div class="vm-section">
-                <h3 class="vm-section-title">
-                    <lightning-icon icon-name="utility:photo" size="xx-small" class="vm-section-icon"></lightning-icon>
-                    Selfie
-                </h3>
-                <div class="vm-photo-area">
-                    <template if:false={startSelfiePreview}>
-                        <label class="vm-photo-btn">
-                            <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
-                            Capture Selfie
-                            <input type="file" accept="image/*" capture="user" class="vm-file-input-hidden" onchange={handleStartSelfieCapture}/>
-                        </label>
-                    </template>
-                    <template if:true={startSelfiePreview}>
-                        <div class="vm-photo-preview">
-                            <img src={startSelfiePreview} alt="Selfie" class="vm-photo-img"/>
-                            <lightning-button-icon icon-name="utility:close" size="small" variant="bare"
-                                class="vm-photo-remove" onclick={removeStartSelfie}></lightning-button-icon>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Odometer & Companion -->
-            <div class="vm-section">
-                <h3 class="vm-section-title">
-                    <lightning-icon icon-name="utility:settings" size="xx-small" class="vm-section-icon"></lightning-icon>
-                    Additional Details
-                </h3>
-                <div class="vm-card">
-                    <lightning-combobox label="Duty Type" value={dutyType}
-                        options={dutyTypeOptions} onchange={handleDutyTypeChange}
-                        class="slds-m-bottom_small" required></lightning-combobox>
-                    <lightning-input type="number" label="Odometer Start (km)" value={odometerStart}
-                        onchange={handleOdometerStartChange} class="slds-m-bottom_small"></lightning-input>
-                    <div class="slds-m-bottom_small">
-                        <lightning-input type="toggle" label="With Companion?" checked={withCompanion}
-                            onchange={handleCompanionToggle}></lightning-input>
-                    </div>
-                    <template if:true={withCompanion}>
-                        <div class="vm-companion-search">
-                            <lightning-input type="text" label="Search Companion" value={companionSearchTerm}
-                                placeholder="Type name..." onchange={handleCompanionSearch}></lightning-input>
-                            <template if:true={showCompanionDropdown}>
-                                <div class="vm-dropdown">
-                                    <template for:each={companionSearchResults} for:item="emp">
-                                        <div key={emp.id} class="vm-dropdown-item" data-id={emp.id} onclick={handleCompanionSelect}>
-                                            <span class="vm-dropdown-name">{emp.name}</span>
-                                            <span class="vm-dropdown-sub">{emp.subtitle}</span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Start Day Button OR Today's Attendance Summary -->
+            <!-- Selfie + Additional Details + Start Day Button —
+                 only shown when no attendance exists for today -->
             <template if:false={hasTodayAttendance}>
+                <!-- Selfie -->
+                <div class="vm-section">
+                    <h3 class="vm-section-title">
+                        <lightning-icon icon-name="utility:photo" size="xx-small" class="vm-section-icon"></lightning-icon>
+                        Selfie
+                    </h3>
+                    <div class="vm-photo-area">
+                        <template if:false={startSelfiePreview}>
+                            <label class="vm-photo-btn">
+                                <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
+                                Capture Selfie
+                                <input type="file" accept="image/*" capture="user" class="vm-file-input-hidden" onchange={handleStartSelfieCapture}/>
+                            </label>
+                        </template>
+                        <template if:true={startSelfiePreview}>
+                            <div class="vm-photo-preview">
+                                <img src={startSelfiePreview} alt="Selfie" class="vm-photo-img"/>
+                                <lightning-button-icon icon-name="utility:close" size="small" variant="bare"
+                                    class="vm-photo-remove" onclick={removeStartSelfie}></lightning-button-icon>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Odometer & Companion -->
+                <div class="vm-section">
+                    <h3 class="vm-section-title">
+                        <lightning-icon icon-name="utility:settings" size="xx-small" class="vm-section-icon"></lightning-icon>
+                        Additional Details
+                    </h3>
+                    <div class="vm-card">
+                        <lightning-combobox label="Duty Type" value={dutyType}
+                            options={dutyTypeOptions} onchange={handleDutyTypeChange}
+                            class="slds-m-bottom_small" required></lightning-combobox>
+                        <lightning-input type="number" label="Odometer Start (km)" value={odometerStart}
+                            onchange={handleOdometerStartChange} class="slds-m-bottom_small"></lightning-input>
+                        <div class="slds-m-bottom_small">
+                            <lightning-input type="toggle" label="With Companion?" checked={withCompanion}
+                                onchange={handleCompanionToggle}></lightning-input>
+                        </div>
+                        <template if:true={withCompanion}>
+                            <div class="vm-companion-search">
+                                <lightning-input type="text" label="Search Companion" value={companionSearchTerm}
+                                    placeholder="Type name..." onchange={handleCompanionSearch}></lightning-input>
+                                <template if:true={showCompanionDropdown}>
+                                    <div class="vm-dropdown">
+                                        <template for:each={companionSearchResults} for:item="emp">
+                                            <div key={emp.id} class="vm-dropdown-item" data-id={emp.id} onclick={handleCompanionSelect}>
+                                                <span class="vm-dropdown-name">{emp.name}</span>
+                                                <span class="vm-dropdown-sub">{emp.subtitle}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Start Day Button -->
                 <div class="vm-action-center">
                     <button class="vm-btn vm-btn-start" disabled={startDayDisabled} onclick={handleStartDay}>
                         <lightning-icon icon-name="utility:play" size="xx-small" variant="inverse"></lightning-icon>
