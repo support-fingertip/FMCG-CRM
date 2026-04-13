@@ -76,6 +76,9 @@ export default class VisitManager extends LightningElement {
     // ── DAY ATTENDANCE ──
     @track dayAttendance = null;
     @track dayStats = {};
+    // Today's attendance regardless of status — used to show summary card
+    // when the user has already ended their day (prevents duplicate Start Day)
+    @track todayAttendance = null;
 
     // ── LOCATION & DEVICE ──
     @track latitude = 0;
@@ -238,6 +241,9 @@ export default class VisitManager extends LightningElement {
                 outletsLabel: (b.outletCount || 0) + ' Outlets'
             }));
 
+            // Track today's attendance (any status) for the Day Start screen
+            this.todayAttendance = ctx.todayAttendance || null;
+
             if (ctx.isDayStarted && ctx.dayAttendance) {
                 this.dayAttendance = ctx.dayAttendance;
                 this.dayStats = ctx.dayStats || {};
@@ -282,6 +288,80 @@ export default class VisitManager extends LightningElement {
     // ═══════════════════════════════════════════════════
     get isLoadingScreen() { return this.currentScreen === SCREEN.LOADING; }
     get isDayStartScreen() { return this.currentScreen === SCREEN.DAY_START; }
+
+    // When the user already has an attendance record today (in any status),
+    // we show a summary card instead of the Start Day button.
+    get hasTodayAttendance() { return !!this.todayAttendance; }
+
+    get todayAttendanceStatus() {
+        return this.todayAttendance ? this.todayAttendance.Status__c : '';
+    }
+
+    get todayAttendanceBadgeClass() {
+        const s = this.todayAttendanceStatus;
+        if (s === 'Started' || s === 'In Progress') return 'vm-status-pill vm-status-green';
+        if (s === 'Ended' || s === 'Completed') return 'vm-status-pill vm-status-blue';
+        if (s === 'Auto-Closed') return 'vm-status-pill vm-status-amber';
+        return 'vm-status-pill vm-status-gray';
+    }
+
+    get todayAttendanceStartTime() {
+        if (!this.todayAttendance || !this.todayAttendance.Day_Start_Time__c) return '-';
+        return new Date(this.todayAttendance.Day_Start_Time__c).toLocaleTimeString('en-IN',
+            { hour: '2-digit', minute: '2-digit' });
+    }
+
+    get todayAttendanceEndTime() {
+        if (!this.todayAttendance || !this.todayAttendance.Day_End_Time__c) return 'In progress';
+        return new Date(this.todayAttendance.Day_End_Time__c).toLocaleTimeString('en-IN',
+            { hour: '2-digit', minute: '2-digit' });
+    }
+
+    get todayAttendanceHours() {
+        return this.todayAttendance && this.todayAttendance.Hours_Worked__c != null
+            ? this.todayAttendance.Hours_Worked__c.toFixed(1) + ' hrs' : '-';
+    }
+
+    get todayAttendanceVisits() {
+        return this.todayAttendance && this.todayAttendance.Total_Visits__c != null
+            ? String(this.todayAttendance.Total_Visits__c) : '0';
+    }
+
+    get todayAttendanceOrders() {
+        return this.todayAttendance && this.todayAttendance.Total_Orders__c != null
+            ? String(this.todayAttendance.Total_Orders__c) : '0';
+    }
+
+    get todayAttendanceOrderValue() {
+        if (!this.todayAttendance || this.todayAttendance.Total_Order_Value__c == null) return '₹0';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency', currency: 'INR', maximumFractionDigits: 0
+        }).format(this.todayAttendance.Total_Order_Value__c);
+    }
+
+    get todayAttendanceCollection() {
+        if (!this.todayAttendance || this.todayAttendance.Total_Collection__c == null) return '₹0';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency', currency: 'INR', maximumFractionDigits: 0
+        }).format(this.todayAttendance.Total_Collection__c);
+    }
+
+    get todayAttendanceBeatName() {
+        return this.todayAttendance && this.todayAttendance.Beat__r
+            ? this.todayAttendance.Beat__r.Name : '—';
+    }
+
+    get todayAttendanceMessage() {
+        const s = this.todayAttendanceStatus;
+        if (s === 'Ended' || s === 'Completed') {
+            return 'Your day is already complete. You cannot start another attendance for today.';
+        }
+        if (s === 'Auto-Closed') {
+            return 'Your day was auto-closed. Please contact your manager if you need to adjust.';
+        }
+        return 'You already have an active attendance record for today.';
+    }
+
     get isBeatSelectScreen() { return this.currentScreen === SCREEN.BEAT_SELECT; }
     get isVisitBoardScreen() { return this.currentScreen === SCREEN.VISIT_BOARD; }
     get isVisitActiveScreen() { return this.currentScreen === SCREEN.VISIT_ACTIVE; }

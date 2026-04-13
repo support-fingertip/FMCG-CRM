@@ -19,6 +19,30 @@ public without sharing class VisitManagerController {
         ctx.put('dayAttendance', dayAtt);
         ctx.put('isDayStarted', dayAtt != null);
 
+        // Also fetch any attendance record for today (any status) so the UI
+        // can show a summary card instead of the Start Day button when the
+        // user has already ended their day.
+        List<Day_Attendance__c> todayAttList = [
+            SELECT Id, Name, Status__c, Day_Start_Time__c, Day_End_Time__c,
+                   Start_Time__c, End_Time__c, Hours_Worked__c,
+                   Total_Visits__c, Productive_Calls__c, Total_Orders__c,
+                   Total_Order_Value__c, Total_Collection__c,
+                   Distance_Traveled_Km__c, Beat__c, Beat__r.Name,
+                   Duty_Type__c, Remarks__c, Is_Finalized__c, Auto_Closed__c
+            FROM Day_Attendance__c
+            WHERE User__c = :userId
+              AND Attendance_Date__c = :Date.today()
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+        if (!todayAttList.isEmpty()) {
+            ctx.put('todayAttendance', todayAttList[0]);
+            ctx.put('hasTodayAttendance', true);
+        } else {
+            ctx.put('todayAttendance', null);
+            ctx.put('hasTodayAttendance', false);
+        }
+
         // Config
         ctx.put('config', getVisitConfig());
 

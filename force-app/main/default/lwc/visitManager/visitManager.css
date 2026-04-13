@@ -2609,3 +2609,96 @@
     line-height: 1.5;
     margin: 12px 0 0 0;
 }
+
+/* Today's attendance summary card (Day Start screen) */
+.vm-today-summary {
+    max-width: 720px;
+    margin: 16px auto;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+.vm-today-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+.vm-today-icon {
+    --sds-c-icon-color-foreground-default: #0176d3;
+}
+.vm-today-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+    color: #181818;
+    margin: 0;
+}
+.vm-status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.vm-status-green {
+    background: #eafbef;
+    color: #2e844a;
+    border: 1px solid #91dba0;
+}
+.vm-status-blue {
+    background: #eef4ff;
+    color: #0176d3;
+    border: 1px solid #b3d4ff;
+}
+.vm-status-amber {
+    background: #fff4e6;
+    color: #dd7a01;
+    border: 1px solid #ffcb8c;
+}
+.vm-status-gray {
+    background: #f3f3f3;
+    color: #706e6b;
+    border: 1px solid #dddbda;
+}
+.vm-today-message {
+    font-size: 13px;
+    color: #706e6b;
+    margin: 10px 0 16px 0;
+    line-height: 1.5;
+}
+.vm-today-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+.vm-today-stat {
+    background: #f8f9fa;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+}
+.vm-today-stat-label {
+    font-size: 10px;
+    color: #706e6b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+}
+.vm-today-stat-value {
+    font-size: 14px;
+    color: #181818;
+    font-weight: 600;
+}
+@media (max-width: 700px) {
+    .vm-today-stats { grid-template-columns: repeat(2, 1fr); }
+}

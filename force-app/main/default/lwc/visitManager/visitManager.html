@@ -106,13 +106,61 @@
                 </div>
             </div>
 
-            <!-- Start Day Button -->
-            <div class="vm-action-center">
-                <button class="vm-btn vm-btn-start" disabled={startDayDisabled} onclick={handleStartDay}>
-                    <lightning-icon icon-name="utility:play" size="xx-small" variant="inverse"></lightning-icon>
-                    Start Day
-                </button>
-            </div>
+            <!-- Start Day Button OR Today's Attendance Summary -->
+            <template if:false={hasTodayAttendance}>
+                <div class="vm-action-center">
+                    <button class="vm-btn vm-btn-start" disabled={startDayDisabled} onclick={handleStartDay}>
+                        <lightning-icon icon-name="utility:play" size="xx-small" variant="inverse"></lightning-icon>
+                        Start Day
+                    </button>
+                </div>
+            </template>
+
+            <template if:true={hasTodayAttendance}>
+                <div class="vm-today-summary">
+                    <div class="vm-today-header">
+                        <lightning-icon icon-name="utility:info" size="small" class="vm-today-icon"></lightning-icon>
+                        <h3 class="vm-today-title">Today's Attendance</h3>
+                        <span class={todayAttendanceBadgeClass}>{todayAttendanceStatus}</span>
+                    </div>
+                    <p class="vm-today-message">{todayAttendanceMessage}</p>
+
+                    <div class="vm-today-stats">
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Start Time</span>
+                            <span class="vm-today-stat-value">{todayAttendanceStartTime}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">End Time</span>
+                            <span class="vm-today-stat-value">{todayAttendanceEndTime}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Hours Worked</span>
+                            <span class="vm-today-stat-value">{todayAttendanceHours}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Beat</span>
+                            <span class="vm-today-stat-value">{todayAttendanceBeatName}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Visits</span>
+                            <span class="vm-today-stat-value">{todayAttendanceVisits}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Orders</span>
+                            <span class="vm-today-stat-value">{todayAttendanceOrders}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Order Value</span>
+                            <span class="vm-today-stat-value">{todayAttendanceOrderValue}</span>
+                        </div>
+                        <div class="vm-today-stat">
+                            <span class="vm-today-stat-label">Collections</span>
+                            <span class="vm-today-stat-value">{todayAttendanceCollection}</span>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
     </template>
 
