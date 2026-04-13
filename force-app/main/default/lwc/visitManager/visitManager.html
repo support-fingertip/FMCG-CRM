@@ -1485,6 +1485,48 @@
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 
+    <!-- GEO-FENCE WARNING MODAL -->
+    <template if:true={showGeofenceWarning}>
+        <section class="slds-modal slds-fade-in-open vm-geofence-modal">
+            <div class="slds-modal__container vm-geofence-container">
+                <header class="slds-modal__header vm-geofence-header">
+                    <h2 class="slds-modal__title vm-geofence-title">
+                        <lightning-icon icon-name="utility:warning" size="small" variant="inverse"
+                            class="slds-m-right_x-small"></lightning-icon>
+                        Outside Geofence
+                    </h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium vm-geofence-content">
+                    <p class="vm-geofence-message">{geofenceWarningMessage}</p>
+                    <div class="vm-geofence-stats">
+                        <div class="vm-geofence-stat">
+                            <span class="vm-geofence-stat-label">Distance to outlet</span>
+                            <span class="vm-geofence-stat-value">{geofenceDistance} m</span>
+                        </div>
+                        <div class="vm-geofence-stat">
+                            <span class="vm-geofence-stat-label">Geofence radius</span>
+                            <span class="vm-geofence-stat-value">{geofenceRadius} m</span>
+                        </div>
+                    </div>
+                    <p class="vm-geofence-help">
+                        You appear to be outside the outlet&apos;s geofence. If this is correct and
+                        you&apos;re really at the store, you can proceed — the check-in will be
+                        flagged in reports. Otherwise please cancel and move closer to the outlet.
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={handleGeofenceCancel}>
+                        Cancel
+                    </button>
+                    <button class="slds-button slds-button_destructive" onclick={handleGeofenceConfirm}>
+                        Proceed Anyway
+                    </button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
     <!-- Spinner Overlay -->
     <template if:true={isProcessing}>
         <div class="vm-spinner">

@@ -7,6 +7,7 @@ import endDayApex from '@salesforce/apex/VisitManagerController.endDay';
 import selectBeatApex from '@salesforce/apex/VisitManagerController.selectBeat';
 import switchBeatApex from '@salesforce/apex/VisitManagerController.switchBeat';
 import checkInVisitApex from '@salesforce/apex/VisitManagerController.checkInVisit';
+import checkGeofence from '@salesforce/apex/AccountGeolocation_Controller.checkGeofence';
 import checkOutVisitApex from '@salesforce/apex/VisitManagerController.checkOutVisit';
 import skipVisitApex from '@salesforce/apex/VisitManagerController.skipVisit';
 import skipPlannedVisitApex from '@salesforce/apex/VisitManagerController.skipPlannedVisit';
@@ -122,6 +123,14 @@ export default class VisitManager extends LightningElement {
 
     // ── AD-HOC ──
     @track showAdHocModal = false;
+
+    // Geo-fence warning state
+    @track showGeofenceWarning = false;
+    @track geofenceWarningMessage = '';
+    @track geofenceDistance = 0;
+    @track geofenceRadius = 0;
+    @track geofenceOutletName = '';
+    _pendingCheckIn = null; // holds the pending check-in data for retry after confirm
     @track adHocSearchTerm = '';
     @track adHocSearchResults = [];
     @track adHocSelectedAccount = null;
@@ -719,7 +728,6 @@ export default class VisitManager extends LightningElement {
 
         if (!accountId) { this._toast('Error', 'No outlet found.', 'error'); return; }
 
-
         // Block if active visit exists
         if (this.activeVisits.length > 0) {
             this._toast('Warning', 'Complete the current active visit first.', 'warning');
@@ -740,18 +748,100 @@ export default class VisitManager extends LightningElement {
                 existingVisitId: existingVisitId
             };
 
-            const visit = await checkInVisitApex({ visitJson: JSON.stringify(visitData) });
-            this._toast('Success', 'Checked in successfully!', 'success');
+            // Geo-fence validation — warn (not block) when outside
+            const fenceOk = await this._validateGeofence(accountId, pos, visitData);
+            if (!fenceOk) {
+                // _validateGeofence opened the warning modal and stored pending data
+                this.isProcessing = false;
+                return;
+            }
 
-            this.activeVisit = visit;
-            await this._loadActiveVisitData(visit.Id, accountId);
-            this._startVisitTimer();
-            this.currentScreen = SCREEN.VISIT_ACTIVE;
-            await this._refreshAllData();
+            await this._performCheckIn(visitData, accountId);
         } catch (err) {
             this._toast('Error', 'Check-in failed: ' + this._err(err), 'error');
         } finally {
             this.isProcessing = false;
+        }
+    }
+
+    /**
+     * Validates the current GPS position against the outlet's geo-fence.
+     * Returns true if within fence (or no fence set). Returns false if
+     * outside fence — in that case, opens the warning modal and stores
+     * pending data for retry after user confirms.
+     */
+    async _validateGeofence(accountId, pos, visitData) {
+        try {
+            const result = await checkGeofence({
+                accountId: accountId,
+                currentLat: pos.latitude,
+                currentLng: pos.longitude
+            });
+            if (!result.hasFence || result.withinFence) {
+                return true;
+            }
+            // Outside fence — store pending check-in and show warning modal
+            this.geofenceDistance = result.distanceMeters;
+            this.geofenceRadius = result.radiusMeters;
+            this.geofenceOutletName = result.outletLat ? (result.outletName || 'the outlet') : 'the outlet';
+            this.geofenceWarningMessage = result.message || '';
+            this._pendingCheckIn = { visitData, accountId };
+            this.showGeofenceWarning = true;
+            return false;
+        } catch (err) {
+            // If the geo-fence check fails, don't block check-in — just proceed
+            console.error('Geofence check failed:', err);
+            return true;
+        }
+    }
+
+    /**
+     * Actual check-in after geo-fence validation passes (or user confirms override).
+     */
+    async _performCheckIn(visitData, accountId) {
+        const visit = await checkInVisitApex({ visitJson: JSON.stringify(visitData) });
+        this._toast('Success', 'Checked in successfully!', 'success');
+
+        this.activeVisit = visit;
+        await this._loadActiveVisitData(visit.Id, accountId);
+        this._startVisitTimer();
+        this.currentScreen = SCREEN.VISIT_ACTIVE;
+        await this._refreshAllData();
+    }
+
+    handleGeofenceCancel() {
+        this.showGeofenceWarning = false;
+        this._pendingCheckIn = null;
+        this._toast('Cancelled', 'Check-in cancelled.', 'info');
+    }
+
+    async handleGeofenceConfirm() {
+        if (!this._pendingCheckIn) {
+            this.showGeofenceWarning = false;
+            return;
+        }
+        const { visitData, accountId } = this._pendingCheckIn;
+        // Server-side OVE_Visit_Service.checkIn requires geoOverrideReason
+        // when the user is outside the geofence. Setting it here signals the
+        // server to allow the check-in and persist Geo_Fence_Override_Reason__c
+        // for audit/reporting.
+        visitData.geoOverrideReason = 'User confirmed physical presence at outlet. ' +
+            'Distance: ' + this.geofenceDistance + 'm (radius: ' + this.geofenceRadius + 'm).';
+
+        this.showGeofenceWarning = false;
+        this.isProcessing = true;
+        try {
+            // Ad-hoc visits have isPlanned === false
+            if (visitData.isPlanned === false && visitData.adHocReason) {
+                await this._performAdHocCheckIn(visitData, accountId);
+            } else {
+                await this._performCheckIn(visitData, accountId);
+            }
+        } catch (err) {
+            this._toast('Error', 'Check-in failed: ' + this._err(err), 'error');
+        } finally {
+            this.isProcessing = false;
+            this._pendingCheckIn = null;
         }
     }
 
@@ -1858,8 +1948,9 @@ export default class VisitManager extends LightningElement {
         this.showAdHocModal = false;
         try {
             const pos = await this._captureLocationAsync();
+            const accountId = this.adHocSelectedAccount.id;
             const data = {
-                accountId: this.adHocSelectedAccount.id,
+                accountId: accountId,
                 dayAttendanceId: this.dayAttendance.Id,
                 beatId: this.activeBeatId,
                 latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy,
@@ -1869,18 +1960,29 @@ export default class VisitManager extends LightningElement {
                 adHocReason: this.adHocReason || 'Ad-hoc visit'
             };
 
-            const visit = await checkInVisitApex({ visitJson: JSON.stringify(data) });
-            this._toast('Success', 'Ad-hoc visit started for ' + this.adHocSelectedAccount.name, 'success');
-            this.activeVisit = visit;
-            await this._loadActiveVisitData(visit.Id, this.adHocSelectedAccount.id);
-            this._startVisitTimer();
-            this.currentScreen = SCREEN.VISIT_ACTIVE;
-            await this._refreshAllData();
+            // Geo-fence validation — warn (not block) when outside
+            const fenceOk = await this._validateGeofence(accountId, pos, data);
+            if (!fenceOk) {
+                this.isProcessing = false;
+                return;
+            }
+
+            await this._performAdHocCheckIn(data, accountId);
         } catch (err) {
             this._toast('Error', 'Ad-hoc visit failed: ' + this._err(err), 'error');
         } finally {
             this.isProcessing = false;
         }
+    }
+
+    async _performAdHocCheckIn(data, accountId) {
+        const visit = await checkInVisitApex({ visitJson: JSON.stringify(data) });
+        this._toast('Success', 'Ad-hoc visit started for ' + this.adHocSelectedAccount.name, 'success');
+        this.activeVisit = visit;
+        await this._loadActiveVisitData(visit.Id, accountId);
+        this._startVisitTimer();
+        this.currentScreen = SCREEN.VISIT_ACTIVE;
+        await this._refreshAllData();
     }
 
     // ═══════════════════════════════════════════════════

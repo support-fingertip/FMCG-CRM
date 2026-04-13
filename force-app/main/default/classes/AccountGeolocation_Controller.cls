@@ -210,4 +210,107 @@ public with sharing class AccountGeolocation_Controller {
             throw new AuraHandledException('Failed to clear location: ' + e.getMessage());
         }
     }
+
+    /**
+     * @description Validates whether the salesperson's current location is
+     *              inside the outlet's geo-fence radius. Returns a result
+     *              structure that the LWC uses to display a warning (not a
+     *              hard block) when the user is outside the fence.
+     *
+     * @param accountId     The outlet being visited.
+     * @param currentLat    Salesperson's current GPS latitude.
+     * @param currentLng    Salesperson's current GPS longitude.
+     * @return Map with: hasFence, withinFence, distanceMeters,
+     *         radiusMeters, outletLat, outletLng, message.
+     */
+    @AuraEnabled
+    public static Map<String, Object> checkGeofence(
+        Id accountId,
+        Decimal currentLat,
+        Decimal currentLng
+    ) {
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('hasFence', false);
+        result.put('withinFence', true);
+        result.put('distanceMeters', null);
+        result.put('radiusMeters', null);
+        result.put('outletLat', null);
+        result.put('outletLng', null);
+        result.put('message', '');
+
+        if (accountId == null || currentLat == null || currentLng == null) {
+            result.put('message', 'Missing account or location.');
+            return result;
+        }
+
+        List<Account> accts = [
+            SELECT Id, Name, Outlet_Latitude__c, Outlet_Longitude__c, Geofence_Radius__c
+            FROM Account
+            WHERE Id = :accountId
+            LIMIT 1
+        ];
+        if (accts.isEmpty()) {
+            result.put('message', 'Outlet not found.');
+            return result;
+        }
+        Account acc = accts[0];
+        if (acc.Outlet_Latitude__c == null || acc.Outlet_Longitude__c == null) {
+            // No geofence configured — always within "fence"
+            result.put('message', 'No geo-fence configured for this outlet.');
+            return result;
+        }
+
+        result.put('hasFence', true);
+        result.put('outletLat', acc.Outlet_Latitude__c);
+        result.put('outletLng', acc.Outlet_Longitude__c);
+
+        Decimal radius = (acc.Geofence_Radius__c != null && acc.Geofence_Radius__c > 0)
+            ? acc.Geofence_Radius__c : 100;
+        result.put('radiusMeters', radius);
+
+        Decimal distance = haversineMeters(
+            acc.Outlet_Latitude__c, acc.Outlet_Longitude__c,
+            currentLat, currentLng
+        );
+        result.put('distanceMeters', distance.setScale(0));
+
+        Boolean within = distance <= radius;
+        result.put('withinFence', within);
+
+        if (within) {
+            result.put('message', 'You are ' + distance.setScale(0) + ' m from the outlet (within ' +
+                       radius.setScale(0) + ' m geofence).');
+        } else {
+            Decimal over = distance - radius;
+            result.put('message', 'You are ' + distance.setScale(0) + ' m from ' + acc.Name +
+                       ' — ' + over.setScale(0) + ' m outside the ' + radius.setScale(0) +
+                       ' m geofence.');
+        }
+        return result;
+    }
+
+    /**
+     * @description Haversine formula to compute distance between two
+     *              lat/lng points in metres.
+     */
+    private static Decimal haversineMeters(
+        Decimal lat1, Decimal lng1,
+        Decimal lat2, Decimal lng2
+    ) {
+        Double EARTH_RADIUS_M = 6371000;
+        Double dLat = toRadians(lat2.doubleValue() - lat1.doubleValue());
+        Double dLng = toRadians(lng2.doubleValue() - lng1.doubleValue());
+        Double l1 = toRadians(lat1.doubleValue());
+        Double l2 = toRadians(lat2.doubleValue());
+
+        Double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(l1) * Math.cos(l2) *
+                   Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        Double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Decimal.valueOf(EARTH_RADIUS_M * c);
+    }
+
+    private static Double toRadians(Double degrees) {
+        return degrees * Math.PI / 180;
+    }
 }
