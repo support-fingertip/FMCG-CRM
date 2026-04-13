@@ -112,6 +112,7 @@
     <classAccesses><apexClass>DKD_Forecast_Service</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_DashboardView_Controller</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DKD_Insights_Service</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>AccountGeolocation_Controller</apexClass><enabled>true</enabled></classAccesses>
     <custom>true</custom>
     <fieldPermissions>
         <editable>true</editable>
