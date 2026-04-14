@@ -232,7 +232,11 @@
 }
 
 .month-header-cell {
-    flex: 1;
+    /* flex: 1 1 0 + min-width: 0 matches .month-cell below so every
+       column gets exactly 1/7th width; without matching basis the
+       header row can drift from the body row when content differs. */
+    flex: 1 1 0;
+    min-width: 0;
     text-align: center;
     padding: 8px 4px;
     font-size: 11px;
@@ -257,12 +261,19 @@
 }
 
 .month-cell {
-    flex: 1;
+    flex: 1 1 0;
+    /* min-width: 0 lets flex: 1 honour the 1/7th share even when the
+       beat chips inside have intrinsic content wider than the cell.
+       Without it, long beat names like 'Admin Beat - Delhi Central'
+       push the cell wider than its share and break column alignment
+       with the weekday header row above. */
+    min-width: 0;
     min-height: 90px;
     padding: 4px 6px;
     border-right: 1px solid var(--border-color);
     cursor: pointer;
     transition: background-color 0.15s ease;
+    overflow: hidden;
 }
 
 .month-cell:last-child {
@@ -306,6 +317,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* Same flex-shrink fix as .month-cell — without min-width:0 the
+       chip refuses to compress below the width of its longest child,
+       so a single cell's chip can push the whole row wider than the
+       parent and misalign with the weekday header. */
+    min-width: 0;
+    overflow: hidden;
 }
 
 .month-beat-name {
@@ -313,6 +330,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* flex child needs min-width:0 so ellipsis actually kicks in. */
+    min-width: 0;
+    flex: 1 1 0;
 }
 
 .month-beat-count {
