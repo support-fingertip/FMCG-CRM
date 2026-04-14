@@ -102,6 +102,21 @@ public class MDM_PriceList_Handler extends TriggerHandler {
      *              dimension fields (Customer, Category, Territory, Channel) are
      *              populated. Uses Pricebook_Priority__mdt for configurable priority
      *              ordering.
+     *
+     *              Matching strategy:
+     *              1. Customer populated  -> Priority 1 (customer-wise), regardless of
+     *                 whatever else is also populated. Customer-specific pricing is the
+     *                 most specific dimension by design and always wins. This short-circuit
+     *                 fixes the case where picking Customer + Channel together used to
+     *                 fall through to base price because no metadata config had
+     *                 Has_Customer=true AND Has_Channel=true.
+     *              2. Otherwise, look up the metadata row whose Has_* flags match the
+     *                 record's populated dimensions exactly. The metadata ships rows for
+     *                 every meaningful combination (Category+Territory+Channel,
+     *                 Territory+Channel, Category+Territory, Territory, Channel,
+     *                 Category, Base).
+     *              3. Fallback = 8 (base price).
+     *
      * @param records The records to calculate priority for.
      */
     private void calculatePriority(List<Price_List__c> records) {
@@ -114,6 +129,16 @@ public class MDM_PriceList_Handler extends TriggerHandler {
             ORDER BY Priority_Order__c ASC
         ];
 
+        // Resolve the customer-wise priority from the single Has_Customer=true
+        // metadata row so it stays configurable (no hardcoded 1).
+        Integer customerPriority = null;
+        for (Pricebook_Priority__mdt config : priorityConfigs) {
+            if (config.Has_Customer__c == true) {
+                customerPriority = Integer.valueOf(config.Priority_Order__c);
+                break;
+            }
+        }
+
         for (Price_List__c rec : records) {
             Boolean hasCustomer = rec.Customer__c != null;
             Boolean hasCategory = rec.Category__c != null;
@@ -122,13 +147,19 @@ public class MDM_PriceList_Handler extends TriggerHandler {
 
             Integer priority = 8; // Default: base price (no dimensions)
 
-            for (Pricebook_Priority__mdt config : priorityConfigs) {
-                if (config.Has_Customer__c == hasCustomer &&
-                    config.Has_Category__c == hasCategory &&
-                    config.Has_Territory__c == hasTerritory &&
-                    config.Has_Channel__c == hasChannel) {
-                    priority = Integer.valueOf(config.Priority_Order__c);
-                    break;
+            if (hasCustomer && customerPriority != null) {
+                // Customer-specific pricing always wins — any combination
+                // that includes a customer is treated as customer-wise.
+                priority = customerPriority;
+            } else {
+                for (Pricebook_Priority__mdt config : priorityConfigs) {
+                    if (config.Has_Customer__c == hasCustomer &&
+                        config.Has_Category__c == hasCategory &&
+                        config.Has_Territory__c == hasTerritory &&
+                        config.Has_Channel__c == hasChannel) {
+                        priority = Integer.valueOf(config.Priority_Order__c);
+                        break;
+                    }
                 }
             }
 
