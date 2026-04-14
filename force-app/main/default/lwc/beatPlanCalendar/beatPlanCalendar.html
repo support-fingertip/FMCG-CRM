@@ -296,13 +296,13 @@
                     </p>
                     <div class="slds-grid slds-gutters slds-wrap">
                         <div class="slds-col slds-size_1-of-2">
-                            <lightning-input type="date" label="From Date (Today)"
-                                value={todayFormatted} disabled></lightning-input>
+                            <lightning-input type="date" label="From Date"
+                                value={generateFromDate} disabled></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2">
                             <lightning-input type="date" label="To Date"
                                 value={generateToDate} onchange={handleToDateChange}
-                                min={todayFormatted}
+                                min={generateFromDate}
                                 required></lightning-input>
                         </div>
                     </div>

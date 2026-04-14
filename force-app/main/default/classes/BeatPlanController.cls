@@ -6,6 +6,28 @@
 public with sharing class BeatPlanController {
 
     /**
+     * @description Returns true if the running user has the 'Modify All Data'
+     *              permission, used as an admin-override signal in the journey
+     *              plan UI so admins can regenerate approved plans while regular
+     *              users remain locked to the Draft/Rejected status gate.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Boolean isCurrentUserAdmin() {
+        try {
+            List<User> runningUser = [
+                SELECT Id, Profile.PermissionsModifyAllData
+                FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1
+            ];
+            if (runningUser.isEmpty() || runningUser[0].Profile == null) {
+                return false;
+            }
+            return runningUser[0].Profile.PermissionsModifyAllData == true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Wrapper class so the LWC receives a structured response with both the
      * plan header and the flattened list of day entries.
      */

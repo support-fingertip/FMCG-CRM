@@ -14,6 +14,7 @@ import generateDefaultPlan from '@salesforce/apex/BeatPlanController.generateDef
 import generatePlanForDateRange from '@salesforce/apex/BeatPlanController.generatePlanForDateRange';
 import regeneratePlan from '@salesforce/apex/BeatPlanController.regeneratePlan';
 import removeBeatFromPlan from '@salesforce/apex/BeatPlanController.removeBeatFromPlan';
+import isCurrentUserAdmin from '@salesforce/apex/BeatPlanController.isCurrentUserAdmin';
 
 const JP_SALESPERSON_FIELD = 'Journey_Plan__c.Salesperson__c';
 const JP_MONTH_FIELD = 'Journey_Plan__c.Month__c';
@@ -51,6 +52,7 @@ export default class BeatPlanCalendar extends LightningElement {
     @track selectedDayDetail = null;
     @track availableBeats = [];
     @track pjpStatus = 'Draft';
+    @track isAdmin = false;
 
     currentUserId = Id;
     resolvedUserId = null;
@@ -112,7 +114,13 @@ export default class BeatPlanCalendar extends LightningElement {
     }
 
     get isPlanEditable() {
-        return this.hasPlan && (this.pjpStatus === 'Draft' || this.pjpStatus === 'Rejected');
+        // Regular users can only edit Draft or Rejected plans. Admins
+        // (profile = Modify All Data) can regenerate at any status so
+        // they can unblock field teams without manually flipping the
+        // Journey_Plan__c.Status__c field on the record.
+        if (!this.hasPlan) return false;
+        if (this.pjpStatus === 'Draft' || this.pjpStatus === 'Rejected') return true;
+        return this.isAdmin === true;
     }
 
     get isSelectedDayEditable() {
@@ -138,9 +146,10 @@ export default class BeatPlanCalendar extends LightningElement {
 
     get generateDateInfo() {
         if (!this.generateToDate) return '';
-        const from = new Date(this.todayFormatted + 'T12:00:00');
+        const fromKey = this.generateFromDate || this.todayFormatted;
+        const from = new Date(fromKey + 'T12:00:00');
         const to = new Date(this.generateToDate + 'T12:00:00');
-        if (from > to) return 'To Date must be today or later.';
+        if (from > to) return 'To Date must be on or after From Date.';
         const days = Math.round((to - from) / (1000 * 60 * 60 * 24)) + 1;
         return 'A single plan will be generated covering ' + days + ' days.';
     }
@@ -202,6 +211,13 @@ export default class BeatPlanCalendar extends LightningElement {
         if (this.currentYear === null) this.currentYear = today.getFullYear();
         this.currentWeekStart = this.getWeekStart(today);
         this.selectedExecutiveId = this.currentUserId;
+
+        // Detect admin once so the UI can expose Regenerate Plan on any
+        // status (Approved/Active included) for admins only. Non-admins
+        // stay locked to the Draft/Rejected status gate.
+        isCurrentUserAdmin()
+            .then(result => { this.isAdmin = result === true; })
+            .catch(() => { this.isAdmin = false; });
 
         if (!this.recordId) {
             this.resolvedUserId = this.currentUserId;
@@ -618,9 +634,22 @@ export default class BeatPlanCalendar extends LightningElement {
 
     handleOpenGenerateModal() {
         const today = new Date();
-        const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
-        this.generateFromDate = this.formatDateKey(today);
-        this.generateToDate = lastDay >= today ? this.formatDateKey(lastDay) : this.formatDateKey(today);
+        today.setHours(0, 0, 0, 0);
+        const firstDayOfViewedMonth = new Date(this.currentYear, this.currentMonth, 1);
+        const lastDayOfViewedMonth = new Date(this.currentYear, this.currentMonth + 1, 0);
+
+        // From Date pre-fill:
+        //   - If the user is looking at today's (or an earlier) month, start
+        //     the plan from today (we can't backfill the past).
+        //   - If the user is looking at a FUTURE month, start from the 1st of
+        //     that month. Otherwise viewing May in April and clicking Generate
+        //     tried to create May's plan starting in April, overlapping the
+        //     existing April plan.
+        const fromDate = (firstDayOfViewedMonth > today) ? firstDayOfViewedMonth : today;
+        const toDate = (lastDayOfViewedMonth >= fromDate) ? lastDayOfViewedMonth : fromDate;
+
+        this.generateFromDate = this.formatDateKey(fromDate);
+        this.generateToDate = this.formatDateKey(toDate);
         this.excludeHolidays = true;
         this.excludeLeaves = true;
         this.excludeWeekOffs = true;
@@ -660,7 +689,11 @@ export default class BeatPlanCalendar extends LightningElement {
             return;
         }
 
-        const fromDate = this.todayFormatted;
+        // Use the From Date derived in handleOpenGenerateModal so the plan
+        // starts on the viewed-month's 1st when generating for a future
+        // month (was hardcoded to today, which overlapped the current-month
+        // plan whenever the user was viewing a later month).
+        const fromDate = this.generateFromDate || this.todayFormatted;
         this.isLoading = true;
         this.showGenerateModal = false;
         try {
@@ -674,7 +707,7 @@ export default class BeatPlanCalendar extends LightningElement {
                 excludeWeekOffs: this.excludeWeekOffs === true
             });
 
-            // Navigate to today's month
+            // Navigate to the month the plan starts in (handles future months)
             const from = new Date(fromDate + 'T12:00:00');
             this.currentMonth = from.getMonth();
             this.currentYear = from.getFullYear();
