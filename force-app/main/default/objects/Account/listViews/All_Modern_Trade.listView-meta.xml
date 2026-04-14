@@ -19,7 +19,7 @@
     <columns>Account.Channel__c</columns>
     <columns>Account.Outlet_Class__c</columns>
     <columns>Account.Territory__c</columns>
-    <columns>ACCOUNT.ANNUAL_REVENUE</columns>
+    <columns>ACCOUNT.SALES</columns>
     <columns>Account.Credit_Limit__c</columns>
     <columns>Account.Outstanding_Balance__c</columns>
     <columns>Account.Last_Order_Date__c</columns>
