@@ -1410,7 +1410,8 @@
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="number" label="Min Qty" value={editMustSell.Min_Qty__c}
-                                data-field="Min_Qty__c" onchange={handleMustSellFieldChange}></lightning-input>
+                                data-field="Min_Qty__c" onchange={handleMustSellFieldChange}
+                                min="1" step="1" required></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="checkbox" label="Active" checked={editMustSell.Is_Active__c}

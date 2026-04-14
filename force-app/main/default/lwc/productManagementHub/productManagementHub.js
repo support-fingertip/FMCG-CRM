@@ -1038,6 +1038,17 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     }
 
     async handleSaveMustSell() {
+        // Client-side required check. Min_Qty is mandatory because the
+        // order-line trigger filters configs with Min_Qty__c != null
+        // (OMS_OrderLineItem_TriggerHandler) — a config without Min Qty
+        // has no enforcement effect, so we block the save up front.
+        if (this.editMustSell.Min_Qty__c === null
+            || this.editMustSell.Min_Qty__c === undefined
+            || this.editMustSell.Min_Qty__c === ''
+            || Number(this.editMustSell.Min_Qty__c) <= 0) {
+            this.showError('Min Qty is required', 'Enter a Min Qty greater than zero — the order-line MOQ check only enforces configs that have a Min Qty set.');
+            return;
+        }
         this.isSaving = true;
         try {
             const msToSave = { ...this.editMustSell };
