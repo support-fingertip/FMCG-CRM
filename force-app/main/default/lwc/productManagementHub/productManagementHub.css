@@ -223,23 +223,24 @@
     color: #6b7280;
 }
 
-/* Higher specificity selectors so these alignment rules win over
-   `.data-table thead th { text-align: left; }` (which was forcing
-   numeric column headers back to left-aligned, creating a mismatch
-   between the right-aligned numeric cells and their headers). */
-.data-table th.cell-number,
-.data-table td.cell-number {
-    text-align: right;
+/* LWC scopes CSS with [lwc-xxx] attribute selectors, which push the
+   existing `.data-table thead th` rule to specificity 0,0,4,2 and
+   causes it to override a plain `.cell-number` rule. Matching the
+   same thead/tbody path bumps us to 0,0,5,2 so numeric headers
+   actually right-align and actions headers actually center. */
+.data-table thead th.cell-number,
+.data-table tbody td.cell-number {
+    text-align: right !important;
     font-variant-numeric: tabular-nums;
 }
 
-.data-table th.cell-actions,
-.data-table td.cell-actions {
+.data-table thead th.cell-actions,
+.data-table tbody td.cell-actions {
+    text-align: center !important;
     white-space: nowrap;
-    text-align: center;
 }
 
-.data-table td.cell-actions {
+.data-table tbody td.cell-actions {
     position: sticky;
     right: 0;
     background: #fff;
