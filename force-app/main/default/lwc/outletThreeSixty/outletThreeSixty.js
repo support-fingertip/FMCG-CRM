@@ -223,8 +223,13 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     }
 
     handleTabChange(event) {
-        this.activeTab = event.target.value;
-        this.loadTabData(this.activeTab);
+        // lightning-tabset retargets the `active` event at the shadow boundary,
+        // so `event.target` becomes the tabset (no `.value`). The tab's value
+        // is published on the event detail.
+        const newTab = (event.detail && event.detail.value) || event.target.value;
+        if (!newTab) return;
+        this.activeTab = newTab;
+        this.loadTabData(newTab);
     }
 
     async loadTabData(tabName) {
