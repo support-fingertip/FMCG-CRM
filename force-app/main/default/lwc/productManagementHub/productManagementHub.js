@@ -265,6 +265,26 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'lb', value: 'lb' }
         ];
     }
+
+    // Categories for the Product modal's Category combobox. Indents
+    // sub-categories under their parent so users can see the hierarchy
+    // (Foods / Foods - Dals etc.) in a single picklist.
+    get productCategoryOptions() {
+        const options = [{ label: '-- None --', value: '' }];
+        if (!this.categories || this.categories.length === 0) return options;
+        const sorted = [...this.categories].sort((a, b) => {
+            const an = (a.Name || '').toLowerCase();
+            const bn = (b.Name || '').toLowerCase();
+            if (an < bn) return -1;
+            if (an > bn) return 1;
+            return 0;
+        });
+        sorted.forEach(c => {
+            const parent = c.Parent_Category__r ? c.Parent_Category__r.Name + ' / ' : '';
+            options.push({ label: parent + c.Name, value: c.Id });
+        });
+        return options;
+    }
     get classificationOptions() {
         return [
             { label: 'Must Sell', value: 'Must Sell' },
@@ -445,6 +465,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             Is_Active__c: true
         };
         this.selectedUOMName = '';
+        this.ensureCategoriesLoaded();
         this.showProductModal = true;
     }
 
@@ -455,7 +476,18 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             this.isNewProduct = false;
             this.editProduct = JSON.parse(JSON.stringify(product));
             this.selectedUOMName = product.baseUOMName || '';
+            this.ensureCategoriesLoaded();
             this.showProductModal = true;
+        }
+    }
+
+    // Lazy-load categories so the product modal's Category picklist is
+    // populated even when the user opens the modal directly from the
+    // Products section (loadCategories normally runs only when the
+    // Categories section is opened).
+    ensureCategoriesLoaded() {
+        if (!this.categories || this.categories.length === 0) {
+            this.loadCategories();
         }
     }
 
@@ -474,6 +506,10 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             delete productToSave.Base_UOM__r;
             delete productToSave.baseUOMName;
             delete productToSave.categoryName;
+            // Empty-string lookup → null so Salesforce treats it as "clear"
+            if (productToSave.Product_Category__c === '') {
+                productToSave.Product_Category__c = null;
+            }
             await saveProduct({ product: productToSave });
             this.showProductModal = false;
             this.showSuccess(this.isNewProduct ? 'Product created' : 'Product updated');

@@ -785,6 +785,14 @@
                                 data-field="Brand__c" onchange={handleProductFieldChange}></lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                            <lightning-combobox label="Product Category"
+                                value={editProduct.Product_Category__c}
+                                options={productCategoryOptions}
+                                data-field="Product_Category__c"
+                                onchange={handleProductFieldChange}
+                                placeholder="-- Select a category --"></lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input label="HSN/SAC Code" value={editProduct.HSN_SAC_Code__c}
                                 data-field="HSN_SAC_Code__c" onchange={handleProductFieldChange}></lightning-input>
                         </div>

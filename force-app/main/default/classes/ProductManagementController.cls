@@ -34,7 +34,7 @@ public with sharing class ProductManagementController {
         String dataQuery = 'SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Unit_Price__c, GST_Rate__c, ' +
                            'Is_Active__c, Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c, ' +
                            'Case_Size__c, Min_Order_Qty__c, ' +
-                           'Product_Category__r.Name, Product_Category__r.Id, HSN_SAC_Code__c, ' +
+                           'Product_Category__c, Product_Category__r.Name, Product_Category__r.Id, HSN_SAC_Code__c, ' +
                            'Barcode_EAN__c, Barcode_UPC__c, Weight__c, Weight_Unit__c, ' +
                            'Is_Returnable__c, Shelf_Life_Days__c, Reorder_Level__c, Reorder_Quantity__c, ' +
                            'Product_Image_URL__c, Sub_Category__c ' +
@@ -54,15 +54,26 @@ public with sharing class ProductManagementController {
 
     @AuraEnabled
     public static Product_Extension__c saveProduct(Product_Extension__c product) {
-        upsert product;
-        return [SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Unit_Price__c, GST_Rate__c,
-                       Is_Active__c, Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c,
-                       Case_Size__c, Min_Order_Qty__c,
-                       Product_Category__r.Name, HSN_SAC_Code__c,
-                       Barcode_EAN__c, Barcode_UPC__c, Weight__c, Weight_Unit__c,
-                       Is_Returnable__c, Shelf_Life_Days__c, Reorder_Level__c, Reorder_Quantity__c,
-                       Product_Image_URL__c, Sub_Category__c
-                FROM Product_Extension__c WHERE Id = :product.Id];
+        try {
+            upsert product;
+            return [SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Unit_Price__c, GST_Rate__c,
+                           Is_Active__c, Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c,
+                           Case_Size__c, Min_Order_Qty__c,
+                           Product_Category__c, Product_Category__r.Name, HSN_SAC_Code__c,
+                           Barcode_EAN__c, Barcode_UPC__c, Weight__c, Weight_Unit__c,
+                           Is_Returnable__c, Shelf_Life_Days__c, Reorder_Level__c, Reorder_Quantity__c,
+                           Product_Image_URL__c, Sub_Category__c
+                    FROM Product_Extension__c WHERE Id = :product.Id];
+        } catch (DmlException e) {
+            String msg = e.getNumDml() > 0 ? e.getDmlMessage(0) : e.getMessage();
+            AuraHandledException ex = new AuraHandledException(msg);
+            ex.setMessage(msg);
+            throw ex;
+        } catch (Exception e) {
+            AuraHandledException ex = new AuraHandledException(e.getMessage());
+            ex.setMessage(e.getMessage());
+            throw ex;
+        }
     }
 
     @AuraEnabled
