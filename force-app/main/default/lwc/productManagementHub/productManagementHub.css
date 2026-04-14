@@ -223,14 +223,23 @@
     color: #6b7280;
 }
 
-.cell-number {
+/* Higher specificity selectors so these alignment rules win over
+   `.data-table thead th { text-align: left; }` (which was forcing
+   numeric column headers back to left-aligned, creating a mismatch
+   between the right-aligned numeric cells and their headers). */
+.data-table th.cell-number,
+.data-table td.cell-number {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
 
-.cell-actions {
+.data-table th.cell-actions,
+.data-table td.cell-actions {
     white-space: nowrap;
     text-align: center;
+}
+
+.data-table td.cell-actions {
     position: sticky;
     right: 0;
     background: #fff;
