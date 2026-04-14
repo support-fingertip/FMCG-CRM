@@ -15,16 +15,16 @@
                 <field>Account__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Required</behavior>
-                <field>Outlet__c</field>
-            </layoutItems>
-            <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Salesperson__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>User__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Day_Attendance__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -51,6 +51,10 @@
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Is_Ad_Hoc__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Journey_Plan_Day__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
@@ -272,8 +276,16 @@
                 <behavior>Edit</behavior>
                 <field>Stock_Check_Completed__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Survey_Completed__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Merchandising_Completed__c</field>
+            </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Ticket_Logged__c</field>
@@ -312,19 +324,11 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>System</label>
+        <label>System Information</label>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Day_Attendance__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Journey_Plan_Day__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Merchandising_Completed__c</field>
+                <field>OwnerId</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
@@ -332,14 +336,6 @@
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Survey_Completed__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>OwnerId</field>
-            </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>LastModifiedById</field>
@@ -378,7 +374,6 @@
         <fields>Account__c</fields>
         <fields>Visit_Date__c</fields>
         <fields>Visit_Status__c</fields>
-        <fields>Outlet__c</fields>
     </miniLayout>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>
