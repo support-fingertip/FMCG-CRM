@@ -243,11 +243,21 @@ public without sharing class BPM_JourneyPlan_Service {
         if (excludeLeaves == null) excludeLeaves = true;
         if (excludeWeekOffs == null) excludeWeekOffs = true;
 
-        // Validate no overlapping plan exists — check both date-range and month/year matches
+        // Validate no overlapping plan exists. We over-fetch candidate plans
+        // that *could* overlap and then filter in Apex with a precise
+        // date-range check. The old query's `OR (Month__c = :startMonth AND
+        // Year__c = :startYear)` fallback was designed to catch plans that
+        // don't have effective dates populated, but it caused false positives
+        // when plans created via different paths had Month__c set to a month
+        // that happens to match the requested fromDate's month while their
+        // Effective_* dates clearly didn't overlap. The Apex-side filter below
+        // is strict about true date-range overlap and only falls back to the
+        // month match when the candidate's Effective_* fields are actually
+        // null.
         String startMonthCheck = normalizeMonthName(fromDate.month());
         String startYearCheck = String.valueOf(fromDate.year());
 
-        List<Journey_Plan__c> overlapping = [
+        List<Journey_Plan__c> candidates = [
             SELECT Id, Name, Effective_From__c, Effective_To__c, Month__c, Year__c
             FROM Journey_Plan__c
             WHERE Salesperson__c = :userId
@@ -256,19 +266,33 @@ public without sharing class BPM_JourneyPlan_Service {
               AND (
                   (Effective_From__c != null AND Effective_To__c != null
                    AND Effective_From__c <= :toDate AND Effective_To__c >= :fromDate)
-                  OR (Month__c = :startMonthCheck AND Year__c = :startYearCheck)
+                  OR (Effective_From__c = null
+                      AND Month__c = :startMonthCheck AND Year__c = :startYearCheck)
               )
-            LIMIT 1
         ];
 
-        if (!overlapping.isEmpty()) {
-            Journey_Plan__c existing = overlapping[0];
+        Journey_Plan__c existing = null;
+        for (Journey_Plan__c cand : candidates) {
+            // Strict date-range overlap: [A,B] overlaps [C,D] iff A <= D and C <= B
+            if (cand.Effective_From__c != null && cand.Effective_To__c != null) {
+                if (cand.Effective_From__c <= toDate && fromDate <= cand.Effective_To__c) {
+                    existing = cand;
+                    break;
+                }
+            } else if (cand.Month__c == startMonthCheck && cand.Year__c == startYearCheck) {
+                existing = cand;
+                break;
+            }
+        }
+
+        if (existing != null) {
             String detail = existing.Effective_From__c != null && existing.Effective_To__c != null
                 ? ' (' + String.valueOf(existing.Effective_From__c)
                   + ' to ' + String.valueOf(existing.Effective_To__c) + ')'
                 : ' (' + existing.Month__c + ' ' + existing.Year__c + ')';
             throw new BPM_JourneyPlanServiceException(
                 'An overlapping journey plan already exists: ' + existing.Name + detail
+                + '. Requested range: ' + String.valueOf(fromDate) + ' to ' + String.valueOf(toDate)
                 + '. Use Regenerate to update the existing plan.'
             );
         }
