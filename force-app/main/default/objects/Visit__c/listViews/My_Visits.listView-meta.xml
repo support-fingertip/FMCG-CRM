@@ -2,7 +2,7 @@
 <ListView xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>My_Visits</fullName>
     <columns>NAME</columns>
-    <columns>Outlet__c</columns>
+    <columns>Account__c</columns>
     <columns>Visit_Date__c</columns>
     <columns>Visit_Status__c</columns>
     <columns>Beat__c</columns>

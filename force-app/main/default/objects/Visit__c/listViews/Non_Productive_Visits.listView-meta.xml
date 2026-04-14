@@ -3,7 +3,7 @@
     <fullName>Non_Productive_Visits</fullName>
     <columns>NAME</columns>
     <columns>Salesperson__c</columns>
-    <columns>Outlet__c</columns>
+    <columns>Account__c</columns>
     <columns>Visit_Date__c</columns>
     <columns>Beat__c</columns>
     <columns>Non_Productive_Reason__c</columns>

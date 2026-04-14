@@ -3,7 +3,7 @@
     <fullName>Todays_Visits</fullName>
     <columns>NAME</columns>
     <columns>Salesperson__c</columns>
-    <columns>Outlet__c</columns>
+    <columns>Account__c</columns>
     <columns>Visit_Status__c</columns>
     <columns>Beat__c</columns>
     <columns>Is_Productive__c</columns>
