@@ -157,10 +157,10 @@
 
             <!-- Tabs -->
             <div class="tabs-section">
-                <lightning-tabset active-tab-value={activeTab} onactive={handleTabChange}>
+                <lightning-tabset active-tab-value={activeTab}>
 
                     <!-- Orders Tab -->
-                    <lightning-tab label="Orders" value="orders" icon-name="standard:orders">
+                    <lightning-tab label="Orders" value="orders" icon-name="standard:orders" onactive={handleTabChange}>
                         <div class="tab-content">
                             <template if:true={hasOrders}>
                                 <div class="slds-scrollable_y tab-table-container">
@@ -202,7 +202,7 @@
                     </lightning-tab>
 
                     <!-- Collections Tab -->
-                    <lightning-tab label="Collections" value="collections" icon-name="standard:currency">
+                    <lightning-tab label="Collections" value="collections" icon-name="standard:currency" onactive={handleTabChange}>
                         <div class="tab-content">
                             <div class="collection-summary slds-m-bottom_small">
                                 <div class="slds-grid slds-gutters_xx-small">
@@ -268,7 +268,7 @@
                     </lightning-tab>
 
                     <!-- Visits Tab -->
-                    <lightning-tab label="Visits" value="visits" icon-name="standard:visit">
+                    <lightning-tab label="Visits" value="visits" icon-name="standard:visit" onactive={handleTabChange}>
                         <div class="tab-content">
                             <template if:true={hasVisits}>
                                 <div class="slds-scrollable_y tab-table-container">
@@ -321,7 +321,7 @@
                     </lightning-tab>
 
                     <!-- Schemes Tab -->
-                    <lightning-tab label="Schemes" value="schemes" icon-name="standard:promotions">
+                    <lightning-tab label="Schemes" value="schemes" icon-name="standard:promotions" onactive={handleTabChange}>
                         <div class="tab-content">
                             <template if:true={hasSchemes}>
                                 <div class="scheme-cards-grid">
@@ -355,7 +355,7 @@
                     </lightning-tab>
 
                     <!-- Stock Tab -->
-                    <lightning-tab label="Stock" value="stock" icon-name="standard:product_item">
+                    <lightning-tab label="Stock" value="stock" icon-name="standard:product_item" onactive={handleTabChange}>
                         <div class="tab-content">
                             <template if:true={hasStock}>
                                 <div class="slds-scrollable_y tab-table-container">
@@ -397,7 +397,7 @@
                     </lightning-tab>
 
                     <!-- Timeline Tab -->
-                    <lightning-tab label="Timeline" value="timeline" icon-name="standard:timesheet">
+                    <lightning-tab label="Timeline" value="timeline" icon-name="standard:timesheet" onactive={handleTabChange}>
                         <div class="tab-content">
                             <template if:true={hasTimeline}>
                                 <div class="timeline-container">
