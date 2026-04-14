@@ -1416,12 +1416,59 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     }
 
     reduceErrors(error) {
+        if (!error) return 'Unknown error';
         if (typeof error === 'string') return error;
-        if (error?.body?.message) return error.body.message;
-        if (error?.message) return error.message;
-        if (Array.isArray(error?.body)) {
-            return error.body.map(e => e.message).join(', ');
+
+        // Array of errors (e.g. multiple wire errors)
+        if (Array.isArray(error)) {
+            return error.map(e => this.reduceErrors(e)).filter(Boolean).join(', ');
         }
-        return JSON.stringify(error);
+
+        // Standard AuraHandledException shape
+        if (error.body && typeof error.body.message === 'string' && error.body.message.trim()) {
+            return error.body.message;
+        }
+
+        // DML exception composite shape:
+        //   body = [{ errors: [{ message, statusCode }], pageErrors: [], ... }]
+        if (error.body && Array.isArray(error.body)) {
+            const messages = [];
+            error.body.forEach(entry => {
+                if (entry && Array.isArray(entry.errors)) {
+                    entry.errors.forEach(e => { if (e && e.message) messages.push(e.message); });
+                }
+                if (entry && Array.isArray(entry.pageErrors)) {
+                    entry.pageErrors.forEach(e => { if (e && e.message) messages.push(e.message); });
+                }
+                if (entry && typeof entry.message === 'string') {
+                    messages.push(entry.message);
+                }
+            });
+            if (messages.length) return messages.join(', ');
+        }
+
+        // pageErrors / fieldErrors directly on body
+        if (error.body && Array.isArray(error.body.pageErrors) && error.body.pageErrors.length) {
+            return error.body.pageErrors.map(e => e.message).filter(Boolean).join(', ');
+        }
+        if (error.body && error.body.fieldErrors) {
+            const fieldMessages = [];
+            Object.keys(error.body.fieldErrors).forEach(field => {
+                const entries = error.body.fieldErrors[field] || [];
+                entries.forEach(e => { if (e && e.message) fieldMessages.push(e.message); });
+            });
+            if (fieldMessages.length) return fieldMessages.join(', ');
+        }
+
+        // AuraHandledException output wrapper
+        if (error.body && error.body.output && Array.isArray(error.body.output.errors)
+            && error.body.output.errors.length) {
+            return error.body.output.errors.map(e => e.message).filter(Boolean).join(', ');
+        }
+
+        if (typeof error.message === 'string' && error.message.trim()) return error.message;
+        if (typeof error.statusText === 'string' && error.statusText.trim()) return error.statusText;
+
+        return 'Save failed. Please review the form and try again.';
     }
 }

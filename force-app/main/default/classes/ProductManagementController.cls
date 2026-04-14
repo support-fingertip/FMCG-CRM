@@ -84,10 +84,26 @@ public with sharing class ProductManagementController {
 
     @AuraEnabled
     public static Product_Category__c saveCategory(Product_Category__c category) {
-        upsert category;
-        return [SELECT Id, Name, Category_Code__c, Level__c, Is_Active__c, Sort_Order__c,
-                       Parent_Category__c, Parent_Category__r.Name
-                FROM Product_Category__c WHERE Id = :category.Id];
+        try {
+            upsert category;
+            return [SELECT Id, Name, Category_Code__c, Level__c, Is_Active__c, Sort_Order__c,
+                           Parent_Category__c, Parent_Category__r.Name
+                    FROM Product_Category__c WHERE Id = :category.Id];
+        } catch (DmlException e) {
+            // Surface the first validation / DML message cleanly so the LWC
+            // toast shows the human-readable rule text instead of a raw
+            // fetchResponse blob. Salesforce has a known quirk where
+            // AuraHandledException's getMessage() returns "Script-thrown
+            // exception" unless setMessage() is called.
+            String msg = e.getNumDml() > 0 ? e.getDmlMessage(0) : e.getMessage();
+            AuraHandledException ex = new AuraHandledException(msg);
+            ex.setMessage(msg);
+            throw ex;
+        } catch (Exception e) {
+            AuraHandledException ex = new AuraHandledException(e.getMessage());
+            ex.setMessage(e.getMessage());
+            throw ex;
+        }
     }
 
     @AuraEnabled
