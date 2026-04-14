@@ -454,6 +454,19 @@ public without sharing class BPM_JourneyPlan_Service {
      */
     public static void regeneratePlan(Id journeyPlanId, Date toDate,
             Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs) {
+        regeneratePlan(journeyPlanId, toDate, excludeHolidays, excludeLeaves, excludeWeekOffs, false);
+    }
+
+    /**
+     * @description Regenerate overload that can bypass the Draft/Rejected
+     *              status gate. Used by the LWC's admin-override path so
+     *              sys-admins can regenerate Approved/Active plans without
+     *              manually flipping the Status__c field first.
+     *              Regular users should call the 5-arg variant above.
+     */
+    public static void regeneratePlan(Id journeyPlanId, Date toDate,
+            Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs,
+            Boolean skipStatusCheck) {
         Journey_Plan__c plan = [
             SELECT Id, Salesperson__c, Territory__c, Status__c,
                    Effective_From__c, Effective_To__c,
@@ -463,7 +476,8 @@ public without sharing class BPM_JourneyPlan_Service {
             LIMIT 1
         ];
 
-        if (plan.Status__c != 'Draft' && plan.Status__c != 'Rejected') {
+        if (skipStatusCheck != true
+            && plan.Status__c != 'Draft' && plan.Status__c != 'Rejected') {
             throw new BPM_JourneyPlanServiceException('Only Draft or Rejected plans can be regenerated.');
         }
 

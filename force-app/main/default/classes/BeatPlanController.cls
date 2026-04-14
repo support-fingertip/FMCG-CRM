@@ -769,8 +769,14 @@ public with sharing class BeatPlanController {
     public static void regeneratePlan(Id journeyPlanId, Date toDate,
             Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs) {
         try {
+            // Admins (profile has ModifyAllData) can regenerate plans at any
+            // status — matches the LWC behaviour where the Regenerate button
+            // is visible for admins on Approved/Active plans. Non-admins stay
+            // on the strict Draft/Rejected gate enforced by the service.
+            Boolean adminOverride = isCurrentUserAdmin();
             BPM_JourneyPlan_Service.regeneratePlan(
-                journeyPlanId, toDate, excludeHolidays, excludeLeaves, excludeWeekOffs
+                journeyPlanId, toDate, excludeHolidays, excludeLeaves, excludeWeekOffs,
+                adminOverride
             );
         } catch (BPM_JourneyPlanServiceException e) {
             throw new AuraHandledException(e.getMessage());
