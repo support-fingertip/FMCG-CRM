@@ -197,10 +197,15 @@ public with sharing class VisitCheckInController {
                 return new List<Account>();
             }
             String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
+            // Only FMCG outlet record types and active accounts
             return [
-                SELECT Id, Name, BillingStreet, BillingCity
+                SELECT Id, Name, BillingStreet, BillingCity, AccountNumber,
+                       Outlet_Type__c, Outlet_Class__c, Channel__c
                 FROM Account
-                WHERE Name LIKE :searchPattern
+                WHERE (Name LIKE :searchPattern
+                       OR AccountNumber LIKE :searchPattern)
+                  AND Is_Active__c = true
+                  AND Type IN ('Retailer', 'Distributor', 'Super Stockist', 'Modern Trade')
                 ORDER BY Name ASC
                 LIMIT 20
             ];
