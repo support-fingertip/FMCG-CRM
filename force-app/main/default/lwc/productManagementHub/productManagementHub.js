@@ -238,6 +238,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     }
     get channelOptions() {
         return [
+            { label: '-- None --', value: '' },
             { label: 'GT', value: 'GT' },
             { label: 'MT', value: 'MT' },
             { label: 'E-Commerce', value: 'E-Commerce' }
@@ -304,6 +305,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     }
     get outletTypeOptions() {
         return [
+            { label: '-- None --', value: '' },
             { label: 'Grocery', value: 'Grocery' },
             { label: 'Medical', value: 'Medical' },
             { label: 'Hardware', value: 'Hardware' },
@@ -812,6 +814,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             delete plToSave.categoryName;
             delete plToSave.territoryName;
             delete plToSave.priorityLabel;
+            // '-- None --' sentinel value -> null (picklists reject '').
+            if (plToSave.Channel__c === '') plToSave.Channel__c = null;
             await savePriceList({ priceList: plToSave });
             this.showPriceListModal = false;
             this.showSuccess(this.isNewPriceList ? 'Price list entry created' : 'Price list entry updated');
@@ -1039,6 +1043,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             const msToSave = { ...this.editMustSell };
             delete msToSave.Product_Ext__r;
             delete msToSave.Territory__r;
+            // Picklists reject empty string — convert the '-- None --'
+            // sentinel value back to null so users can clear a mistakenly
+            // picked dimension without hitting a save error.
+            if (msToSave.Channel__c === '') msToSave.Channel__c = null;
+            if (msToSave.Customer_Type__c === '') msToSave.Customer_Type__c = null;
             await saveMustSellConfig({ config: msToSave });
             this.showMustSellModal = false;
             this.showSuccess(this.isNewMustSell ? 'Must-sell config created' : 'Must-sell config updated');
