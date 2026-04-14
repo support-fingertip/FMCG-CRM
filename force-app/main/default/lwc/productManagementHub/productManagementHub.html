@@ -89,6 +89,10 @@
                         <div class="stat-value">{stats.nearExpiryBatches}</div>
                         <div class="stat-label">Near Expiry Batches</div>
                     </div>
+                    <div class="stat-card stat-dark-red" data-section="batches" onclick={handleStatClick}>
+                        <div class="stat-value">{stats.expiredBatches}</div>
+                        <div class="stat-label">Expired Batches</div>
+                    </div>
                     <div class="stat-card stat-indigo" data-section="mustSell" onclick={handleStatClick}>
                         <div class="stat-value">{stats.mustSellConfigs}</div>
                         <div class="stat-label">Priority Sell Configs</div>
@@ -405,12 +409,7 @@
                                             </template>
                                         </td>
                                         <td>
-                                            <template if:true={batch.Is_Near_Expiry__c}>
-                                                <span class="badge badge-red">Yes</span>
-                                            </template>
-                                            <template if:false={batch.Is_Near_Expiry__c}>
-                                                <span class="badge badge-green">No</span>
-                                            </template>
+                                            <span class={batch.expiryBadgeClass}>{batch.expiryLabel}</span>
                                         </td>
                                         <td class="cell-actions">
                                             <lightning-button-icon icon-name="utility:edit" alternative-text="Edit"

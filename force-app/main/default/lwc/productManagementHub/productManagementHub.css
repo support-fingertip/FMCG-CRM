@@ -148,6 +148,8 @@
 .stat-orange .stat-value { color: #f59e0b; }
 .stat-red { border-left-color: #ef4444; }
 .stat-red .stat-value { color: #ef4444; }
+.stat-dark-red { border-left-color: #991b1b; }
+.stat-dark-red .stat-value { color: #991b1b; }
 .stat-indigo { border-left-color: #6366f1; }
 .stat-indigo .stat-value { color: #6366f1; }
 .stat-cyan { border-left-color: #06b6d4; }
@@ -319,6 +321,13 @@
 .badge-red {
     background: #fee2e2;
     color: #991b1b;
+}
+
+/* Stronger red for already-expired batches (past expiry date) so they
+   visually out-weigh the near-expiry warning. */
+.badge-dark-red {
+    background: #991b1b;
+    color: #fef2f2;
 }
 
 .badge-purple {

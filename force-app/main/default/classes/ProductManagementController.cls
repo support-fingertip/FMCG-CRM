@@ -342,6 +342,11 @@ public with sharing class ProductManagementController {
         stats.activePriceLists = [SELECT COUNT() FROM Price_List__c WHERE Is_Active__c = true];
         stats.activeBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Status__c = 'Active'];
         stats.nearExpiryBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Is_Near_Expiry__c = true AND Status__c = 'Active'];
+        // Expired = expiry date already past. The Is_Near_Expiry__c formula
+        // deliberately excludes these (it requires days-to-expiry >= 0), so
+        // expired batches were invisible on the dashboard. Count them in
+        // their own tile.
+        stats.expiredBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Expiry_Date__c < TODAY()];
         stats.mustSellConfigs = [SELECT COUNT() FROM Must_Sell_Config__c WHERE Is_Active__c = true];
         stats.totalUOMs = [SELECT COUNT() FROM UOM__c WHERE Is_Active__c = true];
         stats.totalConversions = [SELECT COUNT() FROM UOM_Conversion__c WHERE Is_Active__c = true];
@@ -505,6 +510,7 @@ public with sharing class ProductManagementController {
         @AuraEnabled public Integer activePriceLists;
         @AuraEnabled public Integer activeBatches;
         @AuraEnabled public Integer nearExpiryBatches;
+        @AuraEnabled public Integer expiredBatches;
         @AuraEnabled public Integer mustSellConfigs;
         @AuraEnabled public Integer totalUOMs;
         @AuraEnabled public Integer totalConversions;

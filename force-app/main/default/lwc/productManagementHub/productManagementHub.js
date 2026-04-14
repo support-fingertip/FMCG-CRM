@@ -870,10 +870,38 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 productId: this.batchProductFilter || null,
                 status: this.batchStatusFilter || null
             });
-            this.batches = rawBatches.map(b => ({
-                ...b,
-                productName: b.Product_Ext__r ? b.Product_Ext__r.Name : ''
-            }));
+            // Derive an expiry-state label per batch so the table can show
+            // three distinct states: Near Expiry (red), Expired (dark red,
+            // past expiry date), and OK (green). The Is_Near_Expiry__c
+            // formula field is false for already-expired batches because
+            // it requires days-to-expiry >= 0, which made the old UI show
+            // expired rows as a green 'No' — misleading.
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            this.batches = rawBatches.map(b => {
+                let expiryLabel = 'No';
+                let expiryBadgeClass = 'badge badge-green';
+                if (b.Expiry_Date__c) {
+                    const expiry = new Date(b.Expiry_Date__c);
+                    expiry.setHours(0, 0, 0, 0);
+                    if (expiry < today) {
+                        expiryLabel = 'Expired';
+                        expiryBadgeClass = 'badge badge-dark-red';
+                    } else if (b.Is_Near_Expiry__c) {
+                        expiryLabel = 'Yes';
+                        expiryBadgeClass = 'badge badge-red';
+                    }
+                } else {
+                    expiryLabel = '—';
+                    expiryBadgeClass = 'badge badge-gray';
+                }
+                return {
+                    ...b,
+                    productName: b.Product_Ext__r ? b.Product_Ext__r.Name : '',
+                    expiryLabel,
+                    expiryBadgeClass
+                };
+            });
         } catch (error) {
             this.showError('Error loading batches', this.reduceErrors(error));
         }
