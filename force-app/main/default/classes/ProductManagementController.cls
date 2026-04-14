@@ -26,7 +26,23 @@ public with sharing class ProductManagementController {
             baseQuery += ' AND (Name LIKE \'' + String.escapeSingleQuotes(searchKey) + '\' OR SKU_Code__c LIKE \'' + String.escapeSingleQuotes(searchKey) + '\')';
         }
         if (String.isNotBlank(categoryId)) {
-            baseQuery += ' AND Product_Category__c = \'' + String.escapeSingleQuotes(categoryId) + '\'';
+            // If the selected category is a top-level 'Category' (has
+            // sub-categories), include products linked to any of its
+            // sub-categories too — otherwise picking 'Foods' returns
+            // nothing because products are actually linked to the leaf
+            // sub-categories like 'Foods / Biscuits'.
+            Set<Id> categoryIds = new Set<Id>{ (Id) categoryId };
+            for (Product_Category__c child : [
+                SELECT Id FROM Product_Category__c
+                WHERE Parent_Category__c = :categoryId
+            ]) {
+                categoryIds.add(child.Id);
+            }
+            List<String> quotedIds = new List<String>();
+            for (Id cid : categoryIds) {
+                quotedIds.add('\'' + String.escapeSingleQuotes((String) cid) + '\'');
+            }
+            baseQuery += ' AND Product_Category__c IN (' + String.join(quotedIds, ',') + ')';
         }
         if (String.isNotBlank(brand)) {
             baseQuery += ' AND Brand__c = \'' + String.escapeSingleQuotes(brand) + '\'';
