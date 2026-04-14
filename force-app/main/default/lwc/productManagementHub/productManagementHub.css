@@ -194,12 +194,20 @@
 .data-table-wrapper {
     background: #fff;
     border-radius: 8px;
+    /* Cap vertical height so long result sets scroll inside the wrapper
+       instead of pushing the page-level scrollbar down to the footer. */
+    max-height: calc(100vh - 320px);
+    min-height: 200px;
     overflow: auto;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .data-table {
-    width: 100%;
+    /* Let the table size to its content so columns stop squishing and the
+       horizontal scrollbar appears INSIDE the wrapper. min-width:100% keeps
+       the table at least as wide as its container when there's extra room. */
+    min-width: 100%;
+    width: max-content;
     border-collapse: collapse;
     font-size: 13px;
 }
@@ -215,6 +223,13 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.4px;
+    /* Pin the header to the top of .data-table-wrapper so it stays
+       visible while the body scrolls vertically. z-index 2 so header
+       layers above body cells but below the sticky actions column,
+       whose top-right cell bumps to 3 below. */
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .data-table tbody td {
@@ -255,6 +270,9 @@
     right: 0;
     background: #fff;
     box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
+    /* Above normal body cells so the sticky column paints over them
+       during horizontal scroll, but below the sticky header. */
+    z-index: 1;
 }
 
 .data-table tbody tr:hover .cell-actions {
@@ -266,6 +284,10 @@
     right: 0;
     background: #f8f9fb;
     box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
+    /* Top-right intersection: sits above BOTH the sticky header row
+       (z-index 2) AND the sticky right column (z-index 1), so the
+       corner cell stays fully visible when scrolling in either axis. */
+    z-index: 3;
 }
 
 /* ── Badges ─────────────────────────────────────────────────────────── */
