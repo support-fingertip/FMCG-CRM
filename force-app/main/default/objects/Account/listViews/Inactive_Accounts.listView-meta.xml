@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ListView xmlns="http://soap.sforce.com/2006/metadata">
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Inactive_Accounts</fullName>
     <label>Inactive Accounts</label>
     <filterScope>Everything</filterScope>
@@ -10,10 +10,12 @@
     </filters>
     <columns>ACCOUNT.NAME</columns>
     <columns>ACCOUNT.RECORDTYPE</columns>
+    <columns>Account.Channel__c</columns>
     <columns>Account.Outlet_Type__c</columns>
     <columns>Account.Outlet_Class__c</columns>
-    <columns>Account.Beat__c</columns>
     <columns>Account.Territory__c</columns>
+    <columns>Account.Beat__c</columns>
+    <columns>Account.Outstanding_Balance__c</columns>
     <columns>Account.Last_Visit_Date__c</columns>
     <columns>Account.Last_Order_Date__c</columns>
     <columns>ACCOUNT.PHONE1</columns>
