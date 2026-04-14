@@ -57,17 +57,25 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Territory &amp; Geography</label>
+        <label>Territory</label>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>Territory__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Region__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Beat__c</field></layoutItems>
         </layoutColumns>
+        <layoutColumns></layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Addresses</label>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>BillingAddress</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>ShippingAddress</field></layoutItems>
         </layoutColumns>
-        <style>TwoColumnsTopToBottom</style>
+        <style>TwoColumnsLeftToRight</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
