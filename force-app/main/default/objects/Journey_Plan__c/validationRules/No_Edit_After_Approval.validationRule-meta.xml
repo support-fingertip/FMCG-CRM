@@ -2,7 +2,7 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>No_Edit_After_Approval</fullName>
     <active>true</active>
-    <description>Prevents changes to the rollup field on Approved/Active journey plans. Admins with the Bypass_Journey_Plan_Approval_Lock custom permission are exempt so they can regenerate plans and the automatic rollup update (Total_Planned_Days__c / Total_Planned_Visits__c) still succeeds after plan-day inserts and deletes.</description>
+    <description>Locks Total_Planned_Visits__c on Approved/Active plans. Users with Bypass_Journey_Plan_Approval_Lock are exempt, allowing admin regenerate and the day-rollup update to succeed.</description>
     <errorConditionFormula>AND(
     ISCHANGED(Total_Planned_Visits__c),
     OR(
