@@ -790,6 +790,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     }
 
     async handleSavePriceList() {
+        // Client-side required check — the `required` attribute on
+        // lightning-input paints the asterisk and triggers inline
+        // validation styling, but we also guard here so Save doesn't
+        // fire a server round-trip with a blank name.
+        if (!this.editPriceList.Name || !this.editPriceList.Name.trim()) {
+            this.showError('Pricebook Name is required', 'Please enter a pricebook / price list name before saving.');
+            return;
+        }
         this.isSaving = true;
         try {
             const plToSave = { ...this.editPriceList };
