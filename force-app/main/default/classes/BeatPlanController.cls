@@ -829,8 +829,16 @@ public with sharing class BeatPlanController {
         Boolean excludeHolidays, Boolean excludeLeaves, Boolean excludeWeekOffs
     ) {
         try {
-            // Always use server-side today to avoid browser/server timezone mismatch
-            fromDate = Date.today();
+            // Respect the fromDate the client sends. A previous version hard-
+            // overrode this to Date.today() 'to avoid timezone mismatch', but
+            // that broke the 'Generate for a future month' workflow — the LWC
+            // correctly derives May 1 when the user is viewing May, and the
+            // override was rewriting it back to today, causing a false-positive
+            // overlap error against the current month's existing plan.
+            // If the caller passes null, fall back to today.
+            if (fromDate == null) {
+                fromDate = Date.today();
+            }
             return BPM_JourneyPlan_Service.generatePlanForDateRange(
                 userId, territoryId, fromDate, toDate,
                 excludeHolidays, excludeLeaves, excludeWeekOffs
