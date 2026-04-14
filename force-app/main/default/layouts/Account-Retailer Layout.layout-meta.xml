@@ -5,54 +5,19 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Outlet Information</label>
+        <label>Basic Information</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Required</behavior>
-                <field>Name</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Owner_Name__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ParentId</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Outlet_Type__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Outlet_Class__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Channel__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Required</behavior><field>Name</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>AccountNumber</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>RecordTypeId</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Type</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Owner_Name__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>OwnerId</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Phone</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>RecordTypeId</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Is_Active__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>AccountNumber</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>OwnerId</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Phone</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>ParentId</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Is_Active__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -60,45 +25,15 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Territory &amp; Beat Assignment</label>
+        <label>Outlet Profile</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Beat__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Territory__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Outlet_Type__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Outlet_Class__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Channel__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Visit_Frequency__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Region__c</field>
-            </layoutItems>
-        </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
-    </layoutSections>
-    <layoutSections>
-        <customLabel>false</customLabel>
-        <detailHeading>true</detailHeading>
-        <editHeading>true</editHeading>
-        <label>Address Information</label>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>BillingAddress</field>
-            </layoutItems>
-        </layoutColumns>
-        <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ShippingAddress</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Visit_Frequency__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Last_Visit_Date__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -106,192 +41,106 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>KYC &amp; Compliance</label>
+        <label>Credit &amp; Outstanding</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>GSTIN__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>PAN__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Credit_Limit__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Credit_Utilized__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>FSSAI_License_No__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Drug_License_No__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Outstanding_Balance__c</field></layoutItems>
         </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
+        <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Financial Information</label>
+        <label>Compliance</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Credit_Limit__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Credit_Utilized__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>GSTIN__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>PAN__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Outstanding_Balance__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>FSSAI_License_No__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Drug_License_No__c</field></layoutItems>
         </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
+        <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Activity Tracking</label>
+        <label>Territory &amp; Beat</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Last_Visit_Date__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Last_Order_Date__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Territory__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Beat__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Last_Order_Value__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Region__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>BillingAddress</field></layoutItems>
         </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
+        <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Geo-Location</label>
+        <label>Geolocation &amp; Geo-Fence</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Geo_Location__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Outlet_Latitude__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Outlet_Longitude__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Geofence_Radius__c</field>
-            </layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Geofence_Radius__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Geo_Location__c</field></layoutItems>
         </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
+        <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
-        <customLabel>false</customLabel>
+        <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Description Information</label>
+        <label>Sales Activity</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Description</field>
-            </layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Last_Order_Date__c</field></layoutItems>
         </layoutColumns>
-        <style>OneColumn</style>
+        <layoutColumns>
+            <layoutItems><behavior>Readonly</behavior><field>Last_Order_Value__c</field></layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
-        <customLabel>false</customLabel>
-        <detailHeading>true</detailHeading>
+        <customLabel>true</customLabel>
+        <detailHeading>false</detailHeading>
         <editHeading>true</editHeading>
         <label>System Information</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>CreatedById</field>
-            </layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>CreatedById</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>LastModifiedById</field>
-            </layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>LastModifiedById</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Order_Date__c</fields>
-        <fields>Status__c</fields>
-        <fields>Total_Items__c</fields>
-        <fields>Total_Net_Amount__c</fields>
-        <fields>Salesperson__c</fields>
-        <relatedList>Sales_Order__c.Account__c</relatedList>
-        <sortField>Order_Date__c</sortField>
-        <sortOrder>Desc</sortOrder>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Visit_Date__c</fields>
-        <fields>Visit_Status__c</fields>
-        <fields>Is_Productive__c</fields>
-        <fields>Duration_Minutes__c</fields>
-        <fields>Salesperson__c</fields>
-        <fields>Order_Value__c</fields>
-        <relatedList>Visit__c.Account__c</relatedList>
-        <sortField>Visit_Date__c</sortField>
-        <sortOrder>Desc</sortOrder>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Collection_Date__c</fields>
-        <fields>Amount__c</fields>
-        <fields>Payment_Mode__c</fields>
-        <fields>Status__c</fields>
-        <fields>Receipt_Number__c</fields>
-        <relatedList>Collection__c.Account__c</relatedList>
-        <sortField>Collection_Date__c</sortField>
-        <sortOrder>Desc</sortOrder>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>Invoice_Date__c</fields>
-        <fields>Total_Amount__c</fields>
-        <fields>Balance_Due__c</fields>
-        <fields>Due_Date__c</fields>
-        <fields>Status__c</fields>
-        <relatedList>Invoice__c.Account__c</relatedList>
-        <sortField>Invoice_Date__c</sortField>
-        <sortOrder>Desc</sortOrder>
-    </relatedLists>
-    <relatedLists>
-        <fields>TASK.SUBJECT</fields>
-        <fields>TASK.WHO_NAME</fields>
-        <fields>ACTIVITY.TASK</fields>
-        <fields>TASK.DUE_DATE</fields>
-        <fields>TASK.STATUS</fields>
-        <fields>CORE.USERS.FULL_NAME</fields>
-        <relatedList>RelatedActivityList</relatedList>
-    </relatedLists>
-    <relatedLists>
-        <fields>TASK.SUBJECT</fields>
-        <fields>TASK.WHO_NAME</fields>
-        <fields>ACTIVITY.TASK</fields>
-        <fields>TASK.DUE_DATE</fields>
-        <fields>CORE.USERS.FULL_NAME</fields>
-        <relatedList>RelatedHistoryList</relatedList>
-    </relatedLists>
-    <runAssignmentRulesDefault>false</runAssignmentRulesDefault>
+    <relatedLists><relatedList>RelatedContactList</relatedList></relatedLists>
+    <relatedLists><relatedList>Visit__c.Outlet__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Sales_Order__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Collection__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Invoice__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Return_Order__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Merchandising__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Survey_Response__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Competitor__c.Account__c</relatedList></relatedLists>
+    <relatedLists><relatedList>Ticket__c.Account__c</relatedList></relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
-    <showHighlightsPanel>true</showHighlightsPanel>
+    <showHighlightsPanel>false</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>
     <showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox>
     <showSubmitAndAttachButton>false</showSubmitAndAttachButton>
+    <summaryLayout>
+        <masterLabel>00hdN000000fFQe</masterLabel>
+        <sizeX>4</sizeX>
+        <sizeY>0</sizeY>
+        <sizeZ>1</sizeZ>
+    </summaryLayout>
 </Layout>
