@@ -536,13 +536,15 @@ export default class ExpenseManager extends LightningElement {
             vehicleType: '',
             travelMode: '',
             allowedTravelModes: isTravel ? [
-                { label: 'Own Vehicle (2W)', value: 'Own 2W' },
-                { label: 'Own Vehicle (4W)', value: 'Own 4W' },
-                { label: 'Taxi / Cab', value: 'Taxi' },
-                { label: 'Auto Rickshaw', value: 'Auto' },
+                { label: 'Own Bike', value: 'Own Bike' },
+                { label: 'Own Car', value: 'Own Car' },
+                { label: 'Bike', value: 'Bike' },
+                { label: 'Car', value: 'Car' },
+                { label: 'Auto', value: 'Auto' },
                 { label: 'Bus', value: 'Bus' },
                 { label: 'Train', value: 'Train' },
-                { label: 'Flight', value: 'Flight' }
+                { label: 'Flight', value: 'Flight' },
+                { label: 'Public Transport', value: 'Public Transport' }
             ] : [],
             city: '',
             isMetro: false,
