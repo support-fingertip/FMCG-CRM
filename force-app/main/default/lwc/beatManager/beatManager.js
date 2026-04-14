@@ -358,6 +358,14 @@ export default class BeatManager extends LightningElement {
             this.showToast('Error', 'Beat Name and Beat Code are required.', 'error');
             return;
         }
+        if (!this.beatForm.Territory__c) {
+            // Matches the server-side validation rule
+            // ('Active beats must be assigned to a territory.').
+            // Catching it here avoids the round-trip and shows a
+            // cleaner message than the raw DML exception text.
+            this.showToast('Error', 'Territory is required. Active beats must be assigned to a territory.', 'error');
+            return;
+        }
         if (!this.beatForm.Assigned_User__c) {
             this.showToast('Error', 'Assigned User is required.', 'error');
             return;
