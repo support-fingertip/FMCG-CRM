@@ -694,6 +694,13 @@ export default class BeatPlanCalendar extends LightningElement {
         // month (was hardcoded to today, which overlapped the current-month
         // plan whenever the user was viewing a later month).
         const fromDate = this.generateFromDate || this.todayFormatted;
+        console.log('[BPC] generatePlanForDateRange args:', {
+            userId, territoryId, fromDate,
+            toDate: this.generateToDate,
+            excludeHolidays: this.excludeHolidays,
+            excludeLeaves: this.excludeLeaves,
+            excludeWeekOffs: this.excludeWeekOffs
+        });
         this.isLoading = true;
         this.showGenerateModal = false;
         try {
