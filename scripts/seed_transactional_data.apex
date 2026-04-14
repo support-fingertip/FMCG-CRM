@@ -49,10 +49,12 @@ for (Warehouse__c w : [SELECT Id, Warehouse_Code__c FROM Warehouse__c WHERE Is_A
 
 Id currentUser = UserInfo.getUserId();
 
-// ── Accounts to use (pick 6 retailers from seed data) ──
+// ── Accounts to use (all 12 retailers from 09_accounts.apex) ──
 List<String> retailerNames = new List<String>{
     'Lakshmi General Store', 'Ganesh Provision Store', 'Kumar Kirana',
-    'Deepak Grocery', 'Gupta Mart', 'Sri Balaji Store'
+    'Deepak Grocery', 'Gupta Mart', 'Sri Balaji Store',
+    'Modern Needs Store', 'Daily Fresh Mart', 'City Grocery Point',
+    'Family Store Corner', 'Quick Shop Express', 'New India Provisions'
 };
 
 // ════════════════════════════════════════════════════════════
