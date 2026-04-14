@@ -10,7 +10,6 @@ import getCollectionHistory from '@salesforce/apex/OutletThreeSixtyController.ge
 import getVisitHistory from '@salesforce/apex/OutletThreeSixtyController.getVisitHistory';
 import getApplicableSchemes from '@salesforce/apex/OutletThreeSixtyController.getApplicableSchemes';
 import getStockLevels from '@salesforce/apex/OutletThreeSixtyController.getStockLevels';
-import getAccountTimeline from '@salesforce/apex/OutletThreeSixtyController.getAccountTimeline';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -378,20 +377,95 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
 
     async loadTimeline() {
         try {
-            const result = await getAccountTimeline({ accountId: this.recordId, limitCount: 30 });
-            this.timeline = (result || []).map(entry => ({
-                id: entry.recordId,
-                type: entry.activityType,
+            // Build timeline client-side from the same Apex methods that power
+            // the Orders / Collections / Visits tabs. This avoids the separate
+            // getAccountTimeline server method (which can silently return empty
+            // when FLS or sharing hides any one of the three objects from the
+            // running user) and guarantees the Timeline stays in sync with what
+            // the other tabs show.
+            const [orders, visits, collections] = await Promise.all([
+                getRecentOrders({ accountId: this.recordId, limitCount: 30 }).catch(err => {
+                    console.error('Timeline: orders fetch failed', err);
+                    return [];
+                }),
+                getVisitHistory({ accountId: this.recordId, limitCount: 30 }).catch(err => {
+                    console.error('Timeline: visits fetch failed', err);
+                    return [];
+                }),
+                getCollectionHistory({ accountId: this.recordId, limitCount: 30 }).catch(err => {
+                    console.error('Timeline: collections fetch failed', err);
+                    return [];
+                })
+            ]);
+
+            const entries = [];
+
+            (orders || []).forEach(order => {
+                const items = order.Total_Items__c != null ? Math.round(order.Total_Items__c) : 0;
+                entries.push({
+                    id: order.Id,
+                    type: 'Order',
+                    title: order.Name,
+                    description: 'Order placed - ' + items + ' items',
+                    date: order.Order_Date__c,
+                    amountValue: order.Total_Net_Amount__c,
+                    status: order.Status__c || '',
+                    iconName: 'standard:orders'
+                });
+            });
+
+            (visits || []).forEach(visit => {
+                const sp = visit.Salesperson__r ? visit.Salesperson__r.Name : 'N/A';
+                let desc = 'Visit by ' + sp;
+                if (visit.Duration_Minutes__c != null) {
+                    desc += ' (' + Math.round(visit.Duration_Minutes__c) + ' min)';
+                }
+                entries.push({
+                    id: visit.Id,
+                    type: 'Visit',
+                    title: visit.Name,
+                    description: desc,
+                    date: visit.Visit_Date__c,
+                    amountValue: visit.Order_Value__c,
+                    status: visit.Visit_Status__c || '',
+                    iconName: 'standard:visit'
+                });
+            });
+
+            (collections || []).forEach(col => {
+                entries.push({
+                    id: col.Id,
+                    type: 'Collection',
+                    title: col.Receipt_Number__c || col.Name,
+                    description: 'Payment via ' + (col.Payment_Mode__c || 'N/A'),
+                    date: col.Collection_Date__c,
+                    amountValue: col.Amount__c,
+                    status: col.Status__c || '',
+                    iconName: 'standard:currency'
+                });
+            });
+
+            // Sort descending by date (null dates last)
+            entries.sort((a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0);
+            });
+
+            this.timeline = entries.slice(0, 30).map(entry => ({
+                id: entry.id,
+                type: entry.type,
                 title: entry.title,
                 description: entry.description,
-                date: entry.activityDate,
-                dateFormatted: this.formatDate(entry.activityDate),
-                amount: entry.amount ? this.formatCurrency(entry.amount) : '',
-                hasAmount: entry.amount != null && entry.amount > 0,
-                status: entry.status || '',
+                date: entry.date,
+                dateFormatted: this.formatDate(entry.date),
+                amount: entry.amountValue ? this.formatCurrency(entry.amountValue) : '',
+                hasAmount: entry.amountValue != null && entry.amountValue > 0,
+                status: entry.status,
                 iconName: entry.iconName,
                 statusBadge: this.getStatusBadgeClass(entry.status),
-                typeBadge: this.getTimelineTypeBadge(entry.activityType)
+                typeBadge: this.getTimelineTypeBadge(entry.type)
             }));
         } catch (error) {
             console.error('Error loading timeline:', error);
