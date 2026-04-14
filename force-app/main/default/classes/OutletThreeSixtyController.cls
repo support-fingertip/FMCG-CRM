@@ -84,7 +84,7 @@ public with sharing class OutletThreeSixtyController {
         AggregateResult[] visitAgg = [
             SELECT COUNT(Id) visitCount
             FROM Visit__c
-            WHERE Account__c = :accountId
+            WHERE (Account__c = :accountId OR Outlet__c = :accountId)
             AND Visit_Date__c >= :mtdStart
             AND Visit_Date__c <= :today
             AND Visit_Status__c = 'Completed'
@@ -185,7 +185,7 @@ public with sharing class OutletThreeSixtyController {
         AggregateResult[] visitFreqAgg = [
             SELECT COUNT(Id) totalVisits
             FROM Visit__c
-            WHERE Account__c = :accountId
+            WHERE (Account__c = :accountId OR Outlet__c = :accountId)
             AND Visit_Date__c >= :threeMonthsAgo
             AND Visit_Date__c <= :today
             AND Visit_Status__c = 'Completed'
@@ -209,7 +209,7 @@ public with sharing class OutletThreeSixtyController {
         List<Visit__c> lastVisit = [
             SELECT Visit_Date__c
             FROM Visit__c
-            WHERE Account__c = :accountId
+            WHERE (Account__c = :accountId OR Outlet__c = :accountId)
             AND Visit_Status__c = 'Completed'
             ORDER BY Visit_Date__c DESC
             LIMIT 1
@@ -317,6 +317,9 @@ public with sharing class OutletThreeSixtyController {
             queryLimit = 100;
         }
 
+        // Visit__c has two Account lookups (Account__c and Outlet__c). Most
+        // service paths populate both, but historical / imported records may
+        // have only one set. Match on either to be resilient.
         return [
             SELECT Id, Name, Visit_Date__c, Salesperson__c, Salesperson__r.Name,
                    Check_In_Time__c, Check_Out_Time__c, Duration_Minutes__c,
@@ -325,7 +328,7 @@ public with sharing class OutletThreeSixtyController {
                    Non_Productive_Reason__c, Visit_Sequence__c,
                    Beat__c, Beat__r.Name
             FROM Visit__c
-            WHERE Account__c = :accountId
+            WHERE Account__c = :accountId OR Outlet__c = :accountId
             ORDER BY Visit_Date__c DESC, Check_In_Time__c DESC
             LIMIT :queryLimit
         ];

@@ -185,11 +185,13 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
 
             if (!this.dataLoaded) {
                 this.dataLoaded = true;
+                console.log('[O360] wiredAccount: first load, recordId =', this.recordId, 'accountName =', name);
                 this.loadKPIs();
                 this.loadOutletFullDetails();
                 this.loadTabData('orders');
             }
         } else if (error) {
+            console.error('[O360] wiredAccount error:', error);
             this.showToast('Error', 'Failed to load account', 'error');
         }
     }
@@ -227,12 +229,22 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
         // so `event.target` becomes the tabset (no `.value`). The tab's value
         // is published on the event detail.
         const newTab = (event.detail && event.detail.value) || event.target.value;
-        if (!newTab) return;
+        console.log('[O360] handleTabChange fired:', {
+            'event.type': event.type,
+            'event.detail': event.detail,
+            'event.target.value': event.target && event.target.value,
+            'resolved newTab': newTab
+        });
+        if (!newTab) {
+            console.warn('[O360] handleTabChange: could not resolve tab value — aborting load');
+            return;
+        }
         this.activeTab = newTab;
         this.loadTabData(newTab);
     }
 
     async loadTabData(tabName) {
+        console.log('[O360] loadTabData called with tabName =', tabName, 'recordId =', this.recordId);
         this.isLoading = true;
         try {
             switch (tabName) {
@@ -255,10 +267,11 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                     await this.loadTimeline();
                     break;
                 default:
+                    console.warn('[O360] loadTabData: unknown tab, no-op:', tabName);
                     break;
             }
         } catch (error) {
-            console.error('Error loading tab data:', error);
+            console.error('[O360] loadTabData error:', error);
         } finally {
             this.isLoading = false;
         }
@@ -267,6 +280,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     async loadOrders() {
         try {
             const result = await getRecentOrders({ accountId: this.recordId, limitCount: 20 });
+            console.log('[O360] loadOrders -> rows:', (result || []).length, 'first:', result && result[0]);
             this.orders = (result || []).map(order => ({
                 id: order.Id,
                 orderNumber: order.Name,
@@ -281,7 +295,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                 salesperson: order.Salesperson__r ? order.Salesperson__r.Name : ''
             }));
         } catch (error) {
-            console.error('Error loading orders:', error);
+            console.error('[O360] loadOrders error:', JSON.stringify(error), error);
             this.orders = [];
         }
     }
@@ -289,6 +303,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     async loadCollections() {
         try {
             const result = await getCollectionHistory({ accountId: this.recordId, limitCount: 20 });
+            console.log('[O360] loadCollections -> rows:', (result || []).length, 'first:', result && result[0]);
             this.collections = (result || []).map(col => ({
                 id: col.Id,
                 receiptNumber: col.Receipt_Number__c || col.Name,
@@ -304,7 +319,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                 bankName: col.Bank_Name__c || ''
             }));
         } catch (error) {
-            console.error('Error loading collections:', error);
+            console.error('[O360] loadCollections error:', JSON.stringify(error), error);
             this.collections = [];
         }
     }
@@ -312,6 +327,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     async loadVisits() {
         try {
             const result = await getVisitHistory({ accountId: this.recordId, limitCount: 20 });
+            console.log('[O360] loadVisits -> rows:', (result || []).length, 'first:', result && result[0]);
             this.visits = (result || []).map(visit => ({
                 id: visit.Id,
                 date: visit.Visit_Date__c,
@@ -329,7 +345,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                 beatName: visit.Beat__r ? visit.Beat__r.Name : ''
             }));
         } catch (error) {
-            console.error('Error loading visits:', error);
+            console.error('[O360] loadVisits error:', JSON.stringify(error), error);
             this.visits = [];
         }
     }
@@ -337,6 +353,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     async loadSchemes() {
         try {
             const result = await getApplicableSchemes({ accountId: this.recordId });
+            console.log('[O360] loadSchemes -> rows:', (result || []).length, 'first:', result && result[0]);
             this.schemes = (result || []).map(scheme => ({
                 id: scheme.Id,
                 name: scheme.Name,
@@ -352,7 +369,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                 isStackable: scheme.Is_Stackable__c
             }));
         } catch (error) {
-            console.error('Error loading schemes:', error);
+            console.error('[O360] loadSchemes error:', JSON.stringify(error), error);
             this.schemes = [];
         }
     }
@@ -360,6 +377,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     async loadStock() {
         try {
             const result = await getStockLevels({ accountId: this.recordId });
+            console.log('[O360] loadStock -> rows:', (result || []).length, 'first:', result && result[0]);
             this.stockItems = (result || []).map(item => ({
                 id: item.Id,
                 productName: item.Product_Ext__r ? item.Product_Ext__r.Name : 'N/A',
@@ -375,7 +393,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                 qtyClass: this.getStockQtyClass(item.Closing_Stock__c)
             }));
         } catch (error) {
-            console.error('Error loading stock:', error);
+            console.error('[O360] loadStock error:', JSON.stringify(error), error);
             this.stockItems = [];
         }
     }
@@ -390,18 +408,23 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
             // the other tabs show.
             const [orders, visits, collections] = await Promise.all([
                 getRecentOrders({ accountId: this.recordId, limitCount: 30 }).catch(err => {
-                    console.error('Timeline: orders fetch failed', err);
+                    console.error('[O360] Timeline: orders fetch failed', JSON.stringify(err), err);
                     return [];
                 }),
                 getVisitHistory({ accountId: this.recordId, limitCount: 30 }).catch(err => {
-                    console.error('Timeline: visits fetch failed', err);
+                    console.error('[O360] Timeline: visits fetch failed', JSON.stringify(err), err);
                     return [];
                 }),
                 getCollectionHistory({ accountId: this.recordId, limitCount: 30 }).catch(err => {
-                    console.error('Timeline: collections fetch failed', err);
+                    console.error('[O360] Timeline: collections fetch failed', JSON.stringify(err), err);
                     return [];
                 })
             ]);
+            console.log('[O360] loadTimeline fetched:', {
+                orders: (orders || []).length,
+                visits: (visits || []).length,
+                collections: (collections || []).length
+            });
 
             const entries = [];
 
