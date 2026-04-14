@@ -346,7 +346,7 @@ public with sharing class ProductManagementController {
         // deliberately excludes these (it requires days-to-expiry >= 0), so
         // expired batches were invisible on the dashboard. Count them in
         // their own tile.
-        stats.expiredBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Expiry_Date__c < TODAY()];
+        stats.expiredBatches = [SELECT COUNT() FROM Batch_Master__c WHERE Expiry_Date__c < TODAY];
         stats.mustSellConfigs = [SELECT COUNT() FROM Must_Sell_Config__c WHERE Is_Active__c = true];
         stats.totalUOMs = [SELECT COUNT() FROM UOM__c WHERE Is_Active__c = true];
         stats.totalConversions = [SELECT COUNT() FROM UOM_Conversion__c WHERE Is_Active__c = true];
