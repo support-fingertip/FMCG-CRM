@@ -1296,16 +1296,32 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         const customerId = event.currentTarget.dataset.id;
         const customerName = event.currentTarget.dataset.name;
 
-        this.editPriceList = { ...this.editPriceList, Customer__c: customerId };
+        // Customer is the most specific dimension; any other dimension
+        // becomes irrelevant (see MDM_PriceList_Handler.calculatePriority).
+        // Clear them out so the saved record reflects what the disabled
+        // UI shows and the user doesn't end up with stale values.
+        this.editPriceList = {
+            ...this.editPriceList,
+            Customer__c: customerId,
+            Category__c: null,
+            Territory__c: null,
+            Channel__c: null
+        };
         this.selectedCustomerName = customerName;
         this.customerLookupSearchTerm = '';
         this.showCustomerLookup = false;
         this.customerLookupResults = [];
+        this.resetCategoryLookup();
+        this.resetTerritoryLookup();
     }
 
     handleClearCustomerSelection() {
         this.editPriceList = { ...this.editPriceList, Customer__c: null };
         this.resetCustomerLookup();
+    }
+
+    get isPriceListDimensionDisabled() {
+        return this.hasSelectedCustomer;
     }
 
     // ── UOM Master ────────────────────────────────────────────────────

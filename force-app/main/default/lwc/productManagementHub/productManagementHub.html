@@ -1072,32 +1072,39 @@
                             <div class="slds-form-element">
                                 <label class="slds-form-element__label">Category</label>
                                 <div class="product-lookup-container">
-                                    <template if:true={hasSelectedCategory}>
-                                        <div class="product-lookup-pill">
-                                            <lightning-icon icon-name="standard:category" size="x-small"></lightning-icon>
-                                            <span class="pill-label">{selectedCategoryName}</span>
-                                            <button class="pill-remove" onclick={handleClearCategorySelection} type="button">
-                                                <lightning-icon icon-name="utility:close" size="xx-small"
-                                                    alternative-text="Remove"></lightning-icon>
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <template if:false={hasSelectedCategory}>
+                                    <template if:true={isPriceListDimensionDisabled}>
                                         <lightning-input label="" variant="label-hidden"
-                                            placeholder="Type to search categories..."
-                                            value={categoryLookupSearchTerm}
-                                            onchange={handleCategoryLookupSearch}></lightning-input>
-                                        <template if:true={showCategoryLookup}>
-                                            <ul class="product-lookup-dropdown" role="listbox">
-                                                <template for:each={categoryLookupResults} for:item="cat">
-                                                    <li key={cat.Id} class="lookup-option" role="option"
-                                                        data-id={cat.Id} data-name={cat.Name}
-                                                        onclick={handleSelectLookupCategory}>
-                                                        <span class="lookup-option-name">{cat.Name}</span>
-                                                        <span class="lookup-option-meta">{cat.Level__c}</span>
-                                                    </li>
-                                                </template>
-                                            </ul>
+                                            placeholder="Not applicable — customer-specific pricing"
+                                            disabled></lightning-input>
+                                    </template>
+                                    <template if:false={isPriceListDimensionDisabled}>
+                                        <template if:true={hasSelectedCategory}>
+                                            <div class="product-lookup-pill">
+                                                <lightning-icon icon-name="standard:category" size="x-small"></lightning-icon>
+                                                <span class="pill-label">{selectedCategoryName}</span>
+                                                <button class="pill-remove" onclick={handleClearCategorySelection} type="button">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small"
+                                                        alternative-text="Remove"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        <template if:false={hasSelectedCategory}>
+                                            <lightning-input label="" variant="label-hidden"
+                                                placeholder="Type to search categories..."
+                                                value={categoryLookupSearchTerm}
+                                                onchange={handleCategoryLookupSearch}></lightning-input>
+                                            <template if:true={showCategoryLookup}>
+                                                <ul class="product-lookup-dropdown" role="listbox">
+                                                    <template for:each={categoryLookupResults} for:item="cat">
+                                                        <li key={cat.Id} class="lookup-option" role="option"
+                                                            data-id={cat.Id} data-name={cat.Name}
+                                                            onclick={handleSelectLookupCategory}>
+                                                            <span class="lookup-option-name">{cat.Name}</span>
+                                                            <span class="lookup-option-meta">{cat.Level__c}</span>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </template>
                                         </template>
                                     </template>
                                 </div>
@@ -1108,35 +1115,42 @@
                             <div class="slds-form-element">
                                 <label class="slds-form-element__label">Territory</label>
                                 <div class="product-lookup-container">
-                                    <template if:true={hasSelectedTerritory}>
-                                        <div class="product-lookup-pill">
-                                            <lightning-icon icon-name="standard:location" size="x-small"></lightning-icon>
-                                            <span class="pill-label">{selectedTerritoryName}</span>
-                                            <button class="pill-remove" data-target="priceList"
-                                                onclick={handleClearTerritorySelection} type="button">
-                                                <lightning-icon icon-name="utility:close" size="xx-small"
-                                                    alternative-text="Remove"></lightning-icon>
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <template if:false={hasSelectedTerritory}>
+                                    <template if:true={isPriceListDimensionDisabled}>
                                         <lightning-input label="" variant="label-hidden"
-                                            placeholder="Type to search territories..."
-                                            value={territoryLookupSearchTerm}
-                                            data-target="priceList"
-                                            onchange={handleTerritoryLookupSearch}></lightning-input>
-                                        <template if:true={showTerritoryLookup}>
-                                            <ul class="product-lookup-dropdown" role="listbox">
-                                                <template for:each={territoryLookupResults} for:item="terr">
-                                                    <li key={terr.Id} class="lookup-option" role="option"
-                                                        data-id={terr.Id} data-name={terr.Name}
-                                                        data-target="priceList"
-                                                        onclick={handleSelectLookupTerritory}>
-                                                        <span class="lookup-option-name">{terr.Name}</span>
-                                                        <span class="lookup-option-meta">{terr.Territory_Code__c}</span>
-                                                    </li>
-                                                </template>
-                                            </ul>
+                                            placeholder="Not applicable — customer-specific pricing"
+                                            disabled></lightning-input>
+                                    </template>
+                                    <template if:false={isPriceListDimensionDisabled}>
+                                        <template if:true={hasSelectedTerritory}>
+                                            <div class="product-lookup-pill">
+                                                <lightning-icon icon-name="standard:location" size="x-small"></lightning-icon>
+                                                <span class="pill-label">{selectedTerritoryName}</span>
+                                                <button class="pill-remove" data-target="priceList"
+                                                    onclick={handleClearTerritorySelection} type="button">
+                                                    <lightning-icon icon-name="utility:close" size="xx-small"
+                                                        alternative-text="Remove"></lightning-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        <template if:false={hasSelectedTerritory}>
+                                            <lightning-input label="" variant="label-hidden"
+                                                placeholder="Type to search territories..."
+                                                value={territoryLookupSearchTerm}
+                                                data-target="priceList"
+                                                onchange={handleTerritoryLookupSearch}></lightning-input>
+                                            <template if:true={showTerritoryLookup}>
+                                                <ul class="product-lookup-dropdown" role="listbox">
+                                                    <template for:each={territoryLookupResults} for:item="terr">
+                                                        <li key={terr.Id} class="lookup-option" role="option"
+                                                            data-id={terr.Id} data-name={terr.Name}
+                                                            data-target="priceList"
+                                                            onclick={handleSelectLookupTerritory}>
+                                                            <span class="lookup-option-name">{terr.Name}</span>
+                                                            <span class="lookup-option-meta">{terr.Territory_Code__c}</span>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </template>
                                         </template>
                                     </template>
                                 </div>
@@ -1145,7 +1159,8 @@
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-combobox label="Channel" value={editPriceList.Channel__c}
                                 options={channelOptions} data-field="Channel__c"
-                                onchange={handlePriceListFieldChange}></lightning-combobox>
+                                onchange={handlePriceListFieldChange}
+                                disabled={isPriceListDimensionDisabled}></lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
                             <lightning-input type="number" label="Unit Price" value={editPriceList.Unit_Price__c}
