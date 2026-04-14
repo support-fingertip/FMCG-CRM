@@ -106,16 +106,38 @@
 
             <!-- ─── Products Section ────────────────────────────────────── -->
             <template if:true={showProducts}>
-                <div class="section-toolbar">
+                <div class="section-toolbar section-toolbar_wrap">
                     <div class="toolbar-left">
-                        <lightning-input type="search" label="Search Products" placeholder="Search by name or SKU..."
-                            value={productSearchTerm} onchange={handleProductSearch} variant="label-hidden"></lightning-input>
-                        <label class="checkbox-label">
-                            <lightning-input type="checkbox" label="Active Only" checked={productActiveOnly}
-                                onchange={handleProductActiveFilter} variant="label-hidden"></lightning-input>
-                        </label>
+                        <lightning-input type="search" label="Search Products"
+                            placeholder="Search by name or SKU..."
+                            value={productSearchTerm} onchange={handleProductSearch}
+                            variant="label-hidden"
+                            class="toolbar-search"></lightning-input>
+                        <lightning-combobox label="Category" variant="label-hidden"
+                            placeholder="All Categories"
+                            value={productCategoryFilter}
+                            options={productCategoryFilterOptions}
+                            onchange={handleProductCategoryFilter}
+                            class="toolbar-filter"></lightning-combobox>
+                        <lightning-combobox label="Brand" variant="label-hidden"
+                            placeholder="All Brands"
+                            value={productBrandFilter}
+                            options={productBrandFilterOptions}
+                            onchange={handleProductBrandFilter}
+                            class="toolbar-filter"></lightning-combobox>
+                        <lightning-input type="checkbox" label="Active Only"
+                            checked={productActiveOnly}
+                            onchange={handleProductActiveFilter}></lightning-input>
+                        <template if:true={hasActiveProductFilters}>
+                            <lightning-button label="Clear Filters" icon-name="utility:clear"
+                                variant="neutral" onclick={handleClearProductFilters}></lightning-button>
+                        </template>
                     </div>
                     <div class="toolbar-right">
+                        <lightning-button label="Open Catalog" variant="neutral"
+                            icon-name="utility:new_window"
+                            onclick={handleOpenProductCatalog}
+                            class="slds-m-right_x-small"></lightning-button>
                         <lightning-button label="New Product" variant="brand" icon-name="utility:add"
                             onclick={handleNewProduct}></lightning-button>
                     </div>

@@ -11,7 +11,7 @@ public with sharing class ProductManagementController {
     // ─── Product Extension CRUD ────────────────────────────────────────
 
     @AuraEnabled
-    public static ProductPageResult getProducts(String searchTerm, String categoryId, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
+    public static ProductPageResult getProducts(String searchTerm, String categoryId, String brand, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
         if (pageNumber == null || pageNumber < 1) pageNumber = 1;
         if (pageSize == null || pageSize < 1) pageSize = 25;
 
@@ -27,6 +27,9 @@ public with sharing class ProductManagementController {
         }
         if (String.isNotBlank(categoryId)) {
             baseQuery += ' AND Product_Category__c = \'' + String.escapeSingleQuotes(categoryId) + '\'';
+        }
+        if (String.isNotBlank(brand)) {
+            baseQuery += ' AND Brand__c = \'' + String.escapeSingleQuotes(brand) + '\'';
         }
 
         Integer totalCount = Database.countQuery('SELECT COUNT() ' + baseQuery);
@@ -49,6 +52,24 @@ public with sharing class ProductManagementController {
         result.pageNumber = pageNumber;
         result.pageSize = pageSize;
         result.totalPages = (Integer) Math.ceil((Decimal) totalCount / pageSize);
+        return result;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getBrands() {
+        Set<String> brands = new Set<String>();
+        for (AggregateResult ar : [
+            SELECT Brand__c b FROM Product_Extension__c
+            WHERE Brand__c != null
+            GROUP BY Brand__c
+            ORDER BY Brand__c ASC
+            LIMIT 500
+        ]) {
+            String b = (String) ar.get('b');
+            if (String.isNotBlank(b)) brands.add(b);
+        }
+        List<String> result = new List<String>(brands);
+        result.sort();
         return result;
     }
 

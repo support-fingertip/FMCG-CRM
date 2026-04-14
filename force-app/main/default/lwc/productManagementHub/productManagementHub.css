@@ -179,6 +179,16 @@
     gap: 8px;
 }
 
+/* Fixed widths for the filter inputs in the Products toolbar so the
+   search box doesn't collapse when combobox filters get long labels. */
+.toolbar-search {
+    min-width: 260px;
+}
+
+.toolbar-filter {
+    min-width: 180px;
+}
+
 /* ── Data Table ─────────────────────────────────────────────────────── */
 
 .data-table-wrapper {

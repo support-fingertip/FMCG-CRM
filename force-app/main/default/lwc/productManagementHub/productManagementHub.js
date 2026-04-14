@@ -7,6 +7,7 @@ import getProducts from '@salesforce/apex/ProductManagementController.getProduct
 import saveProduct from '@salesforce/apex/ProductManagementController.saveProduct';
 import deleteProduct from '@salesforce/apex/ProductManagementController.deleteProduct';
 import getCategories from '@salesforce/apex/ProductManagementController.getCategories';
+import getBrands from '@salesforce/apex/ProductManagementController.getBrands';
 import saveCategory from '@salesforce/apex/ProductManagementController.saveCategory';
 import deleteCategory from '@salesforce/apex/ProductManagementController.deleteCategory';
 import getPriceLists from '@salesforce/apex/ProductManagementController.getPriceLists';
@@ -60,6 +61,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track productSearchTerm = '';
     @track productActiveOnly = true;
     @track productCategoryFilter = '';
+    @track productBrandFilter = '';
+    @track brandOptions = [];
     @track productPage = 1;
     @track productTotalPages = 1;
     @track productTotalCount = 0;
@@ -410,9 +413,15 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async loadProducts() {
         try {
+            // Ensure filter lookup lists (categories + brands) are ready
+            // so the new combobox filters on the toolbar have options.
+            this.ensureCategoriesLoaded();
+            this.ensureBrandsLoaded();
+
             const result = await getProducts({
                 searchTerm: this.productSearchTerm,
                 categoryId: this.productCategoryFilter,
+                brand: this.productBrandFilter,
                 activeOnly: this.productActiveOnly,
                 pageNumber: this.productPage,
                 pageSize: PAGE_SIZE
@@ -430,6 +439,17 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         }
     }
 
+    async ensureBrandsLoaded() {
+        if (this.brandOptions && this.brandOptions.length > 0) return;
+        try {
+            const brands = await getBrands();
+            this.brandOptions = (brands || []).map(b => ({ label: b, value: b }));
+        } catch (error) {
+            // Non-fatal: brand filter just stays empty
+            console.error('Failed to load brands:', error);
+        }
+    }
+
     handleProductSearch(event) {
         this.productSearchTerm = event.target.value;
         clearTimeout(this._searchTimeout);
@@ -443,6 +463,61 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         this.productActiveOnly = event.target.checked;
         this.productPage = 1;
         this.loadProducts();
+    }
+
+    handleProductCategoryFilter(event) {
+        this.productCategoryFilter = event.detail.value;
+        this.productPage = 1;
+        this.loadProducts();
+    }
+
+    handleProductBrandFilter(event) {
+        this.productBrandFilter = event.detail.value;
+        this.productPage = 1;
+        this.loadProducts();
+    }
+
+    handleClearProductFilters() {
+        this.productSearchTerm = '';
+        this.productCategoryFilter = '';
+        this.productBrandFilter = '';
+        this.productActiveOnly = true;
+        this.productPage = 1;
+        this.loadProducts();
+    }
+
+    // Navigates to the custom "Product Catalog" tab (LWC-backed tab defined
+    // by force-app/main/default/tabs/Product_Catalog.tab-meta.xml, hosting
+    // the productCatalog component). That's the richer, read-optimized
+    // catalog view with image cards and category tree navigation.
+    handleOpenProductCatalog() {
+        this[NavigationMixin.Navigate]({
+            type: 'standard__navItemPage',
+            attributes: {
+                apiName: 'Product_Catalog'
+            }
+        });
+    }
+
+    get productCategoryFilterOptions() {
+        const opts = [{ label: 'All Categories', value: '' }];
+        if (!this.categories || this.categories.length === 0) return opts;
+        [...this.categories]
+            .sort((a, b) => (a.Name || '').localeCompare(b.Name || ''))
+            .forEach(c => {
+                const parent = c.Parent_Category__r ? c.Parent_Category__r.Name + ' / ' : '';
+                opts.push({ label: parent + c.Name, value: c.Id });
+            });
+        return opts;
+    }
+
+    get productBrandFilterOptions() {
+        return [{ label: 'All Brands', value: '' }, ...this.brandOptions];
+    }
+
+    get hasActiveProductFilters() {
+        return !!(this.productSearchTerm || this.productCategoryFilter
+            || this.productBrandFilter || !this.productActiveOnly);
     }
 
     handleProductPrevPage() {
