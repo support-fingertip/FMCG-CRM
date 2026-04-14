@@ -494,11 +494,26 @@ export default class ExpenseManager extends LightningElement {
     }
 
     buildGenericItem(expenseType, dateStr, dayInfo) {
+        // Even without an eligibility rule, infer which travel/lodging fields
+        // should be visible based on the expense type name so users can still
+        // fill From/To/Mode/City when claiming actuals.
+        const et = (expenseType || '').toLowerCase();
+        const isTravel = et.includes('travel') || et.includes('conveyance') ||
+                         et.includes('fuel') || et.includes('taxi') || et.includes('cab');
+        const isDA = et.includes('daily allowance') || et.includes(' da ') || et === 'da';
+        const isLodging = et.includes('lodging') || et.includes('hotel') ||
+                          et.includes('accommodation') || et.includes('stay');
+        const isFood = et.includes('food') || et.includes('meal');
+
+        const showFromTo = isTravel;
+        const showTravelMode = isTravel;
+        const showCity = isLodging || isTravel;
+
         return {
             key: dateStr + '-' + expenseType,
             id: null,
             expenseType: expenseType,
-            category: 'Miscellaneous',
+            category: isTravel ? 'Travel' : (isLodging ? 'Lodging' : (isFood ? 'Food' : 'Miscellaneous')),
             rateType: 'Actual',
             rateAmount: 0,
             maxPerDay: 0,
@@ -520,6 +535,15 @@ export default class ExpenseManager extends LightningElement {
             notes: '',
             vehicleType: '',
             travelMode: '',
+            allowedTravelModes: isTravel ? [
+                { label: 'Own Vehicle (2W)', value: 'Own 2W' },
+                { label: 'Own Vehicle (4W)', value: 'Own 4W' },
+                { label: 'Taxi / Cab', value: 'Taxi' },
+                { label: 'Auto Rickshaw', value: 'Auto' },
+                { label: 'Bus', value: 'Bus' },
+                { label: 'Train', value: 'Train' },
+                { label: 'Flight', value: 'Flight' }
+            ] : [],
             city: '',
             isMetro: false,
             workingHours: dayInfo.hoursWorked || 0,
@@ -528,15 +552,16 @@ export default class ExpenseManager extends LightningElement {
             isEligible: true,
             hasExisting: false,
             isActual: true,
-            isTravel: false,
-            isDA: false,
-            isLodging: false,
-            isFood: false,
-            showFromTo: false,
+            isTravel: isTravel,
+            isDA: isDA,
+            isLodging: isLodging,
+            isFood: isFood,
+            showFromTo: showFromTo,
             showVehicle: false,
-            showTravelMode: false,
+            showTravelMode: showTravelMode,
             showRemarks: true,
-            showCity: false,
+            showCity: showCity,
+            showCityTier: false,
             systemCalcAmount: 0,
             exceedsEligible: false,
             statusLabel: 'New',
