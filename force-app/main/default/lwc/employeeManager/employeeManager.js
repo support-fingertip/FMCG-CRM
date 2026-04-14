@@ -116,6 +116,10 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         return this.selectedEmployee ? this.selectedEmployee.Designation__c || '-' : '-';
     }
 
+    get selectedEmployeeBand() {
+        return this.selectedEmployee ? this.selectedEmployee.Band__c || '-' : '-';
+    }
+
     get selectedEmployeeCode() {
         return this.selectedEmployee ? this.selectedEmployee.Employee_Code__c || '-' : '-';
     }
