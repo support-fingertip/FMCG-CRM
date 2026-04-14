@@ -2,6 +2,14 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>No_Edit_After_Approval</fullName>
     <active>true</active>
-    <errorConditionFormula>AND(ISCHANGED(Total_Planned_Visits__c), OR(ISPICKVAL(PRIORVALUE(Status__c), &apos;Approved&apos;), ISPICKVAL(PRIORVALUE(Status__c), &apos;Active&apos;)))</errorConditionFormula>
+    <description>Prevents changes to the rollup field on Approved/Active journey plans. Admins with the Bypass_Journey_Plan_Approval_Lock custom permission are exempt so they can regenerate plans and the automatic rollup update (Total_Planned_Days__c / Total_Planned_Visits__c) still succeeds after plan-day inserts and deletes.</description>
+    <errorConditionFormula>AND(
+    ISCHANGED(Total_Planned_Visits__c),
+    OR(
+        ISPICKVAL(PRIORVALUE(Status__c), &apos;Approved&apos;),
+        ISPICKVAL(PRIORVALUE(Status__c), &apos;Active&apos;)
+    ),
+    NOT($Permission.Bypass_Journey_Plan_Approval_Lock)
+)</errorConditionFormula>
     <errorMessage>Cannot modify an approved or active Journey Plan. Please create a new plan or request revision.</errorMessage>
 </ValidationRule>

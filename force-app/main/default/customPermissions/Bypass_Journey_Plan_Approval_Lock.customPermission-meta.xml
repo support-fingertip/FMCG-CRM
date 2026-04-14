@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>When granted, the user bypasses the No_Edit_After_Approval validation rule on Journey_Plan__c, enabling system-managed rollup updates (Total_Planned_Days__c, Total_Planned_Visits__c) and admin regenerate flows on Approved/Active plans.</description>
+    <isLicensed>false</isLicensed>
+    <label>Bypass Journey Plan Approval Lock</label>
+</CustomPermission>
