@@ -476,6 +476,14 @@
                                             onchange={handleFormChange}></lightning-combobox>
                                     </div>
                                     <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                        <lightning-combobox label="Band"
+                                            value={employeeForm.Band__c}
+                                            options={bandOptions}
+                                            data-field="Band__c"
+                                            onchange={handleFormChange}
+                                            field-level-help="Employee band — drives expense eligibility rules"></lightning-combobox>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
                                         <lightning-input type="number" label="Gross Salary"
                                             value={employeeForm.Gross_Salary__c}
                                             data-field="Gross_Salary__c" step="0.01" min="0"
@@ -505,24 +513,19 @@
                                 </div>
                             </div>
 
-                            <!-- Section: Territory & Geography -->
+                            <!-- Section: Territory -->
                             <div class="form-section">
-                                <h3 class="form-section-title">Territory &amp; Geography</h3>
+                                <h3 class="form-section-title">Territory</h3>
                                 <div class="slds-grid slds-gutters slds-wrap">
-                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
-                                        <lightning-input label="Zone" value={employeeForm.Zone__c}
-                                            data-field="Zone__c" onchange={handleFormChange}></lightning-input>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
-                                        <lightning-input label="Region" value={employeeForm.Region__c}
-                                            data-field="Region__c" onchange={handleFormChange}></lightning-input>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-3 slds-m-bottom_small">
+                                    <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
                                         <lightning-input-field field-name="Territory__c"
                                             value={employeeForm.Territory__c}
                                             data-field="Territory__c"
                                             onchange={handleFormChange}
                                             variant="label-stacked"></lightning-input-field>
+                                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                                            Zone and Region are automatically derived from the selected Territory.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

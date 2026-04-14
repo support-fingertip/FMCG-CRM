@@ -38,6 +38,7 @@ const EMPTY_EMPLOYEE_FORM = {
     Date_of_Joining__c: null,
     Zone__c: '',
     Region__c: '',
+    Band__c: '',
     Territory__c: null,
     Is_Active__c: true,
     Profile_Photo_URL__c: '',
@@ -164,6 +165,19 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
 
     get weekDayOptions() {
         return WEEK_DAY_OPTIONS;
+    }
+
+    get bandOptions() {
+        // Mirrors the Band__c picklist on Employee__c (Band 1 through Band 6).
+        // Drives expense eligibility rules.
+        return [
+            { label: 'Band 1', value: 'Band 1' },
+            { label: 'Band 2', value: 'Band 2' },
+            { label: 'Band 3', value: 'Band 3' },
+            { label: 'Band 4', value: 'Band 4' },
+            { label: 'Band 5', value: 'Band 5' },
+            { label: 'Band 6', value: 'Band 6' }
+        ];
     }
 
     get weekOffDaysFormValue() {
@@ -552,6 +566,7 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             Date_of_Joining__c: this.selectedEmployee.Date_of_Joining__c || null,
             Zone__c: this.selectedEmployee.Zone__c || '',
             Region__c: this.selectedEmployee.Region__c || '',
+            Band__c: this.selectedEmployee.Band__c || '',
             Territory__c: this.selectedEmployee.Territory__c || null,
             Is_Active__c: this.selectedEmployee.Is_Active__c !== false,
             Profile_Photo_URL__c: this.selectedEmployee.Profile_Photo_URL__c || '',
@@ -608,6 +623,7 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
                 Date_of_Joining__c: this.employeeForm.Date_of_Joining__c,
                 Zone__c: this.employeeForm.Zone__c,
                 Region__c: this.employeeForm.Region__c,
+                Band__c: this.employeeForm.Band__c,
                 Territory__c: this.employeeForm.Territory__c,
                 Is_Active__c: this.employeeForm.Is_Active__c,
                 Profile_Photo_URL__c: this.employeeForm.Profile_Photo_URL__c,
