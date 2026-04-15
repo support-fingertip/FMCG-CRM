@@ -561,19 +561,30 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     ? li.baseQuantity
                     : qty * (li.conversionFactor || 1);
 
-                // Re-run scheme resolution locally just like the add-to-cart
-                // path does. Drafts saved before scheme persistence was fully
-                // wired may have no Scheme__c — this recovers the scheme so
-                // the Scheme column, scheme discount, and Free Qty all show
-                // correctly when the draft is re-opened.
+                // Re-run scheme resolution locally exactly like the
+                // add-to-cart path does. We deliberately do NOT trust the
+                // stored li.schemeId — earlier buggy saves (where an
+                // order-level 'Snacks & Noodles 3% Off' scheme got stamped
+                // on every line regardless of product) would otherwise
+                // round-trip that wrong value forever.
+                //
+                // If the stored scheme still applies to this product per
+                // findAllApplicableSchemes, we keep it (respects a user's
+                // explicit choice among several applicable schemes). If
+                // not, we pick the top applicable scheme for the product.
                 const pseudoProduct = { id: li.productId, Id: li.productId };
-                const resolvedScheme = li.schemeId
-                    ? (this.schemes || []).find(s => s.Id === li.schemeId) || this.findApplicableScheme(pseudoProduct)
-                    : this.findApplicableScheme(pseudoProduct);
+                const applicableSchemes = this.findAllApplicableSchemes(pseudoProduct);
+                let resolvedScheme = null;
+                if (li.schemeId) {
+                    resolvedScheme = applicableSchemes.find(s => s.Id === li.schemeId) || null;
+                }
+                if (!resolvedScheme) {
+                    resolvedScheme = applicableSchemes.length > 0 ? applicableSchemes[0] : null;
+                }
 
                 const schemeInfo = {
-                    schemeId: resolvedScheme ? resolvedScheme.Id : (li.schemeId || null),
-                    schemeName: resolvedScheme ? resolvedScheme.Name : (li.schemeName || '')
+                    schemeId: resolvedScheme ? resolvedScheme.Id : null,
+                    schemeName: resolvedScheme ? resolvedScheme.Name : ''
                 };
 
                 // Recompute totals from qty * rate + scheme discount + tax so
