@@ -39,6 +39,18 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     get isEmbedded() { return !!this.accountId; }
     get isEditingDraft() { return !!this.editingOrderId; }
+    get headerTitle() {
+        return this.isEditingDraft
+            ? ('Edit Order ' + (this.editingOrderName || ''))
+            : 'New Order';
+    }
+    get headerSubtitle() {
+        return this.isEditingDraft
+            ? 'Update this draft and save or submit'
+            : 'Create sales order for outlet';
+    }
+    // Set by loadDraftOrder so the header can show SO-xxxxx.
+    editingOrderName = '';
 
     @track lineItems = [];
     @track orderSummary = {
@@ -526,6 +538,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             if (!data) return;
 
             this.editingOrderId = data.orderId;
+            this.editingOrderName = data.orderName || '';
             this.selectedAccountId = data.accountId;
             this.accountId = data.accountId;
             if (data.visitId) this.visitId = data.visitId;
@@ -540,21 +553,53 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 this.lineIdCounter++;
                 const qty = li.quantity || 0;
                 const rate = li.rate || 0;
-                const grossAmount = li.grossAmount != null ? li.grossAmount : (qty * rate);
+                // Recompute totals fresh from qty*rate instead of trusting
+                // stored Line_Total__c / Total_Amount__c — those fields can
+                // hold stale values (e.g. taxed-in figures from a prior
+                // trigger recompute) that double-inflate the header totals
+                // when re-used as 'gross'. This is the safe, deterministic
+                // reconstruction path.
+                const taxRate = li.taxRate != null ? li.taxRate : 0;
                 const discountAmount = li.discountAmount || 0;
-                const taxRate = li.taxRate || 0;
-                const taxAmount = li.taxAmount || 0;
-                const totalAmount = li.totalAmount != null
-                    ? li.totalAmount
-                    : (grossAmount - discountAmount + taxAmount);
+                const grossAmount = qty * rate;
+                const taxableAmount = grossAmount - discountAmount;
+                const taxAmount = taxableAmount * (taxRate / 100);
+                const totalAmount = taxableAmount + taxAmount;
+
                 const baseUOMCode = li.baseUOMCode || 'PCS';
                 const uomCode = li.uomCode || this.mapPicklistToCode(li.uom || 'Pieces');
                 const baseQty = li.baseQuantity != null
                     ? li.baseQuantity
                     : qty * (li.conversionFactor || 1);
 
+                // Build per-product UOM options so the UOM combobox has
+                // something to show for its current value. Uses the base
+                // UOM info we saved in getDraftOrder; secondary UOMs fall
+                // back to 'not available' because that data isn't persisted
+                // on the line. refreshLineItemUOMOptions() below re-runs
+                // with the now-loaded master UOMs for a fuller option list.
+                const productUOMOptions = this.buildProductUOMOptions({
+                    BaseUOMCode: baseUOMCode,
+                    BaseUOMName: this.getUOMNameByCode(baseUOMCode),
+                    SecondaryUOMCode: null,
+                    OrderingUOMs: null
+                });
+                this.productUOMOptionsMap = {
+                    ...this.productUOMOptionsMap,
+                    [li.productId]: productUOMOptions
+                };
+
+                // Line up with the minQuantity / classification surfaced by
+                // getMustSellProducts so the 'Min: X' badge is correct when
+                // the line's product is a Must-Sell.
+                const msMatch = (this.mustSellProducts || []).find(p => p.productId === li.productId);
+                const fsMatch = (this.focusedSellProducts || []).find(p => p.productId === li.productId);
+                const classification = msMatch ? 'Must Sell' : (fsMatch ? 'Focused Sell' : '');
+                const resolvedMinQty = msMatch ? msMatch.minQuantity
+                    : (fsMatch ? fsMatch.minQuantity : 1);
+
                 return {
-                    id: 'line_' + this.lineIdCounter,
+                    id: 'LINE_' + this.lineIdCounter,
                     existingLineId: li.lineId,
                     productId: li.productId,
                     productName: li.productName,
@@ -571,23 +616,31 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     uom: li.uom || 'Pieces',
                     uomCode: uomCode,
                     baseUOMCode: baseUOMCode,
+                    productUOMOptions: productUOMOptions,
                     grossAmount: grossAmount,
                     discountAmount: discountAmount,
+                    discountFormatted: this.formatCurrency(discountAmount),
                     taxRate: taxRate,
                     taxAmount: taxAmount,
+                    taxFormatted: this.formatCurrency(taxAmount),
                     totalAmount: totalAmount,
                     totalFormatted: this.formatCurrency(totalAmount),
                     schemeId: li.schemeId,
                     schemeName: li.schemeName,
+                    classification: classification,
+                    classificationBadgeClass: this.getClassificationBadgeClass(classification),
                     priceListId: li.priceListId,
                     priceListName: li.priceListName,
                     serialNumber: idx + 1,
-                    rowClass: '',
-                    isMustSell: false,
-                    minQuantity: 1
+                    rowClass: classification === 'Must Sell' ? 'oef-row-must-sell-pending' : '',
+                    isMustSell: classification === 'Must Sell',
+                    minQuantity: resolvedMinQty
                 };
             });
             this.lineItems = newLineItems;
+            // Refresh UOM options after master data is loaded (initializeOrderData
+            // kicks off async loads; by now uomOptionsData may have arrived).
+            this.refreshLineItemUOMOptions();
             this.calculateTotals();
             this.refreshMustSellStatus();
         } catch (error) {
@@ -1869,6 +1922,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             // calls update the SAME record instead of creating duplicates.
             if (result && result.Id) {
                 this.editingOrderId = result.Id;
+                this.editingOrderName = result.Name || this.editingOrderName;
             }
 
             this.showToast('Success', 'Draft saved successfully!', 'success');
@@ -1954,6 +2008,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         // Clear the edit-context so the next save creates a fresh order
         // instead of re-saving the submitted one.
         this.editingOrderId = null;
+        this.editingOrderName = '';
         this.calculateTotals();
     }
 
