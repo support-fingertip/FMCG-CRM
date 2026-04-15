@@ -734,12 +734,17 @@
                 <div class="vm-tab-content">
                     <template if:true={hasActiveOrders}>
                         <template for:each={activeOrders} for:item="order">
-                            <div key={order.Id} class="vm-rec-row">
+                            <div key={order.Id} class={order.rowClass} data-id={order.Id}
+                                data-status={order.Status__c} onclick={handleOrderRowClick}>
                                 <div class="vm-rec-info">
                                     <span class="vm-rec-name">{order.Name}</span>
                                     <span class="vm-rec-sub">{order.Status__c} - {order.Total_Items__c} items</span>
                                 </div>
                                 <span class="vm-rec-amt">{order.amountFormatted}</span>
+                                <template if:true={order.isEditable}>
+                                    <lightning-icon icon-name="utility:edit" size="xx-small"
+                                        alternative-text="Edit draft" class="slds-m-left_x-small"></lightning-icon>
+                                </template>
                             </div>
                         </template>
                     </template>
@@ -1271,6 +1276,7 @@
             <!-- ORDER ENTRY (embedded child LWC) -->
             <template if:true={isOrderActivity}>
                 <c-order-entry-form account-id={activeAccountId} visit-id={activeVisitId}
+                    draft-order-id={editDraftOrderId}
                     onsuccess={handleActivityFormSuccess} oncancel={handleActivityBack}>
                 </c-order-entry-form>
             </template>

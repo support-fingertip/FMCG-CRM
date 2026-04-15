@@ -13,6 +13,7 @@ import getTopSellingProducts from '@salesforce/apex/OrderEntryController.getTopS
 import getOrderUOMOptions from '@salesforce/apex/OrderEntryController.getOrderUOMOptions';
 import getProductUOMOptions from '@salesforce/apex/OrderEntryController.getProductUOMOptions';
 import convertQuantity from '@salesforce/apex/OrderEntryController.convertQuantity';
+import getDraftOrder from '@salesforce/apex/OrderEntryController.getDraftOrder';
 import getWarehouses from '@salesforce/apex/OrderEntryController.getWarehouses';
 import checkStockAvailability from '@salesforce/apex/OrderEntryController.checkStockAvailability';
 
@@ -29,8 +30,15 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     @api recordId;
     @api visitId;
     @api accountId;
+    // When set, the form rehydrates the given Draft Sales_Order__c and
+    // saves back to the same record instead of creating a new one.
+    @api draftOrderId;
+    // Internal: the order Id we're editing; populated from @api or from
+    // an earlier save-draft that returned an Id.
+    editingOrderId = null;
 
     get isEmbedded() { return !!this.accountId; }
+    get isEditingDraft() { return !!this.editingOrderId; }
 
     @track lineItems = [];
     @track orderSummary = {
@@ -494,9 +502,98 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     }
 
     connectedCallback() {
+        if (this.draftOrderId) {
+            // Edit path — rehydrate from the existing Draft order.
+            this.loadDraftOrder(this.draftOrderId);
+            return;
+        }
         if (!this.recordId && this.accountId) {
             this.selectedAccountId = this.accountId;
             this.initializeOrderData();
+        }
+    }
+
+    /**
+     * Loads an existing Draft Sales_Order__c into the form for editing.
+     * Populates selectedAccountId, lineItems, orderRemarks, totals, and
+     * marks editingOrderId so Save Draft / Submit go to an UPDATE path
+     * on the same record rather than creating a new order.
+     */
+    async loadDraftOrder(orderId) {
+        this.isLoading = true;
+        try {
+            const data = await getDraftOrder({ orderId });
+            if (!data) return;
+
+            this.editingOrderId = data.orderId;
+            this.selectedAccountId = data.accountId;
+            this.accountId = data.accountId;
+            if (data.visitId) this.visitId = data.visitId;
+            this.orderRemarks = data.remarks || '';
+            if (data.warehouseId) this.selectedWarehouseId = data.warehouseId;
+
+            // Load account-side context (pricing, schemes, must-sell products)
+            // before mapping lines so each line can look up its scheme / UOM.
+            await this.initializeOrderData();
+
+            const newLineItems = (data.lineItems || []).map((li, idx) => {
+                this.lineIdCounter++;
+                const qty = li.quantity || 0;
+                const rate = li.rate || 0;
+                const grossAmount = li.grossAmount != null ? li.grossAmount : (qty * rate);
+                const discountAmount = li.discountAmount || 0;
+                const taxRate = li.taxRate || 0;
+                const taxAmount = li.taxAmount || 0;
+                const totalAmount = li.totalAmount != null
+                    ? li.totalAmount
+                    : (grossAmount - discountAmount + taxAmount);
+                const baseUOMCode = li.baseUOMCode || 'PCS';
+                const uomCode = li.uomCode || this.mapPicklistToCode(li.uom || 'Pieces');
+                const baseQty = li.baseQuantity != null
+                    ? li.baseQuantity
+                    : qty * (li.conversionFactor || 1);
+
+                return {
+                    id: 'line_' + this.lineIdCounter,
+                    existingLineId: li.lineId,
+                    productId: li.productId,
+                    productName: li.productName,
+                    sku: li.sku,
+                    mrp: li.mrp,
+                    quantity: qty,
+                    baseQuantity: baseQty,
+                    baseQuantityLabel: (uomCode !== baseUOMCode && qty > 0)
+                        ? '= ' + baseQty + ' ' + baseUOMCode : '',
+                    conversionFactor: li.conversionFactor || 1,
+                    freeQty: li.freeQty || 0,
+                    rate: rate,
+                    rateFormatted: this.formatCurrency(rate),
+                    uom: li.uom || 'Pieces',
+                    uomCode: uomCode,
+                    baseUOMCode: baseUOMCode,
+                    grossAmount: grossAmount,
+                    discountAmount: discountAmount,
+                    taxRate: taxRate,
+                    taxAmount: taxAmount,
+                    totalAmount: totalAmount,
+                    totalFormatted: this.formatCurrency(totalAmount),
+                    schemeId: li.schemeId,
+                    schemeName: li.schemeName,
+                    priceListId: li.priceListId,
+                    priceListName: li.priceListName,
+                    serialNumber: idx + 1,
+                    rowClass: '',
+                    isMustSell: false,
+                    minQuantity: 1
+                };
+            });
+            this.lineItems = newLineItems;
+            this.calculateTotals();
+            this.refreshMustSellStatus();
+        } catch (error) {
+            this.showToast('Error', 'Failed to load draft order: ' + this.reduceErrors(error), 'error');
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -1768,6 +1865,12 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const orderData = this.buildOrderPayload('Draft');
             const result = await createSalesOrder({ orderJson: JSON.stringify(orderData) });
 
+            // Remember the draft's Id so subsequent Save Draft / Submit
+            // calls update the SAME record instead of creating duplicates.
+            if (result && result.Id) {
+                this.editingOrderId = result.Id;
+            }
+
             this.showToast('Success', 'Draft saved successfully!', 'success');
         } catch (error) {
             this.showToast('Error', 'Failed to save draft: ' + this.reduceErrors(error), 'error');
@@ -1781,6 +1884,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         // Filter out must-sell items with qty 0 (placeholders only)
         const activeLineItems = this.lineItems.filter(item => item.quantity && item.quantity > 0);
         return {
+            // Present only in the edit flow — controller uses this as the
+            // 'update existing order' signal (see createSalesOrder).
+            orderId: this.editingOrderId || undefined,
             accountId: this.effectiveAccountId,
             visitId: this.visitId || this.recordId,
             warehouseId: this.selectedWarehouseId || null,
@@ -1810,7 +1916,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 // product (from the Must-Sell 'Min: X' badge). The OLI
                 // trigger honours this over the product MOQ so the save
                 // can't reject a line that the UI said was acceptable.
-                minQuantity: item.minQuantity
+                minQuantity: item.minQuantity,
+                // Persist the Price_List__c that priced this line so the
+                // record shows exactly which entry applied, and a future
+                // draft-edit can rehydrate with the same source.
+                priceListId: item.priceListId || null
             }))
         };
     }
@@ -1841,6 +1951,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
         this.searchTerm = '';
         this.selectedCategory = '';
         this.orderRemarks = '';
+        // Clear the edit-context so the next save creates a fresh order
+        // instead of re-saving the submitted one.
+        this.editingOrderId = null;
         this.calculateTotals();
     }
 

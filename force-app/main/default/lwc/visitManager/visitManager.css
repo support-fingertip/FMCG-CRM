@@ -1198,6 +1198,16 @@
     transition: var(--vm-transition);
 }
 
+.vm-rec-row_clickable {
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vm-rec-row_clickable:hover {
+    background: #f4f7fb;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
 .vm-rec-row:hover {
     box-shadow: var(--vm-shadow);
     border-color: var(--vm-primary);

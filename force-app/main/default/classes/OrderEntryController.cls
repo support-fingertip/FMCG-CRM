@@ -227,14 +227,43 @@ public with sharing class OrderEntryController {
         try {
             Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(orderJson);
 
-            Sales_Order__c order = new Sales_Order__c();
+            // When payload.orderId is present, treat this as an EDIT of an
+            // existing Draft order: reuse the same Sales_Order__c record,
+            // refresh the header fields, and wipe its Order_Line_Item__c
+            // rows so the new line collection is the single source of truth.
+            // Only Draft orders are allowed to edit — submitted/approved
+            // orders must not be mutated via this path.
+            String editOrderId = (String) payload.get('orderId');
+            Boolean isEdit = String.isNotBlank(editOrderId);
+
+            Sales_Order__c order;
+            if (isEdit) {
+                List<Sales_Order__c> existing = [
+                    SELECT Id, Status__c FROM Sales_Order__c
+                    WHERE Id = :editOrderId LIMIT 1
+                ];
+                if (existing.isEmpty()) {
+                    throw new AuraHandledException('Order not found for edit: ' + editOrderId);
+                }
+                if (existing[0].Status__c != 'Draft') {
+                    throw new AuraHandledException(
+                        'Only Draft orders can be edited. Order is currently ' + existing[0].Status__c + '.'
+                    );
+                }
+                order = existing[0];
+                // Remove existing lines — fresh insert below using the new payload.
+                delete [SELECT Id FROM Order_Line_Item__c WHERE Sales_Order__c = :order.Id];
+            } else {
+                order = new Sales_Order__c();
+                order.Order_Date__c = Date.today();
+            }
+
             order.Account__c = (String) payload.get('accountId');
             if (payload.get('visitId') != null) {
                 order.Visit__c = (String) payload.get('visitId');
             }
             order.Status__c = (String) payload.get('status');
             order.Notes__c = (String) payload.get('remarks');
-            order.Order_Date__c = Date.today();
             order.Total_Gross_Amount__c = toDecimal(payload.get('grossAmount'));
             order.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
             order.Total_Tax__c = toDecimal(payload.get('totalTax'));
@@ -287,7 +316,7 @@ public with sharing class OrderEntryController {
                 order.Must_Sell_Compliance__c = toDecimal(payload.get('mustSellCompliance'));
             }
 
-            insert order;
+            upsert order;
 
             List<Order_Line_Item__c> lineItems = new List<Order_Line_Item__c>();
             List<Object> items = (List<Object>) payload.get('lineItems');
@@ -390,6 +419,14 @@ public with sharing class OrderEntryController {
                     if (item.get('schemeId') != null) {
                         li.Scheme__c = (String) item.get('schemeId');
                     }
+                    // Store the Price_List__c Id the UI resolved (if any)
+                    // so the draft-edit flow can re-open with the same
+                    // pricing source applied. If the payload doesn't send
+                    // one, OMS_OrderPricing_Service will stamp it during
+                    // beforeInsert when it resolves the price.
+                    if (item.get('priceListId') != null) {
+                        li.Price_List__c = (String) item.get('priceListId');
+                    }
 
                     // Set UOM picklist (backward compatibility)
                     String uomPicklist = item.get('uom') != null ? (String) item.get('uom') : null;
@@ -431,6 +468,107 @@ public with sharing class OrderEntryController {
             Database.rollback(sp);
             throw new AuraHandledException(e.getMessage());
         }
+    }
+
+    /**
+     * @description Returns a Draft order plus its line items shaped for the
+     *              orderEntryForm LWC to rehydrate its edit state. Only
+     *              Draft orders are allowed through this path — submitted
+     *              or approved orders must not be reopened for edit.
+     * @param  orderId Sales_Order__c Id to load.
+     * @return Map with header (accountId, visitId, remarks, status,
+     *         mustSellOverride, mustSellCompliance, totals) and a list of
+     *         'lineItems' — each carrying productId, productName, sku,
+     *         quantity, baseQuantity, freeQty, uom, uomCode, baseUOMCode,
+     *         rate, grossAmount, discountAmount, taxRate, taxAmount,
+     *         totalAmount, schemeId, schemeName, priceListId,
+     *         priceListName, classification hints.
+     */
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Object> getDraftOrder(Id orderId) {
+        if (orderId == null) {
+            throw new AuraHandledException('orderId is required.');
+        }
+        List<Sales_Order__c> orders = [
+            SELECT Id, Name, Status__c, Account__c, Visit__c, Warehouse__c,
+                   Notes__c, Total_Gross_Amount__c, Total_Discount__c,
+                   Total_Tax__c, Total_Net_Amount__c, Must_Sell_Override__c,
+                   Must_Sell_Compliance__c
+            FROM Sales_Order__c
+            WHERE Id = :orderId LIMIT 1
+        ];
+        if (orders.isEmpty()) {
+            throw new AuraHandledException('Order not found.');
+        }
+        Sales_Order__c o = orders[0];
+        if (o.Status__c != 'Draft') {
+            throw new AuraHandledException(
+                'Only Draft orders can be edited. Order is currently ' + o.Status__c + '.'
+            );
+        }
+
+        List<Order_Line_Item__c> lis = [
+            SELECT Id, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c,
+                   Product_Ext__r.Unit_of_Measure__c, Product_Ext__r.MRP__c,
+                   Product_Ext__r.Base_UOM__c, Product_Ext__r.Base_UOM__r.UOM_Code__c,
+                   Quantity__c, Base_Quantity__c, Conversion_Factor__c,
+                   Free_Quantity__c, Unit_Price__c,
+                   UOM__c, Order_UOM__c, Order_UOM__r.UOM_Code__c,
+                   Line_Total__c, Discount_Amount__c, Discount_Percent__c,
+                   Tax_Rate__c, Tax_Amount__c, Total_Amount__c,
+                   Scheme__c, Scheme__r.Name,
+                   Price_List__c, Price_List__r.Name
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c = :orderId
+            ORDER BY CreatedDate ASC
+        ];
+
+        List<Map<String, Object>> liMaps = new List<Map<String, Object>>();
+        for (Order_Line_Item__c li : lis) {
+            Map<String, Object> m = new Map<String, Object>();
+            m.put('lineId', li.Id);
+            m.put('productId', li.Product_Ext__c);
+            m.put('productName', li.Product_Ext__r != null ? li.Product_Ext__r.Name : null);
+            m.put('sku', li.Product_Ext__r != null ? li.Product_Ext__r.SKU_Code__c : null);
+            m.put('mrp', li.Product_Ext__r != null ? li.Product_Ext__r.MRP__c : null);
+            m.put('quantity', li.Quantity__c);
+            m.put('baseQuantity', li.Base_Quantity__c);
+            m.put('conversionFactor', li.Conversion_Factor__c);
+            m.put('freeQty', li.Free_Quantity__c);
+            m.put('rate', li.Unit_Price__c);
+            m.put('uom', li.UOM__c);
+            m.put('uomCode', li.Order_UOM__r != null ? li.Order_UOM__r.UOM_Code__c : null);
+            m.put('baseUOMCode', (li.Product_Ext__r != null && li.Product_Ext__r.Base_UOM__r != null)
+                ? li.Product_Ext__r.Base_UOM__r.UOM_Code__c : 'PCS');
+            m.put('grossAmount', li.Line_Total__c);
+            m.put('discountAmount', li.Discount_Amount__c);
+            m.put('discountPercent', li.Discount_Percent__c);
+            m.put('taxRate', li.Tax_Rate__c);
+            m.put('taxAmount', li.Tax_Amount__c);
+            m.put('totalAmount', li.Total_Amount__c);
+            m.put('schemeId', li.Scheme__c);
+            m.put('schemeName', li.Scheme__r != null ? li.Scheme__r.Name : null);
+            m.put('priceListId', li.Price_List__c);
+            m.put('priceListName', li.Price_List__r != null ? li.Price_List__r.Name : null);
+            liMaps.add(m);
+        }
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('orderId', o.Id);
+        result.put('orderName', o.Name);
+        result.put('accountId', o.Account__c);
+        result.put('visitId', o.Visit__c);
+        result.put('warehouseId', o.Warehouse__c);
+        result.put('status', o.Status__c);
+        result.put('remarks', o.Notes__c);
+        result.put('grossAmount', o.Total_Gross_Amount__c);
+        result.put('totalDiscount', o.Total_Discount__c);
+        result.put('totalTax', o.Total_Tax__c);
+        result.put('netAmount', o.Total_Net_Amount__c);
+        result.put('mustSellOverride', o.Must_Sell_Override__c);
+        result.put('mustSellCompliance', o.Must_Sell_Compliance__c);
+        result.put('lineItems', liMaps);
+        return result;
     }
 
     private static Decimal toDecimal(Object value) {

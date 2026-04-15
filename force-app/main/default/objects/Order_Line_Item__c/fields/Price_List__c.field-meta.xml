@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Price_List__c</fullName>
+    <label>Price List</label>
+    <description>The Price_List__c record whose Unit_Price was applied to this line. Set at save-time by OMS_OrderPricing_Service so the pricing source can be audited and rehydrated when a draft order is re-opened for edit.</description>
+    <type>Lookup</type>
+    <referenceTo>Price_List__c</referenceTo>
+    <relationshipLabel>Order Line Items</relationshipLabel>
+    <relationshipName>Order_Line_Items</relationshipName>
+    <required>false</required>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

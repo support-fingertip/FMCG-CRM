@@ -159,6 +159,10 @@ export default class VisitManager extends LightningElement {
 
     // ── VISIT ACTIVITY (inline forms) ──
     @track activeActivityId = null;
+    // When user clicks a Draft order row on the active visit's Orders
+    // tab, this gets set and the Order Entry form opens pre-loaded
+    // with that order for editing.
+    @track editDraftOrderId = null;
     // Stock Check
     @track stockCheckLines = [];
     @track stockProductSearch = '';
@@ -1032,10 +1036,18 @@ export default class VisitManager extends LightningElement {
         return 'vm-compliance-badge vm-compliance-red';
     }
     get activeOrders() {
-        return (this.activeVisitSummary.orders || []).map(o => ({
-            ...o,
-            amountFormatted: INR.format(o.Total_Net_Amount__c || 0)
-        }));
+        return (this.activeVisitSummary.orders || []).map(o => {
+            const isEditable = o.Status__c === 'Draft';
+            return {
+                ...o,
+                amountFormatted: INR.format(o.Total_Net_Amount__c || 0),
+                // Draft rows become clickable-to-edit; other statuses are
+                // read-only (we don't let users mutate approved/active
+                // orders via the Order Entry form).
+                isEditable,
+                rowClass: isEditable ? 'vm-rec-row vm-rec-row_clickable' : 'vm-rec-row'
+            };
+        });
     }
     get activeCollections() {
         return (this.activeVisitSummary.collections || []).map(c => ({
@@ -1079,12 +1091,31 @@ export default class VisitManager extends LightningElement {
     handleActivityClick(e) {
         const id = e.currentTarget.dataset.id;
         this.activeActivityId = id;
+        // Starting a brand-new activity — clear any previous draft-edit
+        // context so the form doesn't try to rehydrate a stale order.
+        this.editDraftOrderId = null;
         this.currentScreen = SCREEN.VISIT_ACTIVITY;
         this._loadActivityData(id);
     }
 
+    /**
+     * Click on a Draft order row in the active-visit Orders tab re-opens
+     * the Order Entry form pre-populated with that draft's line items,
+     * scheme, price list, UOMs, etc. Non-draft orders just no-op here —
+     * they remain read-only.
+     */
+    handleOrderRowClick(e) {
+        const orderId = e.currentTarget.dataset.id;
+        const status = e.currentTarget.dataset.status;
+        if (!orderId || status !== 'Draft') return;
+        this.editDraftOrderId = orderId;
+        this.activeActivityId = 'order';
+        this.currentScreen = SCREEN.VISIT_ACTIVITY;
+    }
+
     handleActivityBack() {
         this.activeActivityId = null;
+        this.editDraftOrderId = null;
         this.currentScreen = SCREEN.VISIT_ACTIVE;
         this.handleRefreshVisitSummary();
         this._loadActivitiesData();

@@ -110,9 +110,17 @@ public without sharing class OMS_OrderPricing_Service {
 
                 List<Price_List__c> productPrices = pricesByProduct.get(item.Product_Ext__c);
                 Decimal orderQty = item.Quantity__c != null ? item.Quantity__c : 0;
-                unitPrice = resolvePriceByPriority(
+                // Also record which Price_List__c matched so draft-edit and
+                // audit can trace the exact pricing source applied.
+                Price_List__c matchedPL = resolvePriceListByPriority(
                     productPrices, accountId, categoryId, territoryId, channel, orderQty
                 );
+                if (matchedPL != null) {
+                    unitPrice = matchedPL.Unit_Price__c;
+                    item.Price_List__c = matchedPL.Id;
+                } else {
+                    unitPrice = 0;
+                }
                 item.Unit_Price__c = unitPrice;
             }
 
@@ -371,6 +379,44 @@ public without sharing class OMS_OrderPricing_Service {
         }
 
         return 0;
+    }
+
+    /**
+     * @description Same filtering/ordering as resolvePriceByPriority but
+     *              returns the matched Price_List__c record (or null).
+     *              Used by applyPricing to stamp Order_Line_Item__c.Price_List__c
+     *              so the order-draft edit flow can show the exact price list
+     *              applied and recalculate from the same source.
+     */
+    private static Price_List__c resolvePriceListByPriority(
+        List<Price_List__c> productPrices,
+        Id accountId,
+        Id categoryId,
+        Id territoryId,
+        String channel,
+        Decimal orderQuantity
+    ) {
+        if (productPrices == null || productPrices.isEmpty()) {
+            return null;
+        }
+
+        for (Price_List__c pl : productPrices) {
+            Boolean matches = true;
+
+            if (pl.Customer__c != null
+                && (accountId == null || pl.Customer__c != accountId)) matches = false;
+            if (matches && pl.Category__c != null
+                && (categoryId == null || pl.Category__c != categoryId)) matches = false;
+            if (matches && pl.Territory__c != null
+                && (territoryId == null || pl.Territory__c != territoryId)) matches = false;
+            if (matches && String.isNotBlank(pl.Channel__c)
+                && (String.isBlank(channel) || pl.Channel__c != channel)) matches = false;
+            if (matches && pl.Min_Qty__c != null && pl.Min_Qty__c > 0
+                && orderQuantity < pl.Min_Qty__c) matches = false;
+
+            if (matches) return pl;
+        }
+        return null;
     }
 
     /**
