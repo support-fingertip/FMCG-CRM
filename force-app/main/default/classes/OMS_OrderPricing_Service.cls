@@ -433,7 +433,10 @@ public without sharing class OMS_OrderPricing_Service {
         }
 
         for (SPM_SchemeEngine_Service.SchemeResult scheme : schemes) {
-            // Use per-line-item discount map if available (preferred)
+            // Use per-line-item discount map if available (preferred). This
+            // is a 'targeted' scheme — it explicitly identifies the lines it
+            // applies to, so it's a legitimate primary attribution for those
+            // lines.
             if (scheme.lineItemDiscounts != null && !scheme.lineItemDiscounts.isEmpty()) {
                 for (Order_Line_Item__c item : lineItems) {
                     if (scheme.lineItemDiscounts.containsKey(item.Id)) {
@@ -441,13 +444,25 @@ public without sharing class OMS_OrderPricing_Service {
                         Decimal currentDiscount = item.Scheme_Discount__c != null
                             ? item.Scheme_Discount__c : 0;
                         item.Scheme_Discount__c = currentDiscount + itemDiscount;
-                        item.Scheme__c = scheme.schemeId;
-                        item.Scheme_Applied__c = scheme.schemeId;
-                        item.Scheme_Category__c = scheme.schemeCategory;
+                        // Only attribute the scheme to the line if there's
+                        // no scheme already on it. The first targeted scheme
+                        // wins; later schemes still contribute to the
+                        // discount total but don't overwrite the lookup.
+                        if (item.Scheme__c == null) {
+                            item.Scheme__c = scheme.schemeId;
+                            item.Scheme_Applied__c = scheme.schemeId;
+                            item.Scheme_Category__c = scheme.schemeCategory;
+                        }
                     }
                 }
             } else if (scheme.discountAmount != null && scheme.discountAmount > 0) {
-                // Fallback: apply total discount proportionally across all line items
+                // Order-level / proportional scheme — only contributes to
+                // each line's Scheme_Discount__c. Does NOT overwrite the
+                // per-line Scheme__c lookup, which would mis-attribute a
+                // line's product-specific scheme (e.g. 'Detergent Invoice
+                // Qty Discount' on a detergent line) to a generic order
+                // scheme (e.g. 'Snacks & Noodles 3% Off') and confuse
+                // reporting / audit.
                 Decimal totalLineAmount = 0;
                 for (Order_Line_Item__c item : lineItems) {
                     totalLineAmount += (item.Net_Amount__c != null ? item.Net_Amount__c : 0);
@@ -461,9 +476,11 @@ public without sharing class OMS_OrderPricing_Service {
                         Decimal currentDiscount = item.Scheme_Discount__c != null
                             ? item.Scheme_Discount__c : 0;
                         item.Scheme_Discount__c = currentDiscount + itemDiscount;
-                        item.Scheme__c = scheme.schemeId;
-                        item.Scheme_Applied__c = scheme.schemeId;
-                        item.Scheme_Category__c = scheme.schemeCategory;
+                        // Order-level schemes are intentionally NOT stamped
+                        // onto the line's Scheme__c lookup — that field is
+                        // reserved for a product/category-targeted scheme
+                        // attribution. Order-level discounts only flow into
+                        // Scheme_Discount__c.
                     }
                 }
             }
