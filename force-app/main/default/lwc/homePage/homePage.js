@@ -60,7 +60,7 @@ export default class HomePage extends NavigationMixin(LightningElement) {
     get tabItems() {
         return [
             { key: TABS.DASHBOARD, label: 'Dashboard', icon: 'standard:home' },
-            { key: TABS.FIELD_OPS, label: 'Field Ops', icon: 'standard:visit' },
+            { key: TABS.FIELD_OPS, label: 'Field Ops', icon: 'standard:address' },
             { key: TABS.SALES, label: 'Sales', icon: 'standard:opportunity' },
             { key: TABS.INVENTORY, label: 'Inventory', icon: 'standard:product' },
             { key: TABS.HR, label: 'HR & Expense', icon: 'standard:people' },
