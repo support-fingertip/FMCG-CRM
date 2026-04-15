@@ -238,8 +238,12 @@ public with sharing class OrderEntryController {
 
             Sales_Order__c order;
             if (isEdit) {
+                // Pull Visit__c / Account__c so we can preserve them when
+                // the payload omits them — prevents the edit flow from
+                // silently unlinking a draft from its visit, which makes
+                // the order disappear from the Visit Manager's Orders tab.
                 List<Sales_Order__c> existing = [
-                    SELECT Id, Status__c FROM Sales_Order__c
+                    SELECT Id, Status__c, Visit__c, Account__c FROM Sales_Order__c
                     WHERE Id = :editOrderId LIMIT 1
                 ];
                 if (existing.isEmpty()) {
@@ -258,7 +262,13 @@ public with sharing class OrderEntryController {
                 order.Order_Date__c = Date.today();
             }
 
-            order.Account__c = (String) payload.get('accountId');
+            // Only overwrite Account/Visit when payload explicitly carries
+            // them. In the edit path the existing record already has them;
+            // the form may not always re-send (depending on entry path), and
+            // wiping them would orphan the order from its visit.
+            if (payload.get('accountId') != null) {
+                order.Account__c = (String) payload.get('accountId');
+            }
             if (payload.get('visitId') != null) {
                 order.Visit__c = (String) payload.get('visitId');
             }

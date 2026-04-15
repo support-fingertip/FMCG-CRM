@@ -1645,8 +1645,15 @@ export default class VisitManager extends LightningElement {
     async handleRefreshVisitSummary() {
         if (!this.activeVisit) return;
         try {
-            this.activeVisitSummary = await refreshVisitSummary({ visitId: this.activeVisit.Id }) || {};
-        } catch (e) { /* ignore */ }
+            const next = await refreshVisitSummary({ visitId: this.activeVisit.Id }) || {};
+            // Replace with a fresh object reference so LWC's @track reactivity
+            // picks up the change (including when the orders list grew).
+            this.activeVisitSummary = { ...next };
+        } catch (e) {
+            // Surface failures so missing-order issues can be diagnosed
+            // instead of silently eating the error.
+            console.error('[VM] refreshVisitSummary failed', e);
+        }
     }
 
     // NAVIGATION: Back to Visit Board from Active Visit
