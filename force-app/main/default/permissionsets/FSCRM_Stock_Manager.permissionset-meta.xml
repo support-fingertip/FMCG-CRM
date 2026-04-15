@@ -1112,6 +1112,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Order_Line_Item__c.Price_List__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Order_Line_Item__c.Product_Ext__c</field>
         <readable>true</readable>
     </fieldPermissions>
