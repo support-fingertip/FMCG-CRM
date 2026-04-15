@@ -5,7 +5,7 @@
     <columns>Account__c</columns>
     <columns>Order_Date__c</columns>
     <columns>Status__c</columns>
-    <columns>Total_Amount__c</columns>
+    <columns>Total_Net_Amount__c</columns>
     <columns>Salesperson__c</columns>
     <filterScope>Everything</filterScope>
     <filters>
