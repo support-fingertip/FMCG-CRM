@@ -138,21 +138,27 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
             Decimal effectiveQty = (item.Base_Quantity__c != null && item.Base_Quantity__c > 0)
                 ? item.Base_Quantity__c : item.Quantity__c;
 
-            // Must-sell config min qty overrides product MOQ when lower
-            Decimal effectiveMOQ = product.Min_Order_Qty__c;
+            // Must-sell config is the authoritative minimum when it exists:
+            // it's an outlet-specific targeted push, so its Min_Qty replaces
+            // the generic product MOQ instead of being 'lower-of-two'. That
+            // keeps the server rule in sync with the UI, which only shows
+            // 'Min: X' from the must-sell config when one is present.
+            Decimal effectiveMOQ;
+            String moqSource;
             if (mustSellMinQtyMap.containsKey(item.Product_Ext__c)) {
-                Decimal mustSellMin = mustSellMinQtyMap.get(item.Product_Ext__c);
-                if (mustSellMin < effectiveMOQ) {
-                    effectiveMOQ = mustSellMin;
-                }
+                effectiveMOQ = mustSellMinQtyMap.get(item.Product_Ext__c);
+                moqSource = 'Must-Sell minimum';
+            } else {
+                effectiveMOQ = product.Min_Order_Qty__c;
+                moqSource = 'product MOQ';
             }
 
             if (effectiveQty < effectiveMOQ) {
                 item.Quantity__c.addError(
                     'Quantity (' + effectiveQty.setScale(0) +
-                    ') is below the minimum order quantity (' +
+                    ') is below the ' + moqSource + ' of ' +
                     effectiveMOQ.setScale(0) +
-                    ') for product ' + product.Name + '.'
+                    ' for product ' + product.Name + '.'
                 );
             }
         }
