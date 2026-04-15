@@ -240,11 +240,39 @@ public with sharing class OrderEntryController {
             order.Total_Tax__c = toDecimal(payload.get('totalTax'));
             order.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
 
-            // Set territory from account
+            // Resolve Territory via a fallback cascade so the order doesn't
+            // trip the Territory_Required_On_Submit validation rule when the
+            // outlet hasn't been mapped to a territory directly:
+            //   1. Account.Territory__c          (primary)
+            //   2. Visit.Beat.Territory__c       (ad-hoc / non-mapped outlet)
+            //   3. Current user's Employee.Territory__c (last-resort)
+            // Still leaves the field null if none of the above resolve so
+            // the validation rule can surface a clear error to the user.
             if (order.Account__c != null) {
                 List<Account> accts = [SELECT Territory__c FROM Account WHERE Id = :order.Account__c LIMIT 1];
                 if (!accts.isEmpty() && accts[0].Territory__c != null) {
                     order.Territory__c = accts[0].Territory__c;
+                }
+            }
+            if (order.Territory__c == null && order.Visit__c != null) {
+                List<Visit__c> visits = [
+                    SELECT Beat__c, Beat__r.Territory__c
+                    FROM Visit__c WHERE Id = :order.Visit__c LIMIT 1
+                ];
+                if (!visits.isEmpty() && visits[0].Beat__r != null
+                    && visits[0].Beat__r.Territory__c != null) {
+                    order.Territory__c = visits[0].Beat__r.Territory__c;
+                }
+            }
+            if (order.Territory__c == null) {
+                List<Employee__c> emps = [
+                    SELECT Territory__c FROM Employee__c
+                    WHERE User__c = :UserInfo.getUserId()
+                      AND Territory__c != null
+                    LIMIT 1
+                ];
+                if (!emps.isEmpty()) {
+                    order.Territory__c = emps[0].Territory__c;
                 }
             }
 
