@@ -272,7 +272,21 @@ public with sharing class OrderEntryController {
             if (payload.get('visitId') != null) {
                 order.Visit__c = (String) payload.get('visitId');
             }
-            order.Status__c = (String) payload.get('status');
+            // For the edit flow, defer the status transition until AFTER
+            // we've re-inserted the fresh line items. Otherwise the SO
+            // beforeUpdate trigger's validateMustSellCompliance (which
+            // fires on Draft -> Submitted) sees zero OLIs (we just
+            // deleted them) and incorrectly flags every required
+            // must-sell product as 'missing'. We keep the record at
+            // 'Draft' through the header upsert + OLI re-insert, then
+            // flip to the target status in a follow-up update where the
+            // validator can see the freshly-inserted lines.
+            String targetStatus = (String) payload.get('status');
+            if (isEdit && targetStatus != null && targetStatus != 'Draft') {
+                order.Status__c = 'Draft';
+            } else {
+                order.Status__c = targetStatus;
+            }
             order.Notes__c = (String) payload.get('remarks');
             order.Total_Gross_Amount__c = toDecimal(payload.get('grossAmount'));
             order.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
@@ -543,6 +557,14 @@ public with sharing class OrderEntryController {
             }
             if (doHeaderSync) {
                 update headerSync;
+            }
+
+            // For edits, flip status to the caller's target now that the
+            // fresh OLIs are in place and the must-sell validator can
+            // count them. For new orders, status was already set on
+            // insert so there's nothing more to do.
+            if (isEdit && targetStatus != null && targetStatus != 'Draft') {
+                update new Sales_Order__c(Id = order.Id, Status__c = targetStatus);
             }
 
             return [SELECT Id, Name, Status__c, Total_Net_Amount__c FROM Sales_Order__c WHERE Id = :order.Id];

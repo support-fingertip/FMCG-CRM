@@ -587,6 +587,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 const discountAmount = resolvedScheme
                     ? this.calculateSchemeDiscount(grossAmount, qty, resolvedScheme)
                     : (li.discountAmount || 0);
+                const taxableAmount = grossAmount - discountAmount;
+                const taxAmount = taxableAmount * (taxRate / 100);
+                const totalAmount = taxableAmount + taxAmount;
                 // Build per-product UOM options so the UOM combobox has
                 // something to show for its current value. Uses the base
                 // UOM info we saved in getDraftOrder; secondary UOMs fall
