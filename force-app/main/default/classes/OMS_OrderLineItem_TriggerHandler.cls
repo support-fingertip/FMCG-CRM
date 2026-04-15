@@ -7,6 +7,20 @@
  */
 public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
 
+    /**
+     * Same-transaction hint map populated by OrderEntryController before
+     * inserting line items. The controller knows what Min Qty the UI
+     * showed for each product (from the Must-Sell config badge the user
+     * saw on screen). The trigger trusts this hint so the server
+     * validation agrees with the user's expectation — no more cases of
+     * UI showing 'Min: 4' and the save failing with MOQ=24 because the
+     * Must-Sell config SOQL didn't match in the trigger's context.
+     *
+     * Keyed by Product_Extension__c Id; value is the Min Qty the UI
+     * confirmed for that product. Cleared naturally at end of transaction.
+     */
+    public static Map<Id, Decimal> uiMinQtyByProduct = new Map<Id, Decimal>();
+
     // ── Before Insert ─────────────────────────────────────────────────────────
 
     /**
@@ -138,14 +152,20 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
             Decimal effectiveQty = (item.Base_Quantity__c != null && item.Base_Quantity__c > 0)
                 ? item.Base_Quantity__c : item.Quantity__c;
 
-            // Must-sell config is the authoritative minimum when it exists:
-            // it's an outlet-specific targeted push, so its Min_Qty replaces
-            // the generic product MOQ instead of being 'lower-of-two'. That
-            // keeps the server rule in sync with the UI, which only shows
-            // 'Min: X' from the must-sell config when one is present.
+            // Priority order for the effective minimum:
+            //   1. UI hint (populated by OrderEntryController before insert)
+            //      — trust what the user saw on screen so the UI's 'Min: X'
+            //        badge and the server's rejection threshold are always
+            //        the same.
+            //   2. Server-side Must-Sell config lookup — outlet-specific
+            //        targeted push overrides the catalog MOQ.
+            //   3. Product MOQ — generic catalog rule.
             Decimal effectiveMOQ;
             String moqSource;
-            if (mustSellMinQtyMap.containsKey(item.Product_Ext__c)) {
+            if (uiMinQtyByProduct.containsKey(item.Product_Ext__c)) {
+                effectiveMOQ = uiMinQtyByProduct.get(item.Product_Ext__c);
+                moqSource = 'minimum order quantity';
+            } else if (mustSellMinQtyMap.containsKey(item.Product_Ext__c)) {
                 effectiveMOQ = mustSellMinQtyMap.get(item.Product_Ext__c);
                 moqSource = 'Must-Sell minimum';
             } else {

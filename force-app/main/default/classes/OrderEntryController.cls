@@ -353,6 +353,25 @@ public with sharing class OrderEntryController {
                 // Bulk convert
                 List<UOM_Conversion_Service.ConvertedResult> convResults = UOM_Conversion_Service.bulkConvert(convRequests);
 
+                // Populate the same-transaction hint map the OLI trigger
+                // reads, so the UI's Must-Sell 'Min: X' badge is honoured
+                // at save time without relying on the trigger's Must-Sell
+                // SOQL returning the same record (which has been observed
+                // to miss valid configs depending on context).
+                OMS_OrderLineItem_TriggerHandler.uiMinQtyByProduct.clear();
+                for (Object raw : itemMaps) {
+                    Map<String, Object> it = (Map<String, Object>) raw;
+                    Object minRaw = it.get('minQuantity');
+                    Object pidRaw = it.get('productId');
+                    if (minRaw == null || pidRaw == null) continue;
+                    Decimal minQty = toDecimal(minRaw);
+                    if (minQty != null && minQty > 0) {
+                        OMS_OrderLineItem_TriggerHandler.uiMinQtyByProduct.put(
+                            (Id) pidRaw, minQty
+                        );
+                    }
+                }
+
                 for (Integer i = 0; i < itemMaps.size(); i++) {
                     Map<String, Object> item = itemMaps[i];
                     UOM_Conversion_Service.ConvertedResult conv = convResults[i];

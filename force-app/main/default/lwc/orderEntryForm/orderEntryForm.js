@@ -1805,7 +1805,12 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 taxRate: item.taxRate,
                 taxAmount: item.taxAmount,
                 totalAmount: item.totalAmount,
-                schemeId: item.schemeId
+                schemeId: item.schemeId,
+                // Tell the server the Min Qty the UI showed for this
+                // product (from the Must-Sell 'Min: X' badge). The OLI
+                // trigger honours this over the product MOQ so the save
+                // can't reject a line that the UI said was acceptable.
+                minQuantity: item.minQuantity
             }))
         };
     }
