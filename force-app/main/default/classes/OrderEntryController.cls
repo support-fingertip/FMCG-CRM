@@ -382,6 +382,21 @@ public with sharing class OrderEntryController {
                 // Bulk convert
                 List<UOM_Conversion_Service.ConvertedResult> convResults = UOM_Conversion_Service.bulkConvert(convRequests);
 
+                // Bulk-fetch product MRP / HSN so we can populate those
+                // fields on each Order_Line_Item__c (otherwise they'd stay
+                // blank on the created record — they're not in the LWC
+                // payload and the trigger pipeline doesn't set them).
+                Map<Id, Product_Extension__c> productMetaMap = new Map<Id, Product_Extension__c>();
+                if (!lineProductIds.isEmpty()) {
+                    for (Product_Extension__c pe : [
+                        SELECT Id, MRP__c, HSN_SAC_Code__c, Product_Category__c
+                        FROM Product_Extension__c
+                        WHERE Id IN :lineProductIds
+                    ]) {
+                        productMetaMap.put(pe.Id, pe);
+                    }
+                }
+
                 // Populate the same-transaction hint map the OLI trigger
                 // reads, so the UI's Must-Sell 'Min: X' badge is honoured
                 // at save time without relying on the trigger's Must-Sell
@@ -407,17 +422,41 @@ public with sharing class OrderEntryController {
 
                     Order_Line_Item__c li = new Order_Line_Item__c();
                     li.Sales_Order__c = order.Id;
-                    li.Product_Ext__c = (String) item.get('productId');
+                    Id prodId = item.get('productId') != null
+                        ? Id.valueOf((String) item.get('productId')) : null;
+                    li.Product_Ext__c = prodId;
                     li.Quantity__c = toDecimal(item.get('quantity'));
                     li.Free_Quantity__c = toDecimal(item.get('freeQty'));
                     li.Unit_Price__c = toDecimal(item.get('rate'));
-                    li.Line_Total__c = toDecimal(item.get('grossAmount'));
+                    // Line_Total__c = gross (qty * rate). Fallback to
+                    // calculating it locally when the payload value is
+                    // missing or zero so the stored row always has a real
+                    // subtotal to display.
+                    Decimal payloadGross = toDecimal(item.get('grossAmount'));
+                    Decimal liQty = toDecimal(item.get('quantity'));
+                    Decimal liRate = toDecimal(item.get('rate'));
+                    if (payloadGross == null || payloadGross == 0) {
+                        payloadGross = (liQty != null && liRate != null) ? liQty * liRate : 0;
+                    }
+                    li.Line_Total__c = payloadGross;
                     li.Discount_Amount__c = toDecimal(item.get('discountAmount'));
+                    li.Discount_Percent__c = toDecimal(item.get('discountPercent'));
                     li.Tax_Rate__c = toDecimal(item.get('taxRate'));
                     li.Tax_Amount__c = toDecimal(item.get('taxAmount'));
                     li.Total_Amount__c = toDecimal(item.get('totalAmount'));
                     if (item.get('schemeId') != null) {
                         li.Scheme__c = (String) item.get('schemeId');
+                    }
+                    if (item.get('schemeDiscount') != null) {
+                        li.Scheme_Discount__c = toDecimal(item.get('schemeDiscount'));
+                    }
+                    // Copy MRP / HSN from the product master so the saved
+                    // line item is self-contained and reports don't need to
+                    // chase back through Product_Ext__r at read-time.
+                    if (prodId != null && productMetaMap.containsKey(prodId)) {
+                        Product_Extension__c pe = productMetaMap.get(prodId);
+                        li.MRP__c = pe.MRP__c;
+                        li.HSN_SAC_Code__c = pe.HSN_SAC_Code__c;
                     }
                     // Store the Price_List__c Id the UI resolved (if any)
                     // so the draft-edit flow can re-open with the same
@@ -461,8 +500,41 @@ public with sharing class OrderEntryController {
                 insert lineItems;
             }
 
-            // Recalculate totals
+            // Recalculate totals — this rebuilds Total_Amount / Net_Amount
+            // etc. from line-item aggregates (which may use base-quantity
+            // pricing and diverge from what the UI showed).
             updateOrderTotals(order.Id);
+
+            // Reconcile the UI-facing Total_Gross_Amount__c /
+            // Total_Net_Amount__c / Total_Tax__c / Total_Discount__c with
+            // what the user confirmed on screen. updateOrderTotals above
+            // (and the line-item trigger pipeline) can compute header
+            // totals from base-quantity pricing, which produces different
+            // numbers than the UI's qty*rate view. We treat the UI totals
+            // as authoritative for these four 'Total_*' fields so the
+            // order record's header matches what the user saw and saved.
+            Sales_Order__c headerSync = new Sales_Order__c(Id = order.Id);
+            Boolean doHeaderSync = false;
+            if (payload.get('grossAmount') != null) {
+                headerSync.Total_Gross_Amount__c = toDecimal(payload.get('grossAmount'));
+                doHeaderSync = true;
+            }
+            if (payload.get('totalDiscount') != null) {
+                headerSync.Total_Discount__c = toDecimal(payload.get('totalDiscount'));
+                doHeaderSync = true;
+            }
+            if (payload.get('totalTax') != null) {
+                headerSync.Total_Tax__c = toDecimal(payload.get('totalTax'));
+                doHeaderSync = true;
+            }
+            if (payload.get('netAmount') != null) {
+                headerSync.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
+                doHeaderSync = true;
+            }
+            if (doHeaderSync) {
+                update headerSync;
+            }
+
             return [SELECT Id, Name, Status__c, Total_Net_Amount__c FROM Sales_Order__c WHERE Id = :order.Id];
         } catch (Exception e) {
             Database.rollback(sp);

@@ -553,18 +553,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 this.lineIdCounter++;
                 const qty = li.quantity || 0;
                 const rate = li.rate || 0;
-                // Recompute totals fresh from qty*rate instead of trusting
-                // stored Line_Total__c / Total_Amount__c — those fields can
-                // hold stale values (e.g. taxed-in figures from a prior
-                // trigger recompute) that double-inflate the header totals
-                // when re-used as 'gross'. This is the safe, deterministic
-                // reconstruction path.
                 const taxRate = li.taxRate != null ? li.taxRate : 0;
-                const discountAmount = li.discountAmount || 0;
-                const grossAmount = qty * rate;
-                const taxableAmount = grossAmount - discountAmount;
-                const taxAmount = taxableAmount * (taxRate / 100);
-                const totalAmount = taxableAmount + taxAmount;
 
                 const baseUOMCode = li.baseUOMCode || 'PCS';
                 const uomCode = li.uomCode || this.mapPicklistToCode(li.uom || 'Pieces');
@@ -572,6 +561,32 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     ? li.baseQuantity
                     : qty * (li.conversionFactor || 1);
 
+                // Re-run scheme resolution locally just like the add-to-cart
+                // path does. Drafts saved before scheme persistence was fully
+                // wired may have no Scheme__c — this recovers the scheme so
+                // the Scheme column, scheme discount, and Free Qty all show
+                // correctly when the draft is re-opened.
+                const pseudoProduct = { id: li.productId, Id: li.productId };
+                const resolvedScheme = li.schemeId
+                    ? (this.schemes || []).find(s => s.Id === li.schemeId) || this.findApplicableScheme(pseudoProduct)
+                    : this.findApplicableScheme(pseudoProduct);
+
+                const schemeInfo = {
+                    schemeId: resolvedScheme ? resolvedScheme.Id : (li.schemeId || null),
+                    schemeName: resolvedScheme ? resolvedScheme.Name : (li.schemeName || '')
+                };
+
+                // Recompute totals from qty * rate + scheme discount + tax so
+                // the view agrees with whatever scheme now applies (either the
+                // stored one or a newly-resolved one).
+                const grossAmount = qty * rate;
+                const freeQty = resolvedScheme
+                    ? this.calculateFreeQty(qty, resolvedScheme,
+                          { baseQuantity: baseQty, baseUOMCode, uomCode, conversionFactor: li.conversionFactor || 1 })
+                    : (li.freeQty || 0);
+                const discountAmount = resolvedScheme
+                    ? this.calculateSchemeDiscount(grossAmount, qty, resolvedScheme)
+                    : (li.discountAmount || 0);
                 // Build per-product UOM options so the UOM combobox has
                 // something to show for its current value. Uses the base
                 // UOM info we saved in getDraftOrder; secondary UOMs fall
@@ -610,7 +625,7 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     baseQuantityLabel: (uomCode !== baseUOMCode && qty > 0)
                         ? '= ' + baseQty + ' ' + baseUOMCode : '',
                     conversionFactor: li.conversionFactor || 1,
-                    freeQty: li.freeQty || 0,
+                    freeQty: freeQty,
                     rate: rate,
                     rateFormatted: this.formatCurrency(rate),
                     uom: li.uom || 'Pieces',
@@ -625,8 +640,8 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                     taxFormatted: this.formatCurrency(taxAmount),
                     totalAmount: totalAmount,
                     totalFormatted: this.formatCurrency(totalAmount),
-                    schemeId: li.schemeId,
-                    schemeName: li.schemeName,
+                    schemeId: schemeInfo.schemeId,
+                    schemeName: schemeInfo.schemeName,
                     classification: classification,
                     classificationBadgeClass: this.getClassificationBadgeClass(classification),
                     priceListId: li.priceListId,
