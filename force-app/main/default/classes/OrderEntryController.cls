@@ -307,14 +307,28 @@ public with sharing class OrderEntryController {
                     order.Territory__c = accts[0].Territory__c;
                 }
             }
-            if (order.Territory__c == null && order.Visit__c != null) {
+            // When the order is tied to a visit, copy the visit's Beat and
+            // Day_Attendance context onto the order so reporting (visit
+            // productivity, beat-wise sales, daily attendance coverage)
+            // doesn't have to traverse Visit__r every time. Also backfills
+            // Territory from the beat if Account didn't supply one.
+            if (order.Visit__c != null) {
                 List<Visit__c> visits = [
-                    SELECT Beat__c, Beat__r.Territory__c
+                    SELECT Beat__c, Beat__r.Territory__c, Day_Attendance__c
                     FROM Visit__c WHERE Id = :order.Visit__c LIMIT 1
                 ];
-                if (!visits.isEmpty() && visits[0].Beat__r != null
-                    && visits[0].Beat__r.Territory__c != null) {
-                    order.Territory__c = visits[0].Beat__r.Territory__c;
+                if (!visits.isEmpty()) {
+                    Visit__c v = visits[0];
+                    if (v.Beat__c != null && order.Beat__c == null) {
+                        order.Beat__c = v.Beat__c;
+                    }
+                    if (v.Day_Attendance__c != null && order.Day_Attendance__c == null) {
+                        order.Day_Attendance__c = v.Day_Attendance__c;
+                    }
+                    if (order.Territory__c == null
+                        && v.Beat__r != null && v.Beat__r.Territory__c != null) {
+                        order.Territory__c = v.Beat__r.Territory__c;
+                    }
                 }
             }
             if (order.Territory__c == null) {
