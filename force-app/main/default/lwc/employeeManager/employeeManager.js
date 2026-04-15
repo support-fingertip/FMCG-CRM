@@ -611,6 +611,13 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             this.showToast('Error', 'Email is required.', 'error');
             return;
         }
+        // Matches the Employee__c.Territory_Required_When_Active validation
+        // rule. Catching it here avoids a DML round-trip and shows a clean
+        // message instead of the FIELD_CUSTOM_VALIDATION_EXCEPTION text.
+        if (!this.employeeForm.Territory__c) {
+            this.showToast('Error', 'Territory is required.', 'error');
+            return;
+        }
 
         this.isLoading = true;
         try {
