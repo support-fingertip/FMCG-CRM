@@ -34,7 +34,9 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
         List<Visit__c> newRecords = (List<Visit__c>) Trigger.new;
         Map<Id, Visit__c> oldMap = (Map<Id, Visit__c>) Trigger.oldMap;
 
-        validateStatusTransitions(newRecords, oldMap);
+        // Status transition validation disabled per business request — any Visit_Status__c
+        // transition (e.g. Planned -> Completed) is now allowed.
+        // validateStatusTransitions(newRecords, oldMap);
         calculateDurationOnCompletion(newRecords, oldMap);
     }
 
