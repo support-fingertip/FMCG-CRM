@@ -227,7 +227,9 @@ public with sharing class TAM_TargetCriteria_Controller {
             SELECT Name, Object__c, Operator__c, Field__c,
                    Date_Field__c, User_Field__c,
                    Filters__c, Filter_Logic__c,
-                   Enable_Customer_Targets__c
+                   Enable_Customer_Targets__c,
+                   Category__c, Incentive_Weight__c,
+                   Prerequisite_Criteria__c, Prerequisite_Min_Percent__c
             FROM Target_Criteria__c
             WHERE Id = :criteriaId
         ];
