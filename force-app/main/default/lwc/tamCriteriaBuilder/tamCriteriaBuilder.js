@@ -704,6 +704,16 @@ export default class TamCriteriaBuilder extends LightningElement {
 
     // ===== NAVIGATION =====
     handleNext() {
+        if (this.currentStep === 1) {
+            if (!this.criteria.Name || !this.criteria.Name.trim()) {
+                this.showToast('Validation Error', 'Criteria Name is required', 'error');
+                return;
+            }
+            if (!this.criteria.Object__c) {
+                this.showToast('Validation Error', 'Please select an Object before continuing', 'error');
+                return;
+            }
+        }
         if (this.currentStep === 3) {
             const filterIds = this.filters.map(f => f.id);
             if (this.criteria.Filter_Logic__c && filterIds.length > 0) {
@@ -721,6 +731,14 @@ export default class TamCriteriaBuilder extends LightningElement {
 
     // ===== SAVE =====
     handleSave() {
+        if (!this.criteria.Name || !this.criteria.Name.trim()) {
+            this.showToast('Validation Error', 'Criteria Name is required', 'error');
+            return;
+        }
+        if (!this.criteria.Object__c) {
+            this.showToast('Validation Error', 'Please select an Object before saving', 'error');
+            return;
+        }
         // Validate filter logic before saving from any step
         if (this.filters.length > 0 && this.criteria.Filter_Logic__c) {
             const filterIds = this.filters.map(f => f.id);

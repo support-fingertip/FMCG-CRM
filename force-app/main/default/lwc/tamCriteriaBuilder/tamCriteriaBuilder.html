@@ -322,7 +322,7 @@
                             <template if:false={isEditMode}>
                                 <div class="tcb-search-box">
                                     <lightning-input type="text" label="Search Object" placeholder="Search objects..."
-                                        value={objectSearchText} onchange={handleObjectSearch}></lightning-input>
+                                        value={objectSearchText} onchange={handleObjectSearch} required></lightning-input>
                                     <template if:true={showObjectDropdown}>
                                         <div class="tcb-dropdown">
                                             <template for:each={filteredObjects} for:item="obj">
