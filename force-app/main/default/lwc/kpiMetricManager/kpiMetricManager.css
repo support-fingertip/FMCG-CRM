@@ -67,6 +67,13 @@
 }
 .kmm-toggle-row { grid-template-columns: auto auto 1fr; align-items: end; }
 
+/* Section divider */
+.kmm-section-divider {
+    border-top: 1px solid #e5e5e5; margin-top: 16px; padding-top: 16px;
+}
+.kmm-section-title { font-size: 14px; font-weight: 600; margin: 0 0 4px 0; }
+.kmm-section-hint { font-size: 12px; color: #6b6d70; margin: 0 0 12px 0; }
+
 /* Responsive */
 @media (max-width: 768px) {
     .kmm-form-row { grid-template-columns: 1fr; }

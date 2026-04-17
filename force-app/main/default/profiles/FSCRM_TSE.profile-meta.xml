@@ -366,6 +366,8 @@
     <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Allow_Forecast__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Sort_Order__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Filters_JSON__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Filter_Logic__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Description__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Configuration_JSON__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Owner_User__c</field><readable>true</readable></fieldPermissions>

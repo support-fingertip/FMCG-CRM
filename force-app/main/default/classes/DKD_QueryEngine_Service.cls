@@ -267,6 +267,16 @@ public with sharing class DKD_QueryEngine_Service {
             clauses.add('(' + metric.Default_Filter__c + ')');
         }
 
+        // 2b. Structured metric filters (from Filters_JSON__c + Filter_Logic__c)
+        if (String.isNotBlank(metric.Filters_JSON__c)) {
+            String metricFilterWhere = TAM_FilterEngine_Service.buildWhereClause(
+                metric.Filters_JSON__c, metric.Filter_Logic__c
+            );
+            if (String.isNotBlank(metricFilterWhere)) {
+                clauses.add('(' + metricFilterWhere + ')');
+            }
+        }
+
         // 3. User-provided filters (JSON)
         if (String.isNotBlank(filtersJson)) {
             String filterWhere = TAM_FilterEngine_Service.buildWhereClause(filtersJson, null);

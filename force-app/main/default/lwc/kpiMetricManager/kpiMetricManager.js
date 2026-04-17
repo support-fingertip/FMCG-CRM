@@ -5,6 +5,7 @@ import getQueryableObjects from '@salesforce/apex/DKD_MetricManager_Controller.g
 import getObjectFields from '@salesforce/apex/DKD_MetricManager_Controller.getObjectFields';
 import saveMetric from '@salesforce/apex/DKD_MetricManager_Controller.saveMetric';
 import deleteMetric from '@salesforce/apex/DKD_MetricManager_Controller.deleteMetric';
+import getFieldMetadata from '@salesforce/apex/TAM_FieldMetadata_Service.getFields';
 
 const EMPTY_FORM = {
     Id: null,
@@ -18,6 +19,8 @@ const EMPTY_FORM = {
     Date_Field__c: '',
     User_Field__c: '',
     Default_Filter__c: '',
+    Filters_JSON__c: '',
+    Filter_Logic__c: '',
     Format__c: 'Number',
     Icon__c: '',
     Color__c: '',
@@ -39,6 +42,9 @@ export default class KpiMetricManager extends LightningElement {
     @track dateFieldOptions = [];
     @track numberFieldOptions = [];
     @track userFieldOptions = [];
+    @track fieldsMetadata = [];
+    @track filters = [];
+    @track autoFilterLogic = true;
 
     connectedCallback() {
         this.loadData();
@@ -109,6 +115,9 @@ export default class KpiMetricManager extends LightningElement {
         this.dateFieldOptions = [];
         this.numberFieldOptions = [];
         this.userFieldOptions = [];
+        this.fieldsMetadata = [];
+        this.filters = [];
+        this.autoFilterLogic = true;
         this.showForm = true;
     }
 
@@ -128,6 +137,8 @@ export default class KpiMetricManager extends LightningElement {
             Date_Field__c: m.Date_Field__c || '',
             User_Field__c: m.User_Field__c || '',
             Default_Filter__c: m.Default_Filter__c || '',
+            Filters_JSON__c: m.Filters_JSON__c || '',
+            Filter_Logic__c: m.Filter_Logic__c || '',
             Format__c: m.Format__c || 'Number',
             Icon__c: m.Icon__c || '',
             Color__c: m.Color__c || '',
@@ -136,9 +147,23 @@ export default class KpiMetricManager extends LightningElement {
             Is_Active__c: m.Is_Active__c !== false,
             Sort_Order__c: m.Sort_Order__c
         };
+        this.autoFilterLogic = !this.form.Filter_Logic__c;
         this.showForm = true;
         if (this.form.Source_Object__c) {
-            this.loadFieldsForObject(this.form.Source_Object__c);
+            this.loadFieldsForObject(this.form.Source_Object__c).then(() => {
+                if (this.form.Filters_JSON__c) {
+                    try {
+                        const parsed = JSON.parse(this.form.Filters_JSON__c);
+                        this.filters = parsed.filters || [];
+                    } catch (e) {
+                        this.filters = [];
+                    }
+                } else {
+                    this.filters = [];
+                }
+            });
+        } else {
+            this.filters = [];
         }
     }
 
@@ -168,19 +193,25 @@ export default class KpiMetricManager extends LightningElement {
 
     handleObjectChange(event) {
         const objApi = event.detail.value;
-        this.form = { ...this.form, Source_Object__c: objApi, Date_Field__c: '', Aggregate_Field__c: '', User_Field__c: '' };
+        this.form = { ...this.form, Source_Object__c: objApi, Date_Field__c: '', Aggregate_Field__c: '', User_Field__c: '', Filter_Logic__c: '' };
+        this.filters = [];
+        this.autoFilterLogic = true;
         if (objApi) {
             this.loadFieldsForObject(objApi);
         } else {
             this.dateFieldOptions = [];
             this.numberFieldOptions = [];
             this.userFieldOptions = [];
+            this.fieldsMetadata = [];
         }
     }
 
     async loadFieldsForObject(objectApi) {
         try {
-            const result = await getObjectFields({ objectApiName: objectApi });
+            const [result, metadata] = await Promise.all([
+                getObjectFields({ objectApiName: objectApi }),
+                getFieldMetadata({ objectName: objectApi })
+            ]);
             const noSelection = [{ label: '-- None --', value: '' }];
             this.dateFieldOptions = noSelection.concat(
                 (result.dateFields || []).map(f => ({ label: f.label, value: f.api }))
@@ -191,6 +222,7 @@ export default class KpiMetricManager extends LightningElement {
             this.userFieldOptions = noSelection.concat(
                 (result.userFields || []).map(f => ({ label: f.label, value: f.api }))
             );
+            this.fieldsMetadata = metadata || [];
         } catch (e) {
             this.toast('Error', 'Failed to load fields: ' + this.err(e), 'error');
         }
@@ -212,6 +244,14 @@ export default class KpiMetricManager extends LightningElement {
             const payload = { ...this.form };
             if (!payload.Id) delete payload.Id;
             if (!payload.Sort_Order__c && payload.Sort_Order__c !== 0) payload.Sort_Order__c = null;
+            if (this.filters.length > 0) {
+                const cleanFilters = this.filters.map(f => ({
+                    id: f.id, field: f.field, operator: f.operator, value: f.value, type: f.type
+                }));
+                payload.Filters_JSON__c = JSON.stringify({ filters: cleanFilters });
+            } else {
+                payload.Filters_JSON__c = '';
+            }
             await saveMetric({ metric: payload });
             this.toast('Success', 'Metric "' + this.form.Label__c + '" saved.', 'success');
             this.showForm = false;
@@ -238,6 +278,25 @@ export default class KpiMetricManager extends LightningElement {
             this.toast('Delete Failed', this.err(e), 'error');
         }
     }
+
+    // ===== FILTER HANDLERS =====
+    handleFilterChange(event) {
+        this.filters = event.detail || [];
+        if (this.autoFilterLogic) {
+            this.form = {
+                ...this.form,
+                Filter_Logic__c: this.filters.map(f => f.id).join(' AND ')
+            };
+        }
+    }
+
+    handleFilterLogicChange(event) {
+        this.autoFilterLogic = false;
+        this.form = { ...this.form, Filter_Logic__c: event.target.value };
+    }
+
+    get hasFilters() { return this.filters.length > 0; }
+    get filterCount() { return this.filters.length; }
 
     // ===== HELPERS =====
     slugify(str) {

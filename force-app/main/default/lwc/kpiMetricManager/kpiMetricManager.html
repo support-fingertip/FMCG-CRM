@@ -161,10 +161,31 @@
                                 field-level-help="Hex color for the KPI card accent."></lightning-input>
                         </div>
 
-                        <!-- Row 7: Default Filter -->
-                        <lightning-textarea label="Default Filter (SOQL WHERE snippet)" value={form.Default_Filter__c}
+                        <!-- Filters Section -->
+                        <template if:true={form.Source_Object__c}>
+                            <div class="kmm-section-divider">
+                                <h3 class="kmm-section-title">Filters ({filterCount})</h3>
+                                <p class="kmm-section-hint">Add conditions that are always applied when this metric runs.</p>
+                            </div>
+                            <c-tam-filter-builder
+                                fields-metadata={fieldsMetadata}
+                                value={filters}
+                                onfilterchange={handleFilterChange}></c-tam-filter-builder>
+
+                            <template if:true={hasFilters}>
+                                <div class="kmm-form-row slds-m-top_small">
+                                    <lightning-input label="Filter Logic (e.g. 1 AND (2 OR 3))"
+                                        value={form.Filter_Logic__c}
+                                        onchange={handleFilterLogicChange}
+                                        field-level-help="Custom logic expression. If blank, all filters are joined with AND."></lightning-input>
+                                </div>
+                            </template>
+                        </template>
+
+                        <!-- Row 7: Default Filter (advanced/raw SOQL) -->
+                        <lightning-textarea label="Advanced: Raw SOQL Filter (optional)" value={form.Default_Filter__c}
                             data-field="Default_Filter__c" onchange={handleFormChange}
-                            field-level-help="Always-applied filter. Example: Status__c = 'Approved'. Do NOT include WHERE keyword."></lightning-textarea>
+                            field-level-help="Additional raw SOQL WHERE snippet applied alongside the filters above. Example: Status__c = 'Approved'. Do NOT include WHERE keyword."></lightning-textarea>
 
                         <!-- Row 8: Description -->
                         <lightning-textarea label="Description" value={form.Description__c}

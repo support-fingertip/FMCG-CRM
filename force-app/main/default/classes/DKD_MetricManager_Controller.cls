@@ -93,6 +93,7 @@ public with sharing class DKD_MetricManager_Controller {
             SELECT Id, Name, Metric_Key__c, Label__c, Description__c,
                    Source_Object__c, Aggregation__c, Aggregate_Field__c,
                    Date_Field__c, User_Field__c, Default_Filter__c,
+                   Filters_JSON__c, Filter_Logic__c,
                    Format__c, Icon__c, Color__c, Category__c,
                    Allow_Forecast__c, Is_Active__c, Sort_Order__c
             FROM KPI_Metric__c
