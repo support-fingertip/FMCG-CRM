@@ -1,9 +1,34 @@
 public class TAM_Achievement_Batch implements Database.Batchable<SObject>, Database.Stateful {
 
+    private Id targetPeriodId;
+
+    public TAM_Achievement_Batch() {
+        this.targetPeriodId = null;
+    }
+
+    public TAM_Achievement_Batch(Id periodId) {
+        this.targetPeriodId = periodId;
+    }
+
     // ===============================
     // START — Load active period rows
     // ===============================
     public Database.QueryLocator start(Database.BatchableContext bc) {
+
+        if (this.targetPeriodId != null) {
+            return Database.getQueryLocator([
+                SELECT
+                    Id,
+                    User__c,
+                    Target_Criteria__c,
+                    Target_Period__c,
+                    Target_Period__r.Start_Date__c,
+                    Target_Period__r.End_Date__c,
+                    User__r.ManagerId
+                FROM Target_Actual__c
+                WHERE Target_Period__c = :targetPeriodId
+            ]);
+        }
 
         Date today = Date.today();
 

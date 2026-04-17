@@ -272,6 +272,16 @@ public with sharing class AchievementDashboardController {
         return result;
     }
 
+    @AuraEnabled
+    public static String runAchievementCalculation(String periodId) {
+        if (String.isBlank(periodId)) {
+            throw new AuraHandledException('Please select a period before running calculation.');
+        }
+        Target_Period__c period = [SELECT Id, Name FROM Target_Period__c WHERE Id = :periodId LIMIT 1];
+        Database.executeBatch(new TAM_Achievement_Batch(periodId), 50);
+        return 'Achievement calculation started for ' + period.Name + '. Results will update shortly.';
+    }
+
     private class LeaderboardComparator implements Comparator<Map<String, Object>> {
         public Integer compare(Map<String, Object> a, Map<String, Object> b) {
             Decimal pa = (Decimal) a.get('percent');

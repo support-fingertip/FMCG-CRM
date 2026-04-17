@@ -6,6 +6,7 @@ import getTargetsAndAchievements from '@salesforce/apex/AchievementDashboardCont
 import getTrendData from '@salesforce/apex/AchievementDashboardController.getTrendData';
 import getLeaderboard from '@salesforce/apex/AchievementDashboardController.getLeaderboard';
 import getDrillDown from '@salesforce/apex/AchievementDashboardController.getDrillDown';
+import runAchievementCalculation from '@salesforce/apex/AchievementDashboardController.runAchievementCalculation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class AchievementDashboard extends LightningElement {
@@ -255,6 +256,24 @@ export default class AchievementDashboard extends LightningElement {
     }
 
     handleRefresh() { this.loadAllData(); }
+
+    handleRunCalculation() {
+        if (!this.selectedPeriod) {
+            this.showToast('No Period', 'Select a period first.', 'warning');
+            return;
+        }
+        this.isLoading = true;
+        runAchievementCalculation({ periodId: this.selectedPeriod })
+            .then(msg => {
+                this.showToast('Calculation Started', msg, 'success');
+                // eslint-disable-next-line @lwc/lwc/no-async-operation
+                setTimeout(() => { this.loadAllData(); }, 5000);
+            })
+            .catch(e => {
+                this.showToast('Error', e?.body?.message || 'Failed to run calculation', 'error');
+            })
+            .finally(() => { this.isLoading = false; });
+    }
 
     get hasKpiCards() { return this.kpiCards.length > 0; }
     get hasLeaderboard() { return this.leaderboard.length > 0; }
