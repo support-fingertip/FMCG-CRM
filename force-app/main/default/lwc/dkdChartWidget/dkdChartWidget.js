@@ -9,11 +9,21 @@ const DEFAULT_COLORS = [
 ];
 
 export default class DkdChartWidget extends LightningElement {
-    @api chartType = 'bar';
+    _chartType = 'bar';
     @api title = '';
     @api height = 300;
     @api format = 'Number';
     @api showLegend = false;
+
+    @api
+    get chartType() { return this._chartType; }
+    set chartType(value) {
+        const prev = this._chartType;
+        this._chartType = value || 'bar';
+        if (prev !== this._chartType) {
+            this._scheduleRender();
+        }
+    }
 
     _labels = [];
     _datasets = [];
