@@ -79,14 +79,19 @@ export default class DkdChartWidget extends LightningElement {
             clearTimeout(this._renderTimer);
         }
         this._pendingRender = true;
-        // Don't schedule a timer — wait for renderedCallback to confirm
-        // the canvas is in the DOM, then render from there.
+        if (this._isConnected && this.chartJsLoaded) {
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            this._renderTimer = setTimeout(() => {
+                this._renderTimer = null;
+                this._pendingRender = false;
+                this._safeRender();
+            }, 200);
+        }
     }
 
     renderedCallback() {
         if (this._pendingRender && this.chartJsLoaded && this._isConnected) {
             this._pendingRender = false;
-            // Small delay to let LWC finish all DOM mutations
             if (this._renderTimer) clearTimeout(this._renderTimer);
             // eslint-disable-next-line @lwc/lwc/no-async-operation
             this._renderTimer = setTimeout(() => {
