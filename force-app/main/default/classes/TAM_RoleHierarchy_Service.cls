@@ -1,32 +1,58 @@
 public with sharing class TAM_RoleHierarchy_Service {
 
-    private static final Integer MAX_DEPTH = 6; // Prevent infinite recursion / governor limits
+    private static Map<Id, Set<Id>> subordinateCache = new Map<Id, Set<Id>>();
+    private static Map<Id, Set<Id>> managerToDirects;
 
-    public static Set<ID> getRoleSubordinateUsers(Id userId) {
-        Set<Id> allSubRoleIds = getAllSubRoleIds(new Set<ID>{userId}, 0);
-        allSubRoleIds.add(userId);
-        return allSubRoleIds;
+    public static Set<Id> getRoleSubordinateUsers(Id userId) {
+        if (subordinateCache.containsKey(userId)) {
+            return subordinateCache.get(userId);
+        }
+
+        ensureHierarchyLoaded();
+
+        Set<Id> allSubs = new Set<Id>();
+        Set<Id> currentLevel = new Set<Id>();
+        if (managerToDirects.containsKey(userId)) {
+            currentLevel.addAll(managerToDirects.get(userId));
+        }
+
+        Integer depth = 0;
+        while (!currentLevel.isEmpty() && depth < 8) {
+            allSubs.addAll(currentLevel);
+            Set<Id> nextLevel = new Set<Id>();
+            for (Id uid : currentLevel) {
+                if (managerToDirects.containsKey(uid)) {
+                    nextLevel.addAll(managerToDirects.get(uid));
+                }
+            }
+            nextLevel.removeAll(allSubs);
+            currentLevel = nextLevel;
+            depth++;
+        }
+
+        allSubs.add(userId);
+        subordinateCache.put(userId, allSubs);
+        return allSubs;
     }
 
-    // Recursive function with depth limit and active user filter
-    private static Set<ID> getAllSubRoleIds(Set<ID> userIds, Integer depth) {
-        if (depth >= MAX_DEPTH || userIds.isEmpty()) return new Set<Id>();
-
-        Set<ID> currentRoleIds = new Set<ID>();
-
-        for (User userRole : [
-            SELECT Id FROM User
-            WHERE ManagerId IN :userIds
+    private static void ensureHierarchyLoaded() {
+        if (managerToDirects != null) return;
+        managerToDirects = new Map<Id, Set<Id>>();
+        for (User u : [
+            SELECT Id, ManagerId
+            FROM User
+            WHERE IsActive = true
             AND ManagerId != null
-            AND IsActive = true
         ]) {
-            currentRoleIds.add(userRole.Id);
+            if (!managerToDirects.containsKey(u.ManagerId)) {
+                managerToDirects.put(u.ManagerId, new Set<Id>());
+            }
+            managerToDirects.get(u.ManagerId).add(u.Id);
         }
+    }
 
-        if (!currentRoleIds.isEmpty()) {
-            currentRoleIds.addAll(getAllSubRoleIds(currentRoleIds, depth + 1));
-        }
-
-        return currentRoleIds;
+    public static void clearCache() {
+        subordinateCache = new Map<Id, Set<Id>>();
+        managerToDirects = null;
     }
 }
