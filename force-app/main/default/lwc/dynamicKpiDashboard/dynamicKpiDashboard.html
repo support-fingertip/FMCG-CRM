@@ -178,14 +178,14 @@
                         </div>
                         <div class="dkd-metric-list">
                             <template for:each={filteredMetricOptions} for:item="opt">
-                                <div class="dkd-metric-row"
+                                <div class={opt.rowClass}
                                      key={opt.value}
                                      data-metric-key={opt.value}
                                      onclick={handleMetricToggle}>
                                     <lightning-icon
                                         icon-name="utility:check"
                                         size="xx-small"
-                                        class="dkd-metric-check"></lightning-icon>
+                                        class={opt.checkClass}></lightning-icon>
                                     <span class="dkd-metric-row-label">{opt.label}</span>
                                 </div>
                             </template>
@@ -353,10 +353,18 @@
                                     placeholder="Interval..."
                                     class="dkd-ctrl-type">
                                 </lightning-combobox>
+                                <lightning-combobox
+                                    variant="label-hidden"
+                                    value={trendChartType}
+                                    options={chartTypeOptions}
+                                    onchange={handleTrendChartTypeChange}
+                                    placeholder="Chart type..."
+                                    class="dkd-ctrl-type">
+                                </lightning-combobox>
                             </div>
                         </div>
                         <c-dkd-chart-widget
-                            chart-type="line"
+                            chart-type={trendChartType}
                             labels={trendLabels}
                             chart-datasets={trendDatasets}
                             title={trendChartTitle}

@@ -281,8 +281,20 @@
     border-bottom: none;
 }
 .dkd-metric-check {
+    --sds-c-icon-color-foreground-default: #b0b0b0;
+    opacity: 0.25;
+    transition: opacity 0.15s, transform 0.15s;
+}
+.dkd-metric-check-active {
     --sds-c-icon-color-foreground-default: var(--dkd-primary);
-    opacity: 0.3;
+    opacity: 1;
+}
+.dkd-metric-row-selected {
+    background: #eef4ff;
+    font-weight: 600;
+}
+.dkd-metric-row-selected .dkd-metric-row-label {
+    color: var(--dkd-primary);
 }
 .dkd-metric-row-label {
     flex: 1;

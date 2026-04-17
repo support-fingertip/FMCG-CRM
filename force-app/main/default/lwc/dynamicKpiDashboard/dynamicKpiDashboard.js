@@ -68,6 +68,7 @@ export default class DynamicKpiDashboard extends LightningElement {
     // Trend chart (time series)
     @track selectedTrendMetric = '';
     @track selectedTrendInterval = 'MONTH';
+    @track trendChartType = 'line';
     @track trendLabels = [];
     @track trendDatasets = [];
 
@@ -195,6 +196,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             if (config.selectedGroupBy) this.selectedGroupBy = config.selectedGroupBy;
             if (config.breakdownChartType) this.breakdownChartType = config.breakdownChartType;
             if (config.selectedTrendMetric) this.selectedTrendMetric = config.selectedTrendMetric;
+            if (config.trendChartType) this.trendChartType = config.trendChartType;
             if (config.selectedTrendInterval) this.selectedTrendInterval = config.selectedTrendInterval;
             if (config.selectedForecastMetric) this.selectedForecastMetric = config.selectedForecastMetric;
             if (config.selectedForecastInterval) this.selectedForecastInterval = config.selectedForecastInterval;
@@ -220,6 +222,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             selectedGroupBy: this.selectedGroupBy,
             breakdownChartType: this.breakdownChartType,
             selectedTrendMetric: this.selectedTrendMetric,
+            trendChartType: this.trendChartType,
             selectedTrendInterval: this.selectedTrendInterval,
             selectedForecastMetric: this.selectedForecastMetric,
             selectedForecastInterval: this.selectedForecastInterval,
@@ -234,14 +237,17 @@ export default class DynamicKpiDashboard extends LightningElement {
     get isCustomRange() { return this.datePreset === 'custom'; }
 
     get filteredMetricOptions() {
-        if (!this.selectedCategory) {
-            return this.allMetrics.map(m => ({
-                label: m.category + ' — ' + m.label, value: m.key
-            }));
-        }
-        return this.allMetrics
-            .filter(m => m.category === this.selectedCategory)
-            .map(m => ({ label: m.label, value: m.key }));
+        const selected = new Set(this.selectedMetricKeys);
+        const metrics = !this.selectedCategory
+            ? this.allMetrics
+            : this.allMetrics.filter(m => m.category === this.selectedCategory);
+        return metrics.map(m => ({
+            label: !this.selectedCategory ? (m.category + ' — ' + m.label) : m.label,
+            value: m.key,
+            isSelected: selected.has(m.key),
+            rowClass: 'dkd-metric-row' + (selected.has(m.key) ? ' dkd-metric-row-selected' : ''),
+            checkClass: 'dkd-metric-check' + (selected.has(m.key) ? ' dkd-metric-check-active' : '')
+        }));
     }
 
     get chartMetricOptions() {
@@ -605,6 +611,10 @@ export default class DynamicKpiDashboard extends LightningElement {
     handleTrendMetricChange(event) {
         this.selectedTrendMetric = event.detail.value;
         this.loadTrendChart();
+    }
+
+    handleTrendChartTypeChange(event) {
+        this.trendChartType = event.detail.value;
     }
 
     handleTrendIntervalChange(event) {
