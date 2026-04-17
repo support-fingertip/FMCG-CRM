@@ -167,8 +167,7 @@ public with sharing class AchievementDashboardController {
             AND Target_Criteria__r.Active__c = true
             AND Target_Value__c > 0
             GROUP BY User__c, User__r.Name
-            ORDER BY SUM(Achievement_Value__c) DESC
-            LIMIT 20
+            HAVING SUM(Achievement_Value__c) > 0
         ];
 
         for (AggregateResult ar : aggResults) {
@@ -185,6 +184,11 @@ public with sharing class AchievementDashboardController {
             row.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
 
             results.add(row);
+        }
+
+        results.sort(new LeaderboardComparator());
+        while (results.size() > 20) {
+            results.remove(results.size() - 1);
         }
 
         return results;
@@ -266,5 +270,15 @@ public with sharing class AchievementDashboardController {
         result.put('currentYear', Date.today().year());
 
         return result;
+    }
+
+    private class LeaderboardComparator implements Comparator<Map<String, Object>> {
+        public Integer compare(Map<String, Object> a, Map<String, Object> b) {
+            Decimal pa = (Decimal) a.get('percent');
+            Decimal pb = (Decimal) b.get('percent');
+            if (pb > pa) return 1;
+            if (pb < pa) return -1;
+            return 0;
+        }
     }
 }
