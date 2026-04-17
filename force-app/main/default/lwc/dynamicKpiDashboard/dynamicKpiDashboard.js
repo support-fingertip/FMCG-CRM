@@ -811,17 +811,26 @@ export default class DynamicKpiDashboard extends LightningElement {
         };
         const lines = [header.map(esc).join(',')];
         rows.forEach(r => lines.push(r.map(esc).join(',')));
-        const csvContent = lines.join('\n');
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const csvContent = '\uFEFF' + lines.join('\n');
+
+        const a = this.template.querySelector('.dkd-download-anchor');
+        if (a) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            a.href = url;
+            a.download = filename;
+            a.style.display = '';
+            a.click();
+            a.style.display = 'none';
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            this.showToast('Exported', filename, 'success');
+            return;
+        }
+
+        // Fallback: data URI navigation
+        const encoded = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+        window.open(encoded, '_blank');
         this.showToast('Exported', filename, 'success');
     }
 

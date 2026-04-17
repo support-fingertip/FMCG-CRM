@@ -815,3 +815,4 @@
 .dkd-link { font-size: 11px; color: #0176d3; cursor: pointer; text-decoration: underline; }
 .dkd-link:hover { color: #014486; }
 .dkd-link-sep { font-size: 11px; color: #d8dde6; }
+.dkd-download-anchor { display: none; }
