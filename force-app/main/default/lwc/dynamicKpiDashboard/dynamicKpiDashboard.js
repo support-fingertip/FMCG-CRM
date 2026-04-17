@@ -823,7 +823,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             console.log('[DKD-CSV] template anchor found:', !!anchor);
 
             if (anchor) {
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+                const blob = new Blob([csvContent], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 console.log('[DKD-CSV] blob URL created:', url);
                 anchor.href = url;
