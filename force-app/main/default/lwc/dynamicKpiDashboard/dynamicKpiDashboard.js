@@ -781,6 +781,8 @@ export default class DynamicKpiDashboard extends LightningElement {
     // ── Export (Sprint 7) ────────────────────────────────────────
 
     handleExportKpis() {
+        console.log('[DKD-CSV] handleExportKpis called');
+        console.log('[DKD-CSV] kpiCards count:', this.kpiCards ? this.kpiCards.length : 0);
         if (!this.kpiCards || !this.kpiCards.length) {
             this.showToast('Nothing to export', 'Add some KPI cards first.', 'warning');
             return;
@@ -793,6 +795,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             c.prevValue,
             c.hasComparison ? (c.delta >= 0 ? '+' : '-') + c.deltaPct : ''
         ]);
+        console.log('[DKD-CSV] rows built:', rows.length);
         this._downloadCsv('kpi-dashboard-' + this._timestamp() + '.csv', header, rows);
     }
 
@@ -804,32 +807,46 @@ export default class DynamicKpiDashboard extends LightningElement {
     }
 
     _downloadCsv(filename, header, rows) {
-        const esc = v => {
-            if (v === null || v === undefined) return '';
-            const s = String(v).replace(/"/g, '""');
-            return /[",\n]/.test(s) ? '"' + s + '"' : s;
-        };
-        const lines = [header.map(esc).join(',')];
-        rows.forEach(r => lines.push(r.map(esc).join(',')));
-        const csvContent = '\uFEFF' + lines.join('\n');
+        console.log('[DKD-CSV] _downloadCsv called, filename:', filename);
+        try {
+            const esc = v => {
+                if (v === null || v === undefined) return '';
+                const s = String(v).replace(/"/g, '""');
+                return /[",\n]/.test(s) ? '"' + s + '"' : s;
+            };
+            const lines = [header.map(esc).join(',')];
+            rows.forEach(r => lines.push(r.map(esc).join(',')));
+            const csvContent = '\uFEFF' + lines.join('\n');
+            console.log('[DKD-CSV] CSV built, length:', csvContent.length);
 
-        const a = this.template.querySelector('.dkd-download-anchor');
-        if (a) {
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            a.href = url;
-            a.download = filename;
-            a.style.display = '';
-            a.click();
-            a.style.display = 'none';
-            // eslint-disable-next-line @lwc/lwc/no-async-operation
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            const anchor = this.template.querySelector('.dkd-download-anchor');
+            console.log('[DKD-CSV] template anchor found:', !!anchor);
+
+            if (anchor) {
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                console.log('[DKD-CSV] blob URL created:', url);
+                anchor.href = url;
+                anchor.download = filename;
+                anchor.style.display = '';
+                anchor.click();
+                console.log('[DKD-CSV] anchor clicked');
+                anchor.style.display = 'none';
+                // eslint-disable-next-line @lwc/lwc/no-async-operation
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                this.showToast('Exported', filename, 'success');
+                return;
+            }
+
+            console.log('[DKD-CSV] No anchor found, trying fallback');
+            const encoded = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+            window.open(encoded, '_blank');
             this.showToast('Exported', filename, 'success');
-            return;
+        } catch (err) {
+            console.error('[DKD-CSV] Error in _downloadCsv:', err);
+            this.showToast('Export Failed', String(err.message || err), 'error');
         }
-
-        // Fallback: data URI navigation
-        const encoded = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    }
         window.open(encoded, '_blank');
         this.showToast('Exported', filename, 'success');
     }
