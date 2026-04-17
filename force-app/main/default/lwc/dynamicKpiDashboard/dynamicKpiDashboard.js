@@ -847,9 +847,6 @@ export default class DynamicKpiDashboard extends LightningElement {
             this.showToast('Export Failed', String(err.message || err), 'error');
         }
     }
-        window.open(encoded, '_blank');
-        this.showToast('Exported', filename, 'success');
-    }
 
     handlePrintDashboard() {
         // Trigger browser print — CSS @media print controls the layout
