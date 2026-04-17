@@ -79,6 +79,10 @@
     transition: all 0.15s;
     font-family: inherit;
 }
+.dkd-btn lightning-icon,
+.dkd-btn-mini lightning-icon {
+    pointer-events: none;
+}
 .dkd-btn-primary {
     background: #fff;
     color: var(--dkd-primary);
