@@ -30,6 +30,44 @@
 .kd-stat-value { font-size: 24px; font-weight: 700; color: #3e3e3c; }
 .kd-stat-label { font-size: 11px; color: #6b6d70; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
+/* Highlight Row (Leaderboard + Incentive chart) */
+.kd-highlight-row { display: flex; gap: 16px; margin-bottom: 20px; }
+.kd-leaderboard-card { flex: 3; }
+.kd-chart-card-sm { flex: 2; }
+.kd-chart-body-sm { padding: 16px; height: 320px; position: relative; }
+
+/* Section Title */
+.kd-section-title { font-size: 14px; font-weight: 600; color: #54698d; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Cards */
+.kd-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; }
+.kd-card-header {
+    padding: 12px 16px; font-weight: 600; font-size: 14px; background: #f3f6f9;
+    display: flex; align-items: center; gap: 8px;
+}
+.kd-card-body { padding: 16px; max-height: 500px; overflow-y: auto; }
+
+/* Leaderboard */
+.kd-leader-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.kd-leader-row:last-child { border-bottom: none; }
+.kd-leader-info { flex: 1; }
+.kd-leader-info strong { font-size: 13px; display: block; margin-bottom: 4px; }
+.kd-leader-bar { height: 4px; background: #e5e5e5; border-radius: 2px; overflow: hidden; }
+.kd-leader-fill { height: 100%; background: linear-gradient(90deg, #0176d3, #2e844a); border-radius: 2px; transition: width 0.3s; }
+.kd-leader-stats { text-align: right; min-width: 70px; }
+.kd-leader-pct { font-size: 14px; font-weight: 700; display: block; }
+.kd-leader-val { font-size: 11px; color: #6b6d70; }
+
+/* Rank badges */
+.kd-rank-gold, .kd-rank-silver, .kd-rank-bronze, .kd-rank-default {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.kd-rank-gold { background: linear-gradient(135deg, #ffd700, #ffaa00); color: white; }
+.kd-rank-silver { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: white; }
+.kd-rank-bronze { background: linear-gradient(135deg, #cd7f32, #a0522d); color: white; }
+.kd-rank-default { background: #f3f3f3; color: #54698d; }
+
 /* KPI Cards */
 .kd-kpi-grid { display: flex; gap: 14px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
 .kd-kpi-card {
@@ -54,14 +92,12 @@
 /* Charts */
 .kd-charts-row { display: flex; gap: 16px; margin-bottom: 20px; }
 .kd-chart-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; }
-.kd-chart-trend { flex: 2; }
-.kd-chart-inc { flex: 1; }
-.kd-card-header { padding: 12px 16px; font-weight: 600; font-size: 14px; background: #f3f6f9; }
+.kd-chart-trend { flex: 1; }
+.kd-chart-criteria { flex: 1; }
 .kd-chart-body { padding: 16px; height: 280px; position: relative; }
 
-/* Card */
-.kd-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
-.kd-card-body { padding: 16px; max-height: 500px; overflow-y: auto; }
+/* Team Card */
+.kd-team-card { margin-bottom: 20px; }
 
 /* Table */
 .kd-table { width: 100%; border-collapse: collapse; }
@@ -93,5 +129,8 @@
     .kd-kpi-grid { flex-wrap: wrap; }
     .kd-kpi-card { min-width: 45%; }
     .kd-charts-row { flex-direction: column; }
+    .kd-highlight-row { flex-direction: column; }
     .kd-header { flex-direction: column; align-items: flex-start; }
+    .kd-stats-bar { flex-wrap: wrap; }
+    .kd-stat { min-width: 45%; }
 }

@@ -20,9 +20,11 @@ export default class TamKpiDashboard extends LightningElement {
     @track incentiveSummary = {};
     @track team = [];
     @track trend = [];
+    @track leaderboard = [];
 
     trendChart = null;
     incentiveChart = null;
+    criteriaChart = null;
 
     connectedCallback() {
         loadScript(this, ChartJs)
@@ -45,6 +47,7 @@ export default class TamKpiDashboard extends LightningElement {
                 this.incentiveSummary = result.incentiveSummary || {};
                 this.team = result.team || [];
                 this.trend = result.trend || [];
+                this.processLeaderboard(result.leaderboard || []);
 
                 // eslint-disable-next-line @lwc/lwc/no-async-operation
                 setTimeout(() => { this.renderCharts(); }, 300);
@@ -53,7 +56,21 @@ export default class TamKpiDashboard extends LightningElement {
             .finally(() => { this.isLoading = false; });
     }
 
-    // ===== VIEW TOGGLE =====
+    processLeaderboard(data) {
+        this.leaderboard = (data || []).map((row, idx) => {
+            const pct = Number(row.percent) || 0;
+            return {
+                ...row,
+                rank: idx + 1,
+                percentDisplay: pct.toFixed(1),
+                actualDisplay: this.fmt(row.actual),
+                progressWidth: `width: ${Math.min(pct, 100)}%`,
+                rankClass: idx === 0 ? 'kd-rank-gold' : idx === 1 ? 'kd-rank-silver' : idx === 2 ? 'kd-rank-bronze' : 'kd-rank-default',
+                percentColorClass: pct >= 100 ? 'kd-leader-pct kd-pct-green' : pct >= 70 ? 'kd-leader-pct kd-pct-amber' : 'kd-leader-pct kd-pct-red'
+            };
+        });
+    }
+
     get viewOptions() {
         return [
             { value: 'self', label: 'My KPIs', pillClass: 'kd-pill' + (this.selectedView === 'self' ? ' kd-pill-active' : '') },
@@ -74,9 +91,9 @@ export default class TamKpiDashboard extends LightningElement {
 
     handleRefresh() { this.loadData(); }
 
-    // ===== GETTERS =====
     get hasKpis() { return this.kpis.length > 0; }
     get hasTeam() { return this.team.length > 0; }
+    get hasLeaderboard() { return this.leaderboard.length > 0; }
     get showTeam() { return this.selectedView !== 'self'; }
 
     get grandPercentDisplay() { return Number(this.grandPercent).toFixed(1); }
@@ -105,6 +122,10 @@ export default class TamKpiDashboard extends LightningElement {
         });
     }
 
+    get computedLeaderboard() {
+        return this.leaderboard;
+    }
+
     get computedTeam() {
         return this.team.map(row => {
             const pct = Number(row.percent) || 0;
@@ -120,11 +141,11 @@ export default class TamKpiDashboard extends LightningElement {
         });
     }
 
-    // ===== CHARTS =====
     renderCharts() {
         if (!this.chartJsLoaded) return;
         this.renderTrendChart();
         this.renderIncentiveChart();
+        this.renderCriteriaChart();
     }
 
     renderTrendChart() {
@@ -188,7 +209,6 @@ export default class TamKpiDashboard extends LightningElement {
             s['Paid_amount'] || 0
         ];
 
-        // Only render if there's data
         if (data.every(d => d === 0)) return;
 
         this.incentiveChart = new window.Chart(canvas.getContext('2d'), {
@@ -211,7 +231,44 @@ export default class TamKpiDashboard extends LightningElement {
         });
     }
 
-    // ===== HELPERS =====
+    renderCriteriaChart() {
+        const canvas = this.template.querySelector('.kd-criteria-canvas');
+        if (!canvas || !this.kpis.length) return;
+
+        if (this.criteriaChart) this.criteriaChart.destroy();
+
+        const labels = this.kpis.map(k => k.name);
+        const percents = this.kpis.map(k => Number(k.percent) || 0);
+        const bgColors = percents.map(p => p >= 100 ? 'rgba(46,132,74,0.7)' : p >= 70 ? 'rgba(230,81,0,0.7)' : 'rgba(194,57,52,0.7)');
+
+        this.criteriaChart = new window.Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Achievement %',
+                    data: percents,
+                    backgroundColor: bgColors,
+                    borderRadius: 4,
+                    barThickness: 24
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ctx.parsed.x + '%' } }
+                },
+                scales: {
+                    x: { beginAtZero: true, max: Math.max(120, ...percents.map(p => p + 10)), ticks: { callback: v => v + '%' } },
+                    y: { ticks: { font: { size: 12 } } }
+                }
+            }
+        });
+    }
+
     fmt(val) {
         if (val == null) return '0';
         val = Number(val);

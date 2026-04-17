@@ -8,7 +8,6 @@
                 <h1>KPI Dashboard</h1>
             </div>
             <div class="kd-header-right">
-                <!-- View Toggle -->
                 <div class="kd-view-toggle">
                     <template for:each={viewOptions} for:item="v">
                         <span key={v.value} class={v.pillClass} data-value={v.value}
@@ -43,8 +42,51 @@
             </div>
         </div>
 
+        <!-- Top Performers + Incentive Breakdown -->
+        <div class="kd-highlight-row">
+            <div class="kd-card kd-leaderboard-card">
+                <div class="kd-card-header">
+                    <lightning-icon icon-name="utility:trophy" size="x-small"></lightning-icon>
+                    <span>Top Performers</span>
+                </div>
+                <div class="kd-card-body">
+                    <template if:true={hasLeaderboard}>
+                        <template for:each={computedLeaderboard} for:item="person">
+                            <div key={person.userId} class="kd-leader-row">
+                                <span class={person.rankClass}>{person.rank}</span>
+                                <div class="kd-leader-info">
+                                    <strong>{person.name}</strong>
+                                    <div class="kd-leader-bar">
+                                        <div class="kd-leader-fill" style={person.progressWidth}></div>
+                                    </div>
+                                </div>
+                                <div class="kd-leader-stats">
+                                    <span class={person.percentColorClass}>{person.percentDisplay}%</span>
+                                    <span class="kd-leader-val">{person.actualDisplay}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasLeaderboard}>
+                        <div class="kd-no-data">No performers with achievements this period</div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="kd-card kd-chart-card-sm">
+                <div class="kd-card-header">
+                    <lightning-icon icon-name="utility:money" size="x-small"></lightning-icon>
+                    <span>Incentive Breakdown</span>
+                </div>
+                <div class="kd-chart-body-sm">
+                    <canvas class="kd-incentive-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- KPI Cards -->
         <template if:true={hasKpis}>
+            <div class="kd-section-title">KPI Breakdown</div>
             <div class="kd-kpi-grid">
                 <template for:each={computedKpis} for:item="kpi">
                     <div key={kpi.key} class="kd-kpi-card">
@@ -87,23 +129,37 @@
         <!-- Charts Row -->
         <div class="kd-charts-row">
             <div class="kd-chart-card kd-chart-trend">
-                <div class="kd-card-header">Performance Trend (Last 6 Months)</div>
+                <div class="kd-card-header">
+                    <lightning-icon icon-name="utility:trending" size="x-small"></lightning-icon>
+                    <span>Performance Trend (Last 6 Months)</span>
+                </div>
                 <div class="kd-chart-body">
                     <canvas class="kd-trend-canvas"></canvas>
                 </div>
             </div>
-            <div class="kd-chart-card kd-chart-inc">
-                <div class="kd-card-header">Incentive Breakdown</div>
+            <div class="kd-chart-card kd-chart-criteria">
+                <div class="kd-card-header">
+                    <lightning-icon icon-name="utility:metrics" size="x-small"></lightning-icon>
+                    <span>Achievement by Criteria</span>
+                </div>
                 <div class="kd-chart-body">
-                    <canvas class="kd-incentive-canvas"></canvas>
+                    <template if:true={hasKpis}>
+                        <canvas class="kd-criteria-canvas"></canvas>
+                    </template>
+                    <template if:false={hasKpis}>
+                        <div class="kd-no-data">No criteria data</div>
+                    </template>
                 </div>
             </div>
         </div>
 
         <!-- Team Table (Manager/Leadership view) -->
         <template if:true={showTeam}>
-            <div class="kd-card">
-                <div class="kd-card-header">Team Performance</div>
+            <div class="kd-card kd-team-card">
+                <div class="kd-card-header">
+                    <lightning-icon icon-name="utility:people" size="x-small"></lightning-icon>
+                    <span>Team Performance</span>
+                </div>
                 <div class="kd-card-body">
                     <template if:true={hasTeam}>
                         <table class="kd-table">

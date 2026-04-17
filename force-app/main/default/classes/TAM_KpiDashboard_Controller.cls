@@ -232,6 +232,51 @@ public with sharing class TAM_KpiDashboard_Controller {
         }
         result.put('trend', trend);
 
+        // ── Top Performers (Leaderboard) ──
+        List<AggregateResult> lbAggs = [
+            SELECT User__c userId, User__r.Name userName,
+                   SUM(Target_Value__c) totalTarget,
+                   SUM(Achievement_Value__c) totalAchievement
+            FROM Target_Actual__c
+            WHERE Target_Period__c = :periodId
+            AND Target_Criteria__r.Active__c = true
+            AND Target_Value__c > 0
+            GROUP BY User__c, User__r.Name
+            HAVING SUM(Achievement_Value__c) > 0
+        ];
+
+        List<Map<String, Object>> leaderboard = new List<Map<String, Object>>();
+        for (AggregateResult ar : lbAggs) {
+            Decimal tt = (Decimal) ar.get('totalTarget');
+            Decimal ta = (Decimal) ar.get('totalAchievement');
+            tt = tt != null ? tt : 0;
+            ta = ta != null ? ta : 0;
+
+            Map<String, Object> row = new Map<String, Object>();
+            row.put('userId', (Id) ar.get('userId'));
+            row.put('name', (String) ar.get('userName'));
+            row.put('target', tt);
+            row.put('actual', ta);
+            row.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
+            leaderboard.add(row);
+        }
+
+        leaderboard.sort(new LeaderboardComparator());
+        while (leaderboard.size() > 10) {
+            leaderboard.remove(leaderboard.size() - 1);
+        }
+        result.put('leaderboard', leaderboard);
+
         return result;
+    }
+
+    private class LeaderboardComparator implements Comparator<Map<String, Object>> {
+        public Integer compare(Map<String, Object> a, Map<String, Object> b) {
+            Decimal pa = (Decimal) a.get('percent');
+            Decimal pb = (Decimal) b.get('percent');
+            if (pb > pa) return 1;
+            if (pb < pa) return -1;
+            return 0;
+        }
     }
 }

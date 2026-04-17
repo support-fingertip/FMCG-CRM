@@ -13,23 +13,23 @@ export default class AchievementDashboard extends LightningElement {
     @track isLoading = false;
     chartJsLoaded = false;
 
-    // Controls
     @track periodOptions = [];
     @track yearOptions = [];
     selectedPeriod = '';
     selectedYear = '';
     currentUserId = '';
 
-    // Data
     @track kpiCards = [];
     @track totalPercent = 0;
+    @track totalTarget = 0;
+    @track totalActual = 0;
     @track leaderboard = [];
     @track drillDown = [];
     @track trendData = [];
 
-    // Charts
     trendChart = null;
     kpiChart = null;
+    criteriaChart = null;
 
     connectedCallback() {
         this.loadChartJs();
@@ -87,12 +87,11 @@ export default class AchievementDashboard extends LightningElement {
         .finally(() => { this.isLoading = false; });
     }
 
-    // ===== DATA PROCESSING =====
     processKpiData(data) {
         if (!data) { this.kpiCards = []; return; }
 
         const criteria = data.criteria || [];
-        const colors = ['#0176d3', '#2e844a', '#7e5cef', '#e65100', '#c23934', '#00796b'];
+        const colors = ['#0176d3', '#2e844a', '#7e5cef', '#e65100', '#c23934', '#00796b', '#1565c0', '#ad1457'];
 
         this.kpiCards = criteria.map((c, i) => {
             const pct = Number(c.percent) || 0;
@@ -103,8 +102,8 @@ export default class AchievementDashboard extends LightningElement {
                 key: c.name,
                 name: c.name,
                 category: c.category || '',
-                target: this.formatNumber(c.target),
-                actual: this.formatNumber(c.actual),
+                target: this.fmt(c.target),
+                actual: this.fmt(c.actual),
                 percent: pct,
                 color: colors[i % colors.length],
                 ringOffset: offset,
@@ -114,6 +113,8 @@ export default class AchievementDashboard extends LightningElement {
         });
 
         this.totalPercent = Number(data.totalPercent) || 0;
+        this.totalTarget = Number(data.totalTarget) || 0;
+        this.totalActual = Number(data.totalAchievement) || 0;
     }
 
     processLeaderboard(data) {
@@ -123,18 +124,19 @@ export default class AchievementDashboard extends LightningElement {
                 ...row,
                 rank: idx + 1,
                 percentDisplay: pct.toFixed(1),
-                actualDisplay: this.formatNumber(row.actual),
+                actualDisplay: this.fmt(row.actual),
                 progressWidth: `width: ${Math.min(pct, 100)}%`,
-                rankClass: idx === 0 ? 'ad-rank-gold' : idx === 1 ? 'ad-rank-silver' : idx === 2 ? 'ad-rank-bronze' : 'ad-rank-default'
+                rankClass: idx === 0 ? 'ad-rank-gold' : idx === 1 ? 'ad-rank-silver' : idx === 2 ? 'ad-rank-bronze' : 'ad-rank-default',
+                percentColorClass: pct >= 100 ? 'ad-leader-pct ad-pct-green' : pct >= 70 ? 'ad-leader-pct ad-pct-amber' : 'ad-leader-pct ad-pct-red'
             };
         });
     }
 
-    // ===== CHARTS =====
     renderCharts() {
         if (!this.chartJsLoaded) return;
         this.renderTrendChart();
         this.renderKpiChart();
+        this.renderCriteriaChart();
     }
 
     renderTrendChart() {
@@ -204,7 +206,44 @@ export default class AchievementDashboard extends LightningElement {
         });
     }
 
-    // ===== EVENT HANDLERS =====
+    renderCriteriaChart() {
+        const canvas = this.template.querySelector('.ad-criteria-canvas');
+        if (!canvas || !this.kpiCards.length) return;
+
+        if (this.criteriaChart) this.criteriaChart.destroy();
+
+        const labels = this.kpiCards.map(k => k.name);
+        const percents = this.kpiCards.map(k => Number(k.percent) || 0);
+        const bgColors = percents.map(p => p >= 100 ? 'rgba(46,132,74,0.7)' : p >= 70 ? 'rgba(230,81,0,0.7)' : 'rgba(194,57,52,0.7)');
+
+        this.criteriaChart = new window.Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Achievement %',
+                    data: percents,
+                    backgroundColor: bgColors,
+                    borderRadius: 4,
+                    barThickness: 24
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ctx.parsed.x + '%' } }
+                },
+                scales: {
+                    x: { beginAtZero: true, max: Math.max(120, ...percents.map(p => p + 10)), ticks: { callback: v => v + '%' } },
+                    y: { ticks: { font: { size: 12 } } }
+                }
+            }
+        });
+    }
+
     handlePeriodChange(event) {
         this.selectedPeriod = event.target.value;
         this.loadAllData();
@@ -217,11 +256,13 @@ export default class AchievementDashboard extends LightningElement {
 
     handleRefresh() { this.loadAllData(); }
 
-    // ===== GETTERS =====
     get hasKpiCards() { return this.kpiCards.length > 0; }
     get hasLeaderboard() { return this.leaderboard.length > 0; }
     get hasDrillDown() { return this.drillDown.length > 0; }
     get hasTrendData() { return this.trendData.length > 0; }
+    get kpiCount() { return this.kpiCards.length; }
+    get totalTargetDisplay() { return this.fmt(this.totalTarget); }
+    get totalActualDisplay() { return this.fmt(this.totalActual); }
 
     get totalPercentClass() {
         return this.totalPercent >= 100 ? 'ad-pct-green' : this.totalPercent >= 70 ? 'ad-pct-amber' : 'ad-pct-red';
@@ -233,16 +274,15 @@ export default class AchievementDashboard extends LightningElement {
             return {
                 ...row,
                 percentDisplay: pct.toFixed(1),
-                targetDisplay: this.formatNumber(row.target),
-                actualDisplay: this.formatNumber(row.actual),
+                targetDisplay: this.fmt(row.target),
+                actualDisplay: this.fmt(row.actual),
                 progressWidth: `width: ${Math.min(pct, 100)}%`,
                 percentClass: pct >= 100 ? 'ad-pct-green' : pct >= 70 ? 'ad-pct-amber' : 'ad-pct-red'
             };
         });
     }
 
-    // ===== HELPERS =====
-    formatNumber(val) {
+    fmt(val) {
         if (val == null) return '0';
         val = Number(val);
         if (val >= 10000000) return (val / 10000000).toFixed(1) + 'Cr';

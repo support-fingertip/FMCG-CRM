@@ -19,18 +19,76 @@
             </div>
         </div>
 
-        <!-- Overall Achievement Banner -->
-        <template if:true={hasKpiCards}>
-            <div class="ad-banner">
-                <span class="ad-banner-label">Overall Achievement</span>
-                <span class={totalPercentClass}>
-                    <strong>{totalPercent}%</strong>
-                </span>
+        <!-- Stats Row -->
+        <div class="ad-stats-row">
+            <div class="ad-stat ad-stat-primary">
+                <span class="ad-stat-value">{totalPercent}%</span>
+                <span class="ad-stat-label">Overall Achievement</span>
             </div>
-        </template>
+            <div class="ad-stat">
+                <span class="ad-stat-value">{totalTargetDisplay}</span>
+                <span class="ad-stat-label">Total Target</span>
+            </div>
+            <div class="ad-stat">
+                <span class="ad-stat-value">{totalActualDisplay}</span>
+                <span class="ad-stat-label">Total Actual</span>
+            </div>
+            <div class="ad-stat ad-stat-kpis">
+                <span class="ad-stat-value">{kpiCount}</span>
+                <span class="ad-stat-label">KPIs Tracked</span>
+            </div>
+        </div>
+
+        <!-- Top Performers + KPI Distribution -->
+        <div class="ad-highlight-row">
+            <div class="ad-card ad-leaderboard-card">
+                <div class="ad-card-header">
+                    <lightning-icon icon-name="utility:trophy" size="x-small"></lightning-icon>
+                    <span>Top Performers</span>
+                </div>
+                <div class="ad-card-body">
+                    <template if:true={hasLeaderboard}>
+                        <template for:each={leaderboard} for:item="person">
+                            <div key={person.userId} class="ad-leader-row">
+                                <span class={person.rankClass}>{person.rank}</span>
+                                <div class="ad-leader-info">
+                                    <strong>{person.name}</strong>
+                                    <div class="ad-leader-bar">
+                                        <div class="ad-leader-fill" style={person.progressWidth}></div>
+                                    </div>
+                                </div>
+                                <div class="ad-leader-stats">
+                                    <span class={person.percentColorClass}>{person.percentDisplay}%</span>
+                                    <span class="ad-leader-val">{person.actualDisplay}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasLeaderboard}>
+                        <div class="ad-no-data">No performers with achievements this period</div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="ad-card ad-chart-card-sm">
+                <div class="ad-card-header">
+                    <lightning-icon icon-name="utility:chart" size="x-small"></lightning-icon>
+                    <span>KPI Distribution</span>
+                </div>
+                <div class="ad-chart-body-sm">
+                    <template if:true={hasKpiCards}>
+                        <canvas class="ad-kpi-canvas"></canvas>
+                    </template>
+                    <template if:false={hasKpiCards}>
+                        <div class="ad-no-data">No KPI data available</div>
+                    </template>
+                </div>
+            </div>
+        </div>
 
         <!-- KPI Cards -->
         <template if:true={hasKpiCards}>
+            <div class="ad-section-title">KPI Breakdown</div>
             <div class="ad-kpi-grid">
                 <template for:each={kpiCards} for:item="kpi">
                     <div key={kpi.key} class="ad-kpi-card">
@@ -64,9 +122,11 @@
 
         <!-- Charts Row -->
         <div class="ad-charts-row">
-            <!-- Trend Chart -->
             <div class="ad-chart-card ad-chart-trend">
-                <div class="ad-card-header">Monthly Trend</div>
+                <div class="ad-card-header">
+                    <lightning-icon icon-name="utility:trending" size="x-small"></lightning-icon>
+                    <span>Monthly Trend</span>
+                </div>
                 <div class="ad-chart-body">
                     <template if:true={hasTrendData}>
                         <canvas class="ad-trend-canvas"></canvas>
@@ -77,87 +137,61 @@
                 </div>
             </div>
 
-            <!-- KPI Distribution Chart -->
-            <div class="ad-chart-card ad-chart-kpi">
-                <div class="ad-card-header">KPI Distribution</div>
+            <div class="ad-chart-card ad-chart-criteria">
+                <div class="ad-card-header">
+                    <lightning-icon icon-name="utility:metrics" size="x-small"></lightning-icon>
+                    <span>Achievement by Criteria</span>
+                </div>
                 <div class="ad-chart-body">
                     <template if:true={hasKpiCards}>
-                        <canvas class="ad-kpi-canvas"></canvas>
+                        <canvas class="ad-criteria-canvas"></canvas>
                     </template>
                     <template if:false={hasKpiCards}>
-                        <div class="ad-no-data">No KPI data available</div>
+                        <div class="ad-no-data">No criteria data</div>
                     </template>
                 </div>
             </div>
         </div>
 
-        <!-- Bottom Row: Team Drill-Down + Leaderboard -->
-        <div class="ad-bottom-row">
-
-            <!-- Team Drill-Down -->
-            <div class="ad-card ad-team-card">
-                <div class="ad-card-header">Team Performance</div>
-                <div class="ad-card-body">
-                    <template if:true={hasDrillDown}>
-                        <table class="ad-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Target</th>
-                                    <th>Actual</th>
-                                    <th>Achievement</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template for:each={computedDrillDown} for:item="row">
-                                    <tr key={row.userId}>
-                                        <td class="ad-name-cell">{row.name}</td>
-                                        <td>{row.targetDisplay}</td>
-                                        <td>{row.actualDisplay}</td>
-                                        <td>
-                                            <div class="ad-progress-cell">
-                                                <span class={row.percentClass}>{row.percentDisplay}%</span>
-                                                <div class="ad-mini-bar">
-                                                    <div class="ad-mini-fill" style={row.progressWidth}></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </template>
-                    <template if:false={hasDrillDown}>
-                        <div class="ad-no-data">No team data. You may not have subordinates.</div>
-                    </template>
-                </div>
+        <!-- Team Performance -->
+        <div class="ad-card ad-team-card">
+            <div class="ad-card-header">
+                <lightning-icon icon-name="utility:people" size="x-small"></lightning-icon>
+                <span>Team Performance</span>
             </div>
-
-            <!-- Leaderboard -->
-            <div class="ad-card ad-leaderboard-card">
-                <div class="ad-card-header">Top Performers</div>
-                <div class="ad-card-body">
-                    <template if:true={hasLeaderboard}>
-                        <template for:each={leaderboard} for:item="person">
-                            <div key={person.userId} class="ad-leader-row">
-                                <span class={person.rankClass}>{person.rank}</span>
-                                <div class="ad-leader-info">
-                                    <strong>{person.name}</strong>
-                                    <div class="ad-leader-bar">
-                                        <div class="ad-leader-fill" style={person.progressWidth}></div>
-                                    </div>
-                                </div>
-                                <div class="ad-leader-stats">
-                                    <span class="ad-leader-pct">{person.percentDisplay}%</span>
-                                    <span class="ad-leader-val">{person.actualDisplay}</span>
-                                </div>
-                            </div>
-                        </template>
-                    </template>
-                    <template if:false={hasLeaderboard}>
-                        <div class="ad-no-data">No leaderboard data for this period</div>
-                    </template>
-                </div>
+            <div class="ad-card-body">
+                <template if:true={hasDrillDown}>
+                    <table class="ad-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Target</th>
+                                <th>Actual</th>
+                                <th>Achievement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={computedDrillDown} for:item="row">
+                                <tr key={row.userId}>
+                                    <td class="ad-name-cell">{row.name}</td>
+                                    <td>{row.targetDisplay}</td>
+                                    <td>{row.actualDisplay}</td>
+                                    <td>
+                                        <div class="ad-progress-cell">
+                                            <span class={row.percentClass}>{row.percentDisplay}%</span>
+                                            <div class="ad-mini-bar">
+                                                <div class="ad-mini-fill" style={row.progressWidth}></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+                <template if:false={hasDrillDown}>
+                    <div class="ad-no-data">No team data. You may not have subordinates.</div>
+                </template>
             </div>
         </div>
     </div>

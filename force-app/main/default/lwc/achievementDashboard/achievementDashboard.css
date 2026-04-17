@@ -8,34 +8,49 @@
 .ad-period-picker { min-width: 180px; }
 .ad-year-picker { min-width: 100px; }
 
-/* Banner */
-.ad-banner {
-    background: white; border-radius: 10px; padding: 14px 24px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 20px;
-    display: flex; align-items: center; justify-content: space-between;
+/* Stats Row */
+.ad-stats-row { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.ad-stat {
+    background: white; border-radius: 10px; padding: 16px 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05); flex: 1; min-width: 140px;
+    display: flex; flex-direction: column; align-items: center;
+    border-top: 3px solid #d8dde6;
 }
-.ad-banner-label { font-size: 14px; color: #54698d; font-weight: 500; }
-.ad-banner strong { font-size: 28px; }
+.ad-stat-primary { border-top-color: #0176d3; }
+.ad-stat-kpis { border-top-color: #7e5cef; }
+.ad-stat-value { font-size: 24px; font-weight: 700; color: #3e3e3c; }
+.ad-stat-label { font-size: 11px; color: #6b6d70; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* Highlight Row (Leaderboard + KPI Distribution) */
+.ad-highlight-row { display: flex; gap: 16px; margin-bottom: 20px; }
+.ad-leaderboard-card { flex: 3; }
+.ad-chart-card-sm { flex: 2; }
+.ad-chart-body-sm { padding: 16px; height: 320px; position: relative; }
+
+/* Section Title */
+.ad-section-title { font-size: 14px; font-weight: 600; color: #54698d; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Cards */
+.ad-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; }
+.ad-card-header {
+    padding: 12px 16px; font-weight: 600; font-size: 14px; background: #f3f6f9;
+    display: flex; align-items: center; gap: 8px;
+}
+.ad-card-body { padding: 16px; max-height: 400px; overflow-y: auto; }
 
 /* KPI Cards */
-.ad-kpi-grid {
-    display: flex; gap: 16px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;
-}
-
+.ad-kpi-grid { display: flex; gap: 16px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
 .ad-kpi-card {
     background: white; border-radius: 10px; padding: 16px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05); min-width: 160px; flex: 1;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
-
 .ad-kpi-ring { position: relative; width: 80px; height: 80px; }
 .ad-ring-svg { width: 80px; height: 80px; }
-
 .ad-kpi-ring > span {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%); font-size: 14px; font-weight: 700;
 }
-
 .ad-kpi-info { text-align: center; }
 .ad-kpi-info h3 { font-size: 13px; font-weight: 600; color: #3e3e3c; margin: 0; }
 .ad-kpi-category { font-size: 10px; color: #7e5cef; background: #f0e6ff; padding: 1px 6px; border-radius: 8px; }
@@ -45,23 +60,19 @@
 
 /* Charts Row */
 .ad-charts-row { display: flex; gap: 16px; margin-bottom: 20px; }
-.ad-chart-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); flex: 1; overflow: hidden; }
-.ad-chart-trend { flex: 2; }
-.ad-chart-kpi { flex: 1; }
-.ad-card-header { padding: 12px 16px; font-weight: 600; font-size: 14px; background: #f3f6f9; }
+.ad-chart-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; }
+.ad-chart-trend { flex: 1; }
+.ad-chart-criteria { flex: 1; }
 .ad-chart-body { padding: 16px; height: 280px; position: relative; }
 
-/* Bottom Row */
-.ad-bottom-row { display: flex; gap: 16px; }
-.ad-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); flex: 1; overflow: hidden; }
-.ad-card-body { padding: 16px; max-height: 400px; overflow-y: auto; }
+/* Team Card */
+.ad-team-card { margin-bottom: 20px; }
 
 /* Table */
 .ad-table { width: 100%; border-collapse: collapse; }
-.ad-table th { padding: 8px 12px; font-size: 11px; font-weight: 600; color: #54698d; text-transform: uppercase; border-bottom: 2px solid #e5e5e5; text-align: left; }
-.ad-table td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+.ad-table th { padding: 10px 14px; font-size: 11px; font-weight: 600; color: #54698d; text-transform: uppercase; border-bottom: 2px solid #e5e5e5; text-align: left; }
+.ad-table td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
 .ad-name-cell { font-weight: 600; color: #3e3e3c; }
-
 .ad-progress-cell { display: flex; flex-direction: column; gap: 3px; }
 .ad-mini-bar { height: 4px; background: #e5e5e5; border-radius: 2px; overflow: hidden; }
 .ad-mini-fill { height: 100%; background: linear-gradient(90deg, #0176d3, #2e844a); border-radius: 2px; transition: width 0.3s; }
@@ -106,7 +117,9 @@
     .ad-kpi-grid { flex-wrap: wrap; }
     .ad-kpi-card { min-width: 140px; flex-basis: 45%; }
     .ad-charts-row { flex-direction: column; }
-    .ad-bottom-row { flex-direction: column; }
+    .ad-highlight-row { flex-direction: column; }
     .ad-header { flex-direction: column; gap: 12px; }
     .ad-header-right { flex-wrap: wrap; }
+    .ad-stats-row { flex-wrap: wrap; }
+    .ad-stat { min-width: 45%; }
 }
