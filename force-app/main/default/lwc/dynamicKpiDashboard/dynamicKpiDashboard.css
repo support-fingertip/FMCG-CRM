@@ -90,6 +90,32 @@
     --sds-c-button-neutral-color-background-hover: rgba(255,255,255,0.25);
     --sds-c-button-text-color-hover: #fff;
 }
+.dkd-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    transition: background 0.15s;
+    user-select: none;
+}
+.dkd-action-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+.dkd-action-btn-primary {
+    background: #fff;
+    color: var(--dkd-primary, #0176d3);
+    border-color: #fff;
+}
+.dkd-action-btn-primary:hover {
+    background: rgba(255,255,255,0.9);
+}
 .dkd-btn-primary {
     background: #fff;
     color: var(--dkd-primary);

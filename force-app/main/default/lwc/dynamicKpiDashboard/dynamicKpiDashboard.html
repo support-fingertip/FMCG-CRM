@@ -25,18 +25,10 @@
                         class="dkd-auto-refresh-picker">
                     </lightning-combobox>
                 </div>
-                <lightning-button label="CSV" icon-name="utility:download"
-                    variant="neutral" onclick={handleExportKpis}
-                    title="Export KPI cards to CSV" class="dkd-header-btn"></lightning-button>
-                <lightning-button label="Print" icon-name="utility:print"
-                    variant="neutral" onclick={handlePrintDashboard}
-                    title="Print / save as PDF" class="dkd-header-btn"></lightning-button>
-                <lightning-button label="Filters" icon-name={toggleFilterIcon}
-                    variant="neutral" onclick={handleToggleFilterPanel}
-                    title="Toggle filter panel" class="dkd-header-btn"></lightning-button>
-                <lightning-button label="Refresh" icon-name="utility:refresh"
-                    variant="brand" onclick={handleRefresh}
-                    title="Refresh data" class="dkd-header-btn"></lightning-button>
+                <span class="dkd-action-btn" onclick={handleExportKpis} role="button" tabindex="0">&#x2913; CSV</span>
+                <span class="dkd-action-btn" onclick={handlePrintDashboard} role="button" tabindex="0">&#x1F5B6; Print</span>
+                <span class="dkd-action-btn" onclick={handleToggleFilterPanel} role="button" tabindex="0">&#x2630; Filters</span>
+                <span class="dkd-action-btn dkd-action-btn-primary" onclick={handleRefresh} role="button" tabindex="0">&#x21BB; Refresh</span>
             </div>
         </div>
 
