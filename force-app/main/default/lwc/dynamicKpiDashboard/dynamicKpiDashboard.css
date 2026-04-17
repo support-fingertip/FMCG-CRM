@@ -83,6 +83,13 @@
 .dkd-btn-mini lightning-icon {
     pointer-events: none;
 }
+.dkd-header-btn {
+    --sds-c-button-neutral-color-background: rgba(255,255,255,0.15);
+    --sds-c-button-neutral-color-border: rgba(255,255,255,0.4);
+    --sds-c-button-text-color: #fff;
+    --sds-c-button-neutral-color-background-hover: rgba(255,255,255,0.25);
+    --sds-c-button-text-color-hover: #fff;
+}
 .dkd-btn-primary {
     background: #fff;
     color: var(--dkd-primary);

@@ -25,22 +25,18 @@
                         class="dkd-auto-refresh-picker">
                     </lightning-combobox>
                 </div>
-                <button class="dkd-btn dkd-btn-ghost" onclick={handleExportKpis} title="Export KPI cards to CSV">
-                    <lightning-icon icon-name="utility:download" size="xx-small"></lightning-icon>
-                    CSV
-                </button>
-                <button class="dkd-btn dkd-btn-ghost" onclick={handlePrintDashboard} title="Print / save as PDF">
-                    <lightning-icon icon-name="utility:print" size="xx-small"></lightning-icon>
-                    Print
-                </button>
-                <button class="dkd-btn dkd-btn-ghost" onclick={handleToggleFilterPanel} title="Toggle filter panel">
-                    <lightning-icon icon-name={toggleFilterIcon} size="xx-small"></lightning-icon>
-                    Filters
-                </button>
-                <button class="dkd-btn dkd-btn-primary" onclick={handleRefresh} title="Refresh data">
-                    <lightning-icon icon-name="utility:refresh" size="xx-small" variant="inverse"></lightning-icon>
-                    Refresh
-                </button>
+                <lightning-button label="CSV" icon-name="utility:download"
+                    variant="neutral" onclick={handleExportKpis}
+                    title="Export KPI cards to CSV" class="dkd-header-btn"></lightning-button>
+                <lightning-button label="Print" icon-name="utility:print"
+                    variant="neutral" onclick={handlePrintDashboard}
+                    title="Print / save as PDF" class="dkd-header-btn"></lightning-button>
+                <lightning-button label="Filters" icon-name={toggleFilterIcon}
+                    variant="neutral" onclick={handleToggleFilterPanel}
+                    title="Toggle filter panel" class="dkd-header-btn"></lightning-button>
+                <lightning-button label="Refresh" icon-name="utility:refresh"
+                    variant="brand" onclick={handleRefresh}
+                    title="Refresh data" class="dkd-header-btn"></lightning-button>
             </div>
         </div>
 
