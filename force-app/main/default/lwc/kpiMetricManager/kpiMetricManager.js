@@ -76,6 +76,7 @@ export default class KpiMetricManager extends LightningElement {
     get formTitle() { return this.form.Id ? 'Edit Metric' : 'New Metric'; }
     get saveButtonLabel() { return this.isSaving ? 'Saving...' : 'Save'; }
     get noObjectSelected() { return !this.form.Source_Object__c; }
+    get hasObjectSelected() { return !!this.form.Source_Object__c; }
     get aggregateFieldDisabled() { return !this.form.Source_Object__c || this.form.Aggregation__c === 'COUNT'; }
 
     get categoryOptions() {

@@ -162,7 +162,7 @@
                         </div>
 
                         <!-- Filters Section -->
-                        <template if:true={form.Source_Object__c}>
+                        <template if:true={hasObjectSelected}>
                             <div class="kmm-section-divider">
                                 <h3 class="kmm-section-title">Filters ({filterCount})</h3>
                                 <p class="kmm-section-hint">Add conditions that are always applied when this metric runs.</p>
