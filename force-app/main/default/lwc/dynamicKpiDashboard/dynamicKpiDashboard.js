@@ -48,6 +48,7 @@ export default class DynamicKpiDashboard extends LightningElement {
     @track datePreset = 'mtd';
     @track userScope = 'self';
     @track selectedCategory = '';
+    @track selectedTerritory = '';
     @track selectedMetricKeys = [];
 
     // Data
@@ -188,6 +189,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             if (config.dateFrom) this.dateFrom = config.dateFrom;
             if (config.dateTo) this.dateTo = config.dateTo;
             if (config.selectedCategory !== undefined) this.selectedCategory = config.selectedCategory;
+            if (config.selectedTerritory !== undefined) this.selectedTerritory = config.selectedTerritory;
             if (Array.isArray(config.selectedMetricKeys)) this.selectedMetricKeys = [...config.selectedMetricKeys];
             if (config.selectedChartMetric) this.selectedChartMetric = config.selectedChartMetric;
             if (config.selectedGroupBy) this.selectedGroupBy = config.selectedGroupBy;
@@ -212,6 +214,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             dateFrom: this.dateFrom,
             dateTo: this.dateTo,
             selectedCategory: this.selectedCategory,
+            selectedTerritory: this.selectedTerritory,
             selectedMetricKeys: [...this.selectedMetricKeys],
             selectedChartMetric: this.selectedChartMetric,
             selectedGroupBy: this.selectedGroupBy,
@@ -258,40 +261,57 @@ export default class DynamicKpiDashboard extends LightningElement {
     }
 
     get groupByOptions() {
-        // Options depend on the source object of the selected chart metric.
         const metric = this.allMetrics.find(m => m.key === this.selectedChartMetric);
         const obj = metric ? metric.sourceObject : '';
-        const base = [
-            { label: 'Status', value: 'Status__c' }
-        ];
         if (obj === 'Sales_Order__c') {
             return [
                 { label: 'Status', value: 'Status__c' },
                 { label: 'Channel', value: 'Channel__c' },
                 { label: 'Territory', value: 'Territory__c' },
-                { label: 'Order Type', value: 'Order_Type__c' }
+                { label: 'Order Type', value: 'Order_Type__c' },
+                { label: 'Salesperson', value: 'Salesperson__c' },
+                { label: 'Beat', value: 'Beat__c' }
+            ];
+        }
+        if (obj === 'Order_Line_Item__c') {
+            return [
+                { label: 'Product', value: 'Product__c' },
+                { label: 'Product Category', value: 'Product_Category__c' },
+                { label: 'UOM', value: 'UOM__c' }
             ];
         }
         if (obj === 'Visit__c') {
             return [
                 { label: 'Status', value: 'Visit_Status__c' },
                 { label: 'Is Productive', value: 'Is_Productive__c' },
-                { label: 'Is Ad-Hoc', value: 'Is_Ad_Hoc__c' }
+                { label: 'Is Ad-Hoc', value: 'Is_Ad_Hoc__c' },
+                { label: 'Beat', value: 'Beat__c' },
+                { label: 'Salesperson', value: 'Salesperson__c' }
             ];
         }
         if (obj === 'Collection__c') {
             return [
                 { label: 'Payment Mode', value: 'Payment_Mode__c' },
-                { label: 'Status', value: 'Status__c' }
+                { label: 'Status', value: 'Status__c' },
+                { label: 'Salesperson', value: 'Salesperson__c' }
             ];
         }
         if (obj === 'Account') {
             return [
                 { label: 'Type', value: 'Type' },
-                { label: 'Channel', value: 'Channel__c' }
+                { label: 'Channel', value: 'Channel__c' },
+                { label: 'Outlet Type', value: 'Outlet_Type__c' },
+                { label: 'Territory', value: 'Territory__c' }
             ];
         }
-        return base;
+        if (obj === 'Return_Order__c') {
+            return [
+                { label: 'Status', value: 'Status__c' },
+                { label: 'Return Reason', value: 'Return_Reason__c' },
+                { label: 'Salesperson', value: 'Salesperson__c' }
+            ];
+        }
+        return [{ label: 'Status', value: 'Status__c' }];
     }
 
     get trendIntervalOptions() {
@@ -434,6 +454,10 @@ export default class DynamicKpiDashboard extends LightningElement {
         if (this.selectedCategory) {
             chips.push({ key: 'cat', label: 'Category: ' + this.selectedCategory });
         }
+        if (this.selectedTerritory) {
+            const t = this.territoryOptions.find(o => o.value === this.selectedTerritory);
+            chips.push({ key: 'terr', label: 'Territory: ' + (t ? t.label : this.selectedTerritory) });
+        }
         return chips;
     }
 
@@ -528,6 +552,30 @@ export default class DynamicKpiDashboard extends LightningElement {
 
     handleScopeChange(event) { this.userScope = event.detail.value; }
     handleCategoryChange(event) { this.selectedCategory = event.detail.value; }
+    handleTerritoryChange(event) { this.selectedTerritory = event.detail.value; }
+
+    handleSelectAllMetrics() {
+        this.selectedMetricKeys = this.filteredMetricOptions.map(m => m.value);
+    }
+
+    handleClearMetrics() {
+        this.selectedMetricKeys = [];
+    }
+
+    buildFiltersJson() {
+        const filters = [];
+        let id = 1;
+        if (this.selectedTerritory) {
+            filters.push({ id: id++, field: 'Territory__c', operator: 'equals', value: this.selectedTerritory, type: 'STRING' });
+        }
+        if (filters.length === 0) return null;
+        return JSON.stringify({ filters });
+    }
+
+    validateDateRange() {
+        if (!this.dateFrom || !this.dateTo) return true;
+        return this.dateFrom <= this.dateTo;
+    }
 
     handleMetricToggle(event) {
         const key = event.currentTarget.dataset.metricKey;
@@ -588,6 +636,7 @@ export default class DynamicKpiDashboard extends LightningElement {
     handleResetFilters() {
         this.userScope = 'self';
         this.selectedCategory = '';
+        this.selectedTerritory = '';
         this.datePreset = 'mtd';
         this.applyDatePreset('mtd');
         this.refreshData();
@@ -608,7 +657,9 @@ export default class DynamicKpiDashboard extends LightningElement {
 
     get autoRefreshLabel() {
         if (this.autoRefreshInterval === 'off') return 'Auto-refresh: Off';
-        return 'Auto-refresh: every ' + this.autoRefreshInterval + 's';
+        const s = parseInt(this.autoRefreshInterval, 10);
+        if (s >= 60) return 'Auto-refresh: every ' + (s / 60) + ' min';
+        return 'Auto-refresh: every ' + s + 's';
     }
 
     handleAutoRefreshChange(event) {
@@ -665,7 +716,7 @@ export default class DynamicKpiDashboard extends LightningElement {
         try {
             const result = await drillDown({
                 metricKey: metricKey,
-                filtersJson: null,
+                filtersJson: this.buildFiltersJson(),
                 groupBy: groupBy || null,
                 groupKey: groupKey || null,
                 dateFrom: this.dateFrom,
@@ -796,7 +847,7 @@ export default class DynamicKpiDashboard extends LightningElement {
         try {
             const result = await getInsights({
                 metricKeys: this.selectedMetricKeys,
-                filtersJson: null,
+                filtersJson: this.buildFiltersJson(),
                 dateFrom: this.dateFrom,
                 dateTo: this.dateTo,
                 userScope: this.userScope
@@ -923,21 +974,26 @@ export default class DynamicKpiDashboard extends LightningElement {
             this.isLoading = false;
             return;
         }
+        if (!this.validateDateRange()) {
+            this.showToast('Invalid Date Range', 'From date must be before To date.', 'error');
+            return;
+        }
         this.isLoading = true;
         let current = {};
         let previous = {};
+        const fJson = this.buildFiltersJson();
         try {
             const kpiResults = await Promise.allSettled([
                 getKpiValues({
                     metricKeys: this.selectedMetricKeys,
-                    filtersJson: null,
+                    filtersJson: fJson,
                     dateFrom: this.dateFrom,
                     dateTo: this.dateTo,
                     userScope: this.userScope
                 }),
                 getPreviousPeriodValues({
                     metricKeys: this.selectedMetricKeys,
-                    filtersJson: null,
+                    filtersJson: fJson,
                     dateFrom: this.dateFrom,
                     dateTo: this.dateTo,
                     userScope: this.userScope
@@ -972,7 +1028,7 @@ export default class DynamicKpiDashboard extends LightningElement {
         try {
             const rows = await getMetricData({
                 metricKey: this.selectedChartMetric,
-                filtersJson: null,
+                filtersJson: this.buildFiltersJson(),
                 groupBy: this.selectedGroupBy,
                 dateFrom: this.dateFrom,
                 dateTo: this.dateTo,
@@ -1002,7 +1058,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             const trendFrom = this.extendedTrendStart();
             const rows = await getTimeSeries({
                 metricKey: this.selectedTrendMetric,
-                filtersJson: null,
+                filtersJson: this.buildFiltersJson(),
                 dateFrom: trendFrom,
                 dateTo: this.dateTo,
                 interval: this.selectedTrendInterval,
@@ -1062,7 +1118,7 @@ export default class DynamicKpiDashboard extends LightningElement {
             const fromDate = this.extendedWindowStart(this.selectedForecastInterval);
             const result = await getForecast({
                 metricKey: this.selectedForecastMetric,
-                filtersJson: null,
+                filtersJson: this.buildFiltersJson(),
                 dateFrom: fromDate,
                 dateTo: this.dateTo,
                 interval: this.selectedForecastInterval,

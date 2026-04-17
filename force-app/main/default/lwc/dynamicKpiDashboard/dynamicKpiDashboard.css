@@ -797,3 +797,9 @@
         display: none !important;
     }
 }
+
+/* Metric select/clear links */
+.dkd-metric-actions { display: flex; gap: 4px; margin-bottom: 6px; }
+.dkd-link { font-size: 11px; color: #0176d3; cursor: pointer; text-decoration: underline; }
+.dkd-link:hover { color: #014486; }
+.dkd-link-sep { font-size: 11px; color: #d8dde6; }
