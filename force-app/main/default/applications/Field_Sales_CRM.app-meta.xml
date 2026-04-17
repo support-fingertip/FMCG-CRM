@@ -17,6 +17,7 @@
     <tabs>Achievement_Dashboard</tabs>
     <tabs>Dynamic_KPI_Dashboard</tabs>
     <tabs>KPI_Metric__c</tabs>
+    <tabs>KPI_Metric_Manager</tabs>
     <tabs>Dashboard_View__c</tabs>
     <tabs>Visit__c</tabs>
     <tabs>Visit_Manager</tabs>
