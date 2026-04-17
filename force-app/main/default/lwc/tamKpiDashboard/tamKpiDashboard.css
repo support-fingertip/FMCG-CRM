@@ -6,6 +6,7 @@
 .kd-header h1 { font-size: 24px; font-weight: 700; }
 .kd-header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .kd-period-picker { min-width: 180px; }
+.kd-compare-picker { min-width: 180px; }
 
 /* View Toggle */
 .kd-view-toggle { display: flex; gap: 4px; }
@@ -30,7 +31,22 @@
 .kd-stat-value { font-size: 24px; font-weight: 700; color: #3e3e3c; }
 .kd-stat-label { font-size: 11px; color: #6b6d70; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-/* Highlight Row (Leaderboard + Incentive chart) */
+/* KPI Filter Bar */
+.kd-filter-bar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
+    padding: 12px 16px; background: white; border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05); flex-wrap: wrap;
+}
+.kd-filter-label { font-size: 12px; font-weight: 600; color: #54698d; margin-right: 4px; }
+.kd-filter-pill {
+    padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600;
+    background: #f3f3f3; color: #6b6d70; cursor: pointer; transition: all 0.15s;
+    border: 1px solid #e5e5e5; user-select: none;
+}
+.kd-filter-pill:hover { background: #e5e5e5; border-color: #c0c0c0; }
+.kd-filter-pill-active { background: #eef4ff; color: #0176d3; border-color: #0176d3; }
+
+/* Highlight Row (Leaderboard + Incentive) */
 .kd-highlight-row { display: flex; gap: 16px; margin-bottom: 20px; }
 .kd-leaderboard-card { flex: 3; }
 .kd-chart-card-sm { flex: 2; }
@@ -45,7 +61,12 @@
     padding: 12px 16px; font-weight: 600; font-size: 14px; background: #f3f6f9;
     display: flex; align-items: center; gap: 8px;
 }
+.kd-card-header-flex { justify-content: space-between; }
+.kd-card-header-left { display: flex; align-items: center; gap: 8px; }
 .kd-card-body { padding: 16px; max-height: 500px; overflow-y: auto; }
+
+/* Chart Type Toggle */
+.kd-chart-type-toggle { display: flex; gap: 4px; }
 
 /* Leaderboard */
 .kd-leader-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
@@ -133,4 +154,5 @@
     .kd-header { flex-direction: column; align-items: flex-start; }
     .kd-stats-bar { flex-wrap: wrap; }
     .kd-stat { min-width: 45%; }
+    .kd-filter-bar { flex-wrap: wrap; }
 }

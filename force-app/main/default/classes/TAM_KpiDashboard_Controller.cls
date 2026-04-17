@@ -270,6 +270,46 @@ public with sharing class TAM_KpiDashboard_Controller {
         return result;
     }
 
+    @AuraEnabled(cacheable=false)
+    public static List<Map<String, Object>> getComparisonKpis(String periodId, String viewType) {
+        if (String.isBlank(periodId)) return new List<Map<String, Object>>();
+
+        Id userId = UserInfo.getUserId();
+        Set<Id> scopeUserIds = new Set<Id>();
+        if (viewType == 'self') {
+            scopeUserIds.add(userId);
+        } else {
+            scopeUserIds = TAM_RoleHierarchy_Service.getRoleSubordinateUsers(userId);
+        }
+
+        List<AggregateResult> aggs = [
+            SELECT Target_Criteria__r.Name criteriaName,
+                   SUM(Target_Value__c) totalTarget,
+                   SUM(Achievement_Value__c) totalActual
+            FROM Target_Actual__c
+            WHERE Target_Period__c = :periodId
+            AND User__c IN :scopeUserIds
+            AND Target_Criteria__r.Active__c = true
+            GROUP BY Target_Criteria__r.Name
+        ];
+
+        List<Map<String, Object>> kpis = new List<Map<String, Object>>();
+        for (AggregateResult ar : aggs) {
+            Decimal tt = (Decimal) ar.get('totalTarget');
+            Decimal ta = (Decimal) ar.get('totalActual');
+            tt = tt != null ? tt : 0;
+            ta = ta != null ? ta : 0;
+
+            Map<String, Object> kpi = new Map<String, Object>();
+            kpi.put('name', (String) ar.get('criteriaName'));
+            kpi.put('target', tt);
+            kpi.put('actual', ta);
+            kpi.put('percent', tt > 0 ? (ta / tt * 100).setScale(1, RoundingMode.HALF_UP) : 0);
+            kpis.add(kpi);
+        }
+        return kpis;
+    }
+
     private class LeaderboardComparator implements Comparator<Map<String, Object>> {
         public Integer compare(Map<String, Object> a, Map<String, Object> b) {
             Decimal pa = (Decimal) a.get('percent');
