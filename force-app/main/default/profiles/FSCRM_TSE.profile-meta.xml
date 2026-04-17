@@ -366,6 +366,13 @@
     <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Allow_Forecast__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Sort_Order__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Metric_Key__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Label__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Source_Object__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Aggregation__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Date_Field__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Format__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>KPI_Metric__c.Category__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Description__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Configuration_JSON__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Dashboard_View__c.Owner_User__c</field><readable>true</readable></fieldPermissions>
@@ -714,6 +721,7 @@
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOff</visibility></tabVisibilities>
     <tabVisibilities><tab>Dynamic_KPI_Dashboard</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>KPI_Metric__c</tab><visibility>DefaultOff</visibility></tabVisibilities>
+    <tabVisibilities><tab>KPI_Metric_Manager</tab><visibility>DefaultOff</visibility></tabVisibilities>
     <tabVisibilities><tab>Dashboard_View__c</tab><visibility>DefaultOff</visibility></tabVisibilities>
     <userLicense>Salesforce</userLicense>
     <userPermissions>
