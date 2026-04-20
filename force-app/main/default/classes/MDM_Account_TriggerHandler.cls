@@ -205,23 +205,42 @@ public with sharing class MDM_Account_TriggerHandler {
             return;
         }
 
-        List<Account> accountsToUpdate = new List<Account>();
-        for (Id accId : accountIds) {
-            List<Sales_Order__c> latestOrders = [
-                SELECT Order_Date__c, Total_Net_Amount__c
-                FROM Sales_Order__c
-                WHERE Account__c = :accId
-                AND Status__c NOT IN ('Cancelled', 'Rejected')
-                ORDER BY Order_Date__c DESC
-                LIMIT 1
-            ];
-            if (!latestOrders.isEmpty()) {
-                accountsToUpdate.add(new Account(
-                    Id = accId,
-                    Last_Order_Date__c = latestOrders[0].Order_Date__c,
-                    Last_Order_Value__c = latestOrders[0].Total_Net_Amount__c
-                ));
+        // Single aggregate query: latest order date per account + the matching amount
+        Map<Id, Date> latestOrderDateByAcc = new Map<Id, Date>();
+        for (AggregateResult ar : [
+            SELECT Account__c accId, MAX(Order_Date__c) maxDate
+            FROM Sales_Order__c
+            WHERE Account__c IN :accountIds
+            AND Status__c NOT IN ('Cancelled', 'Rejected')
+            GROUP BY Account__c
+        ]) {
+            latestOrderDateByAcc.put((Id) ar.get('accId'), (Date) ar.get('maxDate'));
+        }
+
+        if (latestOrderDateByAcc.isEmpty()) return;
+
+        // Fetch the order value for each (Account, max date) pair in one query
+        Map<Id, Decimal> amountByAcc = new Map<Id, Decimal>();
+        for (Sales_Order__c so : [
+            SELECT Account__c, Order_Date__c, Total_Net_Amount__c
+            FROM Sales_Order__c
+            WHERE Account__c IN :latestOrderDateByAcc.keySet()
+            AND Status__c NOT IN ('Cancelled', 'Rejected')
+            AND Order_Date__c IN :latestOrderDateByAcc.values()
+        ]) {
+            Date expected = latestOrderDateByAcc.get(so.Account__c);
+            if (expected != null && so.Order_Date__c == expected && !amountByAcc.containsKey(so.Account__c)) {
+                amountByAcc.put(so.Account__c, so.Total_Net_Amount__c);
             }
+        }
+
+        List<Account> accountsToUpdate = new List<Account>();
+        for (Id accId : latestOrderDateByAcc.keySet()) {
+            accountsToUpdate.add(new Account(
+                Id = accId,
+                Last_Order_Date__c = latestOrderDateByAcc.get(accId),
+                Last_Order_Value__c = amountByAcc.get(accId)
+            ));
         }
 
         if (!accountsToUpdate.isEmpty()) {
@@ -239,20 +258,21 @@ public with sharing class MDM_Account_TriggerHandler {
             return;
         }
 
+        // Single aggregate query
         List<Account> accountsToUpdate = new List<Account>();
-        for (Id accId : accountIds) {
-            List<Visit__c> latestVisits = [
-                SELECT Visit_Date__c
-                FROM Visit__c
-                WHERE Account__c = :accId
-                AND Visit_Status__c = 'Completed'
-                ORDER BY Visit_Date__c DESC
-                LIMIT 1
-            ];
-            if (!latestVisits.isEmpty()) {
+        for (AggregateResult ar : [
+            SELECT Account__c accId, MAX(Visit_Date__c) maxDate
+            FROM Visit__c
+            WHERE Account__c IN :accountIds
+            AND Visit_Status__c = 'Completed'
+            GROUP BY Account__c
+        ]) {
+            Id accId = (Id) ar.get('accId');
+            Date maxDate = (Date) ar.get('maxDate');
+            if (maxDate != null) {
                 accountsToUpdate.add(new Account(
                     Id = accId,
-                    Last_Visit_Date__c = latestVisits[0].Visit_Date__c
+                    Last_Visit_Date__c = maxDate
                 ));
             }
         }

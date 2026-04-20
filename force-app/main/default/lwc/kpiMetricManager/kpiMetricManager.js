@@ -151,18 +151,23 @@ export default class KpiMetricManager extends LightningElement {
         this.autoFilterLogic = !this.form.Filter_Logic__c;
         this.showForm = true;
         if (this.form.Source_Object__c) {
-            this.loadFieldsForObject(this.form.Source_Object__c).then(() => {
-                if (this.form.Filters_JSON__c) {
-                    try {
-                        const parsed = JSON.parse(this.form.Filters_JSON__c);
-                        this.filters = parsed.filters || [];
-                    } catch (e) {
+            this.loadFieldsForObject(this.form.Source_Object__c)
+                .then(() => {
+                    if (this.form.Filters_JSON__c) {
+                        try {
+                            const parsed = JSON.parse(this.form.Filters_JSON__c);
+                            this.filters = parsed.filters || [];
+                        } catch (e) {
+                            this.filters = [];
+                        }
+                    } else {
                         this.filters = [];
                     }
-                } else {
+                })
+                .catch(e => {
                     this.filters = [];
-                }
-            });
+                    this.toast('Error', 'Failed to load filter metadata: ' + this.err(e), 'error');
+                });
         } else {
             this.filters = [];
         }
