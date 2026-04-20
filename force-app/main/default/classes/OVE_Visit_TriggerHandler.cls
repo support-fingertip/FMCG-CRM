@@ -37,6 +37,27 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
         // Status transition validation disabled per business request — any Visit_Status__c
         // transition (e.g. Planned -> Completed) is now allowed.
         // validateStatusTransitions(newRecords, oldMap);
+
+        // Geo-fence check on check-in: users typically update an existing
+        // Planned visit by setting Check_In_Latitude/Longitude, so this MUST
+        // run on update too. Filter to only the records where check-in
+        // coordinates are being set or changed to avoid re-validating on
+        // every field tweak.
+        List<Visit__c> toValidate = new List<Visit__c>();
+        for (Visit__c rec : newRecords) {
+            Visit__c oldRec = oldMap.get(rec.Id);
+            Boolean latChanged = rec.Check_In_Latitude__c != null
+                && rec.Check_In_Latitude__c != oldRec.Check_In_Latitude__c;
+            Boolean lngChanged = rec.Check_In_Longitude__c != null
+                && rec.Check_In_Longitude__c != oldRec.Check_In_Longitude__c;
+            if (latChanged || lngChanged) {
+                toValidate.add(rec);
+            }
+        }
+        if (!toValidate.isEmpty()) {
+            validateGeoFence(toValidate);
+        }
+
         calculateDurationOnCompletion(newRecords, oldMap);
     }
 
