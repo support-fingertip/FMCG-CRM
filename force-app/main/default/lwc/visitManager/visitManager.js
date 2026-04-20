@@ -8,6 +8,7 @@ import selectBeatApex from '@salesforce/apex/VisitManagerController.selectBeat';
 import switchBeatApex from '@salesforce/apex/VisitManagerController.switchBeat';
 import checkInVisitApex from '@salesforce/apex/VisitManagerController.checkInVisit';
 import checkGeofence from '@salesforce/apex/AccountGeolocation_Controller.checkGeofence';
+import saveAccountLocation from '@salesforce/apex/AccountGeolocation_Controller.saveAccountLocation';
 import checkOutVisitApex from '@salesforce/apex/VisitManagerController.checkOutVisit';
 import skipVisitApex from '@salesforce/apex/VisitManagerController.skipVisit';
 import skipPlannedVisitApex from '@salesforce/apex/VisitManagerController.skipPlannedVisit';
@@ -713,6 +714,8 @@ export default class VisitManager extends LightningElement {
                 _journeyPlanDayId: p.journeyPlanDayId,
                 _isFromPlan: true,
                 outletName: p.accountName || 'Unknown Outlet',
+                outletLatitude: p.outletLatitude || null,
+                outletLongitude: p.outletLongitude || null,
                 beatName: p.beatName || '',
                 truncatedAddress: p.city || 'No address',
                 checkInTimeDisplay: '--',
@@ -766,12 +769,86 @@ export default class VisitManager extends LightningElement {
 
     // Enriched planned visits — all can check in (no sequence restriction)
     get plannedVisitsEnriched() {
-        return this.plannedVisits.map(v => ({
-            ...v,
-            canCheckIn: v._isFromPlan,
-            isLocked: false,
-            rowClass: 'vm-visit-row vm-row-planned vm-row-next'
-        }));
+        const myLat = this.latitude;
+        const myLng = this.longitude;
+        const hasMyLocation = myLat != null && myLng != null && this.locationCaptured;
+
+        return this.plannedVisits.map(v => {
+            const hasOutletLoc = v.outletLatitude != null && v.outletLongitude != null;
+            let distanceDisplay = '';
+            let distanceClass = 'vm-distance';
+            let distanceMeters = null;
+
+            if (hasMyLocation && hasOutletLoc) {
+                distanceMeters = this._haversineMeters(myLat, myLng, v.outletLatitude, v.outletLongitude);
+                if (distanceMeters < 1000) {
+                    distanceDisplay = Math.round(distanceMeters) + 'm away';
+                } else {
+                    distanceDisplay = (distanceMeters / 1000).toFixed(1) + 'km away';
+                }
+                distanceClass += distanceMeters <= 500 ? ' vm-dist-near' : distanceMeters <= 2000 ? ' vm-dist-mid' : ' vm-dist-far';
+            } else if (!hasOutletLoc) {
+                distanceDisplay = 'No location set';
+                distanceClass += ' vm-dist-none';
+            }
+
+            return {
+                ...v,
+                canCheckIn: v._isFromPlan,
+                isLocked: false,
+                rowClass: 'vm-visit-row vm-row-planned vm-row-next',
+                distanceDisplay,
+                distanceClass,
+                distanceMeters,
+                hasOutletLocation: hasOutletLoc,
+                showSetLocation: !hasOutletLoc
+            };
+        });
+    }
+
+    _haversineMeters(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = d => (d * Math.PI) / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    async handleSetStoreLocation(event) {
+        event.stopPropagation();
+        const accountId = event.currentTarget.dataset.accountId;
+        if (!accountId) return;
+
+        if (!this.locationCaptured || this.latitude == null) {
+            this._toast('Error', 'Your current location is not available. Please enable GPS.', 'error');
+            return;
+        }
+
+        try {
+            this.isProcessing = true;
+            await saveAccountLocation({
+                accountId: accountId,
+                latitude: this.latitude,
+                longitude: this.longitude,
+                radiusMeters: null
+            });
+            this._toast('Success', 'Store location saved from your current position.', 'success');
+
+            // Update the planned visit in memory so UI refreshes
+            this.allVisits = this.allVisits.map(v => {
+                if (v.Account__c === accountId) {
+                    return { ...v, outletLatitude: this.latitude, outletLongitude: this.longitude };
+                }
+                return v;
+            });
+        } catch (err) {
+            this._toast('Error', 'Failed to save location: ' + this._err(err), 'error');
+        } finally {
+            this.isProcessing = false;
+        }
     }
 
     // Stats

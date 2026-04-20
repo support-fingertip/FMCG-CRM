@@ -401,7 +401,19 @@
                                 <span class="vm-row-seq">{visit.Visit_Sequence__c}</span>
                                 <div class="vm-row-body">
                                     <p class="vm-row-name">{visit.outletName}</p>
-                                    <p class="vm-row-addr">{visit.truncatedAddress}</p>
+                                    <div class="vm-row-addr-line">
+                                        <span class="vm-row-addr">{visit.truncatedAddress}</span>
+                                        <template if:true={visit.distanceDisplay}>
+                                            <span class={visit.distanceClass}>{visit.distanceDisplay}</span>
+                                        </template>
+                                    </div>
+                                    <template if:true={visit.showSetLocation}>
+                                        <span class="vm-set-location" role="button" tabindex="0"
+                                            data-account-id={visit.Account__c}
+                                            onclick={handleSetStoreLocation}>
+                                            &#x1F4CD; Set store location from here
+                                        </span>
+                                    </template>
                                 </div>
                                 <div class="vm-row-btns">
                                     <template if:true={visit.canCheckIn}>
