@@ -47,7 +47,12 @@ export default class TamKpiDashboard extends LightningElement {
     connectedCallback() {
         loadScript(this, ChartJs)
             .then(() => { this.chartJsLoaded = true; })
-            .catch(() => {});
+            .catch(error => {
+                this.chartJsLoaded = false;
+                // eslint-disable-next-line no-console
+                console.error('Chart.js failed to load', error);
+                this.showToast('Charts Unavailable', 'Charts could not be loaded. Try refreshing the page.', 'warning');
+            });
         this.loadData();
     }
 

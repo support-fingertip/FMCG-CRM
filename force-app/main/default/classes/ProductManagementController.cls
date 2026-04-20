@@ -92,6 +92,13 @@ public with sharing class ProductManagementController {
     @AuraEnabled
     public static Product_Extension__c saveProduct(Product_Extension__c product) {
         try {
+            Schema.DescribeSObjectResult d = Product_Extension__c.SObjectType.getDescribe();
+            if (product.Id == null && !d.isCreateable()) {
+                throw new AuraHandledException('You do not have permission to create products.');
+            }
+            if (product.Id != null && !d.isUpdateable()) {
+                throw new AuraHandledException('You do not have permission to update products.');
+            }
             upsert product;
             return [SELECT Id, Name, SKU_Code__c, Brand__c, MRP__c, Unit_Price__c, GST_Rate__c,
                            Is_Active__c, Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.Name, Base_UOM__r.UOM_Code__c,
@@ -115,6 +122,9 @@ public with sharing class ProductManagementController {
 
     @AuraEnabled
     public static void deleteProduct(Id productId) {
+        if (!Product_Extension__c.SObjectType.getDescribe().isDeletable()) {
+            throw new AuraHandledException('You do not have permission to delete products.');
+        }
         Product_Extension__c p = [SELECT Id FROM Product_Extension__c WHERE Id = :productId LIMIT 1];
         delete p;
     }
@@ -133,6 +143,13 @@ public with sharing class ProductManagementController {
     @AuraEnabled
     public static Product_Category__c saveCategory(Product_Category__c category) {
         try {
+            Schema.DescribeSObjectResult d = Product_Category__c.SObjectType.getDescribe();
+            if (category.Id == null && !d.isCreateable()) {
+                throw new AuraHandledException('You do not have permission to create categories.');
+            }
+            if (category.Id != null && !d.isUpdateable()) {
+                throw new AuraHandledException('You do not have permission to update categories.');
+            }
             upsert category;
             return [SELECT Id, Name, Category_Code__c, Level__c, Is_Active__c, Sort_Order__c,
                            Parent_Category__c, Parent_Category__r.Name
@@ -156,6 +173,9 @@ public with sharing class ProductManagementController {
 
     @AuraEnabled
     public static void deleteCategory(Id categoryId) {
+        if (!Product_Category__c.SObjectType.getDescribe().isDeletable()) {
+            throw new AuraHandledException('You do not have permission to delete categories.');
+        }
         Product_Category__c c = [SELECT Id FROM Product_Category__c WHERE Id = :categoryId LIMIT 1];
         delete c;
     }

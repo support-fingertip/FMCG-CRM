@@ -137,7 +137,15 @@ public class INV_DistributorStock_TriggerHandler extends TriggerHandler {
         }
 
         if (!updates.isEmpty()) {
-            update updates;
+            // Bypass this handler on the recursive update — the unmarked records
+            // only flip Is_Current__c=false, which would re-enter unmarkPreviousCurrentEntries
+            // for no reason and could exceed CPU limits on bulk inserts.
+            TriggerHandler.bypass('INV_DistributorStock_TriggerHandler');
+            try {
+                update updates;
+            } finally {
+                TriggerHandler.clearBypass('INV_DistributorStock_TriggerHandler');
+            }
         }
     }
 }

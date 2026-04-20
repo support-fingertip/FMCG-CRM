@@ -368,6 +368,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
     wiredCategories({ error, data }) {
         if (data) {
             this.categoryOptionsData = data;
+        } else if (error) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to load product categories', error);
+            this.categoryOptionsData = [];
+            this.showToast('Error', 'Could not load product categories. Please refresh.', 'error');
         }
     }
 
@@ -378,6 +383,11 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
                 { label: '-- Select Warehouse --', value: '' },
                 ...data.map(w => ({ label: w.label, value: w.value }))
             ];
+        } else if (error) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to load warehouses', error);
+            this.warehouseOptions = [{ label: '-- Select Warehouse --', value: '' }];
+            this.showToast('Error', 'Could not load warehouses. Please refresh.', 'error');
         }
     }
 

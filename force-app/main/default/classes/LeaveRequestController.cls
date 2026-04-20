@@ -64,18 +64,18 @@ public with sharing class LeaveRequestController {
      */
     @AuraEnabled(cacheable=true)
     public static Boolean checkIsAdmin(Id userId) {
+        // Primary: custom permission (works in managed packages and subscriber orgs)
+        if (FeatureManagement.checkPermission('Leave_Admin_Access')) {
+            return true;
+        }
+        // Fallback: system admins by profile license (not name — portable across orgs)
         List<User> users = [
-            SELECT Profile.Name
+            SELECT Profile.PermissionsModifyAllData
             FROM User
             WHERE Id = :userId
             LIMIT 1
         ];
-
-        if (users.isEmpty()) {
-            return false;
-        }
-
-        return users[0].Profile.Name == 'System Administrator';
+        return !users.isEmpty() && users[0].Profile.PermissionsModifyAllData == true;
     }
 
     // ── Get Reporting Manager User Id ───────────────────────────────────────

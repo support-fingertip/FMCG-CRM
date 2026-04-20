@@ -36,10 +36,19 @@ public class TAM_TargetAllocation_Controller {
         }
         dx.currentUserId = isCurrentUserPresent ? UserInfo.getUserId() : '';
 
-        // Determine admin status using Custom Permission or Profile
-        dx.isAdmin = FeatureManagement.checkPermission('TAM_Admin_Access')
-            || [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()
-                AND Profile.Name = 'System Administrator' LIMIT 1].size() > 0;
+        // Admin status via Custom Permission (managed-package portable)
+        // Fallback checks the "Modify All Data" permission on the user's profile,
+        // which is a license-level flag that doesn't depend on profile naming.
+        if (FeatureManagement.checkPermission('TAM_Admin_Access')) {
+            dx.isAdmin = true;
+        } else {
+            List<User> adminCheck = [
+                SELECT Profile.PermissionsModifyAllData
+                FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1
+            ];
+            dx.isAdmin = !adminCheck.isEmpty()
+                && adminCheck[0].Profile.PermissionsModifyAllData == true;
+        }
 
         dx.periodsList = [
             SELECT Id, Name, Start_Date__c, End_Date__c

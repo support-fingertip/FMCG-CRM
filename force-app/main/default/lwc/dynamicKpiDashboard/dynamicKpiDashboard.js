@@ -696,6 +696,10 @@ export default class DynamicKpiDashboard extends LightningElement {
             clearInterval(this._autoRefreshTimer);
             this._autoRefreshTimer = null;
         }
+        if (this._revokeBlobTimers) {
+            this._revokeBlobTimers.forEach(id => clearTimeout(id));
+            this._revokeBlobTimers = [];
+        }
     }
 
     // ── Drill-Down (Sprint 7) ────────────────────────────────────
@@ -832,8 +836,15 @@ export default class DynamicKpiDashboard extends LightningElement {
                 anchor.click();
                 console.log('[DKD-CSV] anchor clicked');
                 anchor.style.display = 'none';
+                if (!this._revokeBlobTimers) this._revokeBlobTimers = [];
                 // eslint-disable-next-line @lwc/lwc/no-async-operation
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                const revokeId = setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    if (this._revokeBlobTimers) {
+                        this._revokeBlobTimers = this._revokeBlobTimers.filter(t => t !== revokeId);
+                    }
+                }, 1000);
+                this._revokeBlobTimers.push(revokeId);
                 this.showToast('Exported', filename, 'success');
                 return;
             }
