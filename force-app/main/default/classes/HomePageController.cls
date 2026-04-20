@@ -77,12 +77,14 @@ public with sharing class HomePageController {
               AND Status__c IN ('Draft', 'Pending')
         ];
 
-        // ── Low Stock Alerts ──
+        // ── Low Stock Alerts (scoped to current user's records) ──
         data.lowStockAlertCount = [
             SELECT COUNT()
             FROM Distributor_Stock__c
             WHERE Closing_Stock__c <= 10
               AND Closing_Stock__c > 0
+              AND OwnerId = :userId
+            LIMIT 10000
         ];
 
         // ── Active Schemes ──
@@ -130,12 +132,13 @@ public with sharing class HomePageController {
               AND Status__c IN ('Draft', 'Submitted')
         ];
 
-        // ── Near Expiry Batches ──
+        // ── Near Expiry Batches (capped to avoid full-org scan) ──
         data.nearExpiryBatchCount = [
             SELECT COUNT()
             FROM Batch_Master__c
             WHERE Status__c = 'Active'
               AND Is_Near_Expiry__c = true
+            LIMIT 10000
         ];
 
         return data;

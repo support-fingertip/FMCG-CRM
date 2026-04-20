@@ -84,9 +84,9 @@
             </value>
         </inputAssignments>
         <inputAssignments>
-            <field>Rescheduled_From__c</field>
+            <field>Is_Rescheduled__c</field>
             <value>
-                <elementReference>$Record.Id</elementReference>
+                <booleanValue>true</booleanValue>
             </value>
         </inputAssignments>
     </recordCreates>

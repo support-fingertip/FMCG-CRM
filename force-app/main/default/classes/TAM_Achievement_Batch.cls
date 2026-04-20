@@ -99,6 +99,17 @@ public class TAM_Achievement_Batch implements Database.Batchable<SObject>, Datab
 
             Target_Criteria__c crit = critMap.get(critId);
 
+            // Skip criteria with incomplete configuration — otherwise the
+            // dynamic SOQL would be malformed and blow up the whole batch chunk.
+            if (crit == null || String.isBlank(crit.Object__c)
+                || String.isBlank(crit.Operator__c) || String.isBlank(crit.Date_Field__c)
+                || String.isBlank(crit.User_Field__c)
+                || (crit.Operator__c != 'COUNT' && String.isBlank(crit.Field__c))) {
+                System.debug(LoggingLevel.WARN,
+                    'TAM_Achievement_Batch: skipping criteria ' + critId + ' — incomplete config');
+                continue;
+            }
+
             // Period boundaries
             Date startDate = rows[0].Target_Period__r.Start_Date__c;
             Date endDate   = rows[0].Target_Period__r.End_Date__c;

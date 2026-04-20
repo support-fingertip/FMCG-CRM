@@ -30,7 +30,9 @@
     <formulas>
         <name>EffectiveToDate</name>
         <dataType>Date</dataType>
-        <expression>DATE(VALUE({!$Record.Year__c}), {!MonthNumber} + 1, 1) - 1</expression>
+        <expression>IF({!MonthNumber} = 12,
+            DATE(VALUE({!$Record.Year__c}) + 1, 1, 1) - 1,
+            DATE(VALUE({!$Record.Year__c}), {!MonthNumber} + 1, 1) - 1)</expression>
     </formulas>
     <interviewLabel>BPM Journey Plan Effective Dates {!$Flow.CurrentDateTime}</interviewLabel>
     <label>BPM Journey Plan Effective Dates</label>
