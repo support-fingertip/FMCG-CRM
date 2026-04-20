@@ -893,6 +893,36 @@
     <fieldPermissions><editable>true</editable><field>Order_Line_Item__c.Total_Amount__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Order_Line_Item__c.UOM__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Order_Line_Item__c.Unit_Price__c</field><readable>true</readable></fieldPermissions>
+
+    <fieldPermissions><editable>true</editable><field>Invoice__c.Channel__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice__c.Territory__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice__c.Total_Items__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice__c.Order_Type__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice__c.Salesperson__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice_Line__c.MRP__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice_Line__c.Scheme__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice_Line__c.Scheme_Discount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice_Line__c.Free_Quantity__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice_Line__c.Product_Category__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Channel__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Territory__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Warehouse__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Tax_Amount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Net_Amount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Discount_Amount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Order__c.Billing_Address__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.Net_Amount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.Discount_Amount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.Discount_Percent__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.Tax_Rate__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.Tax_Amount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.HSN_SAC_Code__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.CGST__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.SGST__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.IGST__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.UOM__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.MRP__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Return_Line__c.Quantity__c</field><readable>true</readable></fieldPermissions>
     <layoutAssignments><layout>Leave_Policy__c-Leave Policy Layout</layout></layoutAssignments>
     <layoutAssignments><layout>Leave_Balance__c-Leave Balance Layout</layout></layoutAssignments>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
