@@ -26,6 +26,8 @@
     <decisions>
         <name>Check_Reschedule_Date</name>
         <label>Has Reschedule Date?</label>
+        <locationX>176</locationX>
+        <locationY>335</locationY>
         <defaultConnectorLabel>No Reschedule Date</defaultConnectorLabel>
         <rules>
             <name>Has_Date</name>
@@ -46,6 +48,8 @@
     <recordCreates>
         <name>Create_Follow_Up_Visit</name>
         <label>Create Follow-Up Visit</label>
+        <locationX>176</locationX>
+        <locationY>575</locationY>
         <object>Visit__c</object>
         <inputAssignments>
             <field>Account__c</field>

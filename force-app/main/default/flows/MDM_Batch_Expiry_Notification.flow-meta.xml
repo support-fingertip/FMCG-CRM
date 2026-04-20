@@ -24,6 +24,8 @@
     <recordLookups>
         <name>Get_Expiring_Batches</name>
         <label>Get Expiring Batches</label>
+        <locationX>176</locationX>
+        <locationY>335</locationY>
         <object>Batch_Master__c</object>
         <filterLogic>and</filterLogic>
         <filters>
