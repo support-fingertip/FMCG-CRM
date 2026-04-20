@@ -95,7 +95,11 @@ export default class TamCriteriaBuilder extends LightningElement {
     loadPrerequisiteOptions() {
         getCriteriaOptions()
             .then(data => { this.prerequisiteOptions = data || []; })
-            .catch(() => {});
+            .catch(error => {
+                // eslint-disable-next-line no-console
+                console.error('Failed to load prerequisite criteria options', error);
+                this.prerequisiteOptions = [];
+            });
     }
 
     loadCriteriaList() {
@@ -120,9 +124,14 @@ export default class TamCriteriaBuilder extends LightningElement {
     }
 
     @wire(getAllObjects)
-    wiredObjects({ data }) {
+    wiredObjects({ error, data }) {
         if (data) {
             this.allObjects = data.map(o => ({ label: o.label, api: o.api }));
+        } else if (error) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to load object list', error);
+            this.allObjects = [];
+            this.showToast('Error', 'Could not load object list. Please refresh.', 'error');
         }
     }
 
