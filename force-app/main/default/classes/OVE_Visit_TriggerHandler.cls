@@ -207,8 +207,11 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
 
         if (!updates.isEmpty()) {
             TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
-            update updates;
-            TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            try {
+                update updates;
+            } finally {
+                TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            }
         }
     }
 
@@ -272,8 +275,11 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
 
         if (!updates.isEmpty()) {
             TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
-            update updates;
-            TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            try {
+                update updates;
+            } finally {
+                TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            }
         }
     }
 
@@ -377,8 +383,11 @@ public class OVE_Visit_TriggerHandler extends TriggerHandler {
 
         if (!visitsToUpdate.isEmpty()) {
             TriggerHandler.bypass('OVE_Visit_TriggerHandler');
-            update visitsToUpdate;
-            TriggerHandler.clearBypass('OVE_Visit_TriggerHandler');
+            try {
+                update visitsToUpdate;
+            } finally {
+                TriggerHandler.clearBypass('OVE_Visit_TriggerHandler');
+            }
         }
     }
 

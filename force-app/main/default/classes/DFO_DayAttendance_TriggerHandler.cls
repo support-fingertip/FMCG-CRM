@@ -289,8 +289,11 @@ public class DFO_DayAttendance_TriggerHandler extends TriggerHandler {
 
         if (!toUpdate.isEmpty()) {
             TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
-            update toUpdate;
-            TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            try {
+                update toUpdate;
+            } finally {
+                TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            }
         }
     }
 

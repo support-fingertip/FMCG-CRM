@@ -253,8 +253,14 @@ public class OMS_OrderLineItem_TriggerHandler extends TriggerHandler {
 
         if (!ordersToUpdate.isEmpty()) {
             TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
-            update ordersToUpdate.values();
-            TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
+            try {
+                update ordersToUpdate.values();
+            } finally {
+                // Guarantee cleanup even if the update DML throws, otherwise the
+                // OMS_SalesOrder_TriggerHandler would stay bypassed for the rest
+                // of the transaction.
+                TriggerHandler.clearBypass('OMS_SalesOrder_TriggerHandler');
+            }
         }
     }
 }

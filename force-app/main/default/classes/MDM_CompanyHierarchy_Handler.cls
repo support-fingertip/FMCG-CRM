@@ -273,8 +273,11 @@ public class MDM_CompanyHierarchy_Handler extends TriggerHandler {
         if (!parentsToUpdate.isEmpty()) {
             // Bypass self to prevent recursion during rollup update
             TriggerHandler.bypass('MDM_CompanyHierarchy_Handler');
-            update parentsToUpdate;
-            TriggerHandler.clearBypass('MDM_CompanyHierarchy_Handler');
+            try {
+                update parentsToUpdate;
+            } finally {
+                TriggerHandler.clearBypass('MDM_CompanyHierarchy_Handler');
+            }
         }
     }
 }

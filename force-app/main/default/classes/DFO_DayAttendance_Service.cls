@@ -392,8 +392,11 @@ public without sharing class DFO_DayAttendance_Service {
         List<Day_Attendance__c> updates = calculateDaySummary(new Set<Id>{ attendanceId });
         if (!updates.isEmpty()) {
             TriggerHandler.bypass('DFO_DayAttendance_TriggerHandler');
-            update updates;
-            TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            try {
+                update updates;
+            } finally {
+                TriggerHandler.clearBypass('DFO_DayAttendance_TriggerHandler');
+            }
         }
     }
 
