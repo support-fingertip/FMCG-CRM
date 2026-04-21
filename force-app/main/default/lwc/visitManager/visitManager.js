@@ -560,8 +560,15 @@ export default class VisitManager extends LightningElement {
     }
 
     handleOpenStartCamera() {
-        this._cameraTarget = 'start';
-        this._startCamera();
+        if (this._isMobileDevice()) {
+            this._cameraTarget = 'start';
+            this._startCamera();
+        } else {
+            this._openFileUpload((base64, preview) => {
+                this._startSelfieBase64 = base64;
+                this.startSelfiePreview = preview;
+            });
+        }
     }
 
     removeStartSelfie() {
@@ -2213,8 +2220,15 @@ export default class VisitManager extends LightningElement {
     }
 
     handleOpenEndCamera() {
-        this._cameraTarget = 'end';
-        this._startCamera();
+        if (this._isMobileDevice()) {
+            this._cameraTarget = 'end';
+            this._startCamera();
+        } else {
+            this._openFileUpload((base64, preview) => {
+                this._endSelfieBase64 = base64;
+                this.endSelfiePreview = preview;
+            });
+        }
     }
 
     removeEndSelfie() { this._endSelfieBase64 = null; this.endSelfiePreview = null; }
@@ -2308,6 +2322,34 @@ export default class VisitManager extends LightningElement {
     _cameraStream = null;
     _videoEl = null;
     _canvasEl = null;
+
+    _isMobileDevice() {
+        return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    _openFileUpload(callback) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                this._toast('Error', 'Photo must be less than 5MB.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                callback(reader.result.split(',')[1], reader.result);
+            };
+            reader.readAsDataURL(file);
+        }, { once: true });
+        document.body.appendChild(input);
+        input.click();
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        setTimeout(() => { if (input.parentNode) input.parentNode.removeChild(input); }, 60000);
+    }
 
     _startCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
