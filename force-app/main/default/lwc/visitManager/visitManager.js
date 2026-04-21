@@ -559,6 +559,13 @@ export default class VisitManager extends LightningElement {
         });
     }
 
+    handleOpenStartCamera() {
+        this._openCameraOnly((base64, preview) => {
+            this._startSelfieBase64 = base64;
+            this.startSelfiePreview = preview;
+        });
+    }
+
     removeStartSelfie() {
         this._startSelfieBase64 = null;
         this.startSelfiePreview = null;
@@ -2207,6 +2214,13 @@ export default class VisitManager extends LightningElement {
         });
     }
 
+    handleOpenEndCamera() {
+        this._openCameraOnly((base64, preview) => {
+            this._endSelfieBase64 = base64;
+            this.endSelfiePreview = preview;
+        });
+    }
+
     removeEndSelfie() { this._endSelfieBase64 = null; this.endSelfiePreview = null; }
 
     async handleEndDayConfirm() {
@@ -2293,6 +2307,34 @@ export default class VisitManager extends LightningElement {
     // ═══════════════════════════════════════════════════
     // PHOTO HELPER
     // ═══════════════════════════════════════════════════
+    _openCameraOnly(callback) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.setAttribute('capture', 'user');
+        input.style.display = 'none';
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                this._toast('Error', 'Photo must be less than 5MB.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = reader.result.split(',')[1];
+                callback(base64, reader.result);
+            };
+            reader.readAsDataURL(file);
+        }, { once: true });
+        document.body.appendChild(input);
+        input.click();
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        setTimeout(() => {
+            if (input.parentNode) input.parentNode.removeChild(input);
+        }, 60000);
+    }
+
     _processPhoto(event, callback) {
         const file = event.target.files[0];
         if (!file) return;

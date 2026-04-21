@@ -58,11 +58,10 @@
                     </h3>
                     <div class="vm-photo-area">
                         <template if:false={startSelfiePreview}>
-                            <label class="vm-photo-btn">
+                            <button type="button" class="vm-photo-btn" onclick={handleOpenStartCamera}>
                                 <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
                                 Capture Selfie
-                                <input type="file" accept="image/*" capture="user" class="vm-file-input-hidden" onchange={handleStartSelfieCapture}/>
-                            </label>
+                            </button>
                         </template>
                         <template if:true={startSelfiePreview}>
                             <div class="vm-photo-preview">
@@ -605,11 +604,10 @@
                             onchange={handleEndRemarksChange} class="slds-m-bottom_small"></lightning-textarea>
                         <div class="vm-photo-area">
                             <template if:false={endSelfiePreview}>
-                                <label class="vm-photo-btn">
+                                <button type="button" class="vm-photo-btn" onclick={handleOpenEndCamera}>
                                     <lightning-icon icon-name="utility:photo" size="small"></lightning-icon>
                                     End Day Selfie
-                                    <input type="file" accept="image/*" capture="user" class="vm-file-input-hidden" onchange={handleEndSelfieCapture}/>
-                                </label>
+                                </button>
                             </template>
                             <template if:true={endSelfiePreview}>
                                 <div class="vm-photo-preview">
