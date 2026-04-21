@@ -1599,4 +1599,20 @@
             <lightning-spinner alternative-text="Processing" size="medium"></lightning-spinner>
         </div>
     </template>
+
+    <!-- Camera Overlay -->
+    <template if:true={showCameraOverlay}>
+        <div class="vm-camera-overlay">
+            <div class="vm-camera-header">
+                <span class="vm-camera-title">Take Selfie</span>
+                <button class="vm-camera-close" onclick={handleCameraClose}>&#x2715;</button>
+            </div>
+            <div class="vm-camera-body" lwc:dom="manual"></div>
+            <div class="vm-camera-footer">
+                <button class="vm-camera-capture-btn" onclick={handleCameraCapture}>
+                    <span class="vm-camera-shutter"></span>
+                </button>
+            </div>
+        </div>
+    </template>
 </template>

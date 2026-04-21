@@ -560,10 +560,8 @@ export default class VisitManager extends LightningElement {
     }
 
     handleOpenStartCamera() {
-        this._openCameraOnly((base64, preview) => {
-            this._startSelfieBase64 = base64;
-            this.startSelfiePreview = preview;
-        });
+        this._cameraTarget = 'start';
+        this._startCamera();
     }
 
     removeStartSelfie() {
@@ -2215,10 +2213,8 @@ export default class VisitManager extends LightningElement {
     }
 
     handleOpenEndCamera() {
-        this._openCameraOnly((base64, preview) => {
-            this._endSelfieBase64 = base64;
-            this.endSelfiePreview = preview;
-        });
+        this._cameraTarget = 'end';
+        this._startCamera();
     }
 
     removeEndSelfie() { this._endSelfieBase64 = null; this.endSelfiePreview = null; }
@@ -2307,32 +2303,87 @@ export default class VisitManager extends LightningElement {
     // ═══════════════════════════════════════════════════
     // PHOTO HELPER
     // ═══════════════════════════════════════════════════
-    _openCameraOnly(callback) {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.setAttribute('capture', 'user');
-        input.style.display = 'none';
-        input.addEventListener('change', () => {
-            const file = input.files[0];
-            if (!file) return;
-            if (file.size > 5 * 1024 * 1024) {
-                this._toast('Error', 'Photo must be less than 5MB.', 'error');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => {
-                const base64 = reader.result.split(',')[1];
-                callback(base64, reader.result);
-            };
-            reader.readAsDataURL(file);
-        }, { once: true });
-        document.body.appendChild(input);
-        input.click();
+    @track showCameraOverlay = false;
+    _cameraTarget = null;
+    _cameraStream = null;
+    _videoEl = null;
+    _canvasEl = null;
+
+    _startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            this._toast('Error', 'Camera not available on this device.', 'error');
+            return;
+        }
+        this.showCameraOverlay = true;
         // eslint-disable-next-line @lwc/lwc/no-async-operation
-        setTimeout(() => {
-            if (input.parentNode) input.parentNode.removeChild(input);
-        }, 60000);
+        setTimeout(() => this._initCameraStream(), 150);
+    }
+
+    async _initCameraStream() {
+        try {
+            this._cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } },
+                audio: false
+            });
+            const container = this.template.querySelector('.vm-camera-body');
+            if (!container) { this._stopCamera(); return; }
+
+            const video = document.createElement('video');
+            video.setAttribute('autoplay', '');
+            video.setAttribute('playsinline', '');
+            video.setAttribute('muted', '');
+            video.className = 'vm-camera-video';
+            video.srcObject = this._cameraStream;
+            video.play();
+            container.appendChild(video);
+            this._videoEl = video;
+
+            const canvas = document.createElement('canvas');
+            canvas.style.display = 'none';
+            container.appendChild(canvas);
+            this._canvasEl = canvas;
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Camera access failed', err);
+            this._toast('Error', 'Could not access camera. Please allow camera permission.', 'error');
+            this.showCameraOverlay = false;
+        }
+    }
+
+    handleCameraCapture() {
+        if (!this._videoEl || !this._canvasEl) return;
+        const video = this._videoEl;
+        const canvas = this._canvasEl;
+        canvas.width = video.videoWidth || 720;
+        canvas.height = video.videoHeight || 960;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const base64 = dataUrl.split(',')[1];
+
+        if (this._cameraTarget === 'start') {
+            this._startSelfieBase64 = base64;
+            this.startSelfiePreview = dataUrl;
+        } else {
+            this._endSelfieBase64 = base64;
+            this.endSelfiePreview = dataUrl;
+        }
+        this._stopCamera();
+        this._toast('Success', 'Selfie captured.', 'success');
+    }
+
+    handleCameraClose() {
+        this._stopCamera();
+    }
+
+    _stopCamera() {
+        if (this._cameraStream) {
+            this._cameraStream.getTracks().forEach(t => t.stop());
+            this._cameraStream = null;
+        }
+        this._videoEl = null;
+        this._canvasEl = null;
+        this.showCameraOverlay = false;
     }
 
     _processPhoto(event, callback) {
