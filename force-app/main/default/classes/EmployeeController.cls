@@ -32,7 +32,7 @@ public with sharing class EmployeeController {
                         'Email__c, Phone__c, Department__c, Designation__c, ' +
                         'Date_of_Joining__c, Is_Active__c, Zone__c, Region__c, Band__c, ' +
                         'Profile_Photo_URL__c, User__c, User__r.Name, Week_Off_Days__c, Gross_Salary__c, ' +
-                        'Territory__c, Territory__r.Name, ' +
+                        'Territory__c, Territory__r.Name, Channels__c, ' +
                         'Reporting_Manager__c, Reporting_Manager__r.First_Name__c, ' +
                         'Reporting_Manager__r.Last_Name__c, Reporting_Manager__r.Employee_Code__c ' +
                         'FROM Employee__c WHERE Id != null';

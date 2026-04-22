@@ -244,6 +244,18 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'E-Commerce', value: 'E-Commerce' }
         ];
     }
+    get productChannelOptions() {
+        return [
+            { label: 'GT', value: 'GT' },
+            { label: 'MT', value: 'MT' },
+            { label: 'E-Commerce', value: 'E-Commerce' }
+        ];
+    }
+    get editProductChannels() {
+        const val = this.editProduct?.Channels__c;
+        if (!val) return [];
+        return val.split(';').map(s => s.trim()).filter(s => s);
+    }
     get priceTypeOptions() {
         return [
             { label: 'MRP', value: 'MRP' },
@@ -572,6 +584,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         const field = event.target.dataset.field;
         const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
         this.editProduct = { ...this.editProduct, [field]: value };
+    }
+
+    handleProductChannelsChange(event) {
+        const selected = event.detail.value;
+        this.editProduct = { ...this.editProduct, Channels__c: selected.join(';') };
     }
 
     async handleSaveProduct() {

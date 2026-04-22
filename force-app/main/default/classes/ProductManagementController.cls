@@ -56,7 +56,7 @@ public with sharing class ProductManagementController {
                            'Product_Category__c, Product_Category__r.Name, Product_Category__r.Id, HSN_SAC_Code__c, ' +
                            'Barcode_EAN__c, Barcode_UPC__c, Weight__c, Weight_Unit__c, ' +
                            'Is_Returnable__c, Shelf_Life_Days__c, Reorder_Level__c, Reorder_Quantity__c, ' +
-                           'Product_Image_URL__c, Sub_Category__c ' +
+                           'Product_Image_URL__c, Sub_Category__c, Channels__c ' +
                            baseQuery + ' ORDER BY Name ASC LIMIT :pageSize OFFSET :offset';
 
         Integer offset = (pageNumber - 1) * pageSize;

@@ -149,6 +149,11 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         return this.selectedEmployee.Territory__r ? this.selectedEmployee.Territory__r.Name : '-';
     }
 
+    get selectedEmployeeChannels() {
+        if (!this.selectedEmployee || !this.selectedEmployee.Channels__c) return '-';
+        return this.selectedEmployee.Channels__c.replace(/;/g, ', ');
+    }
+
     get selectedEmployeeManagerName() {
         if (!this.selectedEmployee) return '-';
         if (this.selectedEmployee.Reporting_Manager__r) {
@@ -187,6 +192,20 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
     get weekOffDaysFormValue() {
         if (!this.employeeForm.Week_Off_Days__c) return [];
         return this.employeeForm.Week_Off_Days__c.split(';');
+    }
+
+    get employeeChannelOptions() {
+        return [
+            { label: 'GT', value: 'GT' },
+            { label: 'MT', value: 'MT' },
+            { label: 'E-Commerce', value: 'E-Commerce' }
+        ];
+    }
+
+    get employeeFormChannels() {
+        const val = this.employeeForm?.Channels__c;
+        if (!val) return [];
+        return val.split(';').map(s => s.trim()).filter(s => s);
     }
 
     get selectedEmployeeIsActive() {
@@ -596,6 +615,11 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         } else {
             this.employeeForm = { ...this.employeeForm, [field]: event.target.value };
         }
+    }
+
+    handleEmployeeChannelsChange(event) {
+        const selected = event.detail.value;
+        this.employeeForm = { ...this.employeeForm, Channels__c: selected.join(';') };
     }
 
     handleCancelForm() {

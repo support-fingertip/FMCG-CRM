@@ -905,6 +905,13 @@
                             <lightning-input type="checkbox" label="Returnable" checked={editProduct.Is_Returnable__c}
                                 data-field="Is_Returnable__c" onchange={handleProductFieldChange}></lightning-input>
                         </div>
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                            <lightning-dual-listbox label="Channels"
+                                source-label="Available" selected-label="Selected"
+                                options={productChannelOptions}
+                                value={editProductChannels}
+                                onchange={handleProductChannelsChange}></lightning-dual-listbox>
+                        </div>
                     </div>
                 </div>
                 <footer class="slds-modal__footer">

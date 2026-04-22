@@ -254,11 +254,15 @@
                                 </div>
 
                                 <div class="detail-section">
-                                    <h3 class="detail-section-title">Territory</h3>
+                                    <h3 class="detail-section-title">Territory &amp; Channels</h3>
                                     <div class="slds-grid slds-wrap slds-gutters_small">
                                         <div class="slds-col slds-size_1-of-3 detail-field">
                                             <span class="detail-label">Territory</span>
                                             <span class="detail-value">{selectedEmployeeTerritoryName}</span>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 detail-field">
+                                            <span class="detail-label">Channels</span>
+                                            <span class="detail-value">{selectedEmployeeChannels}</span>
                                         </div>
                                         <div class="slds-col slds-size_1-of-1 detail-field">
                                             <span class="detail-label">Address</span>
@@ -509,9 +513,9 @@
                                 </div>
                             </div>
 
-                            <!-- Section: Territory -->
+                            <!-- Section: Territory & Channels -->
                             <div class="form-section">
-                                <h3 class="form-section-title">Territory</h3>
+                                <h3 class="form-section-title">Territory &amp; Channels</h3>
                                 <div class="slds-grid slds-gutters slds-wrap">
                                     <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
                                         <lightning-input-field field-name="Territory__c"
@@ -523,6 +527,13 @@
                                         <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
                                             Zone and Region are automatically derived from the selected Territory.
                                         </p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
+                                        <lightning-dual-listbox label="Channels"
+                                            source-label="Available" selected-label="Assigned"
+                                            options={employeeChannelOptions}
+                                            value={employeeFormChannels}
+                                            onchange={handleEmployeeChannelsChange}></lightning-dual-listbox>
                                     </div>
                                 </div>
                             </div>
