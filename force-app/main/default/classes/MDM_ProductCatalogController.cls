@@ -166,7 +166,8 @@ public with sharing class MDM_ProductCatalogController {
         Product_Extension__c product = [
             SELECT Id, Name, Product_Category__c, Product_Category__r.Name,
                    Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c,
-                   Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Is_Active__c
+                   Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Is_Active__c,
+                   Product_Image_URL__c, SKU_Code__c, MRP__c, Unit_Price__c, Brand__c
             FROM Product_Extension__c
             WHERE Id = :productId
         ];
@@ -183,6 +184,11 @@ public with sharing class MDM_ProductCatalogController {
         detail.weightUnit = product.Weight_Unit__c;
         detail.caseSize = product.Case_Size__c;
         detail.minOrderQty = product.Min_Order_Qty__c;
+        detail.imageUrl = product.Product_Image_URL__c;
+        detail.skuCode = product.SKU_Code__c;
+        detail.mrp = product.MRP__c;
+        detail.unitPrice = product.Unit_Price__c;
+        detail.brand = product.Brand__c;
 
         // Get pricing
         detail.priceLists = getProductPricing(productId);
@@ -273,6 +279,11 @@ public with sharing class MDM_ProductCatalogController {
         @AuraEnabled public String weightUnit;
         @AuraEnabled public Decimal caseSize;
         @AuraEnabled public Decimal minOrderQty;
+        @AuraEnabled public String imageUrl;
+        @AuraEnabled public String skuCode;
+        @AuraEnabled public Decimal mrp;
+        @AuraEnabled public Decimal unitPrice;
+        @AuraEnabled public String brand;
         @AuraEnabled public List<Price_List__c> priceLists;
         @AuraEnabled public Integer activeBatchCount;
         @AuraEnabled public Decimal totalDistributorStock;
