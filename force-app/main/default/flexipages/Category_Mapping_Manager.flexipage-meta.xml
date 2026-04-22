@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FlexiPage xmlns="http://soap.sforce.com/2006/metadata">
-    <description>Category Mapping Manager - Manage category assignments for accounts and employees</description>
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
                 <componentName>c:categoryMappingManager</componentName>
+                <identifier>c_categoryMappingManager</identifier>
             </componentInstance>
         </itemInstances>
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Category Mapping Manager</masterLabel>
+    <template>
+        <name>flexipage:defaultAppHomeTemplate</name>
+    </template>
     <type>AppPage</type>
 </FlexiPage>
