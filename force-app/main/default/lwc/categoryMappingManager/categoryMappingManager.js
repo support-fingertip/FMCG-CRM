@@ -328,7 +328,7 @@ export default class CategoryMappingManager extends LightningElement {
             this.showError('Validation Error', 'Please select a customer (account).');
             return;
         }
-        if (!this.editAccountCategory.Product_Category__c) {
+        if (!this.editAccountCategory.Category__c) {
             this.showError('Validation Error', 'Please select a category.');
             return;
         }
@@ -556,7 +556,7 @@ export default class CategoryMappingManager extends LightningElement {
             this.showError('Validation Error', 'Please select an employee (user).');
             return;
         }
-        if (!this.editEmployeeCategory.Product_Category__c) {
+        if (!this.editEmployeeCategory.Category__c) {
             this.showError('Validation Error', 'Please select a category.');
             return;
         }
