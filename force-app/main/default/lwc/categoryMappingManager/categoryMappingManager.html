@@ -101,6 +101,11 @@
                     </div>
                 </div>
 
+                <div class="info-banner">
+                    <lightning-icon icon-name="utility:info" size="x-small" class="info-banner-icon"></lightning-icon>
+                    <span>Customers with <strong>no category mappings</strong> can see and order <strong>all products</strong>. Only assign categories if you want to restrict a customer to specific product categories.</span>
+                </div>
+
                 <template if:true={hasAccountCategoryMappings}>
                     <div class="data-table-wrapper">
                         <table class="data-table">
@@ -184,6 +189,11 @@
                             icon-name="utility:add"
                             onclick={handleNewEmployeeCategory}></lightning-button>
                     </div>
+                </div>
+
+                <div class="info-banner">
+                    <lightning-icon icon-name="utility:info" size="x-small" class="info-banner-icon"></lightning-icon>
+                    <span>Users with <strong>no category mappings</strong> can sell <strong>all products</strong>. Only assign categories if you want to restrict a user to specific product categories.</span>
                 </div>
 
                 <template if:true={hasEmployeeCategoryMappings}>

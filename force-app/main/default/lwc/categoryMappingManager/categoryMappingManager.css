@@ -411,6 +411,26 @@
 
 /* ── Priority / Info Box ────────────────────────────────────────────── */
 
+.info-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #3b82f6;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #1e40af;
+    line-height: 1.5;
+}
+
+.info-banner-icon {
+    flex-shrink: 0;
+    --sds-c-icon-color-foreground-default: #3b82f6;
+}
+
 .priority-info-box {
     display: flex;
     align-items: flex-start;

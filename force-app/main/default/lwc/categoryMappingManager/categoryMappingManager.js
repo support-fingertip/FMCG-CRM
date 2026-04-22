@@ -485,7 +485,7 @@ export default class CategoryMappingManager extends LightningElement {
                 .filter(m => {
                     if (this.employeeSearchTerm) {
                         const term = this.employeeSearchTerm.toLowerCase();
-                        const empName = (m.Employee__r ? m.Employee__r.Name : '').toLowerCase();
+                        const empName = (m.Employee__r ? ((m.Employee__r.First_Name__c || '') + ' ' + (m.Employee__r.Last_Name__c || '')).trim() : '').toLowerCase();
                         const catName = (m.Category__r ? m.Category__r.Name : '').toLowerCase();
                         if (!empName.includes(term) && !catName.includes(term)) return false;
                     }
@@ -497,7 +497,7 @@ export default class CategoryMappingManager extends LightningElement {
                 })
                 .map(m => ({
                     ...m,
-                    employeeName: m.Employee__r ? m.Employee__r.Name : '',
+                    employeeName: m.Employee__r ? ((m.Employee__r.First_Name__c || '') + ' ' + (m.Employee__r.Last_Name__c || '')).trim() : '',
                     categoryName: m.Category__r ? m.Category__r.Name : '',
                     categoryLevel: m.Category__r ? m.Category__r.Level__c : '',
                     responsibilityType: m.Responsibility_Type__c || '',
