@@ -15,6 +15,16 @@
                 <label>Open</label>
             </value>
             <value>
+                <fullName>Pending</fullName>
+                <default>false</default>
+                <label>Pending</label>
+            </value>
+            <value>
+                <fullName>Posted</fullName>
+                <default>false</default>
+                <label>Posted</label>
+            </value>
+            <value>
                 <fullName>Closed</fullName>
                 <default>false</default>
                 <label>Closed</label>
