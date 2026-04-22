@@ -275,7 +275,14 @@ private class MDM_EmployeeCategory_TriggerHandler_Test {
         Product_Category__c cat = [SELECT Id FROM Product_Category__c WHERE Category_Code__c = 'ECT-PC-SHP'];
 
         Test.startTest();
-        Employee_Category__c ec = TestDataFactory.createEmployeeCategory(emp.Id, cat.Id);
+        Employee_Category__c ec = new Employee_Category__c(
+            Employee__c = emp.Id,
+            Category__c = cat.Id,
+            Is_Active__c = true,
+            Responsibility_Type__c = 'Primary',
+            Effective_From__c = Date.today()
+        );
+        insert ec;
         Test.stopTest();
 
         System.assertNotEquals(null, ec.Id, 'Factory method should insert the record');

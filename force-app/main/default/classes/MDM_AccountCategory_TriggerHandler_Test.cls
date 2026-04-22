@@ -257,7 +257,13 @@ private class MDM_AccountCategory_TriggerHandler_Test {
         Product_Category__c cat = [SELECT Id FROM Product_Category__c WHERE Category_Code__c = 'ACT-DAI-MLK'];
 
         Test.startTest();
-        Account_Category__c ac = TestDataFactory.createAccountCategory(acc.Id, cat.Id);
+        Account_Category__c ac = new Account_Category__c(
+            Account__c = acc.Id,
+            Category__c = cat.Id,
+            Is_Active__c = true,
+            Effective_From__c = Date.today()
+        );
+        insert ac;
         Test.stopTest();
 
         System.assertNotEquals(null, ac.Id, 'Factory method should insert the record');
