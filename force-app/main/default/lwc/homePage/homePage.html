@@ -695,7 +695,7 @@
             <template if:true={isAdmin}>
                 <div class="hp-section">
                     <h2 class="hp-section-title">Step 1: Master Data</h2>
-                    <p class="hp-section-hint">Set these up first — everything else depends on territories, warehouses, and partners.</p>
+                    <p class="hp-section-hint">Set these up first — everything else depends on territories and warehouses.</p>
                     <div class="hp-nav-grid">
                         <div class="hp-nav-card" data-object="Territory_Master__c" onclick={navigateToObject}>
                             <div class="hp-nav-icon hp-icon-green">
@@ -715,17 +715,6 @@
                             <div class="hp-nav-info">
                                 <h3 class="hp-nav-title">Warehouses</h3>
                                 <p class="hp-nav-desc">Warehouse master records</p>
-                            </div>
-                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
-                        </div>
-
-                        <div class="hp-nav-card" data-object="Channel_Partner__c" onclick={navigateToObject}>
-                            <div class="hp-nav-icon hp-icon-orange">
-                                <lightning-icon icon-name="standard:partners" size="medium"></lightning-icon>
-                            </div>
-                            <div class="hp-nav-info">
-                                <h3 class="hp-nav-title">Channel Partners</h3>
-                                <p class="hp-nav-desc">Distributor and partner management</p>
                             </div>
                             <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
                         </div>
@@ -765,17 +754,6 @@
                             <div class="hp-nav-info">
                                 <h3 class="hp-nav-title">Surveys</h3>
                                 <p class="hp-nav-desc">Survey templates and responses</p>
-                            </div>
-                            <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
-                        </div>
-
-                        <div class="hp-nav-card" data-object="Merchandising__c" onclick={navigateToObject}>
-                            <div class="hp-nav-icon hp-icon-teal">
-                                <lightning-icon icon-name="standard:store" size="medium"></lightning-icon>
-                            </div>
-                            <div class="hp-nav-info">
-                                <h3 class="hp-nav-title">Merchandising</h3>
-                                <p class="hp-nav-desc">Visual merchandising records and audits</p>
                             </div>
                             <lightning-icon icon-name="utility:chevronright" size="xx-small" class="hp-nav-arrow"></lightning-icon>
                         </div>
