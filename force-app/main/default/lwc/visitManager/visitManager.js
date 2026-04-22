@@ -1210,6 +1210,13 @@ export default class VisitManager extends LightningElement {
         this._loadActivitiesData();
     }
 
+    handleDownloadOrderPdf(event) {
+        event.stopPropagation();
+        const orderId = event.currentTarget.dataset.id;
+        if (!orderId) return;
+        window.open('/apex/SalesOrderPDF?id=' + orderId, '_blank');
+    }
+
     handleActivityFormSuccess() {
         this._toast('Success', 'Activity completed successfully.', 'success');
         this.handleActivityBack();

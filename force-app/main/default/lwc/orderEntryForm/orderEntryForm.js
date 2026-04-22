@@ -98,6 +98,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
 
     // Warehouse & Stock Availability
     @track warehouseOptions = [];
+    @track showOrderPdfPrompt = false;
+    _lastCreatedOrderId;
+    _lastCreatedOrderName;
     @track selectedWarehouseId = '';
     @track stockAvailabilityMap = {}; // productId -> available qty
 
@@ -1921,6 +1924,9 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             const result = await createSalesOrder({ orderJson: JSON.stringify(orderData) });
 
             this.showToast('Success', 'Order submitted successfully! Order #: ' + (result.Name || result.Id), 'success');
+            this._lastCreatedOrderId = result.Id;
+            this._lastCreatedOrderName = result.Name;
+            this.showOrderPdfPrompt = true;
             this.resetForm();
 
             this.dispatchEvent(new CustomEvent('success', {
@@ -2074,6 +2080,17 @@ export default class OrderEntryForm extends NavigationMixin(LightningElement) {
             month: 'short',
             year: 'numeric'
         });
+    }
+
+    handleDownloadOrderPdf() {
+        if (this._lastCreatedOrderId) {
+            window.open('/apex/SalesOrderPDF?id=' + this._lastCreatedOrderId, '_blank');
+        }
+        this.showOrderPdfPrompt = false;
+    }
+
+    handleDismissPdfPrompt() {
+        this.showOrderPdfPrompt = false;
     }
 
     showToast(title, message, variant) {

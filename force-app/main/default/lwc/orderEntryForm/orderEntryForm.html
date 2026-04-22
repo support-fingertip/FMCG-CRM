@@ -659,4 +659,33 @@
         </div>
     </div>
 
+    <!-- PDF Download Prompt after order creation -->
+    <template if:true={showOrderPdfPrompt}>
+        <section class="slds-modal slds-fade-in-open slds-modal_small" role="dialog" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-theme_success">
+                    <lightning-button-icon icon-name="utility:close" alternative-text="Close"
+                        onclick={handleDismissPdfPrompt} variant="bare-inverse"
+                        class="slds-modal__close"></lightning-button-icon>
+                    <h2 class="slds-modal__title slds-text-color_inverse">Order Created Successfully</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-text-align_center">
+                    <lightning-icon icon-name="action:approval" size="large" class="slds-m-bottom_small"></lightning-icon>
+                    <p class="slds-text-heading_small slds-m-bottom_x-small">
+                        Order <strong>{_lastCreatedOrderName}</strong> has been created.
+                    </p>
+                    <p class="slds-text-body_regular slds-text-color_weak slds-m-bottom_medium">
+                        Would you like to download the order as a PDF?
+                    </p>
+                    <lightning-button label="Download PDF" variant="brand"
+                        icon-name="utility:download" onclick={handleDownloadOrderPdf}
+                        class="slds-m-right_small"></lightning-button>
+                    <lightning-button label="Skip" variant="neutral"
+                        onclick={handleDismissPdfPrompt}></lightning-button>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
 </template>
