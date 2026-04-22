@@ -7,5 +7,5 @@
     <referenceTo>Product_Category__c</referenceTo>
     <relationshipLabel>Employee Category Mappings</relationshipLabel>
     <relationshipName>Employee_Category_Mappings</relationshipName>
-    <deleteConstraint>SetNull</deleteConstraint>
+    <deleteConstraint>Restrict</deleteConstraint>
 </CustomField>

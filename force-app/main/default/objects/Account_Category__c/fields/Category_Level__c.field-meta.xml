@@ -2,9 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/metadata">
     <fullName>Category_Level__c</fullName>
     <label>Category Level</label>
-    <type>Text</type>
-    <length>50</length>
-    <required>false</required>
     <formula>TEXT(Category__r.Level__c)</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <type>Text</type>
 </CustomField>
