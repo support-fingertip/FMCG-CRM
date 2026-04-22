@@ -494,14 +494,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Account_Category__c.Is_Active__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -523,14 +515,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Account_Category__c.Notes__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
