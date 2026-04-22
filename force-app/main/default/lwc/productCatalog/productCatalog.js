@@ -4,7 +4,7 @@ import getProducts from '@salesforce/apex/MDM_ProductCatalogController.getProduc
 import getCategoryTree from '@salesforce/apex/MDM_ProductCatalogController.getCategoryTree';
 import getProductDetail from '@salesforce/apex/MDM_ProductCatalogController.getProductDetail';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export default class ProductCatalog extends LightningElement {
