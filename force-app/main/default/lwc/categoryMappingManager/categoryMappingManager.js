@@ -251,7 +251,7 @@ export default class CategoryMappingManager extends LightningElement {
                     if (this.accountSearchTerm) {
                         const term = this.accountSearchTerm.toLowerCase();
                         const accName = (m.Account__r ? m.Account__r.Name : '').toLowerCase();
-                        const catName = (m.Product_Category__r ? m.Product_Category__r.Name : '').toLowerCase();
+                        const catName = (m.Category__r ? m.Category__r.Name : '').toLowerCase();
                         if (!accName.includes(term) && !catName.includes(term)) return false;
                     }
                     // Active-only filter
@@ -264,10 +264,10 @@ export default class CategoryMappingManager extends LightningElement {
                 .map(m => ({
                     ...m,
                     accountName: m.Account__r ? m.Account__r.Name : '',
-                    categoryName: m.Product_Category__r ? m.Product_Category__r.Name : '',
-                    categoryLevel: m.Product_Category__r ? m.Product_Category__r.Level__c : '',
+                    categoryName: m.Category__r ? m.Category__r.Name : '',
+                    categoryLevel: m.Category__r ? m.Category__r.Level__c : '',
                     isActive: this.isMappingActive(m),
-                    assignedBy: m.CreatedBy ? m.CreatedBy.Name : ''
+                    assignedBy: m.Assigned_By__r ? m.Assigned_By__r.Name : ''
                 }));
         } catch (error) {
             this.showError('Error loading customer categories', this.reduceErrors(error));
@@ -337,8 +337,8 @@ export default class CategoryMappingManager extends LightningElement {
             const toSave = { ...this.editAccountCategory };
             // Remove relationship and computed fields
             delete toSave.Account__r;
-            delete toSave.Product_Category__r;
-            delete toSave.CreatedBy;
+            delete toSave.Category__r;
+            delete toSave.Assigned_By__r;
             delete toSave.accountName;
             delete toSave.categoryName;
             delete toSave.categoryLevel;
@@ -486,7 +486,7 @@ export default class CategoryMappingManager extends LightningElement {
                     if (this.employeeSearchTerm) {
                         const term = this.employeeSearchTerm.toLowerCase();
                         const empName = (m.Employee__r ? m.Employee__r.Name : '').toLowerCase();
-                        const catName = (m.Product_Category__r ? m.Product_Category__r.Name : '').toLowerCase();
+                        const catName = (m.Category__r ? m.Category__r.Name : '').toLowerCase();
                         if (!empName.includes(term) && !catName.includes(term)) return false;
                     }
                     if (this.employeeActiveOnly) {
@@ -498,11 +498,11 @@ export default class CategoryMappingManager extends LightningElement {
                 .map(m => ({
                     ...m,
                     employeeName: m.Employee__r ? m.Employee__r.Name : '',
-                    categoryName: m.Product_Category__r ? m.Product_Category__r.Name : '',
-                    categoryLevel: m.Product_Category__r ? m.Product_Category__r.Level__c : '',
+                    categoryName: m.Category__r ? m.Category__r.Name : '',
+                    categoryLevel: m.Category__r ? m.Category__r.Level__c : '',
                     responsibilityType: m.Responsibility_Type__c || '',
                     isActive: this.isMappingActive(m),
-                    assignedBy: m.CreatedBy ? m.CreatedBy.Name : ''
+                    assignedBy: m.Assigned_By__r ? m.Assigned_By__r.Name : ''
                 }));
         } catch (error) {
             this.showError('Error loading user categories', this.reduceErrors(error));
@@ -564,8 +564,8 @@ export default class CategoryMappingManager extends LightningElement {
         try {
             const toSave = { ...this.editEmployeeCategory };
             delete toSave.Employee__r;
-            delete toSave.Product_Category__r;
-            delete toSave.CreatedBy;
+            delete toSave.Category__r;
+            delete toSave.Assigned_By__r;
             delete toSave.employeeName;
             delete toSave.categoryName;
             delete toSave.categoryLevel;

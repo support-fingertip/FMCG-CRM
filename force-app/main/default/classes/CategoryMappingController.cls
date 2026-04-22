@@ -25,13 +25,23 @@ public with sharing class CategoryMappingController {
 
     @AuraEnabled
     public static List<Account_Category__c> getAccountCategories(Id accountId) {
+        if (accountId != null) {
+            return [
+                SELECT Id, Name, Account__c, Account__r.Name, Category__c, Category__r.Name,
+                       Category_Level__c, Is_Active__c, Effective_From__c, Effective_To__c,
+                       Assigned_By__c, Assigned_By__r.Name, Notes__c
+                FROM Account_Category__c
+                WHERE Account__c = :accountId
+                ORDER BY Category__r.Name
+            ];
+        }
         return [
             SELECT Id, Name, Account__c, Account__r.Name, Category__c, Category__r.Name,
                    Category_Level__c, Is_Active__c, Effective_From__c, Effective_To__c,
                    Assigned_By__c, Assigned_By__r.Name, Notes__c
             FROM Account_Category__c
-            WHERE Account__c = :accountId
-            ORDER BY Category__r.Name
+            ORDER BY Account__r.Name, Category__r.Name
+            LIMIT 500
         ];
     }
 
@@ -88,14 +98,25 @@ public with sharing class CategoryMappingController {
 
     @AuraEnabled
     public static List<Employee_Category__c> getEmployeeCategories(Id employeeId) {
+        if (employeeId != null) {
+            return [
+                SELECT Id, Name, Employee__c, Employee__r.First_Name__c, Employee__r.Last_Name__c,
+                       Employee__r.Employee_Code__c, Category__c, Category__r.Name,
+                       Category_Level__c, Responsibility_Type__c, Is_Active__c,
+                       Effective_From__c, Effective_To__c, Assigned_By__c, Assigned_By__r.Name, Notes__c
+                FROM Employee_Category__c
+                WHERE Employee__c = :employeeId
+                ORDER BY Category__r.Name
+            ];
+        }
         return [
             SELECT Id, Name, Employee__c, Employee__r.First_Name__c, Employee__r.Last_Name__c,
                    Employee__r.Employee_Code__c, Category__c, Category__r.Name,
                    Category_Level__c, Responsibility_Type__c, Is_Active__c,
                    Effective_From__c, Effective_To__c, Assigned_By__c, Assigned_By__r.Name, Notes__c
             FROM Employee_Category__c
-            WHERE Employee__c = :employeeId
-            ORDER BY Category__r.Name
+            ORDER BY Employee__r.Last_Name__c, Category__r.Name
+            LIMIT 500
         ];
     }
 
