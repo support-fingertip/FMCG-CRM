@@ -42,7 +42,7 @@ if (!prodsToUpdate.isEmpty()) {
 // ═══════════════════════════════════════════════════════════
 
 List<Employee__c> empsToUpdate = new List<Employee__c>();
-for (Employee__c e : [SELECT Id, Channels__c FROM Employee__c WHERE Is_Active__c = true]) {
+for (Employee__c e : [SELECT Id, Channels__c FROM Employee__c WHERE Is_Active__c = true AND Territory__c != null]) {
     if (String.isBlank(e.Channels__c)) {
         e.Channels__c = 'GT;MT;E-Commerce';
         empsToUpdate.add(e);
