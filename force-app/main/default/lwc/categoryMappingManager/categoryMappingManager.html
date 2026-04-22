@@ -450,9 +450,10 @@
                                     <ul class="product-lookup-dropdown">
                                         <template for:each={employeeLookupResults} for:item="emp">
                                             <li key={emp.Id} class="lookup-option"
-                                                data-id={emp.Id} data-name={emp.Name}
+                                                data-id={emp.Id} data-name={emp.employeeFullName}
                                                 onclick={handleSelectLookupEmployee}>
-                                                <span class="lookup-option-name">{emp.Name}</span>
+                                                <span class="lookup-option-name">{emp.employeeFullName}</span>
+                                                <span class="lookup-option-meta">{emp.Employee_Code__c} - {emp.Designation__c}</span>
                                             </li>
                                         </template>
                                     </ul>

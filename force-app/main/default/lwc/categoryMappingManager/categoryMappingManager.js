@@ -680,7 +680,11 @@ export default class CategoryMappingManager extends LightningElement {
         }
         this._employeeLookupTimeout = setTimeout(async () => {
             try {
-                this.employeeLookupResults = await searchEmployeesForLookup({ searchTerm });
+                const results = await searchEmployeesForLookup({ searchTerm });
+                this.employeeLookupResults = results.map(e => ({
+                    ...e,
+                    employeeFullName: ((e.First_Name__c || '') + ' ' + (e.Last_Name__c || '')).trim()
+                }));
                 this.showEmployeeLookup = this.employeeLookupResults.length > 0;
             } catch (error) {
                 this.employeeLookupResults = [];
