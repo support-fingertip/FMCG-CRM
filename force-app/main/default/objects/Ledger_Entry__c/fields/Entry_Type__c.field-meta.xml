@@ -14,6 +14,16 @@
                 <label>Invoice</label>
             </value>
             <value>
+                <fullName>Credit</fullName>
+                <default>false</default>
+                <label>Credit</label>
+            </value>
+            <value>
+                <fullName>Debit</fullName>
+                <default>false</default>
+                <label>Debit</label>
+            </value>
+            <value>
                 <fullName>Credit Note</fullName>
                 <default>false</default>
                 <label>Credit Note</label>
