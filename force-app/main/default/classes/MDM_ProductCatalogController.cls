@@ -30,7 +30,7 @@ public with sharing class MDM_ProductCatalogController {
         String query = 'SELECT Id, Name, Is_Active__c, ' +
                        'Product_Category__c, Product_Category__r.Name, ' +
                        'Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c, ' +
-                       'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c ' +
+                       'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Product_Image_URL__c ' +
                        'FROM Product_Extension__c';
 
         List<String> conditions = new List<String>();
@@ -59,7 +59,7 @@ public with sharing class MDM_ProductCatalogController {
             'SELECT Id, Name, Is_Active__c, ' +
             'Product_Category__c, Product_Category__r.Name, ' +
             'Barcode_EAN__c, Barcode_UPC__c, HSN_SAC_Code__c, Weight__c, ' +
-            'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c',
+            'Weight_Unit__c, Case_Size__c, Min_Order_Qty__c, Product_Image_URL__c',
             'SELECT COUNT()'
         );
 
@@ -88,6 +88,7 @@ public with sharing class MDM_ProductCatalogController {
             pw.caseSize = p.Case_Size__c;
             pw.minOrderQty = p.Min_Order_Qty__c;
             pw.extIsActive = p.Is_Active__c;
+            pw.imageUrl = p.Product_Image_URL__c;
 
             result.products.add(pw);
         }
@@ -254,6 +255,7 @@ public with sharing class MDM_ProductCatalogController {
         @AuraEnabled public Decimal caseSize;
         @AuraEnabled public Decimal minOrderQty;
         @AuraEnabled public Boolean extIsActive;
+        @AuraEnabled public String imageUrl;
     }
 
     public class ProductDetailWrapper {

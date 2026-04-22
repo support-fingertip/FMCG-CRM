@@ -118,6 +118,13 @@
                                                 </template>
                                             </div>
 
+                                            <!-- Product Image -->
+                                            <template if:true={product.imageUrl}>
+                                                <div class="product-image-wrapper">
+                                                    <img src={product.imageUrl} alt={product.name} class="product-image" loading="lazy"/>
+                                                </div>
+                                            </template>
+
                                             <!-- Product Code -->
                                             <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_xx-small">
                                                 {product.productCode}
