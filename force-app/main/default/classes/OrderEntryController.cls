@@ -13,7 +13,7 @@ public with sharing class OrderEntryController {
         String query = 'SELECT Id, Name, SKU_Code__c, Is_Active__c, MRP__c, Unit_Price__c, GST_Rate__c, ' +
                        'Unit_of_Measure__c, Base_UOM__c, Base_UOM__r.UOM_Code__c, Base_UOM__r.Name, ' +
                        'Secondary_UOM__c, Secondary_UOM__r.UOM_Code__c, Secondary_UOM__r.Name, ' +
-                       'Ordering_UOMs__c, Case_Size__c ' +
+                       'Ordering_UOMs__c, Case_Size__c, Channels__c, Product_Category__c ' +
                        'FROM Product_Extension__c WHERE Is_Active__c = true';
         String searchKey;
         if (String.isNotBlank(searchTerm)) {
@@ -23,8 +23,37 @@ public with sharing class OrderEntryController {
         if (String.isNotBlank(categoryId)) {
             query += ' AND Product_Category__r.Name = :categoryId';
         }
+
+        // MDM-004: Category-based filtering when account has category mappings
+        Set<Id> expandedCategoryIds;
+        if (BPM_FeatureToggle_Util.isEnabled('MDM-004') && String.isNotBlank(accountId)) {
+            try {
+                Id acctId = Id.valueOf(accountId);
+                Set<Id> acctCatIds = MDM_CategoryMapping_Service.getAccountCategoryIds(acctId);
+                if (!acctCatIds.isEmpty()) {
+                    expandedCategoryIds = MDM_CategoryMapping_Service.expandCategoryHierarchy(acctCatIds);
+                    query += ' AND Product_Category__c IN :expandedCategoryIds';
+                }
+            } catch (StringException e) {
+                // invalid accountId — skip category filtering
+            }
+        }
+
         query += ' ORDER BY Name LIMIT 50';
         List<Product_Extension__c> products = Database.query(query);
+
+        // MDM-003: Channel-based post-query filtering
+        if (BPM_FeatureToggle_Util.isEnabled('MDM-003') && String.isNotBlank(accountId)) {
+            try {
+                Id acctId = Id.valueOf(accountId);
+                String acctChannel = MDM_ChannelMapping_Service.resolveTradeChannel(acctId);
+                if (String.isNotBlank(acctChannel)) {
+                    products = MDM_ChannelMapping_Service.filterProductsByChannel(products, acctChannel);
+                }
+            } catch (StringException e) {
+                // invalid accountId — skip channel filtering
+            }
+        }
 
         if (products.isEmpty()) {
             return new List<ProductSearchResult>();
@@ -343,6 +372,25 @@ public with sharing class OrderEntryController {
                 }
             }
 
+            // MDM-003: Populate Trade_Channel__c from Account's trade channel
+            if (BPM_FeatureToggle_Util.isEnabled('MDM-003') && order.Account__c != null) {
+                String tradeChannel = MDM_ChannelMapping_Service.resolveTradeChannel(order.Account__c);
+                if (String.isNotBlank(tradeChannel)) {
+                    order.Trade_Channel__c = tradeChannel;
+                }
+
+                // Validate employee is authorized for this channel
+                List<Employee__c> currentEmps = [
+                    SELECT Id, Channels__c FROM Employee__c
+                    WHERE User__c = :UserInfo.getUserId() AND Is_Active__c = true LIMIT 1
+                ];
+                if (!currentEmps.isEmpty() && String.isNotBlank(tradeChannel)) {
+                    if (!MDM_ChannelMapping_Service.isEmployeeAuthorizedForChannel(currentEmps[0], tradeChannel)) {
+                        throw new AuraHandledException('You are not authorized to sell in channel: ' + tradeChannel);
+                    }
+                }
+            }
+
             // Set warehouse if selected
             if (payload.get('warehouseId') != null) {
                 order.Warehouse__c = (String) payload.get('warehouseId');
@@ -535,6 +583,62 @@ public with sharing class OrderEntryController {
             }
 
             if (!lineItems.isEmpty()) {
+                // MDM-004: Validate products against account's assigned categories
+                if (BPM_FeatureToggle_Util.isEnabled('MDM-004') && order.Account__c != null) {
+                    Set<Id> lineProductIds2 = new Set<Id>();
+                    Map<Id, String> prodNameMap = new Map<Id, String>();
+                    for (Order_Line_Item__c li : lineItems) {
+                        if (li.Product_Ext__c != null) {
+                            lineProductIds2.add(li.Product_Ext__c);
+                        }
+                    }
+                    if (!lineProductIds2.isEmpty()) {
+                        for (Product_Extension__c pe : [SELECT Id, Name FROM Product_Extension__c WHERE Id IN :lineProductIds2]) {
+                            prodNameMap.put(pe.Id, pe.Name);
+                        }
+                        Map<Id, Boolean> catAllowed = MDM_CategoryMapping_Service.validateProductsForAccount(
+                            order.Account__c, lineProductIds2
+                        );
+                        List<String> blockedProducts = new List<String>();
+                        for (Id pId : catAllowed.keySet()) {
+                            if (!catAllowed.get(pId)) {
+                                blockedProducts.add(prodNameMap.containsKey(pId) ? prodNameMap.get(pId) : String.valueOf(pId));
+                            }
+                        }
+                        if (!blockedProducts.isEmpty()) {
+                            throw new AuraHandledException(
+                                'Products not in customer\'s assigned categories: ' + String.join(blockedProducts, ', ')
+                            );
+                        }
+                    }
+                }
+
+                // MDM-003: Validate products against channel assignment
+                if (BPM_FeatureToggle_Util.isEnabled('MDM-003') && String.isNotBlank(order.Trade_Channel__c)) {
+                    Set<Id> lineProductIds3 = new Set<Id>();
+                    for (Order_Line_Item__c li : lineItems) {
+                        if (li.Product_Ext__c != null) {
+                            lineProductIds3.add(li.Product_Ext__c);
+                        }
+                    }
+                    if (!lineProductIds3.isEmpty()) {
+                        List<Product_Extension__c> channelProds = [
+                            SELECT Id, Name, Channels__c FROM Product_Extension__c WHERE Id IN :lineProductIds3
+                        ];
+                        List<String> channelBlocked = new List<String>();
+                        for (Product_Extension__c pe : channelProds) {
+                            if (!MDM_ChannelMapping_Service.isProductInChannel(pe, order.Trade_Channel__c)) {
+                                channelBlocked.add(pe.Name);
+                            }
+                        }
+                        if (!channelBlocked.isEmpty()) {
+                            throw new AuraHandledException(
+                                'Products not available in channel ' + order.Trade_Channel__c + ': ' + String.join(channelBlocked, ', ')
+                            );
+                        }
+                    }
+                }
+
                 insert lineItems;
             }
 

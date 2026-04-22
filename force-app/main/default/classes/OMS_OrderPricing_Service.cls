@@ -53,7 +53,7 @@ public without sharing class OMS_OrderPricing_Service {
         Map<Id, Sales_Order__c> orderMap = new Map<Id, Sales_Order__c>();
         if (!orderIds.isEmpty()) {
             orderMap = new Map<Id, Sales_Order__c>([
-                SELECT Id, Region__c, Channel__c, Account__c, Territory__c, Order_Date__c
+                SELECT Id, Region__c, Channel__c, Trade_Channel__c, Account__c, Territory__c, Order_Date__c
                 FROM Sales_Order__c
                 WHERE Id IN :orderIds
             ]);
@@ -105,7 +105,13 @@ public without sharing class OMS_OrderPricing_Service {
 
                 Id accountId = (order != null) ? order.Account__c : null;
                 Id territoryId = (order != null) ? order.Territory__c : null;
-                String channel = (order != null) ? order.Channel__c : '';
+                // MDM-003: Use Trade_Channel__c (actual trade channel from Account)
+                // instead of Channel__c (which is the order-entry method like Field App/Portal)
+                String channel = '';
+                if (order != null) {
+                    channel = (BPM_FeatureToggle_Util.isEnabled('MDM-003') && String.isNotBlank(order.Trade_Channel__c))
+                        ? order.Trade_Channel__c : order.Channel__c;
+                }
                 Id categoryId = (product != null) ? product.Product_Category__c : null;
 
                 List<Price_List__c> productPrices = pricesByProduct.get(item.Product_Ext__c);

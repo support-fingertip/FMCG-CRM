@@ -61,6 +61,8 @@ public class OMS_SalesOrder_TriggerHandler extends TriggerHandler {
         }
         if (!submittedOrders.isEmpty()) {
             OMS_OrderValidation_Service.validateMustSellCompliance(submittedOrders);
+            OMS_OrderValidation_Service.validateChannelCompliance(submittedOrders);
+            OMS_OrderValidation_Service.validateCategoryCompliance(submittedOrders);
         }
 
         // Re-validate credit limit if order value increased

@@ -189,7 +189,10 @@ public without sharing class OMS_OrderValidation_Service {
             orderIds.add(order.Id);
             if (order.Account__c != null) accountIds.add(order.Account__c);
             if (order.Territory__c != null) territoryIds.add(order.Territory__c);
-            if (String.isNotBlank(order.Channel__c)) channels.add(order.Channel__c);
+            // MDM-003: Use Trade_Channel__c for must-sell channel matching
+            String tradeChannel = (BPM_FeatureToggle_Util.isEnabled('MDM-003') && String.isNotBlank(order.Trade_Channel__c))
+                ? order.Trade_Channel__c : order.Channel__c;
+            if (String.isNotBlank(tradeChannel)) channels.add(tradeChannel);
         }
 
         if (orderIds.isEmpty()) return;
@@ -248,8 +251,10 @@ public without sharing class OMS_OrderValidation_Service {
                 if (config.Territory__c != null && config.Territory__c != order.Territory__c) {
                     continue;
                 }
-                // Match channel
-                if (String.isNotBlank(config.Channel__c) && config.Channel__c != order.Channel__c) {
+                // Match channel — use Trade_Channel__c when MDM-003 enabled
+                String orderTradeChannel = (BPM_FeatureToggle_Util.isEnabled('MDM-003') && String.isNotBlank(order.Trade_Channel__c))
+                    ? order.Trade_Channel__c : order.Channel__c;
+                if (String.isNotBlank(config.Channel__c) && config.Channel__c != orderTradeChannel) {
                     continue;
                 }
                 // Match customer type
@@ -270,6 +275,118 @@ public without sharing class OMS_OrderValidation_Service {
                     String.join(missingProducts, ', ') +
                     '. Please add these products before submitting.'
                 );
+            }
+        }
+    }
+
+    // ── Channel Compliance (MDM-003) ────────────────────────────────────────
+
+    public static void validateChannelCompliance(List<Sales_Order__c> orders) {
+        if (!BPM_FeatureToggle_Util.isEnabled('MDM-003')) return;
+
+        Set<Id> orderIds = new Set<Id>();
+        Map<Id, String> orderTradeChannelMap = new Map<Id, String>();
+
+        for (Sales_Order__c order : orders) {
+            if (String.isNotBlank(order.Trade_Channel__c)) {
+                orderIds.add(order.Id);
+                orderTradeChannelMap.put(order.Id, order.Trade_Channel__c);
+            }
+        }
+
+        if (orderIds.isEmpty()) return;
+
+        Map<Id, List<Product_Extension__c>> productsByOrder = new Map<Id, List<Product_Extension__c>>();
+        for (Order_Line_Item__c li : [
+            SELECT Sales_Order__c, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Channels__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c IN :orderIds AND Product_Ext__c != null
+        ]) {
+            if (!productsByOrder.containsKey(li.Sales_Order__c)) {
+                productsByOrder.put(li.Sales_Order__c, new List<Product_Extension__c>());
+            }
+            productsByOrder.get(li.Sales_Order__c).add(
+                new Product_Extension__c(
+                    Id = li.Product_Ext__c,
+                    Name = li.Product_Ext__r.Name,
+                    Channels__c = li.Product_Ext__r.Channels__c
+                )
+            );
+        }
+
+        for (Sales_Order__c order : orders) {
+            String tradeChannel = orderTradeChannelMap.get(order.Id);
+            List<Product_Extension__c> prods = productsByOrder.get(order.Id);
+            if (prods == null || String.isBlank(tradeChannel)) continue;
+
+            List<String> blocked = new List<String>();
+            for (Product_Extension__c p : prods) {
+                if (!MDM_ChannelMapping_Service.isProductInChannel(p, tradeChannel)) {
+                    blocked.add(p.Name);
+                }
+            }
+            if (!blocked.isEmpty()) {
+                order.addError('Products not available in channel ' + tradeChannel + ': ' + String.join(blocked, ', '));
+            }
+        }
+    }
+
+    // ── Category Compliance (MDM-004) ────────────────────────────────────────
+
+    public static void validateCategoryCompliance(List<Sales_Order__c> orders) {
+        if (!BPM_FeatureToggle_Util.isEnabled('MDM-004')) return;
+
+        Set<Id> orderIds = new Set<Id>();
+        Set<Id> accountIds = new Set<Id>();
+        Map<Id, Id> orderAccountMap = new Map<Id, Id>();
+
+        for (Sales_Order__c order : orders) {
+            if (order.Account__c != null) {
+                orderIds.add(order.Id);
+                accountIds.add(order.Account__c);
+                orderAccountMap.put(order.Id, order.Account__c);
+            }
+        }
+
+        if (orderIds.isEmpty()) return;
+
+        Map<Id, Set<Id>> acctCatMap = MDM_CategoryMapping_Service.getAccountCategoryIdsMap(accountIds);
+
+        Map<Id, List<Product_Extension__c>> productsByOrder = new Map<Id, List<Product_Extension__c>>();
+        for (Order_Line_Item__c li : [
+            SELECT Sales_Order__c, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.Product_Category__c
+            FROM Order_Line_Item__c
+            WHERE Sales_Order__c IN :orderIds AND Product_Ext__c != null
+        ]) {
+            if (!productsByOrder.containsKey(li.Sales_Order__c)) {
+                productsByOrder.put(li.Sales_Order__c, new List<Product_Extension__c>());
+            }
+            productsByOrder.get(li.Sales_Order__c).add(
+                new Product_Extension__c(
+                    Id = li.Product_Ext__c,
+                    Name = li.Product_Ext__r.Name,
+                    Product_Category__c = li.Product_Ext__r.Product_Category__c
+                )
+            );
+        }
+
+        for (Sales_Order__c order : orders) {
+            Id acctId = orderAccountMap.get(order.Id);
+            Set<Id> catIds = acctCatMap.get(acctId);
+            if (catIds == null || catIds.isEmpty()) continue;
+
+            Set<Id> expandedIds = MDM_CategoryMapping_Service.expandCategoryHierarchy(catIds);
+            List<Product_Extension__c> prods = productsByOrder.get(order.Id);
+            if (prods == null) continue;
+
+            List<String> blocked = new List<String>();
+            for (Product_Extension__c p : prods) {
+                if (p.Product_Category__c != null && !expandedIds.contains(p.Product_Category__c)) {
+                    blocked.add(p.Name);
+                }
+            }
+            if (!blocked.isEmpty()) {
+                order.addError('Products not in customer\'s assigned categories: ' + String.join(blocked, ', '));
             }
         }
     }

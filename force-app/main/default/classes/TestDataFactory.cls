@@ -448,4 +448,29 @@ public class TestDataFactory {
             Achievement_Value__c = 0
         );
     }
+
+    // ── MDM Category Mapping Helpers ─────────────────────────────────────
+
+    public static Account_Category__c createAccountCategory(Id accountId, Id categoryId) {
+        Account_Category__c ac = new Account_Category__c(
+            Account__c = accountId,
+            Category__c = categoryId,
+            Is_Active__c = true,
+            Effective_From__c = Date.today()
+        );
+        insert ac;
+        return ac;
+    }
+
+    public static Employee_Category__c createEmployeeCategory(Id employeeId, Id categoryId) {
+        Employee_Category__c ec = new Employee_Category__c(
+            Employee__c = employeeId,
+            Category__c = categoryId,
+            Is_Active__c = true,
+            Responsibility_Type__c = 'Primary',
+            Effective_From__c = Date.today()
+        );
+        insert ec;
+        return ec;
+    }
 }

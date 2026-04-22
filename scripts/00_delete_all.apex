@@ -135,6 +135,13 @@ if (c > 0) { delete [SELECT Id FROM Stock_Transfer__c]; System.debug('Deleted ' 
 c = [SELECT COUNT() FROM Warehouse__c];
 if (c > 0) { delete [SELECT Id FROM Warehouse__c]; System.debug('Deleted ' + c + ' Warehouse__c'); }
 
+// ── Category & Channel Mappings (junction tables — delete before Account/Employee) ──
+c = [SELECT COUNT() FROM Account_Category__c];
+if (c > 0) { delete [SELECT Id FROM Account_Category__c]; System.debug('Deleted ' + c + ' Account_Category__c'); }
+
+c = [SELECT COUNT() FROM Employee_Category__c];
+if (c > 0) { delete [SELECT Id FROM Employee_Category__c]; System.debug('Deleted ' + c + ' Employee_Category__c'); }
+
 // ── Accounts (skip standard SF sample data that has Cases/Opportunities) ──
 try {
     // Delete Cases first (block Account deletion)
@@ -192,5 +199,7 @@ System.debug('  sf apex run --file scripts/13_employees.apex');
 System.debug('  sf apex run --file scripts/13_target_periods.apex');
 System.debug('  sf apex run --file scripts/14_target_criteria_and_actuals.apex');
 System.debug('  sf apex run --file scripts/13_incentive_slabs.apex');
-System.debug('  sf apex run --file scripts/15_test_team.apex');
-System.debug('  sf apex run --file scripts/16_leave_policies.apex');
+System.debug('  sf apex run --file scripts/15_employee_channels.apex');
+System.debug('  sf apex run --file scripts/16_product_channels.apex');
+System.debug('  sf apex run --file scripts/17_account_categories.apex');
+System.debug('  sf apex run --file scripts/18_employee_categories.apex');

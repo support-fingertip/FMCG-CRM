@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Assigned_By__c</fullName>
+    <label>Assigned By</label>
+    <type>Lookup</type>
+    <required>false</required>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Assigned Account Categories</relationshipLabel>
+    <relationshipName>Assigned_Account_Categories</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>

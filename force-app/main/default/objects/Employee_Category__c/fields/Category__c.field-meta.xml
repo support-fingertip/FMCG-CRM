@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Category__c</fullName>
+    <label>Category</label>
+    <type>Lookup</type>
+    <required>true</required>
+    <referenceTo>Product_Category__c</referenceTo>
+    <relationshipLabel>Employee Category Mappings</relationshipLabel>
+    <relationshipName>Employee_Category_Mappings</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>
