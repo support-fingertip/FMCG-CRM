@@ -456,7 +456,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                     date: visit.Visit_Date__c,
                     amountValue: visit.Order_Value__c,
                     status: visit.Visit_Status__c || '',
-                    iconName: 'standard:visit'
+                    iconName: 'standard:log_a_call'
                 });
             });
 
