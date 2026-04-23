@@ -688,7 +688,27 @@ public with sharing class OrderEntryController {
             return [SELECT Id, Name, Status__c, Total_Net_Amount__c FROM Sales_Order__c WHERE Id = :order.Id];
         } catch (Exception e) {
             Database.rollback(sp);
-            throw new AuraHandledException(e.getMessage());
+            // Log the full stack trace to server logs for debugging
+            System.debug(LoggingLevel.ERROR, 'createSalesOrder failed: ' + e.getMessage()
+                + '\nStack: ' + e.getStackTraceString()
+                + '\nLine: ' + e.getLineNumber() + ', Type: ' + e.getTypeName());
+            // AuraHandledException.getMessage() returns "Script-thrown exception" — use type-aware handling
+            String errMsg = e.getMessage();
+            if (e instanceof AuraHandledException) {
+                // Already a user-friendly message, re-throw as-is
+                throw e;
+            }
+            // For DML exceptions, try to extract the actual field error
+            if (e instanceof DmlException) {
+                DmlException dmlEx = (DmlException) e;
+                if (dmlEx.getNumDml() > 0) {
+                    errMsg = dmlEx.getDmlMessage(0);
+                    if (String.isBlank(errMsg)) errMsg = dmlEx.getMessage();
+                }
+            }
+            AuraHandledException aex = new AuraHandledException(errMsg);
+            aex.setMessage(errMsg);
+            throw aex;
         }
     }
 
