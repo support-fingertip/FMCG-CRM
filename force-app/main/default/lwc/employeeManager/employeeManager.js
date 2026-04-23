@@ -642,6 +642,10 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             this.showToast('Error', 'Territory is required.', 'error');
             return;
         }
+        if (!this.employeeForm.Channels__c) {
+            this.showToast('Error', 'At least one Channel must be assigned.', 'error');
+            return;
+        }
 
         this.isLoading = true;
         try {
@@ -663,7 +667,9 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
                 Is_Active__c: this.employeeForm.Is_Active__c,
                 Profile_Photo_URL__c: this.employeeForm.Profile_Photo_URL__c,
                 Address__c: this.employeeForm.Address__c,
-                Week_Off_Days__c: this.employeeForm.Week_Off_Days__c
+                Week_Off_Days__c: this.employeeForm.Week_Off_Days__c,
+                Channels__c: this.employeeForm.Channels__c,
+                Gross_Salary__c: this.employeeForm.Gross_Salary__c
             };
             if (this.employeeForm.Id) {
                 employeeRecord.Id = this.employeeForm.Id;
