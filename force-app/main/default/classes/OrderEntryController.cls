@@ -669,7 +669,7 @@ public with sharing class OrderEntryController {
                 headerSync.Total_Tax__c = toDecimal(payload.get('totalTax'));
                 doHeaderSync = true;
             }
-            if (payload.get('netAmount') != null) {
+            if (payload.get('netAmount') != null && toDecimal(payload.get('netAmount')) > 0) {
                 headerSync.Total_Net_Amount__c = toDecimal(payload.get('netAmount'));
                 doHeaderSync = true;
             }
