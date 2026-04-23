@@ -3,7 +3,7 @@
     <fullName>Channel__c</fullName>
     <label>Channel</label>
     <type>Picklist</type>
-    <required>false</required>
+    <required>true</required>
     <valueSet>
         <restricted>true</restricted>
         <valueSetDefinition>

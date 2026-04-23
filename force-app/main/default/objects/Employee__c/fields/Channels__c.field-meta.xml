@@ -3,7 +3,7 @@
     <fullName>Channels__c</fullName>
     <label>Channels</label>
     <type>MultiselectPicklist</type>
-    <required>false</required>
+    <required>true</required>
     <visibleLines>3</visibleLines>
     <valueSet>
         <restricted>true</restricted>
