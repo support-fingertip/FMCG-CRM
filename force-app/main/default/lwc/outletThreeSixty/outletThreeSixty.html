@@ -396,6 +396,43 @@
                         </div>
                     </lightning-tab>
 
+                    <!-- Tickets Tab -->
+                    <lightning-tab label="Tickets" value="tickets" icon-name="standard:case" onactive={handleTabChange}>
+                        <div class="tab-content">
+                            <template if:true={hasTickets}>
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                                    <thead>
+                                        <tr>
+                                            <th>TICKET #</th>
+                                            <th>SUBJECT</th>
+                                            <th>CATEGORY</th>
+                                            <th>PRIORITY</th>
+                                            <th>STATUS</th>
+                                            <th>DATE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={tickets} for:item="t">
+                                            <tr key={t.Id}>
+                                                <td>{t.Name}</td>
+                                                <td>{t.Subject__c}</td>
+                                                <td>{t.Category__c}</td>
+                                                <td>{t.Priority__c}</td>
+                                                <td>{t.Status__c}</td>
+                                                <td>{t.Ticket_Date__c}</td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </template>
+                            <template if:false={hasTickets}>
+                                <div class="slds-p-around_medium slds-text-align_center">
+                                    <p class="slds-text-color_weak">No tickets found for this account.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-tab>
+
                     <!-- Timeline Tab -->
                     <lightning-tab label="Timeline" value="timeline" icon-name="standard:timesheet" onactive={handleTabChange}>
                         <div class="tab-content">

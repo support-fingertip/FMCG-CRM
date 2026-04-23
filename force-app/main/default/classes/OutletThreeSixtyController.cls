@@ -540,6 +540,21 @@ public with sharing class OutletThreeSixtyController {
         return timeline;
     }
 
+    // ── Get Tickets ───────────────────────────────────────────────────────────
+
+    @AuraEnabled
+    public static List<Ticket__c> getTickets(Id accountId, Integer limitCount) {
+        if (limitCount == null) limitCount = 20;
+        return [
+            SELECT Id, Name, Subject__c, Category__c, Priority__c, Status__c,
+                   Ticket_Date__c, Description__c, Resolved_Date__c, Resolution__c
+            FROM Ticket__c
+            WHERE Account__c = :accountId
+            ORDER BY Ticket_Date__c DESC
+            LIMIT :limitCount
+        ];
+    }
+
     // ── Timeline Entry Wrapper ──────────────────────────────────────────────────
 
     /**

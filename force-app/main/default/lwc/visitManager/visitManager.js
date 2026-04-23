@@ -124,6 +124,9 @@ export default class VisitManager extends LightningElement {
     @track detailVisitSummary = {};
     @track detailVisitTab = 'orders';
     @track detailSurveyResponses = [];
+    @track detailTickets = [];
+    @track detailMerchandising = [];
+    @track detailCompetitorEntries = [];
 
     // ── AD-HOC ──
     @track showAdHocModal = false;
@@ -1777,11 +1780,17 @@ export default class VisitManager extends LightningElement {
 
         try {
             this.isProcessing = true;
-            const [summary, surveyResp] = await Promise.all([
+            const [summary, surveyResp, tickets, merchandising, competitors] = await Promise.all([
                 refreshVisitSummary({ visitId }),
-                getSurveyResponsesForVisit({ visitId }).catch(() => [])
+                getSurveyResponsesForVisit({ visitId }).catch(() => []),
+                getTicketsForVisit({ visitId }).catch(() => []),
+                getMerchandisingForVisit({ visitId }).catch(() => []),
+                getCompetitorEntriesForVisit({ visitId }).catch(() => [])
             ]);
             this.detailVisitSummary = summary || {};
+            this.detailTickets = tickets || [];
+            this.detailMerchandising = merchandising || [];
+            this.detailCompetitorEntries = competitors || [];
             this.detailSurveyResponses = (surveyResp || []).map(r => ({
                 ...r,
                 responseDateFmt: r.responseDate ? new Date(r.responseDate).toLocaleDateString() : '',
@@ -1801,6 +1810,9 @@ export default class VisitManager extends LightningElement {
         this.detailVisit = null;
         this.detailVisitSummary = {};
         this.detailSurveyResponses = [];
+        this.detailTickets = [];
+        this.detailMerchandising = [];
+        this.detailCompetitorEntries = [];
         this.currentScreen = SCREEN.VISIT_BOARD;
     }
 
@@ -1863,6 +1875,15 @@ export default class VisitManager extends LightningElement {
     get detailCollectionsTabCls() { return 'vm-tab' + (this.isDetailCollectionsTab ? ' vm-tab-active' : ''); }
     get detailReturnsTabCls() { return 'vm-tab' + (this.isDetailReturnsTab ? ' vm-tab-active' : ''); }
     get detailSurveysTabCls() { return 'vm-tab' + (this.isDetailSurveysTab ? ' vm-tab-active' : ''); }
+    get isDetailTicketsTab() { return this.detailVisitTab === 'tickets'; }
+    get isDetailMerchandisingTab() { return this.detailVisitTab === 'merchandising'; }
+    get isDetailCompetitorTab() { return this.detailVisitTab === 'competitor'; }
+    get detailTicketsTabCls() { return 'vm-tab' + (this.isDetailTicketsTab ? ' vm-tab-active' : ''); }
+    get detailMerchandisingTabCls() { return 'vm-tab' + (this.isDetailMerchandisingTab ? ' vm-tab-active' : ''); }
+    get detailCompetitorTabCls() { return 'vm-tab' + (this.isDetailCompetitorTab ? ' vm-tab-active' : ''); }
+    get hasDetailTickets() { return this.detailTickets.length > 0; }
+    get hasDetailMerchandising() { return this.detailMerchandising.length > 0; }
+    get hasDetailCompetitorEntries() { return this.detailCompetitorEntries.length > 0; }
 
     _buildRatingStars(value) {
         const v = value ? parseInt(value, 10) : 0;

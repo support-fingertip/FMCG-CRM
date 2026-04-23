@@ -1404,6 +1404,24 @@
                         <span class="vm-tab-badge">{detailSurveyResponses.length}</span>
                     </template>
                 </button>
+                <button class={detailTicketsTabCls} data-tab="tickets" onclick={handleDetailTab}>
+                    Tickets
+                    <template if:true={hasDetailTickets}>
+                        <span class="vm-tab-badge">{detailTickets.length}</span>
+                    </template>
+                </button>
+                <button class={detailMerchandisingTabCls} data-tab="merchandising" onclick={handleDetailTab}>
+                    Merchandising
+                    <template if:true={hasDetailMerchandising}>
+                        <span class="vm-tab-badge">{detailMerchandising.length}</span>
+                    </template>
+                </button>
+                <button class={detailCompetitorTabCls} data-tab="competitor" onclick={handleDetailTab}>
+                    Competitor
+                    <template if:true={hasDetailCompetitorEntries}>
+                        <span class="vm-tab-badge">{detailCompetitorEntries.length}</span>
+                    </template>
+                </button>
             </div>
 
             <!-- Orders Tab -->
@@ -1507,6 +1525,67 @@
                     </template>
                     <template if:false={hasDetailSurveyResponses}>
                         <div class="vm-empty"><p>No survey responses recorded for this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Tickets Tab -->
+            <template if:true={isDetailTicketsTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailTickets}>
+                        <template for:each={detailTickets} for:item="ticket">
+                            <div key={ticket.Id} class="vm-rec-row">
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{ticket.Subject__c}</span>
+                                    <span class="vm-rec-sub">{ticket.Category__c} - {ticket.Priority__c} - {ticket.Status__c}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailTickets}>
+                        <div class="vm-empty"><p>No tickets logged during this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Merchandising Tab -->
+            <template if:true={isDetailMerchandisingTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailMerchandising}>
+                        <template for:each={detailMerchandising} for:item="merch">
+                            <div key={merch.Id} class="vm-rec-row">
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{merch.Name}</span>
+                                    <span class="vm-rec-sub">
+                                        POSM: {merch.POSM_Present__c} |
+                                        Planogram: {merch.Planogram_Compliant__c} |
+                                        Own Share: {merch.Own_Shelf_Share__c}%
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailMerchandising}>
+                        <div class="vm-empty"><p>No merchandising audit for this visit.</p></div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Competitor Tab -->
+            <template if:true={isDetailCompetitorTab}>
+                <div class="vm-tab-content">
+                    <template if:true={hasDetailCompetitorEntries}>
+                        <template for:each={detailCompetitorEntries} for:item="comp">
+                            <div key={comp.Id} class="vm-rec-row">
+                                <div class="vm-rec-info">
+                                    <span class="vm-rec-name">{comp.Competitor_Name__c}</span>
+                                    <span class="vm-rec-sub">{comp.Product_Observed__c} - {comp.Notes__c}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:false={hasDetailCompetitorEntries}>
+                        <div class="vm-empty"><p>No competitor entries for this visit.</p></div>
                     </template>
                 </div>
             </template>

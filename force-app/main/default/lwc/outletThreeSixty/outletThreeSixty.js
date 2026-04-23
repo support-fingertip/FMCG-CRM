@@ -10,6 +10,7 @@ import getCollectionHistory from '@salesforce/apex/OutletThreeSixtyController.ge
 import getVisitHistory from '@salesforce/apex/OutletThreeSixtyController.getVisitHistory';
 import getApplicableSchemes from '@salesforce/apex/OutletThreeSixtyController.getApplicableSchemes';
 import getStockLevels from '@salesforce/apex/OutletThreeSixtyController.getStockLevels';
+import getTickets from '@salesforce/apex/OutletThreeSixtyController.getTickets';
 
 const ACCOUNT_FIELDS = [
     'Account.Name',
@@ -44,6 +45,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     @track schemes = [];
     @track stockItems = [];
     @track timeline = [];
+    @track tickets = [];
     @track mapMarkers = null;
 
     isLoading = false;
@@ -57,6 +59,7 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
     get hasSchemes() { return this.schemes && this.schemes.length > 0; }
     get hasStock() { return this.stockItems && this.stockItems.length > 0; }
     get hasTimeline() { return this.timeline && this.timeline.length > 0; }
+    get hasTickets() { return this.tickets && this.tickets.length > 0; }
     get hasMapMarkers() { return this.mapMarkers && this.mapMarkers.length > 0; }
 
     get outletName() { return this.outletData.name || ''; }
@@ -266,6 +269,9 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
                 case 'timeline':
                     await this.loadTimeline();
                     break;
+                case 'tickets':
+                    await this.loadTickets();
+                    break;
                 default:
                     console.warn('[O360] loadTabData: unknown tab, no-op:', tabName);
                     break;
@@ -395,6 +401,17 @@ export default class OutletThreeSixty extends NavigationMixin(LightningElement) 
         } catch (error) {
             console.error('[O360] loadStock error:', JSON.stringify(error), error);
             this.stockItems = [];
+        }
+    }
+
+    async loadTickets() {
+        try {
+            const result = await getTickets({ accountId: this.recordId, limitCount: 20 });
+            console.log('[O360] loadTickets -> rows:', (result || []).length);
+            this.tickets = result || [];
+        } catch (error) {
+            console.error('[O360] loadTickets error:', JSON.stringify(error), error);
+            this.tickets = [];
         }
     }
 
