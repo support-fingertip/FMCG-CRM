@@ -11,13 +11,28 @@
             <layoutItems><behavior>Edit</behavior><field>AccountNumber</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>RecordTypeId</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>Type</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Owner_Name__c</field></layoutItems>
+            <layoutItems><behavior>Required</behavior><field>Channel__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>OwnerId</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>Phone</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>ParentId</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>Is_Active__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Owner_Name__c</field></layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Territory &amp; Beat</label>
+        <layoutColumns>
+            <layoutItems><behavior>Required</behavior><field>Territory__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Beat__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems><behavior>Edit</behavior><field>Region__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -29,11 +44,9 @@
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>Outlet_Type__c</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>Outlet_Class__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Channel__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>Visit_Frequency__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Last_Visit_Date__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -41,15 +54,14 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Credit &amp; Outstanding</label>
+        <label>Addresses</label>
         <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Credit_Limit__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Credit_Utilized__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>BillingAddress</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Outstanding_Balance__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>ShippingAddress</field></layoutItems>
         </layoutColumns>
-        <style>TwoColumnsTopToBottom</style>
+        <style>TwoColumnsLeftToRight</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
@@ -70,25 +82,15 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
-        <label>Territory</label>
+        <label>Credit &amp; Outstanding</label>
         <layoutColumns>
-            <layoutItems><behavior>Required</behavior><field>Territory__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Credit_Limit__c</field></layoutItems>
         </layoutColumns>
-        <layoutColumns></layoutColumns>
+        <layoutColumns>
+            <layoutItems><behavior>Readonly</behavior><field>Credit_Utilized__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Outstanding_Balance__c</field></layoutItems>
+        </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
-    </layoutSections>
-    <layoutSections>
-        <customLabel>true</customLabel>
-        <detailHeading>true</detailHeading>
-        <editHeading>true</editHeading>
-        <label>Addresses</label>
-        <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>BillingAddress</field></layoutItems>
-        </layoutColumns>
-        <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>ShippingAddress</field></layoutItems>
-        </layoutColumns>
-        <style>TwoColumnsLeftToRight</style>
     </layoutSections>
     <layoutSections>
         <customLabel>true</customLabel>
@@ -112,6 +114,7 @@
         <label>Sales Activity</label>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Last_Order_Date__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Last_Visit_Date__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>Last_Order_Value__c</field></layoutItems>
