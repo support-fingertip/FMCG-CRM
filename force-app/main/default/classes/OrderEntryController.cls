@@ -583,12 +583,29 @@ public with sharing class OrderEntryController {
             }
 
             if (!lineItems.isEmpty()) {
+                // Identify must-sell product IDs — these bypass channel/category validation
+                // since they're administratively mandated for this account/channel/territory
+                Set<Id> mustSellProductIds = new Set<Id>();
+                if (order.Account__c != null) {
+                    Date effDate = order.Order_Date__c != null ? order.Order_Date__c : Date.today();
+                    for (Must_Sell_Config__c cfg : [
+                        SELECT Product_Ext__c FROM Must_Sell_Config__c
+                        WHERE Is_Active__c = true
+                          AND Start_Date__c <= :effDate
+                          AND End_Date__c >= :effDate
+                          AND Product_Ext__c != null
+                    ]) {
+                        mustSellProductIds.add(cfg.Product_Ext__c);
+                    }
+                }
+
                 // MDM-004: Validate products against account's assigned categories
                 if (BPM_FeatureToggle_Util.isEnabled('MDM-004') && order.Account__c != null) {
                     Set<Id> lineProductIds2 = new Set<Id>();
                     Map<Id, String> prodNameMap = new Map<Id, String>();
                     for (Order_Line_Item__c li : lineItems) {
-                        if (li.Product_Ext__c != null) {
+                        // Skip must-sell products — they override category restrictions
+                        if (li.Product_Ext__c != null && !mustSellProductIds.contains(li.Product_Ext__c)) {
                             lineProductIds2.add(li.Product_Ext__c);
                         }
                     }
@@ -617,7 +634,8 @@ public with sharing class OrderEntryController {
                 if (BPM_FeatureToggle_Util.isEnabled('MDM-003') && String.isNotBlank(order.Trade_Channel__c)) {
                     Set<Id> lineProductIds3 = new Set<Id>();
                     for (Order_Line_Item__c li : lineItems) {
-                        if (li.Product_Ext__c != null) {
+                        // Skip must-sell products — they override channel restrictions
+                        if (li.Product_Ext__c != null && !mustSellProductIds.contains(li.Product_Ext__c)) {
                             lineProductIds3.add(li.Product_Ext__c);
                         }
                     }
