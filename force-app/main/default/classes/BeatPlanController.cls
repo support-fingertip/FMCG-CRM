@@ -586,71 +586,30 @@ public with sharing class BeatPlanController {
         if (pageNumber == null || pageNumber <= 0) pageNumber = 1;
         Integer offset = (pageNumber - 1) * pageSize;
 
-        String baseCondition = 'WHERE Is_Active__c = true';
-        List<String> conditions = new List<String>();
-
-        if (territoryId != null) {
-            conditions.add('Territory__c = :territoryId');
-        }
-        if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
-            conditions.add('Name LIKE :searchPattern');
-        }
-
         String searchPattern = '';
-        if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
+        Boolean hasSearch = String.isNotBlank(searchTerm) && searchTerm.length() >= 2;
+        if (hasSearch) {
             searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
         }
 
-        // Build queries with territory and search filters
-        List<Account> accounts;
-        Integer totalCount;
+        // MDM-003: filter by current user's authorized channels (if any)
+        Set<String> userChannels = MDM_ChannelMapping_Service.getCurrentUserChannels();
+        List<String> channelList = new List<String>(userChannels);
+        Boolean filterByChannel = BPM_FeatureToggle_Util.isEnabled('MDM-003') && !channelList.isEmpty();
 
-        if (territoryId != null && String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
-            totalCount = [
-                SELECT COUNT() FROM Account
-                WHERE Is_Active__c = true AND Territory__c = :territoryId AND Name LIKE :searchPattern
-            ];
-            accounts = [
-                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
-                FROM Account
-                WHERE Is_Active__c = true AND Territory__c = :territoryId AND Name LIKE :searchPattern
-                ORDER BY Name
-                LIMIT :pageSize OFFSET :offset
-            ];
-        } else if (territoryId != null) {
-            totalCount = [
-                SELECT COUNT() FROM Account
-                WHERE Is_Active__c = true AND Territory__c = :territoryId
-            ];
-            accounts = [
-                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
-                FROM Account
-                WHERE Is_Active__c = true AND Territory__c = :territoryId
-                ORDER BY Name
-                LIMIT :pageSize OFFSET :offset
-            ];
-        } else if (String.isNotBlank(searchTerm) && searchTerm.length() >= 2) {
-            totalCount = [
-                SELECT COUNT() FROM Account
-                WHERE Is_Active__c = true AND Name LIKE :searchPattern
-            ];
-            accounts = [
-                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
-                FROM Account
-                WHERE Is_Active__c = true AND Name LIKE :searchPattern
-                ORDER BY Name
-                LIMIT :pageSize OFFSET :offset
-            ];
-        } else {
-            totalCount = [SELECT COUNT() FROM Account WHERE Is_Active__c = true];
-            accounts = [
-                SELECT Id, Name, Type, BillingCity, BillingState, Territory__c
-                FROM Account
-                WHERE Is_Active__c = true
-                ORDER BY Name
-                LIMIT :pageSize OFFSET :offset
-            ];
-        }
+        // Build dynamic WHERE clause
+        List<String> conditions = new List<String>{ 'Is_Active__c = true' };
+        if (territoryId != null) conditions.add('Territory__c = :territoryId');
+        if (hasSearch) conditions.add('Name LIKE :searchPattern');
+        if (filterByChannel) conditions.add('Channel__c IN :channelList');
+
+        String whereClause = 'WHERE ' + String.join(conditions, ' AND ');
+
+        Integer totalCount = Database.countQuery('SELECT COUNT() FROM Account ' + whereClause);
+        List<Account> accounts = Database.query(
+            'SELECT Id, Name, Type, BillingCity, BillingState, Territory__c, Channel__c ' +
+            'FROM Account ' + whereClause + ' ORDER BY Name LIMIT :pageSize OFFSET :offset'
+        );
 
         AccountPageResult result = new AccountPageResult();
         result.accounts = accounts;

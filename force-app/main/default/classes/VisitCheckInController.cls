@@ -197,7 +197,28 @@ public with sharing class VisitCheckInController {
                 return new List<Account>();
             }
             String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
-            // Only FMCG outlet record types and active accounts
+
+            // MDM-003: filter by current user's authorized channels (if any)
+            Set<String> userChannels = MDM_ChannelMapping_Service.getCurrentUserChannels();
+            List<String> channelList = new List<String>(userChannels);
+            Boolean filterByChannel = BPM_FeatureToggle_Util.isEnabled('MDM-003') && !channelList.isEmpty();
+
+            if (filterByChannel) {
+                return [
+                    SELECT Id, Name, BillingStreet, BillingCity, AccountNumber,
+                           Outlet_Type__c, Outlet_Class__c, Channel__c
+                    FROM Account
+                    WHERE (Name LIKE :searchPattern
+                           OR AccountNumber LIKE :searchPattern)
+                      AND Is_Active__c = true
+                      AND Type IN ('Retailer', 'Distributor', 'Super Stockist', 'Modern Trade')
+                      AND Channel__c IN :channelList
+                    ORDER BY Name ASC
+                    LIMIT 20
+                ];
+            }
+
+            // No channel restriction (feature off or employee has no channel assigned)
             return [
                 SELECT Id, Name, BillingStreet, BillingCity, AccountNumber,
                        Outlet_Type__c, Outlet_Class__c, Channel__c

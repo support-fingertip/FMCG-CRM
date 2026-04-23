@@ -70,6 +70,21 @@ public with sharing class MDM_ChannelMapping_Service {
         return accts.isEmpty() ? null : accts[0].Channel__c;
     }
 
+    public static Set<String> getCurrentUserChannels() {
+        if (!BPM_FeatureToggle_Util.isEnabled(FEATURE_CODE)) {
+            return new Set<String>();
+        }
+        List<Employee__c> emps = [
+            SELECT Id, Channels__c FROM Employee__c
+            WHERE User__c = :UserInfo.getUserId() AND Is_Active__c = true
+            LIMIT 1
+        ];
+        if (emps.isEmpty()) {
+            return new Set<String>();
+        }
+        return getEmployeeChannels(emps[0]);
+    }
+
     private static Set<String> parseMultipicklist(String value) {
         Set<String> result = new Set<String>();
         if (String.isNotBlank(value)) {
