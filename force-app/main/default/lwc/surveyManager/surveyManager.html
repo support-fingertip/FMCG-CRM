@@ -544,7 +544,20 @@
                                         <tr key={a.id}>
                                             <td>{a.questionText}</td>
                                             <td>{a.questionType}</td>
-                                            <td><strong>{a.displayValue}</strong></td>
+                                            <td>
+                                                <template if:true={a.displayValue}>
+                                                    <strong>{a.displayValue}</strong>
+                                                </template>
+                                                <template if:true={a.hasPhoto}>
+                                                    <lightning-button
+                                                        label="Preview Photo"
+                                                        icon-name="utility:preview"
+                                                        variant="base"
+                                                        data-content-id={a.contentDocumentId}
+                                                        data-url={a.photoUrl}
+                                                        onclick={handlePreviewPhoto}></lightning-button>
+                                                </template>
+                                            </td>
                                         </tr>
                                     </template>
                                 </tbody>

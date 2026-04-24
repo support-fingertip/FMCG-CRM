@@ -116,6 +116,20 @@ public with sharing class SurveyManagerController {
             ORDER BY Survey_Question__r.Sort_Order__c, Name
         ];
 
+        // Resolve photo attachments via ContentDocumentLink
+        Set<Id> answerIds = new Set<Id>();
+        for (Survey_Answer__c a : answers) answerIds.add(a.Id);
+        Map<Id, Id> answerToContentDocId = new Map<Id, Id>();
+        if (!answerIds.isEmpty()) {
+            for (ContentDocumentLink cdl : [
+                SELECT ContentDocumentId, LinkedEntityId
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId IN :answerIds
+            ]) {
+                answerToContentDocId.put(cdl.LinkedEntityId, cdl.ContentDocumentId);
+            }
+        }
+
         List<Map<String, Object>> answerRows = new List<Map<String, Object>>();
         for (Survey_Answer__c a : answers) {
             Map<String, Object> row = new Map<String, Object>();
@@ -129,6 +143,10 @@ public with sharing class SurveyManagerController {
             else if (a.Answer_Number__c != null) displayValue = String.valueOf(a.Answer_Number__c);
             row.put('displayValue', displayValue);
             row.put('photoUrl', a.Photo_URL__c);
+            // Add ContentDocumentId (file attachment) if present
+            Id contentDocId = answerToContentDocId.get(a.Id);
+            row.put('contentDocumentId', contentDocId);
+            row.put('hasPhoto', contentDocId != null || String.isNotBlank(a.Photo_URL__c));
             answerRows.add(row);
         }
 

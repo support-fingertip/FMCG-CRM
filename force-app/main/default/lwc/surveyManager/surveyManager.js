@@ -1,5 +1,6 @@
 import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
 
 // ── Apex Imports ──────────────────────────────────────────────────────────
 import getStats from '@salesforce/apex/SurveyManagerController.getStats';
@@ -12,7 +13,7 @@ import deleteQuestion from '@salesforce/apex/SurveyManagerController.deleteQuest
 import getResponses from '@salesforce/apex/SurveyManagerController.getResponses';
 import getResponseDetail from '@salesforce/apex/SurveyManagerController.getResponseDetail';
 
-export default class SurveyManager extends LightningElement {
+export default class SurveyManager extends NavigationMixin(LightningElement) {
 
     // ── Navigation State ───────────────────────────────────────────────
     @track currentSection = 'dashboard';
@@ -477,6 +478,23 @@ export default class SurveyManager extends LightningElement {
         this.showResponseDetailModal = false;
         this.responseDetail = null;
         this.responseAnswers = [];
+    }
+
+    handlePreviewPhoto(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const contentDocId = event.currentTarget.dataset.contentId;
+        const url = event.currentTarget.dataset.url;
+        if (contentDocId) {
+            // Preview attached file in Salesforce file preview
+            this[NavigationMixin.Navigate]({
+                type: 'standard__namedPage',
+                attributes: { pageName: 'filePreview' },
+                state: { selectedRecordId: contentDocId }
+            });
+        } else if (url) {
+            window.open(url, '_blank');
+        }
     }
 
     // ── Utility ────────────────────────────────────────────────────────
