@@ -448,3 +448,21 @@
     color: #1e40af;
     line-height: 1.4;
 }
+
+/* ── Response Detail Info ─────────────────────────────────────────────── */
+
+.info-label {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.info-value {
+    display: block;
+    font-size: 14px;
+    color: #1b2a4a;
+    font-weight: 500;
+}

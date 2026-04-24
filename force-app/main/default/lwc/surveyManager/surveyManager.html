@@ -520,7 +520,11 @@
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
                             <span class="info-label">Response Date</span>
-                            <span class="info-value">{responseDetail.Response_Date__c}</span>
+                            <span class="info-value">
+                                <lightning-formatted-date-time value={responseDetail.Response_Date__c}
+                                    year="numeric" month="short" day="2-digit">
+                                </lightning-formatted-date-time>
+                            </span>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
                             <span class="info-label">Total Score</span>
