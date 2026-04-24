@@ -39,6 +39,11 @@
                 <label>Payment</label>
             </value>
             <value>
+                <fullName>Collection</fullName>
+                <default>false</default>
+                <label>Collection</label>
+            </value>
+            <value>
                 <fullName>Adjustment</fullName>
                 <default>false</default>
                 <label>Adjustment</label>
