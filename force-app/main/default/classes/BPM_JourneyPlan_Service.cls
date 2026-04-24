@@ -78,7 +78,10 @@ public without sharing class BPM_JourneyPlan_Service {
         String territoryName = [SELECT Name FROM Territory_Master__c WHERE Id = :territoryId LIMIT 1].Name;
         String planName = monthName + ' ' + year + ' - ' + userName + ' - ' + territoryName;
 
-        // Fetch beat assignments for the user in this territory
+        // Fetch ALL beat assignments for the user (across all territories) so
+        // the calendar shows every assigned beat. Territory on the plan header
+        // is retained for display/reporting but does not filter which beats
+        // appear on the calendar.
         List<Beat__c> beats = [
             SELECT Id, Name, Day_of_Week__c, Frequency__c,
                    Territory__c, Sequence__c,
@@ -88,14 +91,13 @@ public without sharing class BPM_JourneyPlan_Service {
                     ORDER BY Visit_Sequence__c ASC)
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-              AND Territory__c = :territoryId
               AND Is_Active__c = true
             ORDER BY Sequence__c NULLS LAST, Name
         ];
 
         if (beats.isEmpty()) {
             throw new BPM_JourneyPlanServiceException(
-                'No active beat assignments found for this user in the specified territory.'
+                'No active beat assignments found for this user.'
             );
         }
 
@@ -313,7 +315,7 @@ public without sharing class BPM_JourneyPlan_Service {
                 + ' - ' + userName + ' - ' + territoryName;
         }
 
-        // Fetch beats assigned to this user in the territory
+        // Fetch ALL beats assigned to this user (across all territories)
         List<Beat__c> beats = [
             SELECT Id, Name, Day_of_Week__c, Frequency__c,
                    Territory__c, Sequence__c,
@@ -323,14 +325,13 @@ public without sharing class BPM_JourneyPlan_Service {
                     ORDER BY Visit_Sequence__c ASC)
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-              AND Territory__c = :territoryId
               AND Is_Active__c = true
             ORDER BY Sequence__c NULLS LAST, Name
         ];
 
         if (beats.isEmpty()) {
             throw new BPM_JourneyPlanServiceException(
-                'No active beat assignments found for this user in the specified territory.'
+                'No active beat assignments found for this user.'
             );
         }
 
@@ -495,9 +496,8 @@ public without sharing class BPM_JourneyPlan_Service {
             delete futureDays;
         }
 
-        // Fetch current beat assignments for the user
+        // Fetch ALL current beat assignments for the user (across all territories)
         Id userId = plan.Salesperson__c;
-        Id territoryId = plan.Territory__c;
 
         List<Beat__c> beats = [
             SELECT Id, Name, Day_of_Week__c, Frequency__c,
@@ -508,14 +508,13 @@ public without sharing class BPM_JourneyPlan_Service {
                     ORDER BY Visit_Sequence__c ASC)
             FROM Beat__c
             WHERE Assigned_User__c = :userId
-              AND Territory__c = :territoryId
               AND Is_Active__c = true
             ORDER BY Sequence__c NULLS LAST, Name
         ];
 
         if (beats.isEmpty()) {
             throw new BPM_JourneyPlanServiceException(
-                'No active beat assignments found for this user in the specified territory.'
+                'No active beat assignments found for this user.'
             );
         }
 
