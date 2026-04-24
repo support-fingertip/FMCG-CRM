@@ -276,6 +276,7 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
         });
 
         this.allSelected = this.outstandingInvoices.every(inv => inv.selected);
+        this._syncCollectionAmountFromAllocations();
     }
 
     handleSelectAll(event) {
@@ -287,6 +288,7 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
             allocatedAmount: isChecked ? inv.balanceDue : 0,
             rowClass: isChecked ? 'selected-row' : ''
         }));
+        this._syncCollectionAmountFromAllocations();
     }
 
     handleAllocationChange(event) {
@@ -300,6 +302,21 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
             }
             return inv;
         });
+        this._syncCollectionAmountFromAllocations();
+    }
+
+    _syncCollectionAmountFromAllocations() {
+        // Auto-fill Collection Amount with the sum of selected allocations
+        // (only when user hasn't typed a higher amount manually — preserves any
+        // "on account" overage the user entered explicitly)
+        const selectedTotal = this.outstandingInvoices
+            .filter(inv => inv.selected)
+            .reduce((sum, inv) => sum + (parseFloat(inv.allocatedAmount) || 0), 0);
+
+        const currentAmount = parseFloat(this.collectionRecord.amount) || 0;
+        if (selectedTotal > currentAmount || currentAmount === 0) {
+            this.collectionRecord = { ...this.collectionRecord, amount: selectedTotal };
+        }
     }
 
     autoAllocateToInvoices() {
