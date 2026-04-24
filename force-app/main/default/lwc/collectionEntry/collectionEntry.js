@@ -167,16 +167,16 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
             const result = await getAgingSummary({ accountId: this.accountId });
             if (result) {
                 this.agingSummary = {
-                    totalOutstanding: result.Total_Outstanding__c || 0,
-                    totalOutstandingFormatted: this.formatCurrency(result.Total_Outstanding__c || 0),
-                    bucket0to30: result.Bucket_0_30__c || 0,
-                    bucket0to30Formatted: this.formatCurrency(result.Bucket_0_30__c || 0),
-                    bucket31to60: result.Bucket_31_60__c || 0,
-                    bucket31to60Formatted: this.formatCurrency(result.Bucket_31_60__c || 0),
-                    bucket61to90: result.Bucket_61_90__c || 0,
-                    bucket61to90Formatted: this.formatCurrency(result.Bucket_61_90__c || 0),
-                    bucket90Plus: result.Bucket_90_Plus__c || 0,
-                    bucket90PlusFormatted: this.formatCurrency(result.Bucket_90_Plus__c || 0)
+                    totalOutstanding: result.total || 0,
+                    totalOutstandingFormatted: this.formatCurrency(result.total || 0),
+                    bucket0to30: result.current || 0,
+                    bucket0to30Formatted: this.formatCurrency(result.current || 0),
+                    bucket31to60: result.days31_60 || 0,
+                    bucket31to60Formatted: this.formatCurrency(result.days31_60 || 0),
+                    bucket61to90: result.days61_90 || 0,
+                    bucket61to90Formatted: this.formatCurrency(result.days61_90 || 0),
+                    bucket90Plus: result.days90Plus || 0,
+                    bucket90PlusFormatted: this.formatCurrency(result.days90Plus || 0)
                 };
             }
         } catch (error) {

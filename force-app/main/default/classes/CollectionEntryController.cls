@@ -178,6 +178,9 @@ public with sharing class CollectionEntryController {
         collection.Amount__c = totalAmount;
         collection.Payment_Mode__c = (String) data.get('paymentMode');
         collection.Notes__c = (String) data.get('remarks');
+        // Auto-populate assignment fields with the current user
+        collection.Salesperson__c = UserInfo.getUserId();
+        collection.Collected_By__c = UserInfo.getUserId();
         if (data.get('visitId') != null) {
             collection.Visit__c = (Id) data.get('visitId');
         }
