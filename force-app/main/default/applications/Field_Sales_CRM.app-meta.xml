@@ -1,87 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
     <label>Field Sales CRM</label>
-    <!-- <formFactors> -->
     <formFactors>Large</formFactors>
-    <!--  <formFactors>Medium</formFactors> -->
     <formFactors>Small</formFactors>
-    <!-- </formFactors> -->
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
     <navType>Standard</navType>
+
+    <!-- ═══ Core Navigation (12 tabs) ═══ -->
+    <!-- Everything else is accessible via the Home Page hub sections -->
+
+    <!-- Home & Landing -->
     <tabs>standard-home</tabs>
     <tabs>Home_Page</tabs>
-    <tabs>FSCRM_Dashboard</tabs>
-    <tabs>KPI_Dashboard</tabs>
-    <tabs>Achievement_Dashboard</tabs>
-    <tabs>Dynamic_KPI_Dashboard</tabs>
-    <tabs>KPI_Metric__c</tabs>
-    <tabs>KPI_Metric_Manager</tabs>
-    <tabs>Dashboard_View__c</tabs>
-    <tabs>Visit__c</tabs>
+
+    <!-- Daily Operations -->
     <tabs>Visit_Manager</tabs>
-    <tabs>Team_Visit_Dashboard</tabs>
-    <tabs>Merchandising__c</tabs>
-    <tabs>Survey__c</tabs>
-    <tabs>Survey_Question__c</tabs>
-    <tabs>Survey_Response__c</tabs>
     <tabs>Sales_Order__c</tabs>
     <tabs>Collection__c</tabs>
-    <tabs>Beat__c</tabs>
-    <tabs>Beat_Calendar</tabs>
-    <tabs>Beat_Manager</tabs>
-    <tabs>Journey_Plan__c</tabs>
-    <tabs>Day_Attendance__c</tabs>
-    <tabs>Team_Attendance_Dashboard</tabs>
-    <tabs>Employee_Manager</tabs>
-    <tabs>Leave_Manager</tabs>
-    <tabs>Leave_Approval</tabs>
-    <tabs>Holiday_Manager</tabs>
-    <tabs>Employee__c</tabs>
-    <tabs>Leave_Request__c</tabs>
-    <tabs>Leave_Policy__c</tabs>
-    <tabs>Leave_Balance__c</tabs>
-    <tabs>Target_Criteria_Manager</tabs>
-    <tabs>Target_Allocation</tabs>
-    <tabs>Target_Actual__c</tabs>
-    <tabs>Target_Period__c</tabs>
-    <tabs>Incentive_Dashboard</tabs>
-    <tabs>Incentive_Slab_Manager</tabs>
-    <tabs>Incentive_Slab__c</tabs>
-    <tabs>Incentive__c</tabs>
-    <tabs>Scheme__c</tabs>
-    <tabs>Scheme_Manager</tabs>
-    <tabs>Competitor__c</tabs>
-    <tabs>Invoice__c</tabs>
-    <tabs>Return_Order__c</tabs>
-    <tabs>Ticket__c</tabs>
-    <tabs>Channel_Partner__c</tabs>
-    <tabs>Territory_Master__c</tabs>
-    <tabs>Distributor_Stock__c</tabs>
-    <tabs>Warehouse__c</tabs>
-    <tabs>Warehouse_Stock_Dashboard</tabs>
-    <tabs>Stock_Transfer__c</tabs>
-    <tabs>Stock_Dashboard</tabs>
-    <tabs>Product_Management_Hub</tabs>
-    <tabs>Batch_Master__c</tabs>
-    <tabs>Product_Catalog</tabs>
-    <tabs>Product_Extension__c</tabs>
-    <tabs>Product_Category__c</tabs>
-    <tabs>Price_List__c</tabs>
-    <tabs>Price_Change_Log__c</tabs>
-    <tabs>UOM__c</tabs>
-    <tabs>UOM_Conversion__c</tabs>
-    <tabs>UOM_Conversion_Manager</tabs>
-    <tabs>Must_Sell_Config__c</tabs>
-    <tabs>Expense_Eligibility__c</tabs>
-    <tabs>Expense_Eligibility_Admin</tabs>
-    <tabs>City_Tier__c</tabs>
-    <tabs>Expense_Manager</tabs>
-    <tabs>Expense__c</tabs>
     <tabs>standard-Account</tabs>
+    <tabs>Product_Catalog</tabs>
+
+    <!-- Analytics -->
+    <tabs>KPI_Dashboard</tabs>
+    <tabs>Achievement_Dashboard</tabs>
+
+    <!-- Admin Tools (visible for admins via tab-level permissions) -->
+    <tabs>Category_Mapping_Manager</tabs>
+
+    <!-- Standard Salesforce -->
     <tabs>standard-report</tabs>
     <tabs>standard-Dashboard</tabs>
+
     <uiType>Lightning</uiType>
     <!--  <utilityBar>Field_Sales_CRM_UtilityBar</utilityBar> -->
 </CustomApplication>
