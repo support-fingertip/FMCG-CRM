@@ -41,9 +41,7 @@ public with sharing class AccountGeolocation_Controller {
             Account acc = new Account(
                 Id = accountId,
                 Outlet_Latitude__c = latitude,
-                Outlet_Longitude__c = longitude,
-                Geo_Location__Latitude__s = latitude,
-                Geo_Location__Longitude__s = longitude
+                Outlet_Longitude__c = longitude
             );
             if (radiusMeters != null && radiusMeters > 0) {
                 acc.Geofence_Radius__c = radiusMeters;
@@ -176,8 +174,6 @@ public with sharing class AccountGeolocation_Controller {
         for (Account a : toUpdate) {
             a.Outlet_Latitude__c = a.BillingLatitude;
             a.Outlet_Longitude__c = a.BillingLongitude;
-            a.Geo_Location__Latitude__s = a.BillingLatitude;
-            a.Geo_Location__Longitude__s = a.BillingLongitude;
             if (a.Geofence_Radius__c == null || a.Geofence_Radius__c == 0) {
                 a.Geofence_Radius__c = radius;
             }
@@ -201,9 +197,7 @@ public with sharing class AccountGeolocation_Controller {
             Account acc = new Account(
                 Id = accountId,
                 Outlet_Latitude__c = null,
-                Outlet_Longitude__c = null,
-                Geo_Location__Latitude__s = null,
-                Geo_Location__Longitude__s = null
+                Outlet_Longitude__c = null
             );
             update acc;
         } catch (Exception e) {

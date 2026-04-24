@@ -30,7 +30,7 @@ public with sharing class OutletThreeSixtyController {
                    Owner_Name__c,
                    Beat__c, Beat__r.Name, Beat__r.Beat_Code__c,
                    Territory__c, Territory__r.Name, Territory__r.Territory_Code__c,
-                   Geo_Location__Latitude__s, Geo_Location__Longitude__s,
+                   Outlet_Latitude__c, Outlet_Longitude__c,
                    Credit_Limit__c, Credit_Utilized__c, Outstanding_Balance__c,
                    Visit_Frequency__c, Is_Active__c,
                    Last_Visit_Date__c, Last_Order_Date__c, Last_Order_Value__c,
