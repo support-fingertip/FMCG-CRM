@@ -8,7 +8,7 @@ public with sharing class SchemeManagerController {
 
     // ── Dashboard Statistics ─────────────────────────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Map<String, Object> getSchemeStats() {
         Date today = Date.today();
         Map<String, Object> stats = new Map<String, Object>();
@@ -50,7 +50,7 @@ public with sharing class SchemeManagerController {
 
     // ── List Schemes (with filters & pagination) ─────────────────────────
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Map<String, Object> getSchemes(
         String status, String category, String schemeType,
         String channel, String searchTerm,
