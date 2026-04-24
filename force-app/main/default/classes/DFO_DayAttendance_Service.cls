@@ -208,7 +208,7 @@ public without sharing class DFO_DayAttendance_Service {
 
         List<Day_Attendance__c> records = [
             SELECT Id, Status__c, User__c, Day_Start_Time__c, Start_Location_Lat__c,
-                   Start_Location_Long__c, Attendance_Date__c
+                   Start_Location_Long__c, Attendance_Date__c, Odometer_Start__c
             FROM Day_Attendance__c
             WHERE Id = :request.attendanceId
             LIMIT 1
@@ -223,6 +223,15 @@ public without sharing class DFO_DayAttendance_Service {
         // Validate status transition
         if (!isValidStatusTransition('Day_Attendance__c', dayRecord.Status__c, 'Ended')) {
             throw new AuraHandledException('Cannot end day from current status: ' + dayRecord.Status__c);
+        }
+
+        // Validate odometer reading — end must be greater than start
+        if (request.odometerEnd != null && dayRecord.Odometer_Start__c != null
+            && request.odometerEnd <= dayRecord.Odometer_Start__c) {
+            throw new AuraHandledException(
+                'End odometer reading (' + request.odometerEnd +
+                ') must be greater than start reading (' + dayRecord.Odometer_Start__c + ').'
+            );
         }
 
         Savepoint sp = Database.setSavepoint();
@@ -472,7 +481,8 @@ public without sharing class DFO_DayAttendance_Service {
                    Journey_Plan_Day__c, Journey_Plan_Day__r.Name,
                    Journey_Plan_Day__r.Journey_Plan__c, Journey_Plan_Day__r.Journey_Plan__r.Name,
                    Week_Day__c,
-                   Is_Finalized__c, Auto_Closed__c, Is_Leave_Day__c, Remarks__c
+                   Is_Finalized__c, Auto_Closed__c, Is_Leave_Day__c, Remarks__c,
+                   Odometer_Start__c, Odometer_End__c
             FROM Day_Attendance__c
             WHERE User__c = :targetUserId
               AND Attendance_Date__c = :today

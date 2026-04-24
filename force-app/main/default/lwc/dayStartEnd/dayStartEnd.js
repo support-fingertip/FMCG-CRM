@@ -352,6 +352,18 @@ export default class DayStartEnd extends LightningElement {
     }
 
     async handleEndDay() {
+        // Validate odometer reading against start reading
+        const startReading = this.dayRecord && this.dayRecord.Odometer_Start__c != null
+            ? Number(this.dayRecord.Odometer_Start__c) : null;
+        if (this.odometerEnd != null && startReading != null && this.odometerEnd <= startReading) {
+            this._showToast(
+                'Invalid Odometer Reading',
+                'End reading (' + this.odometerEnd + ' km) must be greater than start reading (' + startReading + ' km).',
+                'error'
+            );
+            return;
+        }
+
         // Refresh location before ending
         this._captureLocation();
 
