@@ -45,7 +45,9 @@ public without sharing class OVE_Survey_Service {
                        'AND (Effective_To__c = null OR Effective_To__c >= :today)';
 
         if (String.isNotBlank(outletType)) {
-            query += ' AND (Outlet_Type__c = null OR Outlet_Type__c = :outletType)';
+            // Outlet_Type__c on Survey__c is a MultiselectPicklist — use INCLUDES
+            // to match any survey where the outlet's type is one of the selected values
+            query += ' AND (Outlet_Type__c = null OR Outlet_Type__c INCLUDES (:outletType))';
         }
 
         query += ' ORDER BY Name ASC';
