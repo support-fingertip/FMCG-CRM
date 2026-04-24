@@ -10,8 +10,9 @@
  */
 public with sharing class CollectionEntryController {
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Invoice__c> getOutstandingInvoices(Id accountId) {
+        // Non-cacheable: balances change after every collection — must refetch fresh
         return CollectionController.getOutstandingInvoices(accountId);
     }
 
@@ -81,9 +82,13 @@ public with sharing class CollectionEntryController {
 
             Decimal unallocated = totalAmount - totalAllocated;
             Boolean hasOnAccount = unallocated > 0;
+            Boolean isSingleFullPayment = (activeAllocations.size() == 1 && unallocated == 0);
 
-            // If fully allocated to a single invoice, link it directly for simplicity
-            if (activeAllocations.size() == 1 && unallocated == 0) {
+            // If fully allocated to a single invoice, link it directly so the
+            // existing OVE_Collection_TriggerHandler updates the invoice balance.
+            // For multi-invoice or partial payments, we'll handle balance updates
+            // manually via Collection_Allocation__c.
+            if (isSingleFullPayment) {
                 collection.Invoice__c = (Id) activeAllocations[0].get('invoiceId');
             } else if (activeAllocations.isEmpty()) {
                 // Pure On Account — no allocations
@@ -98,8 +103,10 @@ public with sharing class CollectionEntryController {
 
             insert collection;
 
-            // Create child allocations and update invoice balances
-            if (!activeAllocations.isEmpty()) {
+            // Create child allocations + manually update invoice balances
+            // (only for multi-invoice or partial cases — for single full payment
+            // the trigger handler already deducted via Collection.Invoice__c)
+            if (!activeAllocations.isEmpty() && !isSingleFullPayment) {
                 List<Collection_Allocation__c> allocRecords = new List<Collection_Allocation__c>();
                 Map<Id, Decimal> invoiceAllocAmounts = new Map<Id, Decimal>();
 
@@ -126,13 +133,27 @@ public with sharing class CollectionEntryController {
                     Decimal newBalance = (inv.Balance_Due__c == null ? 0 : inv.Balance_Due__c) - deduct;
                     inv.Balance_Due__c = newBalance;
                     if (newBalance <= 0) {
-                        inv.Status__c = 'Fully Paid';
-                    } else if (inv.Status__c != 'Partially Paid') {
-                        inv.Status__c = 'Partially Paid';
+                        inv.Payment_Status__c = 'Fully Paid';
+                    } else {
+                        inv.Payment_Status__c = 'Partially Paid';
                     }
                     invoicesToUpdate.add(inv);
                 }
                 if (!invoicesToUpdate.isEmpty()) update invoicesToUpdate;
+            } else if (isSingleFullPayment) {
+                // Trigger handler reduced balance but doesn't set Status — set it here
+                Id invId = (Id) activeAllocations[0].get('invoiceId');
+                Invoice__c inv = [SELECT Id, Balance_Due__c, Status__c FROM Invoice__c WHERE Id = :invId];
+                if (inv.Balance_Due__c <= 0) {
+                    inv.Payment_Status__c = 'Fully Paid';
+                    update inv;
+                }
+                // Also create a Collection_Allocation__c record for traceability
+                insert new Collection_Allocation__c(
+                    Collection__c = collection.Id,
+                    Invoice__c = invId,
+                    Allocated_Amount__c = totalAmount
+                );
             }
 
             return [

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Payment_Status__c</fullName>
+    <label>Payment Status</label>
+    <type>Picklist</type>
+    <required>false</required>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Unpaid</fullName>
+                <default>true</default>
+                <label>Unpaid</label>
+            </value>
+            <value>
+                <fullName>Partially Paid</fullName>
+                <default>false</default>
+                <label>Partially Paid</label>
+            </value>
+            <value>
+                <fullName>Fully Paid</fullName>
+                <default>false</default>
+                <label>Fully Paid</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+    <description>Tracks payment state separately from order lifecycle Status__c</description>
+</CustomField>

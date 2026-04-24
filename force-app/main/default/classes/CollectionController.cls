@@ -24,7 +24,7 @@ public with sharing class CollectionController {
             FROM Invoice__c
             WHERE Account__c = :accountId
             AND Balance_Due__c > 0
-            AND Status__c NOT IN ('Cancelled', 'Fully Paid')
+            AND Status__c != 'Cancelled' AND (Payment_Status__c = null OR Payment_Status__c != 'Fully Paid')
             ORDER BY Due_Date__c ASC
         ];
     }
@@ -74,7 +74,7 @@ public with sharing class CollectionController {
                 // Update invoice balance
                 invoice.Balance_Due__c = invoice.Balance_Due__c - collection.Amount__c;
                 if (invoice.Balance_Due__c == 0) {
-                    invoice.Status__c = 'Fully Paid';
+                    invoice.Payment_Status__c = 'Fully Paid';
                 }
                 update invoice;
             }
@@ -142,7 +142,7 @@ public with sharing class CollectionController {
             FROM Invoice__c
             WHERE Account__c = :accountId
             AND Balance_Due__c > 0
-            AND Status__c NOT IN ('Cancelled', 'Fully Paid')
+            AND Status__c != 'Cancelled' AND (Payment_Status__c = null OR Payment_Status__c != 'Fully Paid')
         ];
 
         for (Invoice__c inv : invoices) {
