@@ -103,7 +103,6 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>Geofence_Radius__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Geo_Location__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
