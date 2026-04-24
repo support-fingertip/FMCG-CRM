@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/metadata">
+    <fullName>Collection__c</fullName>
+    <label>Collection</label>
+    <type>MasterDetail</type>
+    <referenceTo>Collection__c</referenceTo>
+    <relationshipLabel>Invoice Allocations</relationshipLabel>
+    <relationshipName>Invoice_Allocations</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>
