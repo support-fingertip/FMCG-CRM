@@ -1,12 +1,13 @@
 import { LightningElement, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
 
 import getOutstandingInvoices from '@salesforce/apex/CollectionEntryController.getOutstandingInvoices';
 import createCollection from '@salesforce/apex/CollectionEntryController.createCollection';
 import getAgingSummary from '@salesforce/apex/CollectionEntryController.getAgingSummary';
 import getCollectionHistory from '@salesforce/apex/CollectionEntryController.getCollectionHistory';
 
-export default class CollectionEntry extends LightningElement {
+export default class CollectionEntry extends NavigationMixin(LightningElement) {
     @api accountId;
     @api visitId;
 
@@ -392,9 +393,18 @@ export default class CollectionEntry extends LightningElement {
     }
 
     viewInvoice(event) {
+        event.preventDefault();
+        event.stopPropagation();
         const invoiceId = event.currentTarget.dataset.invoiceId;
-        // Navigate to invoice record
-        this.showToast('Info', 'Navigating to invoice ' + invoiceId, 'info');
+        if (!invoiceId) return;
+        this[NavigationMixin.Navigate]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: invoiceId,
+                objectApiName: 'Invoice__c',
+                actionName: 'view'
+            }
+        });
     }
 
     validateCollection() {
