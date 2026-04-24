@@ -530,7 +530,7 @@ public without sharing class BPM_JourneyPlan_Service {
         }
 
         // Build exclusion sets based on resolved preferences
-        Set<Date> holidayDates = excludeHolidays ? getHolidayDates(fromDate, toDate, territoryId, userId) : new Set<Date>();
+        Set<Date> holidayDates = excludeHolidays ? getHolidayDates(fromDate, toDate, plan.Territory__c, userId) : new Set<Date>();
         Set<Date> leaveDates = excludeLeaves ? getLeaveDates(userId, fromDate, toDate) : new Set<Date>();
         Set<String> weekOffDays = excludeWeekOffs ? getEmployeeWeekOffDays(userId) : new Set<String>();
 
