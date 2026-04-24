@@ -1221,7 +1221,9 @@ export default class VisitManager extends LightningElement {
     }
 
     handleActivityFormSuccess() {
-        this._toast('Success', 'Activity completed successfully.', 'success');
+        // Child component (order/collection/return form) already shows its own
+        // specific success toast with record details — no generic toast here
+        // to avoid duplicate notifications.
         this.handleActivityBack();
     }
 
