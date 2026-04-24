@@ -945,6 +945,10 @@
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Dashboard_View__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Account_Category__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Employee_Category__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Survey__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Survey_Question__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Survey_Answer__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Survey_Response__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <tabVisibilities><tab>Leave_Policy__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Leave_Balance__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Dynamic_KPI_Dashboard</tab><visibility>DefaultOn</visibility></tabVisibilities>
@@ -952,6 +956,7 @@
     <tabVisibilities><tab>KPI_Metric_Manager</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Dashboard_View__c</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <tabVisibilities><tab>Category_Mapping_Manager</tab><visibility>DefaultOn</visibility></tabVisibilities>
+    <tabVisibilities><tab>Survey_Manager</tab><visibility>DefaultOn</visibility></tabVisibilities>
     <classAccesses><apexClass>LeaveBalanceService</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeaveYearlyResetBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>LeaveAccrualBatch</apexClass><enabled>true</enabled></classAccesses>

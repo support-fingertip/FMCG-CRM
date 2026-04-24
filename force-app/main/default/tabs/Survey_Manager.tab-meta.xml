@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/metadata">
+    <customObject>false</customObject>
+    <description>Survey Manager - Create surveys, add questions, view responses</description>
+    <flexiPage>Survey_Manager</flexiPage>
+    <label>Survey Manager</label>
+    <motif>Custom62: Survey</motif>
+</CustomTab>

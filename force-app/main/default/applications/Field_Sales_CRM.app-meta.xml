@@ -28,6 +28,7 @@
 
     <!-- Admin Tools (visible for admins via tab-level permissions) -->
     <tabs>Category_Mapping_Manager</tabs>
+    <tabs>Survey_Manager</tabs>
 
     <!-- Standard Salesforce -->
     <tabs>standard-report</tabs>
