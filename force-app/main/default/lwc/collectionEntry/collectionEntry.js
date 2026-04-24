@@ -354,7 +354,7 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
                     .filter(inv => inv.selected && inv.allocatedAmount > 0)
                     .map(inv => ({
                         invoiceId: inv.id,
-                        amount: inv.allocatedAmount
+                        allocatedAmount: inv.allocatedAmount
                     }))
                 : [];
 

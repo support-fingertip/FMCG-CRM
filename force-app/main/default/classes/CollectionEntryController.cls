@@ -199,13 +199,15 @@ public with sharing class CollectionEntryController {
         return collection;
     }
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Map<String, Decimal> getAgingSummary(Id accountId) {
+        // Non-cacheable: aging buckets change after every collection
         return CollectionController.getAgingSummary(accountId);
     }
 
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<Collection__c> getCollectionHistory(Id accountId) {
+        // Non-cacheable: history changes immediately after creating a collection
         return CollectionController.getCollectionHistory(accountId);
     }
 }
