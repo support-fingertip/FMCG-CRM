@@ -9,6 +9,7 @@
         <value>1</value>
     </filters>
     <columns>ACCOUNT.NAME</columns>
+    <columns>Account.Is_Active__c</columns>
     <columns>ACCOUNT.RECORDTYPE</columns>
     <columns>Account.Channel__c</columns>
     <columns>Account.Outlet_Type__c</columns>
