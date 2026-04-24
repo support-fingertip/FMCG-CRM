@@ -350,13 +350,13 @@
                                 class="slds-m-bottom_small"></lightning-combobox>
                         </div>
                         <div class="slds-col">
-                            <lightning-combobox label="Outlet Type"
-                                placeholder="Select outlet type..."
-                                value={editSurvey.Outlet_Type__c}
-                                options={outletTypeOptions}
-                                data-field="Outlet_Type__c"
-                                onchange={handleSurveyFieldChange}
-                                class="slds-m-bottom_small"></lightning-combobox>
+                            <lightning-dual-listbox label="Outlet Types"
+                                source-label="Available" selected-label="Applies To"
+                                options={outletTypeMultiOptions}
+                                value={editSurveyOutletTypes}
+                                onchange={handleSurveyOutletTypesChange}
+                                class="slds-m-bottom_small"
+                                field-level-help="Surveys appear for outlets matching any of the selected types. Leave empty to apply to all outlets."></lightning-dual-listbox>
                         </div>
                     </div>
 

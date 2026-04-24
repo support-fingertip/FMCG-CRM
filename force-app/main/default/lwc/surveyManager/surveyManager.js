@@ -109,6 +109,28 @@ export default class SurveyManager extends LightningElement {
         ];
     }
 
+    get outletTypeMultiOptions() {
+        return [
+            { label: 'Grocery', value: 'Grocery' },
+            { label: 'Medical', value: 'Medical' },
+            { label: 'Hardware', value: 'Hardware' },
+            { label: 'General Store', value: 'General Store' },
+            { label: 'Cosmetics', value: 'Cosmetics' },
+            { label: 'Pan Shop', value: 'Pan Shop' }
+        ];
+    }
+
+    get editSurveyOutletTypes() {
+        const val = this.editSurvey?.Outlet_Type__c;
+        if (!val) return [];
+        return val.split(';').map(s => s.trim()).filter(s => s);
+    }
+
+    handleSurveyOutletTypesChange(event) {
+        const selected = event.detail.value;
+        this.editSurvey = { ...this.editSurvey, Outlet_Type__c: selected.join(';') };
+    }
+
     get questionTypeOptions() {
         return [
             { label: '-- Select Type --', value: '' },
