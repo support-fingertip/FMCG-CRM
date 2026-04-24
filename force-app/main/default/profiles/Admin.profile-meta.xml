@@ -936,6 +936,7 @@
     <fieldPermissions><editable>true</editable><field>Employee_Category__c.Effective_To__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Employee_Category__c.Assigned_By__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Employee_Category__c.Notes__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Invoice__c.Payment_Status__c</field><readable>true</readable></fieldPermissions>
     <layoutAssignments><layout>Leave_Policy__c-Leave Policy Layout</layout></layoutAssignments>
     <layoutAssignments><layout>Leave_Balance__c-Leave Balance Layout</layout></layoutAssignments>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>true</modifyAllRecords><object>Leave_Policy__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
