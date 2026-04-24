@@ -16,14 +16,57 @@ public with sharing class CollectionEntryController {
     public static Collection__c createCollection(String collectionJson) {
         Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(collectionJson);
 
-        Collection__c collection = new Collection__c();
-        collection.Account__c = (Id) data.get('accountId');
-        collection.Amount__c = data.get('amount') != null ? Decimal.valueOf(String.valueOf(data.get('amount'))) : null;
-        collection.Payment_Mode__c = (String) data.get('paymentMode');
-        collection.Notes__c = (String) data.get('remarks');
+        Id accountId = (Id) data.get('accountId');
+        Decimal totalAmount = data.get('amount') != null ? Decimal.valueOf(String.valueOf(data.get('amount'))) : null;
+        String paymentMode = (String) data.get('paymentMode');
+        String remarks = (String) data.get('remarks');
+        Id visitId = data.get('visitId') != null ? (Id) data.get('visitId') : null;
 
-        if (data.get('visitId') != null) {
-            collection.Visit__c = (Id) data.get('visitId');
+        List<Object> allocations = data.get('allocations') != null ? (List<Object>) data.get('allocations') : new List<Object>();
+
+        // Filter to only non-zero allocations
+        List<Map<String, Object>> activeAllocations = new List<Map<String, Object>>();
+        for (Object a : allocations) {
+            Map<String, Object> alloc = (Map<String, Object>) a;
+            Decimal amt = alloc.get('allocatedAmount') != null
+                ? Decimal.valueOf(String.valueOf(alloc.get('allocatedAmount'))) : 0;
+            if (amt > 0 && alloc.get('invoiceId') != null) {
+                activeAllocations.add(alloc);
+            }
+        }
+
+        Collection__c firstCollection;
+
+        if (!activeAllocations.isEmpty()) {
+            // Create one Collection__c per allocation so each can be validated
+            // against its invoice balance independently
+            for (Integer i = 0; i < activeAllocations.size(); i++) {
+                Map<String, Object> alloc = activeAllocations[i];
+                Decimal allocAmount = Decimal.valueOf(String.valueOf(alloc.get('allocatedAmount')));
+                Collection__c c = buildCollection(data, accountId, paymentMode, remarks, visitId);
+                c.Amount__c = allocAmount;
+                c.Invoice__c = (Id) alloc.get('invoiceId');
+                Collection__c saved = CollectionController.createCollection(c);
+                if (i == 0) firstCollection = saved;
+            }
+        } else {
+            // On Account (no invoice allocation) — single collection with full amount
+            Collection__c c = buildCollection(data, accountId, paymentMode, remarks, visitId);
+            c.Amount__c = totalAmount;
+            firstCollection = CollectionController.createCollection(c);
+        }
+
+        return firstCollection;
+    }
+
+    private static Collection__c buildCollection(Map<String, Object> data, Id accountId,
+                                                   String paymentMode, String remarks, Id visitId) {
+        Collection__c collection = new Collection__c();
+        collection.Account__c = accountId;
+        collection.Payment_Mode__c = paymentMode;
+        collection.Notes__c = remarks;
+        if (visitId != null) {
+            collection.Visit__c = visitId;
         }
         if (data.get('chequeNumber') != null && String.isNotBlank((String) data.get('chequeNumber'))) {
             collection.Cheque_Number__c = (String) data.get('chequeNumber');
@@ -40,15 +83,7 @@ public with sharing class CollectionEntryController {
         if (data.get('neftReference') != null && String.isNotBlank((String) data.get('neftReference'))) {
             collection.Transaction_Reference__c = (String) data.get('neftReference');
         }
-
-        // Handle invoice allocation - use the first selected invoice
-        List<Object> allocations = data.get('allocations') != null ? (List<Object>) data.get('allocations') : new List<Object>();
-        if (!allocations.isEmpty()) {
-            Map<String, Object> firstAllocation = (Map<String, Object>) allocations[0];
-            collection.Invoice__c = (Id) firstAllocation.get('invoiceId');
-        }
-
-        return CollectionController.createCollection(collection);
+        return collection;
     }
 
     @AuraEnabled(cacheable=true)
