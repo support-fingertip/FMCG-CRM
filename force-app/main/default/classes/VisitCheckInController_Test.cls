@@ -297,8 +297,8 @@ private class VisitCheckInController_Test {
     @isTest
     static void testSearchOutlets() {
         // Ensure outlet is active for search
-        Account acct = [SELECT Id, Active__c FROM Account WHERE Name = 'CI Geo Outlet' LIMIT 1];
-        acct.Active__c = 'Yes';
+        Account acct = [SELECT Id, Is_Active__c FROM Account WHERE Name = 'CI Geo Outlet' LIMIT 1];
+        acct.Is_Active__c = true;
         update acct;
 
         Test.startTest();
