@@ -424,7 +424,9 @@ export default class VisitManager extends LightningElement {
         // Reference currentTime to create a reactive dependency that ticks every second
         void this.currentTime;
         if (!this.dayStartTime) return '00:00:00';
-        const diff = Math.max(0, Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000));
+        // Use Math.abs so minor clock skew between client/server still shows a
+        // meaningful elapsed duration (otherwise the timer sticks at 00:00:00).
+        const diff = Math.abs(Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000));
         const h = Math.floor(diff / 3600);
         const m = Math.floor((diff % 3600) / 60);
         const s = diff % 60;
@@ -1084,7 +1086,7 @@ export default class VisitManager extends LightningElement {
     }
 
     get visitDurationDisplay() {
-        const secs = Math.max(0, this.visitDuration || 0);
+        const secs = Math.abs(this.visitDuration || 0);
         const h = Math.floor(secs / 3600);
         const m = Math.floor((secs % 3600) / 60);
         const s = secs % 60;
@@ -2295,6 +2297,8 @@ export default class VisitManager extends LightningElement {
             this.activeBeatId = null;
             this.selectedBeatId = null;
             this.currentScreen = SCREEN.DAY_START;
+            // Reload context so Today's Attendance summary reflects ended state
+            await this._loadInitialContext();
         } catch (err) {
             this._toast('Error', 'Failed to end day: ' + this._err(err), 'error');
         } finally {
