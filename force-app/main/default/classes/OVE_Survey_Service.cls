@@ -162,6 +162,7 @@ public without sharing class OVE_Survey_Service {
             insert response;
 
             // Create answer records
+            Decimal totalScore = 0;
             if (input.answers != null && !input.answers.isEmpty()) {
                 List<Survey_Answer__c> answers = new List<Survey_Answer__c>();
                 Map<Integer, Id> photoIndexMap = new Map<Integer, Id>();
@@ -178,6 +179,9 @@ public without sharing class OVE_Survey_Service {
                     if (ans.photoContentVersionId != null) {
                         photoIndexMap.put(idx, ans.photoContentVersionId);
                     }
+                    // Sum numeric scoring: ratings (1-5) + numeric answers
+                    if (ans.ratingValue != null) totalScore += ans.ratingValue;
+                    if (ans.answerNumber != null) totalScore += ans.answerNumber;
                     idx++;
                 }
                 insert answers;
@@ -186,6 +190,10 @@ public without sharing class OVE_Survey_Service {
                 for (Integer i : photoIndexMap.keySet()) {
                     FileAttachment_Util.linkFileToParent(photoIndexMap.get(i), answers[i].Id);
                 }
+
+                // Update response with calculated total score
+                response.Total_Score__c = totalScore;
+                update response;
             }
 
             // Mark visit as survey completed

@@ -94,4 +94,47 @@ public with sharing class SurveyManagerController {
             LIMIT 200
         ];
     }
+
+    @AuraEnabled
+    public static Map<String, Object> getResponseDetail(Id responseId) {
+        Survey_Response__c response = [
+            SELECT Id, Name, Survey__c, Survey__r.Name, Account__c, Account__r.Name,
+                   Visit__c, Visit__r.Name, Respondent__c, Respondent__r.Name,
+                   Response_Date__c, Status__c, Total_Score__c
+            FROM Survey_Response__c WHERE Id = :responseId LIMIT 1
+        ];
+
+        List<Survey_Answer__c> answers = [
+            SELECT Id, Name, Survey_Question__c,
+                   Survey_Question__r.Question_Text__c,
+                   Survey_Question__r.Question_Type__c,
+                   Survey_Question__r.Sort_Order__c,
+                   Answer_Text__c, Answer_Choice__c, Answer_Number__c,
+                   Rating_Value__c, Photo_URL__c
+            FROM Survey_Answer__c
+            WHERE Survey_Response__c = :responseId
+            ORDER BY Survey_Question__r.Sort_Order__c, Name
+        ];
+
+        List<Map<String, Object>> answerRows = new List<Map<String, Object>>();
+        for (Survey_Answer__c a : answers) {
+            Map<String, Object> row = new Map<String, Object>();
+            row.put('id', a.Id);
+            row.put('questionText', a.Survey_Question__r != null ? a.Survey_Question__r.Question_Text__c : '');
+            row.put('questionType', a.Survey_Question__r != null ? a.Survey_Question__r.Question_Type__c : '');
+            String displayValue = '';
+            if (a.Answer_Text__c != null) displayValue = a.Answer_Text__c;
+            else if (a.Answer_Choice__c != null) displayValue = a.Answer_Choice__c;
+            else if (a.Rating_Value__c != null) displayValue = String.valueOf(a.Rating_Value__c.intValue()) + ' / 5';
+            else if (a.Answer_Number__c != null) displayValue = String.valueOf(a.Answer_Number__c);
+            row.put('displayValue', displayValue);
+            row.put('photoUrl', a.Photo_URL__c);
+            answerRows.add(row);
+        }
+
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('response', response);
+        result.put('answers', answerRows);
+        return result;
+    }
 }

@@ -275,6 +275,7 @@
                                     <th>Date</th>
                                     <th>Status</th>
                                     <th class="cell-number">Total Score</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -292,6 +293,13 @@
                                             </template>
                                         </td>
                                         <td class="cell-number">{r.Total_Score__c}</td>
+                                        <td>
+                                            <lightning-button-icon icon-name="utility:preview"
+                                                alternative-text="View Answers" title="View Answers"
+                                                variant="bare" size="small"
+                                                data-id={r.Id}
+                                                onclick={handleViewResponse}></lightning-button-icon>
+                                        </td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -476,6 +484,79 @@
                         onclick={handleSaveQuestion}
                         disabled={isSaving}
                         class="slds-m-left_x-small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Response Detail Modal -->
+    <template if:true={showResponseDetailModal}>
+        <section class="slds-modal slds-fade-in-open slds-modal_medium" role="dialog" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon icon-name="utility:close" alternative-text="Close"
+                        onclick={handleCloseResponseDetail} variant="bare-inverse"
+                        class="slds-modal__close"></lightning-button-icon>
+                    <h2 class="slds-modal__title">Survey Response: {responseDetail.Name}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-grid slds-wrap slds-m-bottom_small">
+                        <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
+                            <span class="info-label">Survey</span>
+                            <span class="info-value">{responseDetail.surveyName}</span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
+                            <span class="info-label">Account</span>
+                            <span class="info-value">{responseDetail.accountName}</span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
+                            <span class="info-label">Visit</span>
+                            <span class="info-value">{responseDetail.visitName}</span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
+                            <span class="info-label">Respondent</span>
+                            <span class="info-value">{responseDetail.respondentName}</span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
+                            <span class="info-label">Response Date</span>
+                            <span class="info-value">{responseDetail.Response_Date__c}</span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-bottom_xx-small">
+                            <span class="info-label">Total Score</span>
+                            <span class="info-value"><strong>{responseDetail.Total_Score__c}</strong></span>
+                        </div>
+                    </div>
+
+                    <h3 class="slds-text-title_caps slds-m-top_medium slds-m-bottom_x-small">Questions &amp; Answers</h3>
+                    <template if:true={responseAnswers.length}>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:50%">Question</th>
+                                        <th>Type</th>
+                                        <th>Answer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template for:each={responseAnswers} for:item="a">
+                                        <tr key={a.id}>
+                                            <td>{a.questionText}</td>
+                                            <td>{a.questionType}</td>
+                                            <td><strong>{a.displayValue}</strong></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                    <template if:false={responseAnswers.length}>
+                        <p class="slds-text-color_weak">No answers recorded.</p>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Close" onclick={handleCloseResponseDetail}></lightning-button>
                 </footer>
             </div>
         </section>

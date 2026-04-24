@@ -10,6 +10,7 @@ import getQuestions from '@salesforce/apex/SurveyManagerController.getQuestions'
 import saveQuestion from '@salesforce/apex/SurveyManagerController.saveQuestion';
 import deleteQuestion from '@salesforce/apex/SurveyManagerController.deleteQuestion';
 import getResponses from '@salesforce/apex/SurveyManagerController.getResponses';
+import getResponseDetail from '@salesforce/apex/SurveyManagerController.getResponseDetail';
 
 export default class SurveyManager extends LightningElement {
 
@@ -444,6 +445,38 @@ export default class SurveyManager extends LightningElement {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    @track showResponseDetailModal = false;
+    @track responseDetail = null;
+    @track responseAnswers = [];
+
+    async handleViewResponse(event) {
+        const responseId = event.currentTarget.dataset.id;
+        if (!responseId) return;
+        this.isLoading = true;
+        try {
+            const result = await getResponseDetail({ responseId });
+            this.responseDetail = {
+                ...result.response,
+                surveyName: result.response.Survey__r ? result.response.Survey__r.Name : '',
+                accountName: result.response.Account__r ? result.response.Account__r.Name : '',
+                visitName: result.response.Visit__r ? result.response.Visit__r.Name : '',
+                respondentName: result.response.Respondent__r ? result.response.Respondent__r.Name : ''
+            };
+            this.responseAnswers = result.answers || [];
+            this.showResponseDetailModal = true;
+        } catch (error) {
+            this.showError('Error loading response', this.reduceErrors(error));
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    handleCloseResponseDetail() {
+        this.showResponseDetailModal = false;
+        this.responseDetail = null;
+        this.responseAnswers = [];
     }
 
     // ── Utility ────────────────────────────────────────────────────────
