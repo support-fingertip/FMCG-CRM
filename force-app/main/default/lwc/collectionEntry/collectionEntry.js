@@ -400,13 +400,12 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
         this.dispatchEvent(new CustomEvent('cancel'));
     }
 
-    handleGenerateReceipt() {
-        if (!this.lastCollectionId) {
-            this.showToast('Warning', 'Submit a collection first to generate receipt', 'warning');
-            return;
-        }
-        // Navigate to receipt or trigger PDF generation
-        this.showToast('Info', 'Receipt generation initiated for collection ' + this.lastCollectionId, 'info');
+    handleDownloadReceipt(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const collectionId = event.currentTarget.dataset.id;
+        if (!collectionId) return;
+        window.open('/apex/CollectionReceipt?id=' + collectionId, '_blank');
     }
 
     viewInvoice(event) {

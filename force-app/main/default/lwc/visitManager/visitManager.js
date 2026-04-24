@@ -1220,6 +1220,13 @@ export default class VisitManager extends LightningElement {
         window.open('/apex/SalesOrderPDF?id=' + orderId, '_blank');
     }
 
+    handleDownloadReceipt(event) {
+        event.stopPropagation();
+        const collectionId = event.currentTarget.dataset.id;
+        if (!collectionId) return;
+        window.open('/apex/CollectionReceipt?id=' + collectionId, '_blank');
+    }
+
     handleActivityFormSuccess() {
         // Child component (order/collection/return form) already shows its own
         // specific success toast with record details — no generic toast here

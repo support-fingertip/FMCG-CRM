@@ -263,15 +263,6 @@
                                 disabled={isSubmitting}>
                             </lightning-button>
                         </div>
-                        <div class="slds-col">
-                            <lightning-button
-                                variant="neutral"
-                                label="Generate Receipt"
-                                icon-name="utility:file"
-                                onclick={handleGenerateReceipt}
-                                disabled={disableReceipt}>
-                            </lightning-button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -290,6 +281,7 @@
                                     <th scope="col"><div class="slds-truncate">Mode</div></th>
                                     <th scope="col"><div class="slds-truncate">Reference</div></th>
                                     <th scope="col"><div class="slds-truncate">Status</div></th>
+                                    <th scope="col"><div class="slds-truncate">Receipt</div></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -304,6 +296,14 @@
                                         <td>{item.reference}</td>
                                         <td>
                                             <span class={item.statusBadgeClass}>{item.status}</span>
+                                        </td>
+                                        <td>
+                                            <lightning-button-icon icon-name="utility:download"
+                                                alternative-text="Download Receipt"
+                                                title="Download Receipt"
+                                                variant="bare" size="small"
+                                                data-id={item.id}
+                                                onclick={handleDownloadReceipt}></lightning-button-icon>
                                         </td>
                                     </tr>
                                 </template>

@@ -779,6 +779,10 @@
                                     <span class="vm-rec-sub">{col.Payment_Mode__c} - {col.Status__c}</span>
                                 </div>
                                 <span class="vm-rec-amt">{col.amountFormatted}</span>
+                                <lightning-button-icon icon-name="utility:download"
+                                    alternative-text="Download Receipt" variant="bare" size="small"
+                                    data-id={col.Id} onclick={handleDownloadReceipt}
+                                    class="slds-m-left_x-small" title="Download Receipt"></lightning-button-icon>
                             </div>
                         </template>
                     </template>
@@ -1459,6 +1463,10 @@
                                     <span class="vm-rec-sub">{col.Payment_Mode__c} - {col.Status__c}</span>
                                 </div>
                                 <span class="vm-rec-amt">{col.amountFormatted}</span>
+                                <lightning-button-icon icon-name="utility:download"
+                                    alternative-text="Download Receipt" variant="bare" size="small"
+                                    data-id={col.Id} onclick={handleDownloadReceipt}
+                                    class="slds-m-left_x-small" title="Download Receipt"></lightning-button-icon>
                             </div>
                         </template>
                     </template>
