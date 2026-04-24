@@ -397,13 +397,15 @@ export default class CollectionEntry extends NavigationMixin(LightningElement) {
         event.stopPropagation();
         const invoiceId = event.currentTarget.dataset.invoiceId;
         if (!invoiceId) return;
-        this[NavigationMixin.Navigate]({
+        this[NavigationMixin.GenerateUrl]({
             type: 'standard__recordPage',
             attributes: {
                 recordId: invoiceId,
                 objectApiName: 'Invoice__c',
                 actionName: 'view'
             }
+        }).then(url => {
+            window.open(url, '_blank');
         });
     }
 
