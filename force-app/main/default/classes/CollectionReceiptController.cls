@@ -2,6 +2,11 @@ public with sharing class CollectionReceiptController {
     public Collection__c collection { get; set; }
     public String amountInWords { get; set; }
     public Decimal balanceDue { get; set; }
+    public List<Collection_Allocation__c> allocations { get; set; }
+    public Decimal totalAllocated { get; set; }
+    public Decimal onAccountAmount { get; set; }
+    public Boolean hasAllocations { get; set; }
+    public Boolean hasOnAccountPortion { get; set; }
 
     public CollectionReceiptController(ApexPages.StandardController stdController) {
         collection = (Collection__c)stdController.getRecord();
@@ -12,21 +17,45 @@ public with sharing class CollectionReceiptController {
                              Account__r.Name, Account__r.BillingStreet,
                              Account__r.BillingCity, Account__r.BillingState,
                              Account__r.BillingPostalCode,
-                             Invoice__r.Name, Invoice__r.Invoice_Date__c,
+                             Invoice__c, Invoice__r.Name, Invoice__r.Invoice_Date__c,
                              Invoice__r.Net_Amount__c, Invoice__r.Balance_Due__c,
                              Salesperson__r.Name
                       FROM Collection__c WHERE Id = :collection.Id];
 
-        // Amount in words
-        amountInWords = numberToWords(collection.Amount__c != null ? collection.Amount__c.intValue() : 0);
+        // Fetch all allocations (for multi-invoice payments)
+        allocations = [
+            SELECT Id, Name, Allocated_Amount__c,
+                   Invoice__r.Name, Invoice__r.Invoice_Date__c,
+                   Invoice__r.Total_Amount__c, Invoice__r.Balance_Due__c
+            FROM Collection_Allocation__c
+            WHERE Collection__c = :collection.Id
+            ORDER BY Name
+        ];
 
-        // Calculate balance due after this payment
+        // Calculate totals
+        totalAllocated = 0;
+        for (Collection_Allocation__c a : allocations) {
+            totalAllocated += (a.Allocated_Amount__c != null ? a.Allocated_Amount__c : 0);
+        }
+
+        Decimal amount = collection.Amount__c != null ? collection.Amount__c : 0;
+        onAccountAmount = amount - totalAllocated;
+        if (onAccountAmount < 0) onAccountAmount = 0;
+
+        hasAllocations = !allocations.isEmpty();
+        hasOnAccountPortion = onAccountAmount > 0;
+
+        // Amount in words
+        amountInWords = numberToWords(amount.intValue());
+
+        // Balance due (for single-invoice collection, legacy display)
         if (collection.Invoice__c != null && collection.Invoice__r.Balance_Due__c != null) {
             balanceDue = collection.Invoice__r.Balance_Due__c;
         } else {
             balanceDue = 0;
         }
     }
+
 
     private static String numberToWords(Integer num) {
         if (num == 0) return 'Zero';

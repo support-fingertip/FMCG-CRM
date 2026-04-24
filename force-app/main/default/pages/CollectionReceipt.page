@@ -223,9 +223,67 @@
         </apex:outputPanel>
     </table>
 
-    <div class="section-title">Invoice Reference</div>
-    <table class="details-table">
-        <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(collection.Invoice__c))}">
+    <div class="section-title">Invoice Allocation</div>
+
+    <!-- Multi-invoice allocations table -->
+    <apex:outputPanel layout="none" rendered="{!hasAllocations}">
+        <table class="details-table" style="margin-bottom: 10px;">
+            <thead>
+                <tr style="background-color: #f5f5f5;">
+                    <th style="text-align: left; padding: 6px; font-weight: bold;">Invoice #</th>
+                    <th style="text-align: left; padding: 6px; font-weight: bold;">Invoice Date</th>
+                    <th style="text-align: right; padding: 6px; font-weight: bold;">Allocated Amount</th>
+                    <th style="text-align: right; padding: 6px; font-weight: bold;">Balance Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                <apex:repeat value="{!allocations}" var="alloc">
+                    <tr>
+                        <td style="padding: 6px;">{!alloc.Invoice__r.Name}</td>
+                        <td style="padding: 6px;">
+                            <apex:outputText value="{0,date,dd-MMM-yyyy}">
+                                <apex:param value="{!alloc.Invoice__r.Invoice_Date__c}"/>
+                            </apex:outputText>
+                        </td>
+                        <td style="text-align: right; padding: 6px;">
+                            <apex:outputText value="{0, number, ###,##0.00}">
+                                <apex:param value="{!alloc.Allocated_Amount__c}"/>
+                            </apex:outputText>
+                        </td>
+                        <td style="text-align: right; padding: 6px;">
+                            <apex:outputText value="{0, number, ###,##0.00}">
+                                <apex:param value="{!alloc.Invoice__r.Balance_Due__c}"/>
+                            </apex:outputText>
+                        </td>
+                    </tr>
+                </apex:repeat>
+                <tr style="font-weight: bold; border-top: 2px solid #333;">
+                    <td colspan="2" style="padding: 6px;">Total Allocated to Invoices</td>
+                    <td style="text-align: right; padding: 6px;">
+                        <apex:outputText value="{0, number, ###,##0.00}">
+                            <apex:param value="{!totalAllocated}"/>
+                        </apex:outputText>
+                    </td>
+                    <td></td>
+                </tr>
+                <apex:outputPanel layout="none" rendered="{!hasOnAccountPortion}">
+                    <tr style="font-style: italic; color: #555;">
+                        <td colspan="2" style="padding: 6px;">On Account Credit</td>
+                        <td style="text-align: right; padding: 6px;">
+                            <apex:outputText value="{0, number, ###,##0.00}">
+                                <apex:param value="{!onAccountAmount}"/>
+                            </apex:outputText>
+                        </td>
+                        <td></td>
+                    </tr>
+                </apex:outputPanel>
+            </tbody>
+        </table>
+    </apex:outputPanel>
+
+    <!-- Legacy single-invoice display (when no allocations exist but Invoice is set) -->
+    <apex:outputPanel layout="none" rendered="{!AND(NOT(hasAllocations), NOT(ISBLANK(collection.Invoice__c)))}">
+        <table class="details-table">
             <tr>
                 <td class="label-col">Invoice Number</td>
                 <td class="value-col">{!collection.Invoice__r.Name}</td>
@@ -254,15 +312,19 @@
                     </apex:outputText>
                 </td>
             </tr>
-        </apex:outputPanel>
-        <apex:outputPanel layout="none" rendered="{!collection.Is_On_Account__c}">
+        </table>
+    </apex:outputPanel>
+
+    <!-- Pure On Account payment (no allocations, no invoice) -->
+    <apex:outputPanel layout="none" rendered="{!AND(NOT(hasAllocations), ISBLANK(collection.Invoice__c))}">
+        <table class="details-table">
             <tr>
                 <td class="label-col" colspan="2">
                     <em>This is an on-account payment (not linked to a specific invoice).</em>
                 </td>
             </tr>
-        </apex:outputPanel>
-    </table>
+        </table>
+    </apex:outputPanel>
 
     <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(collection.Notes__c))}">
         <div class="section-title">Notes</div>
