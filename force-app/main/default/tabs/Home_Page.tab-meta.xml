@@ -2,6 +2,6 @@
 <CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
     <customObject>false</customObject>
     <motif>Custom1: Heart</motif>
-    <label>Home Page</label>
+    <label>FMCG Workspace</label>
     <lwcComponent>homePage</lwcComponent>
 </CustomTab>
