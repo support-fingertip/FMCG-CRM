@@ -477,7 +477,6 @@
     <fieldPermissions><editable>true</editable><field>Return_Line__c.UOM__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Return_Line__c.MRP__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Return_Line__c.Quantity__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Employee__c.Channels__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Product_Extension__c.Channels__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Sales_Order__c.Trade_Channel__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Account_Category__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
