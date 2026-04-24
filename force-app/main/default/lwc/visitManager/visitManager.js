@@ -424,7 +424,7 @@ export default class VisitManager extends LightningElement {
         // Reference currentTime to create a reactive dependency that ticks every second
         void this.currentTime;
         if (!this.dayStartTime) return '00:00:00';
-        const diff = Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000);
+        const diff = Math.max(0, Math.floor((Date.now() - this.dayStartTime.getTime()) / 1000));
         const h = Math.floor(diff / 3600);
         const m = Math.floor((diff % 3600) / 60);
         const s = diff % 60;
@@ -1084,9 +1084,10 @@ export default class VisitManager extends LightningElement {
     }
 
     get visitDurationDisplay() {
-        const h = Math.floor(this.visitDuration / 3600);
-        const m = Math.floor((this.visitDuration % 3600) / 60);
-        const s = this.visitDuration % 60;
+        const secs = Math.max(0, this.visitDuration || 0);
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
         return `${this._pad(h)}:${this._pad(m)}:${this._pad(s)}`;
     }
 
@@ -2499,7 +2500,10 @@ export default class VisitManager extends LightningElement {
         return h > 0 ? `${h}h ${m}m` : `${m} min`;
     }
 
-    _pad(n) { return n < 10 ? '0' + n : '' + n; }
+    _pad(n) {
+        const num = Math.max(0, Math.floor(n || 0));
+        return num < 10 ? '0' + num : '' + num;
+    }
 
     _toast(title, message, variant) {
         this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
