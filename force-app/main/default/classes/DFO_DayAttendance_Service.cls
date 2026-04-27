@@ -484,7 +484,7 @@ public without sharing class DFO_DayAttendance_Service {
                    Is_Finalized__c, Auto_Closed__c, Is_Leave_Day__c, Remarks__c,
                    Odometer_Start__c, Odometer_End__c
             FROM Day_Attendance__c
-            WHERE User__c = :targetUserId
+            WHERE (User__c = :targetUserId OR Salesperson__c = :targetUserId)
               AND Attendance_Date__c = :today
               AND Status__c IN ('Started', 'In Progress')
             ORDER BY CreatedDate DESC
