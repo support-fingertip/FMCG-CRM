@@ -465,14 +465,15 @@
 }
 
 .vm-photo-remove button {
-    background: #fff !important;
-    border: 2px solid #c23934 !important;
+    background: #c23934 !important;
+    border: 2px solid #fff !important;
     border-radius: 50% !important;
-    width: 30px !important;
-    height: 30px !important;
+    width: 32px !important;
+    height: 32px !important;
     padding: 0 !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    --sds-c-icon-color-foreground-default: #c23934;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --sds-c-icon-color-foreground-default: #fff;
+    color: #fff !important;
 }
 
 /* Action Center */
