@@ -469,6 +469,8 @@ private class BPM_JourneyPlan_Service_Test {
     @isTest
     static void testRegeneratePlanStatusCheckFails() {
         Journey_Plan__c plan = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        plan.Status__c = 'Submitted';
+        update plan;
         plan.Status__c = 'Approved';
         update plan;
 
@@ -485,6 +487,8 @@ private class BPM_JourneyPlan_Service_Test {
     @isTest
     static void testRegeneratePlanSkipStatusCheck() {
         Journey_Plan__c plan = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        plan.Status__c = 'Submitted';
+        update plan;
         plan.Status__c = 'Approved';
         update plan;
 
