@@ -15,7 +15,7 @@ export default class AchievementDashboard extends LightningElement {
     chartJsLoaded = false;
 
     @track periodOptions = [];
-    @track yearOptions = [];
+    periodsRaw = [];
     selectedPeriod = '';
     selectedYear = '';
     currentUserId = '';
@@ -48,17 +48,12 @@ export default class AchievementDashboard extends LightningElement {
         getDashboardInit()
             .then(result => {
                 const periods = result.periods || [];
+                this.periodsRaw = periods;
                 this.periodOptions = periods.map(p => ({ label: p.Name, value: p.Id }));
                 this.selectedPeriod = result.currentPeriodId || '';
                 this.currentUserId = result.currentUserId || '';
-                this.selectedYear = String(result.currentYear || new Date().getFullYear());
-
-                const cy = Number(this.selectedYear);
-                this.yearOptions = [
-                    { label: String(cy), value: String(cy) },
-                    { label: String(cy - 1), value: String(cy - 1) },
-                    { label: String(cy - 2), value: String(cy - 2) }
-                ];
+                this.selectedYear = this.deriveYearFromPeriod(this.selectedPeriod)
+                    || String(result.currentYear || new Date().getFullYear());
 
                 this.loadAllData();
             })
@@ -247,12 +242,16 @@ export default class AchievementDashboard extends LightningElement {
 
     handlePeriodChange(event) {
         this.selectedPeriod = event.target.value;
+        this.selectedYear = this.deriveYearFromPeriod(this.selectedPeriod) || this.selectedYear;
         this.loadAllData();
     }
 
-    handleYearChange(event) {
-        this.selectedYear = event.target.value;
-        this.loadAllData();
+    deriveYearFromPeriod(periodId) {
+        const period = this.periodsRaw.find(p => p.Id === periodId);
+        if (period && period.Start_Date__c) {
+            return String(new Date(period.Start_Date__c).getFullYear());
+        }
+        return null;
     }
 
     handleRefresh() { this.loadAllData(); }

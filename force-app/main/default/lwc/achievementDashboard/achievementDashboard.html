@@ -11,9 +11,6 @@
                 <lightning-combobox label="Period" value={selectedPeriod}
                     options={periodOptions} onchange={handlePeriodChange}
                     variant="label-hidden" class="ad-period-picker"></lightning-combobox>
-                <lightning-combobox label="Year" value={selectedYear}
-                    options={yearOptions} onchange={handleYearChange}
-                    variant="label-hidden" class="ad-year-picker"></lightning-combobox>
                 <lightning-button label="Calculate" icon-name="utility:sync"
                     variant="brand" onclick={handleRunCalculation}
                     title="Run achievement calculation for the selected period"></lightning-button>
