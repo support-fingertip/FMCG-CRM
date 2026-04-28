@@ -44,8 +44,8 @@ export default class AccountGeolocationButton extends LightningElement {
 
     get savedLatLngLabel() {
         if (!this.hasLocation) return 'Not set';
-        const lat = this.currentLocation.Outlet_Latitude__c.toFixed(6);
-        const lng = this.currentLocation.Outlet_Longitude__c.toFixed(6);
+        const lat = Number(this.currentLocation.Outlet_Latitude__c).toFixed(6);
+        const lng = Number(this.currentLocation.Outlet_Longitude__c).toFixed(6);
         return `${lat}, ${lng}`;
     }
 
