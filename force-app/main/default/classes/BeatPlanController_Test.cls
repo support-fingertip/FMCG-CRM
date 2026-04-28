@@ -215,7 +215,7 @@ private class BeatPlanController_Test {
         // Create new accounts not already in this beat
         List<Account> newAccounts = new List<Account>();
         for (Integer i = 0; i < 3; i++) {
-            newAccounts.add(new Account(Name = 'New Outlet ' + i, Type = 'Retailer'));
+            newAccounts.add(new Account(Name = 'New Outlet ' + i, Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery'));
         }
         insert newAccounts;
 

@@ -5,6 +5,8 @@ public class TestDataFactory {
         Account acc = new Account(
             Name = name,
             Type = type,
+            Channel__c = 'GT',
+            Outlet_Type__c = (type == 'Retailer') ? 'Grocery' : null,
             BillingStreet = '123 Test Street',
             BillingCity = 'Mumbai',
             BillingState = 'Maharashtra',
@@ -391,6 +393,8 @@ public class TestDataFactory {
         Account acc = new Account(
             Name = name,
             Type = type,
+            Channel__c = 'GT',
+            Outlet_Type__c = (type == 'Retailer') ? 'Grocery' : null,
             BillingStreet = '123 Test Street',
             BillingCity = 'Mumbai',
             BillingState = 'Maharashtra',
