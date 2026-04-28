@@ -28,7 +28,7 @@ private class ProductThreeSixtyController_Test {
         Warehouse__c wh = new Warehouse__c(
             Name = 'P360 Warehouse',
             Warehouse_Code__c = 'WH-P360',
-            Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+            Is_Active__c = true
         );
         insert wh;
 
@@ -37,7 +37,6 @@ private class ProductThreeSixtyController_Test {
             Warehouse__c = wh.Id,
             Product_Ext__c = prod.Id,
             Qty_On_Hand__c = 500,
-            Qty_On_Hand__c = 100, Qty_Reserved__c = 0,
             Qty_Reserved__c = 50
         );
         insert ws;
@@ -72,7 +71,7 @@ private class ProductThreeSixtyController_Test {
             Unit_Price__c = 120,
             Effective_From__c = Date.today().addDays(-30),
             Effective_To__c = Date.today().addDays(30),
-            Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+            Is_Active__c = true
         );
         insert pl;
 
@@ -86,7 +85,9 @@ private class ProductThreeSixtyController_Test {
 
         // Scheme tied to product
         Scheme__c scheme = TestDataFactory.createScheme('P360 Scheme', 'SCH-P360', 'Discount in %', 'Invoice Val Based');
-        scheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        scheme.Status__c = 'Active';
+        scheme.Start_Date__c = Date.today().addDays(-1);
+        scheme.End_Date__c = Date.today().addDays(30);
         scheme.Product_Ext__c = prod.Id;
         insert scheme;
 

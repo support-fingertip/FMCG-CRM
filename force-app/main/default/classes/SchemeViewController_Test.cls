@@ -17,7 +17,9 @@ private class SchemeViewController_Test {
         // ── Scheme: Free Products (no slabs) ────────────────────────
         Scheme__c freeScheme = TestDataFactory.createScheme(
             'Buy 1 Get 1', 'SCH-FREE-01', 'Free Products', 'Same Product (QTY)');
-        freeScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        freeScheme.Status__c = 'Active';
+        freeScheme.Start_Date__c = Date.today().addDays(-1);
+        freeScheme.End_Date__c = Date.today().addDays(30);
         freeScheme.Free_Product_Ext__c = freeProd.Id;
         freeScheme.Free_Quantity__c = 1;
         freeScheme.Channel__c = 'Field App';
@@ -26,7 +28,9 @@ private class SchemeViewController_Test {
         // ── Scheme: Discount in % (with slabs) ─────────────────────
         Scheme__c discountScheme = TestDataFactory.createScheme(
             'Volume Discount', 'SCH-DISC-01', 'Discount in %', 'Invoice Val Based');
-        discountScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        discountScheme.Status__c = 'Active';
+        discountScheme.Start_Date__c = Date.today().addDays(-1);
+        discountScheme.End_Date__c = Date.today().addDays(30);
         discountScheme.Max_Discount_Cap__c = 5000;
         insert discountScheme;
 
@@ -39,7 +43,7 @@ private class SchemeViewController_Test {
                 Max_Value__c = 4999,
                 Discount_Type__c = 'Percent',
                 Discount_Value__c = 5,
-                Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+                Is_Active__c = true
             ),
             new Scheme_Slab__c(
                 Scheme__c = discountScheme.Id,
@@ -48,7 +52,7 @@ private class SchemeViewController_Test {
                 Max_Value__c = null,
                 Discount_Type__c = 'Percent',
                 Discount_Value__c = 10,
-                Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+                Is_Active__c = true
             )
         };
         insert slabs;
@@ -56,14 +60,18 @@ private class SchemeViewController_Test {
         // ── Scheme: Discount in Value (no slabs) ────────────────────
         Scheme__c valueScheme = TestDataFactory.createScheme(
             'Flat Discount', 'SCH-VAL-01', 'Discount in Value', 'Invoice Val Based');
-        valueScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        valueScheme.Status__c = 'Active';
+        valueScheme.Start_Date__c = Date.today().addDays(-1);
+        valueScheme.End_Date__c = Date.today().addDays(30);
         valueScheme.Price_Discount__c = 200;
         insert valueScheme;
 
         // ── Scheme: Reward Points (no slabs) ────────────────────────
         Scheme__c rewardScheme = TestDataFactory.createScheme(
             'Loyalty Points', 'SCH-REW-01', 'Reward Points', 'Invoice Val Based');
-        rewardScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        rewardScheme.Status__c = 'Active';
+        rewardScheme.Start_Date__c = Date.today().addDays(-1);
+        rewardScheme.End_Date__c = Date.today().addDays(30);
         rewardScheme.Reward_Points__c = 50;
         insert rewardScheme;
 
@@ -82,7 +90,9 @@ private class SchemeViewController_Test {
         // ── Scheme with amount slab ─────────────────────────────────
         Scheme__c amtScheme = TestDataFactory.createScheme(
             'Flat Amount Off', 'SCH-AMT-01', 'Discount in Value', 'Invoice Val Based');
-        amtScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        amtScheme.Status__c = 'Active';
+        amtScheme.Start_Date__c = Date.today().addDays(-1);
+        amtScheme.End_Date__c = Date.today().addDays(30);
         insert amtScheme;
 
         Scheme_Slab__c amtSlab = new Scheme_Slab__c(
@@ -91,14 +101,16 @@ private class SchemeViewController_Test {
             Min_Value__c = 500,
             Discount_Type__c = 'Amount',
             Discount_Value__c = 100,
-            Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+            Is_Active__c = true
         );
         insert amtSlab;
 
         // ── Scheme with Free Product slab ───────────────────────────
         Scheme__c freeSlabScheme = TestDataFactory.createScheme(
             'Tiered Free', 'SCH-FSLB-01', 'Free Products', 'Same Product (QTY)');
-        freeSlabScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        freeSlabScheme.Status__c = 'Active';
+        freeSlabScheme.Start_Date__c = Date.today().addDays(-1);
+        freeSlabScheme.End_Date__c = Date.today().addDays(30);
         insert freeSlabScheme;
 
         Scheme_Slab__c freeSlab = new Scheme_Slab__c(
@@ -108,14 +120,16 @@ private class SchemeViewController_Test {
             Discount_Type__c = 'Free Product',
             Free_Product_Ext__c = freeProd.Id,
             Free_Quantity__c = 2,
-            Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+            Is_Active__c = true
         );
         insert freeSlab;
 
         // ── Scheme with Price Discount slab ─────────────────────────
         Scheme__c priceDiscScheme = TestDataFactory.createScheme(
             'Price Disc Slab', 'SCH-PDS-01', 'Discount in Value', 'Invoice Val Based');
-        priceDiscScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        priceDiscScheme.Status__c = 'Active';
+        priceDiscScheme.Start_Date__c = Date.today().addDays(-1);
+        priceDiscScheme.End_Date__c = Date.today().addDays(30);
         insert priceDiscScheme;
 
         Scheme_Slab__c priceDiscSlab = new Scheme_Slab__c(
@@ -124,14 +138,16 @@ private class SchemeViewController_Test {
             Min_Value__c = 1000,
             Discount_Type__c = 'Price Discount',
             Price_Discount__c = 50,
-            Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+            Is_Active__c = true
         );
         insert priceDiscSlab;
 
         // ── Scheme with Reward Points slab ──────────────────────────
         Scheme__c rwdSlabScheme = TestDataFactory.createScheme(
             'Reward Slab', 'SCH-RWS-01', 'Reward Points', 'Invoice Val Based');
-        rwdSlabScheme.Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30);
+        rwdSlabScheme.Status__c = 'Active';
+        rwdSlabScheme.Start_Date__c = Date.today().addDays(-1);
+        rwdSlabScheme.End_Date__c = Date.today().addDays(30);
         insert rwdSlabScheme;
 
         Scheme_Slab__c rwdSlab = new Scheme_Slab__c(
@@ -140,7 +156,7 @@ private class SchemeViewController_Test {
             Min_Value__c = 500,
             Discount_Type__c = 'Reward Points',
             Reward_Points__c = 100,
-            Status__c = 'Active', Start_Date__c = Date.today().addDays(-1), End_Date__c = Date.today().addDays(30)
+            Is_Active__c = true
         );
         insert rwdSlab;
     }
