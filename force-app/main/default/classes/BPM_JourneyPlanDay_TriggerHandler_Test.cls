@@ -96,11 +96,11 @@ private class BPM_JourneyPlanDay_TriggerHandler_Test {
         List<Journey_Plan_Day__c> days = new List<Journey_Plan_Day__c>();
         days.add(new Journey_Plan_Day__c(
             Journey_Plan__c = jp.Id, Beat__c = beat.Id,
-            Day_of_Week__c = 'Monday', Week_Number__c = '1', Planned_Outlets__c = 4
+            Day_of_Week__c = 'Monday', Week_Number__c = 'Week 1', Planned_Outlets__c = 4
         ));
         days.add(new Journey_Plan_Day__c(
             Journey_Plan__c = jp.Id, Beat__c = beat.Id,
-            Day_of_Week__c = 'Tuesday', Week_Number__c = '1', Planned_Outlets__c = 6
+            Day_of_Week__c = 'Tuesday', Week_Number__c = 'Week 1', Planned_Outlets__c = 6
         ));
         insert days;
 
