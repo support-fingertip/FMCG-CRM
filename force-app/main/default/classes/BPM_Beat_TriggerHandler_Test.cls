@@ -26,7 +26,8 @@ private class BPM_Beat_TriggerHandler_Test {
         Beat__c beat = new Beat__c(
             Name = 'New Beat',
             Beat_Code__c = 'BEAT-NEW01',
-            Territory__c = territory.Id
+            Territory__c = territory.Id,
+            Day_of_Week__c = 'Monday'
         );
         insert beat;
         Test.stopTest();
@@ -87,12 +88,14 @@ private class BPM_Beat_TriggerHandler_Test {
             beats.add(new Beat__c(
                 Name = 'Batch Beat 1',
                 Beat_Code__c = 'BEAT-BATCH01',
-                Territory__c = territory.Id
+                Territory__c = territory.Id,
+                Day_of_Week__c = 'Monday'
             ));
             beats.add(new Beat__c(
                 Name = 'Batch Beat 2',
                 Beat_Code__c = 'BEAT-BATCH01',
-                Territory__c = territory.Id
+                Territory__c = territory.Id,
+                Day_of_Week__c = 'Monday'
             ));
             insert beats;
             System.assert(false, 'Should have thrown an exception for duplicate codes in batch');
