@@ -2,11 +2,14 @@
 public class TestDataFactory {
 
     public static Account createAccount(String name, String type) {
+        // Ensure a default territory exists for the test context
+        Territory_Master__c territory = getOrCreateDefaultTerritory();
         Account acc = new Account(
             Name = name,
             Type = type,
             Channel__c = 'GT',
             Outlet_Type__c = (type == 'Retailer') ? 'Grocery' : null,
+            Territory__c = territory.Id,
             BillingStreet = '123 Test Street',
             BillingCity = 'Mumbai',
             BillingState = 'Maharashtra',
@@ -14,6 +17,19 @@ public class TestDataFactory {
             BillingCountry = 'India'
         );
         return acc;
+    }
+
+    private static Territory_Master__c defaultTerritory;
+    private static Territory_Master__c getOrCreateDefaultTerritory() {
+        if (defaultTerritory != null) return defaultTerritory;
+        List<Territory_Master__c> existing = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-TEST-DEFAULT' LIMIT 1];
+        if (!existing.isEmpty()) {
+            defaultTerritory = existing[0];
+        } else {
+            defaultTerritory = new Territory_Master__c(Name = 'Test Territory', Territory_Code__c = 'TER-TEST-DEFAULT');
+            insert defaultTerritory;
+        }
+        return defaultTerritory;
     }
 
     public static Account createAndInsertAccount(String name, String type) {
@@ -390,11 +406,13 @@ public class TestDataFactory {
      * @return An unsaved Account with geo fields populated.
      */
     public static Account createAccountWithGeoData(String name, String type, Decimal lat, Decimal lng) {
+        Territory_Master__c territory = getOrCreateDefaultTerritory();
         Account acc = new Account(
             Name = name,
             Type = type,
             Channel__c = 'GT',
             Outlet_Type__c = (type == 'Retailer') ? 'Grocery' : null,
+            Territory__c = territory.Id,
             BillingStreet = '123 Test Street',
             BillingCity = 'Mumbai',
             BillingState = 'Maharashtra',

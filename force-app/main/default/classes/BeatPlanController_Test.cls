@@ -213,9 +213,10 @@ private class BeatPlanController_Test {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'BPC Beat 0' LIMIT 1];
 
         // Create new accounts not already in this beat
+        Territory_Master__c ter = [SELECT Id FROM Territory_Master__c LIMIT 1];
         List<Account> newAccounts = new List<Account>();
         for (Integer i = 0; i < 3; i++) {
-            newAccounts.add(new Account(Name = 'New Outlet ' + i, Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery'));
+            newAccounts.add(new Account(Name = 'New Outlet ' + i, Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = ter.Id));
         }
         insert newAccounts;
 
