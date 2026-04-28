@@ -13,6 +13,7 @@ import getAccountsByTerritory from '@salesforce/apex/BeatPlanController.getAccou
 import cloneBeat from '@salesforce/apex/BeatPlanController.cloneBeat';
 import reassignBeat from '@salesforce/apex/BeatPlanController.reassignBeat';
 import updateOutletSequences from '@salesforce/apex/BeatPlanController.updateOutletSequences';
+import checkBeatDeactivationImpact from '@salesforce/apex/BeatPlanController.checkBeatDeactivationImpact';
 import getTerritoryOptions from '@salesforce/apex/HolidayController.getTerritoryOptions';
 
 const DAY_OPTIONS = [
@@ -353,16 +354,15 @@ export default class BeatManager extends LightningElement {
         this.showBeatForm = false;
     }
 
+    @track showDeactivateWarning = false;
+    @track deactivateImpactCount = 0;
+
     async handleSaveBeat() {
         if (!this.beatForm.Name || !this.beatForm.Beat_Code__c) {
             this.showToast('Error', 'Beat Name and Beat Code are required.', 'error');
             return;
         }
         if (!this.beatForm.Territory__c) {
-            // Matches the server-side validation rule
-            // ('Active beats must be assigned to a territory.').
-            // Catching it here avoids the round-trip and shows a
-            // cleaner message than the raw DML exception text.
             this.showToast('Error', 'Territory is required. Active beats must be assigned to a territory.', 'error');
             return;
         }
@@ -375,6 +375,34 @@ export default class BeatManager extends LightningElement {
             return;
         }
 
+        // Check if deactivating a beat with future journey plan days
+        const isDeactivating = this.beatForm.Id && this.beatForm.Is_Active__c === false
+            && this.selectedBeat && this.selectedBeat.Is_Active__c === true;
+
+        if (isDeactivating) {
+            try {
+                const impactCount = await checkBeatDeactivationImpact({ beatId: this.beatForm.Id });
+                if (impactCount > 0) {
+                    this.deactivateImpactCount = impactCount;
+                    this.showDeactivateWarning = true;
+                    return;
+                }
+            } catch (e) { /* proceed anyway */ }
+        }
+
+        await this._saveBeatRecord();
+    }
+
+    handleDeactivateCancel() {
+        this.showDeactivateWarning = false;
+    }
+
+    async handleDeactivateConfirm() {
+        this.showDeactivateWarning = false;
+        await this._saveBeatRecord();
+    }
+
+    async _saveBeatRecord() {
         this.isLoading = true;
         try {
             const beatRecord = {

@@ -306,6 +306,14 @@ public with sharing class BeatPlanController {
     }
 
     @AuraEnabled
+    public static Integer checkBeatDeactivationImpact(Id beatId) {
+        return [
+            SELECT COUNT() FROM Journey_Plan_Day__c
+            WHERE Beat__c = :beatId AND Plan_Date__c >= TODAY
+        ];
+    }
+
+    @AuraEnabled
     public static void deleteBeat(Id beatId) {
         try {
             delete [SELECT Id FROM Beat__c WHERE Id = :beatId];

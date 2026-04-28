@@ -117,24 +117,14 @@ public class BPM_Beat_TriggerHandler extends TriggerHandler {
             return;
         }
 
-        // Check for future journey plan days
-        Set<Id> beatsWithFuturePlans = new Set<Id>();
-        for (Journey_Plan_Day__c jpd : [
-            SELECT Beat__c
-            FROM Journey_Plan_Day__c
+        // Auto-remove future journey plan days for deactivated beats
+        List<Journey_Plan_Day__c> futureDays = [
+            SELECT Id FROM Journey_Plan_Day__c
             WHERE Beat__c IN :deactivatingBeatIds
               AND Plan_Date__c >= TODAY
-        ]) {
-            beatsWithFuturePlans.add(jpd.Beat__c);
-        }
-
-        for (Beat__c rec : newRecords) {
-            if (beatsWithFuturePlans.contains(rec.Id)) {
-                rec.Is_Active__c.addError(
-                    'Cannot deactivate this beat because it has future journey plan assignments. ' +
-                    'Please reassign or remove the beat from future plans first.'
-                );
-            }
+        ];
+        if (!futureDays.isEmpty()) {
+            delete futureDays;
         }
     }
 }
