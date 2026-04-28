@@ -107,7 +107,7 @@ private class BPM_Beat_TriggerHandler_Test {
     }
 
     @isTest
-    static void testPreventDeactivationWithFuturePlans() {
+    static void testDeactivationAutoRemovesFuturePlans() {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Beat_Code__c = 'BEAT-EXIST01' LIMIT 1];
 
         // Create a journey plan and day in the future
@@ -123,16 +123,19 @@ private class BPM_Beat_TriggerHandler_Test {
         );
         insert jpd;
 
+        System.assertEquals(1, [SELECT COUNT() FROM Journey_Plan_Day__c WHERE Beat__c = :beat.Id AND Plan_Date__c >= TODAY],
+            'Should have 1 future plan day before deactivation');
+
         Test.startTest();
-        try {
-            beat.Is_Active__c = false;
-            update beat;
-            System.assert(false, 'Should have prevented deactivation');
-        } catch (DmlException e) {
-            System.assert(e.getMessage().contains('future journey plan'),
-                'Error should mention future journey plan assignments');
-        }
+        beat.Is_Active__c = false;
+        update beat;
         Test.stopTest();
+
+        Beat__c updated = [SELECT Is_Active__c FROM Beat__c WHERE Id = :beat.Id];
+        System.assertEquals(false, updated.Is_Active__c, 'Beat should be deactivated');
+
+        Integer futureDays = [SELECT COUNT() FROM Journey_Plan_Day__c WHERE Beat__c = :beat.Id AND Plan_Date__c >= TODAY];
+        System.assertEquals(0, futureDays, 'Future plan days should be auto-deleted on deactivation');
     }
 
     @isTest
