@@ -638,6 +638,7 @@ private class BPM_JourneyPlan_Service_Test {
             Employee_Code__c = 'EMP-JPTEST01',
             User__c = UserInfo.getUserId(),
             Territory__c = territory.Id,
+            Channels__c = 'GT',
             Is_Active__c = true,
             Week_Off_Days__c = 'Sunday;Saturday'
         );
