@@ -49,10 +49,15 @@ private class MDM_Account_TriggerHandler_Test {
     @IsTest
     static void testBeforeInsert_DefaultsSetForClassA() {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Beat_Code__c = 'BT-001' LIMIT 1];
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
 
         Test.startTest();
         Account acc = new Account(
             Name = 'Test Retailer A',
+            Type = 'Retailer',
+            Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Outlet_Class__c = 'A',
             Beat__c = beat.Id
         );
@@ -68,9 +73,15 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testBeforeInsert_DefaultsSetForClassB() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+
         Test.startTest();
         Account acc = new Account(
             Name = 'Test Retailer B',
+            Type = 'Retailer',
+            Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Outlet_Class__c = 'B'
         );
         insert acc;
@@ -82,9 +93,15 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testBeforeInsert_DefaultsSetForClassC() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+
         Test.startTest();
         Account acc = new Account(
             Name = 'Test Retailer C',
+            Type = 'Retailer',
+            Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Outlet_Class__c = 'C'
         );
         insert acc;
@@ -96,9 +113,15 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testBeforeInsert_ExplicitFrequencyNotOverridden() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+
         Test.startTest();
         Account acc = new Account(
             Name = 'Test Retailer Explicit',
+            Type = 'Retailer',
+            Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Outlet_Class__c = 'A',
             Visit_Frequency__c = 'Monthly' // Explicitly set, should not be overridden
         );
@@ -114,11 +137,12 @@ private class MDM_Account_TriggerHandler_Test {
     @IsTest
     static void testAfterInsert_BeatOutletCountIncremented() {
         Beat__c beat = [SELECT Id, Total_Outlets__c FROM Beat__c WHERE Beat_Code__c = 'BT-001' LIMIT 1];
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
         System.assertEquals(0, beat.Total_Outlets__c, 'Beat should start with 0 outlets');
 
         Test.startTest();
-        Account acc1 = new Account(Name = 'Outlet 1', Beat__c = beat.Id, Is_Active__c = true);
-        Account acc2 = new Account(Name = 'Outlet 2', Beat__c = beat.Id, Is_Active__c = true);
+        Account acc1 = new Account(Name = 'Outlet 1', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id, Beat__c = beat.Id, Is_Active__c = true);
+        Account acc2 = new Account(Name = 'Outlet 2', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id, Beat__c = beat.Id, Is_Active__c = true);
         insert new List<Account>{ acc1, acc2 };
         Test.stopTest();
 
@@ -129,9 +153,10 @@ private class MDM_Account_TriggerHandler_Test {
     @IsTest
     static void testAfterInsert_InactiveAccountNotCounted() {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Beat_Code__c = 'BT-001' LIMIT 1];
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
 
         Test.startTest();
-        Account acc = new Account(Name = 'Inactive Outlet', Beat__c = beat.Id, Is_Active__c = false);
+        Account acc = new Account(Name = 'Inactive Outlet', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id, Beat__c = beat.Id, Is_Active__c = false);
         insert acc;
         Test.stopTest();
 
@@ -145,8 +170,9 @@ private class MDM_Account_TriggerHandler_Test {
     static void testAfterUpdate_BeatTransferUpdatesCount() {
         Beat__c beat1 = [SELECT Id FROM Beat__c WHERE Beat_Code__c = 'BT-001' LIMIT 1];
         Beat__c beat2 = [SELECT Id FROM Beat__c WHERE Beat_Code__c = 'BT-002' LIMIT 1];
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
 
-        Account acc = new Account(Name = 'Transfer Outlet', Beat__c = beat1.Id, Is_Active__c = true);
+        Account acc = new Account(Name = 'Transfer Outlet', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id, Beat__c = beat1.Id, Is_Active__c = true);
         insert acc;
 
         // Verify initial state
@@ -168,8 +194,14 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testBeforeUpdate_FrequencyUpdatedOnClassChange() {
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+
         Account acc = new Account(
             Name = 'Class Change Outlet',
+            Type = 'Retailer',
+            Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Outlet_Class__c = 'A'
         );
         insert acc;
@@ -199,7 +231,8 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testRecalculateCreditUtilization_NoInvoices() {
-        Account acc = new Account(Name = 'Credit Test Outlet', Credit_Limit__c = 50000);
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+        Account acc = new Account(Name = 'Credit Test Outlet', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id, Credit_Limit__c = 50000);
         insert acc;
 
         Test.startTest();
@@ -222,7 +255,8 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testUpdateLastOrderInfo_NoOrders() {
-        Account acc = new Account(Name = 'Order Test Outlet');
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+        Account acc = new Account(Name = 'Order Test Outlet', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id);
         insert acc;
 
         Test.startTest();
@@ -233,7 +267,8 @@ private class MDM_Account_TriggerHandler_Test {
 
     @IsTest
     static void testUpdateLastVisitDate_NoVisits() {
-        Account acc = new Account(Name = 'Visit Test Outlet');
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
+        Account acc = new Account(Name = 'Visit Test Outlet', Type = 'Retailer', Channel__c = 'GT', Outlet_Type__c = 'Grocery', Territory__c = territory.Id);
         insert acc;
 
         Test.startTest();
@@ -247,11 +282,16 @@ private class MDM_Account_TriggerHandler_Test {
     @IsTest
     static void testBulkInsert_200Accounts() {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Beat_Code__c = 'BT-001' LIMIT 1];
+        Territory_Master__c territory = [SELECT Id FROM Territory_Master__c WHERE Territory_Code__c = 'TER-001' LIMIT 1];
 
         List<Account> accounts = new List<Account>();
         for (Integer i = 0; i < 200; i++) {
             accounts.add(new Account(
                 Name = 'Bulk Outlet ' + i,
+                Type = 'Retailer',
+                Channel__c = 'GT',
+                Outlet_Type__c = 'Grocery',
+                Territory__c = territory.Id,
                 Outlet_Class__c = 'B',
                 Beat__c = beat.Id,
                 Is_Active__c = true

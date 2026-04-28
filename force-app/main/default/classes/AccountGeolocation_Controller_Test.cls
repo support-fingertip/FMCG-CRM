@@ -7,9 +7,13 @@ private class AccountGeolocation_Controller_Test {
         accWithGeo.Is_Active__c = true;
         insert accWithGeo;
 
+        Territory_Master__c ter = [SELECT Id FROM Territory_Master__c LIMIT 1];
         Account accWithBilling = new Account(
             Name = 'Outlet With Billing Only',
             Type = 'Retailer',
+            Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = ter.Id,
             BillingStreet = '456 Test Lane',
             BillingCity = 'Delhi',
             BillingState = 'Delhi',

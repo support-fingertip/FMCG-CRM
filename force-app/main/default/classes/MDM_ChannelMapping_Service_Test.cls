@@ -10,11 +10,23 @@ private class MDM_ChannelMapping_Service_Test {
 
     @TestSetup
     static void setupTestData() {
+        // Territory
+        Territory_Master__c territory = new Territory_Master__c(
+            Name = 'Channel Test Territory',
+            Territory_Code__c = 'TER-CH01',
+            State__c = 'Maharashtra',
+            City__c = 'Mumbai',
+            Is_Active__c = true
+        );
+        insert territory;
+
         // Account with channel
         Account acc = new Account(
             Name = 'Channel Test Retailer',
             Type = 'Retailer',
             Channel__c = 'GT',
+            Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Is_Active__c = true,
             BillingCity = 'Mumbai',
             BillingState = 'Maharashtra',

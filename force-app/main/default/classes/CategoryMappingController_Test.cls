@@ -10,6 +10,16 @@ private class CategoryMappingController_Test {
 
     @TestSetup
     static void setupTestData() {
+        // Territory
+        Territory_Master__c territory = new Territory_Master__c(
+            Name = 'CMC Test Territory',
+            Territory_Code__c = 'TER-CMC01',
+            State__c = 'Delhi',
+            City__c = 'Delhi',
+            Is_Active__c = true
+        );
+        insert territory;
+
         // Category hierarchy
         Product_Category__c l1 = new Product_Category__c(
             Name = 'Home Care',
@@ -58,6 +68,8 @@ private class CategoryMappingController_Test {
         Account acc1 = new Account(
             Name = 'CMC Test Store Alpha',
             Type = 'Retailer',
+            Channel__c = 'GT', Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Is_Active__c = true,
             BillingCity = 'Delhi',
             BillingState = 'Delhi',
@@ -66,6 +78,8 @@ private class CategoryMappingController_Test {
         Account acc2 = new Account(
             Name = 'CMC Test Store Beta',
             Type = 'Retailer',
+            Channel__c = 'GT', Outlet_Type__c = 'Grocery',
+            Territory__c = territory.Id,
             Is_Active__c = true,
             BillingCity = 'Mumbai',
             BillingState = 'Maharashtra',
