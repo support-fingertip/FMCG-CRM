@@ -737,9 +737,9 @@ private class BPM_JourneyPlan_Service_Test {
     @isTest
     static void testMonthlyFrequency() {
         Territory_Master__c territory = [SELECT Id FROM Territory_Master__c LIMIT 1];
-        List<Beat__c> beats = [SELECT Id, Frequency__c FROM Beat__c LIMIT 1];
-        beats[0].Frequency__c = 'Monthly';
-        update beats;
+        Beat__c monthlyBeat = [SELECT Id, Frequency__c FROM Beat__c LIMIT 1];
+        monthlyBeat.Frequency__c = 'Monthly';
+        update monthlyBeat;
 
         Date targetMonth = Date.today().addMonths(13).toStartOfMonth();
 
@@ -752,7 +752,8 @@ private class BPM_JourneyPlan_Service_Test {
         Test.stopTest();
 
         List<Journey_Plan_Day__c> days = [
-            SELECT Plan_Date__c FROM Journey_Plan_Day__c WHERE Journey_Plan__c = :planId
+            SELECT Plan_Date__c, Beat__c FROM Journey_Plan_Day__c
+            WHERE Journey_Plan__c = :planId AND Beat__c = :monthlyBeat.Id
         ];
         for (Journey_Plan_Day__c d : days) {
             System.assert(d.Plan_Date__c.day() <= 7,
