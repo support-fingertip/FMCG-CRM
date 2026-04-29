@@ -226,13 +226,13 @@
                                         <template if:true={isSelectedDayEditable}>
                                             <lightning-button-icon icon-name="utility:close"
                                                 alternative-text="Remove from this day" title="Remove from this day"
-                                                size="small" variant="bare-inverse"
+                                                size="small" variant="bare"
                                                 data-plan-day-id={beat.planDayId}
                                                 onclick={handleRemoveBeat}
                                                 class="remove-beat-btn"></lightning-button-icon>
                                             <lightning-button-icon icon-name="utility:delete"
                                                 alternative-text="Remove from entire plan" title="Remove from entire plan"
-                                                size="small" variant="bare-inverse"
+                                                size="small" variant="bare"
                                                 data-beat-id={beat.id}
                                                 onclick={handleRemoveBeatFromPlan}
                                                 class="remove-beat-plan-btn"></lightning-button-icon>
