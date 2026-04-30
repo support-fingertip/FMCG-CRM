@@ -67,10 +67,8 @@ public with sharing class TAM_IncentiveCalculation_Service {
         // Build achievement map for prerequisite checking (userId+criteriaId → %)
         Map<String, Decimal> achievementPercentMap = new Map<String, Decimal>();
         for (Target_Actual__c ta : actuals) {
-            Decimal tv = (ta.Target_Value__c != null ? ta.Target_Value__c : 0)
-                + (ta.Teams_Target__c != null ? ta.Teams_Target__c : 0);
-            Decimal av = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
-                + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
+            Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
+            Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
             Decimal pct = tv > 0 ? (av / tv) * 100 : 0;
             achievementPercentMap.put(ta.User__c + '-' + ta.Target_Criteria__c, pct);
         }
@@ -81,10 +79,8 @@ public with sharing class TAM_IncentiveCalculation_Service {
             // Rebuild achievement map with cumulative values
             achievementPercentMap.clear();
             for (Target_Actual__c ta : actuals) {
-                Decimal tv = (ta.Target_Value__c != null ? ta.Target_Value__c : 0)
-                    + (ta.Teams_Target__c != null ? ta.Teams_Target__c : 0);
-                Decimal av = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
-                    + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
+                Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
+                Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
                 Decimal pct = tv > 0 ? (av / tv) * 100 : 0;
                 achievementPercentMap.put(ta.User__c + '-' + ta.Target_Criteria__c, pct);
             }
@@ -113,13 +109,10 @@ public with sharing class TAM_IncentiveCalculation_Service {
         List<String> skipReasons = new List<String>();
 
         for (Target_Actual__c ta : actuals) {
-            Decimal individualTarget = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
-            Decimal teamsTarget = ta.Teams_Target__c != null ? ta.Teams_Target__c : 0;
-            Decimal targetValue = individualTarget + teamsTarget;
-            Decimal achievementValue = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
-                + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
+            Decimal targetValue = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
+            Decimal achievementValue = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
             if (targetValue == 0) {
-                skipReasons.add(ta.Target_Criteria__r.Name + ': total target is 0');
+                skipReasons.add(ta.Target_Criteria__r.Name + ': target is 0');
                 continue;
             }
 
