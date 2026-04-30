@@ -278,6 +278,9 @@
             <template if:true={showPriceLists}>
                 <div class="section-toolbar">
                     <div class="toolbar-left">
+                        <lightning-input type="search" label="Search" variant="label-hidden"
+                            placeholder="Search product, SKU, customer..."
+                            value={priceListSearchTerm} onchange={handlePriceListSearch}></lightning-input>
                         <lightning-combobox label="Channel" value={priceListChannelFilter}
                             options={channelFilterOptions} onchange={handlePriceListChannelFilter}
                             variant="label-hidden" placeholder="All Channels"></lightning-combobox>
@@ -369,6 +372,9 @@
             <template if:true={showBatches}>
                 <div class="section-toolbar">
                     <div class="toolbar-left">
+                        <lightning-input type="search" label="Search" variant="label-hidden"
+                            placeholder="Search product, SKU, batch #..."
+                            value={batchSearchTerm} onchange={handleBatchSearch}></lightning-input>
                         <lightning-combobox label="Status" value={batchStatusFilter}
                             options={batchStatusFilterOptions} onchange={handleBatchStatusFilter}
                             variant="label-hidden" placeholder="All Statuses"></lightning-combobox>
@@ -437,6 +443,15 @@
             <template if:true={showMustSell}>
                 <div class="section-toolbar">
                     <div class="toolbar-left">
+                        <lightning-input type="search" label="Search" variant="label-hidden"
+                            placeholder="Search product, SKU..."
+                            value={mustSellSearchTerm} onchange={handleMustSellSearch}></lightning-input>
+                        <lightning-combobox label="Channel" value={mustSellChannelFilter}
+                            options={channelFilterOptions} onchange={handleMustSellChannelFilter}
+                            variant="label-hidden" placeholder="All Channels"></lightning-combobox>
+                        <lightning-combobox label="Classification" value={mustSellClassificationFilter}
+                            options={classificationFilterOptions} onchange={handleMustSellClassificationFilter}
+                            variant="label-hidden" placeholder="All Classifications"></lightning-combobox>
                         <lightning-input type="checkbox" label="Active Only" checked={mustSellActiveOnly}
                             onchange={handleMustSellActiveFilter}></lightning-input>
                     </div>
@@ -706,7 +721,13 @@
             <!-- ─── UOM Conversions Section ───────────────────────────────── -->
             <template if:true={showUOMConversions}>
                 <div class="section-toolbar">
-                    <div class="toolbar-left"></div>
+                    <div class="toolbar-left">
+                        <lightning-input type="search" label="Search" variant="label-hidden"
+                            placeholder="Search product, UOM..."
+                            value={uomConvSearchTerm} onchange={handleUOMConvSearch}></lightning-input>
+                        <lightning-input type="checkbox" label="Active Only" checked={uomConvActiveOnly}
+                            onchange={handleUOMConvActiveFilter}></lightning-input>
+                    </div>
                     <div class="toolbar-right">
                         <lightning-button label="New Conversion Rule" variant="brand" icon-name="utility:add"
                             onclick={handleNewUOMConv}></lightning-button>

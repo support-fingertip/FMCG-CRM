@@ -83,6 +83,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track priceListChannelFilter = '';
     @track priceListPriorityFilter = '';
     @track priceListActiveOnly = true;
+    @track priceListSearchTerm = '';
     @track priceListPage = 1;
     @track priceListTotalPages = 1;
     @track priceListTotalCount = 0;
@@ -95,6 +96,7 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     @track batches = [];
     @track batchProductFilter = '';
     @track batchStatusFilter = '';
+    @track batchSearchTerm = '';
     @track showBatchModal = false;
     @track editBatch = {};
     @track isNewBatch = false;
@@ -102,6 +104,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     // ── Must-Sell Configs ──────────────────────────────────────────────
     @track mustSellConfigs = [];
     @track mustSellActiveOnly = true;
+    @track mustSellSearchTerm = '';
+    @track mustSellChannelFilter = '';
+    @track mustSellClassificationFilter = '';
     @track showMustSellModal = false;
     @track editMustSell = {};
     @track isNewMustSell = false;
@@ -119,6 +124,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     // ── UOM Conversions ──────────────────────────────────────────────────
     @track uomConversions = [];
     @track uomConvProductFilter = '';
+    @track uomConvSearchTerm = '';
+    @track uomConvActiveOnly = true;
     @track showUOMConvModal = false;
     @track editUOMConv = {};
     @track isNewUOMConv = false;
@@ -349,6 +356,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'GT', value: 'GT' },
             { label: 'MT', value: 'MT' },
             { label: 'E-Commerce', value: 'E-Commerce' }
+        ];
+    }
+    get classificationFilterOptions() {
+        return [
+            { label: 'All Classifications', value: '' },
+            { label: 'Must Sell', value: 'Must Sell' },
+            { label: 'Focus SKU', value: 'Focus SKU' },
+            { label: 'Priority', value: 'Priority' }
         ];
     }
     get priorityFilterOptions() {
@@ -724,7 +739,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
                 priorityFilter: this.priceListPriorityFilter || null,
                 activeOnly: this.priceListActiveOnly,
                 pageNumber: this.priceListPage,
-                pageSize: PAGE_SIZE
+                pageSize: PAGE_SIZE,
+                searchTerm: this.priceListSearchTerm || null
             });
             this.priceLists = result.priceLists.map(pl => ({
                 ...pl,
@@ -740,6 +756,15 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         } catch (error) {
             this.showError('Error loading price lists', this.reduceErrors(error));
         }
+    }
+
+    handlePriceListSearch(event) {
+        this.priceListSearchTerm = event.target.value;
+        clearTimeout(this._priceListSearchTimer);
+        this._priceListSearchTimer = setTimeout(() => {
+            this.priceListPage = 1;
+            this.loadPriceLists();
+        }, 300);
     }
 
     handlePriceListChannelFilter(event) {
@@ -889,7 +914,8 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         try {
             const rawBatches = await getBatches({
                 productId: this.batchProductFilter || null,
-                status: this.batchStatusFilter || null
+                status: this.batchStatusFilter || null,
+                searchTerm: this.batchSearchTerm || null
             });
             // Derive an expiry-state label per batch so the table can show
             // three distinct states: Near Expiry (red), Expired (dark red,
@@ -926,6 +952,14 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         } catch (error) {
             this.showError('Error loading batches', this.reduceErrors(error));
         }
+    }
+
+    handleBatchSearch(event) {
+        this.batchSearchTerm = event.target.value;
+        clearTimeout(this._batchSearchTimer);
+        this._batchSearchTimer = setTimeout(() => {
+            this.loadBatches();
+        }, 300);
     }
 
     handleBatchStatusFilter(event) {
@@ -994,7 +1028,10 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     async loadMustSellConfigs() {
         try {
             const rawConfigs = await getMustSellConfigs({
-                activeOnly: this.mustSellActiveOnly
+                activeOnly: this.mustSellActiveOnly,
+                channel: this.mustSellChannelFilter || null,
+                classification: this.mustSellClassificationFilter || null,
+                searchTerm: this.mustSellSearchTerm || null
             });
             this.mustSellConfigs = rawConfigs.map(ms => ({
                 ...ms,
@@ -1005,6 +1042,24 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         } catch (error) {
             this.showError('Error loading priority sell configs', this.reduceErrors(error));
         }
+    }
+
+    handleMustSellSearch(event) {
+        this.mustSellSearchTerm = event.target.value;
+        clearTimeout(this._mustSellSearchTimer);
+        this._mustSellSearchTimer = setTimeout(() => {
+            this.loadMustSellConfigs();
+        }, 300);
+    }
+
+    handleMustSellChannelFilter(event) {
+        this.mustSellChannelFilter = event.target.value;
+        this.loadMustSellConfigs();
+    }
+
+    handleMustSellClassificationFilter(event) {
+        this.mustSellClassificationFilter = event.target.value;
+        this.loadMustSellConfigs();
     }
 
     handleMustSellActiveFilter(event) {
@@ -1457,7 +1512,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
     async loadUOMConversions() {
         try {
             const rawConversions = await getUOMConversions({
-                productId: this.uomConvProductFilter || null
+                productId: this.uomConvProductFilter || null,
+                searchTerm: this.uomConvSearchTerm || null,
+                activeOnly: this.uomConvActiveOnly
             });
             this.uomConversions = rawConversions.map(c => ({
                 ...c,
@@ -1474,6 +1531,19 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         } catch (error) {
             this.showError('Error loading UOM conversions', this.reduceErrors(error));
         }
+    }
+
+    handleUOMConvSearch(event) {
+        this.uomConvSearchTerm = event.target.value;
+        clearTimeout(this._uomConvSearchTimer);
+        this._uomConvSearchTimer = setTimeout(() => {
+            this.loadUOMConversions();
+        }, 300);
+    }
+
+    handleUOMConvActiveFilter(event) {
+        this.uomConvActiveOnly = event.target.checked;
+        this.loadUOMConversions();
     }
 
     handleNewUOMConv() {

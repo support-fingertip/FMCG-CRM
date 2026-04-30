@@ -183,7 +183,7 @@ public with sharing class ProductManagementController {
     // ─── Price List CRUD ───────────────────────────────────────────────
 
     @AuraEnabled
-    public static PriceListPageResult getPriceLists(String productId, String channel, String region, String categoryId, String territoryId, String customerId, String priorityFilter, Boolean activeOnly, Integer pageNumber, Integer pageSize) {
+    public static PriceListPageResult getPriceLists(String productId, String channel, String region, String categoryId, String territoryId, String customerId, String priorityFilter, Boolean activeOnly, Integer pageNumber, Integer pageSize, String searchTerm) {
         if (pageNumber == null || pageNumber < 1) pageNumber = 1;
         if (pageSize == null || pageSize < 1) pageSize = 25;
 
@@ -194,6 +194,10 @@ public with sharing class ProductManagementController {
         }
         if (String.isNotBlank(productId)) {
             baseQuery += ' AND Product_Ext__c = \'' + String.escapeSingleQuotes(productId) + '\'';
+        }
+        if (String.isNotBlank(searchTerm)) {
+            String searchKey = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
+            baseQuery += ' AND (Product_Ext__r.Name LIKE :searchKey OR Product_Ext__r.SKU_Code__c LIKE :searchKey OR Customer__r.Name LIKE :searchKey OR Name LIKE :searchKey)';
         }
         if (String.isNotBlank(channel)) {
             baseQuery += ' AND Channel__c = \'' + String.escapeSingleQuotes(channel) + '\'';
@@ -268,7 +272,7 @@ public with sharing class ProductManagementController {
     // ─── Batch Master CRUD ─────────────────────────────────────────────
 
     @AuraEnabled
-    public static List<Batch_Master__c> getBatches(String productId, String status) {
+    public static List<Batch_Master__c> getBatches(String productId, String status, String searchTerm) {
         String query = 'SELECT Id, Name, Batch_Number__c, Product_Ext__c, Product_Ext__r.Name, ' +
                        'Product_Ext__r.SKU_Code__c, Manufacturing_Date__c, Expiry_Date__c, ' +
                        'Status__c, Quantity_Manufactured__c, Shelf_Life_Days__c, ' +
@@ -280,6 +284,10 @@ public with sharing class ProductManagementController {
         }
         if (String.isNotBlank(status)) {
             query += ' AND Status__c = \'' + String.escapeSingleQuotes(status) + '\'';
+        }
+        if (String.isNotBlank(searchTerm)) {
+            String searchKey = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
+            query += ' AND (Product_Ext__r.Name LIKE :searchKey OR Product_Ext__r.SKU_Code__c LIKE :searchKey OR Batch_Number__c LIKE :searchKey)';
         }
         query += ' ORDER BY Expiry_Date__c ASC LIMIT 200';
 
@@ -305,14 +313,24 @@ public with sharing class ProductManagementController {
     // ─── Must-Sell Configuration CRUD ──────────────────────────────────
 
     @AuraEnabled
-    public static List<Must_Sell_Config__c> getMustSellConfigs(Boolean activeOnly) {
+    public static List<Must_Sell_Config__c> getMustSellConfigs(Boolean activeOnly, String channel, String classification, String searchTerm) {
         String query = 'SELECT Id, Name, Product_Ext__c, Product_Ext__r.Name, Product_Ext__r.SKU_Code__c, ' +
                        'Classification__c, Channel__c, Customer_Type__c, Territory__c, Territory__r.Name, ' +
                        'Start_Date__c, End_Date__c, Is_Active__c, Min_Qty__c ' +
-                       'FROM Must_Sell_Config__c';
+                       'FROM Must_Sell_Config__c WHERE Id != null';
 
         if (activeOnly == true) {
-            query += ' WHERE Is_Active__c = true';
+            query += ' AND Is_Active__c = true';
+        }
+        if (String.isNotBlank(channel)) {
+            query += ' AND Channel__c = :channel';
+        }
+        if (String.isNotBlank(classification)) {
+            query += ' AND Classification__c = :classification';
+        }
+        if (String.isNotBlank(searchTerm)) {
+            String searchKey = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
+            query += ' AND (Product_Ext__r.Name LIKE :searchKey OR Product_Ext__r.SKU_Code__c LIKE :searchKey)';
         }
         query += ' ORDER BY Product_Ext__r.Name ASC LIMIT 200';
 
@@ -455,7 +473,7 @@ public with sharing class ProductManagementController {
     // ─── UOM Conversion CRUD ──────────────────────────────────────────────
 
     @AuraEnabled
-    public static List<UOM_Conversion__c> getUOMConversions(String productId) {
+    public static List<UOM_Conversion__c> getUOMConversions(String productId, String searchTerm, Boolean activeOnly) {
         String query = 'SELECT Id, Name, From_UOM__c, From_UOM__r.Name, From_UOM__r.UOM_Code__c, ' +
                        'To_UOM__c, To_UOM__r.Name, To_UOM__r.UOM_Code__c, ' +
                        'Conversion_Factor__c, Inverse_Conversion_Factor__c, ' +
@@ -464,6 +482,13 @@ public with sharing class ProductManagementController {
 
         if (String.isNotBlank(productId)) {
             query += ' AND (Product__c = \'' + String.escapeSingleQuotes(productId) + '\' OR Product__c = null)';
+        }
+        if (activeOnly == true) {
+            query += ' AND Is_Active__c = true';
+        }
+        if (String.isNotBlank(searchTerm)) {
+            String searchKey = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
+            query += ' AND (Product__r.Name LIKE :searchKey OR From_UOM__r.Name LIKE :searchKey OR To_UOM__r.Name LIKE :searchKey)';
         }
         query += ' ORDER BY Product__c NULLS LAST, From_UOM__r.Name, To_UOM__r.Name LIMIT 200';
         return Database.query(query);
