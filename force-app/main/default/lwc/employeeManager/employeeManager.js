@@ -167,6 +167,16 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
         return this.selectedEmployee ? this.selectedEmployee.Address__c || '-' : '-';
     }
 
+    get selectedEmployeeL1Approver() {
+        if (!this.selectedEmployee || !this.selectedEmployee.L1_Approver__r) return '-';
+        return this.selectedEmployee.L1_Approver__r.Name;
+    }
+
+    get selectedEmployeeL2Approver() {
+        if (!this.selectedEmployee || !this.selectedEmployee.L2_Approver__r) return '-';
+        return this.selectedEmployee.L2_Approver__r.Name;
+    }
+
     get selectedEmployeeWeekOffDays() {
         if (!this.selectedEmployee || !this.selectedEmployee.Week_Off_Days__c) return '-';
         return this.selectedEmployee.Week_Off_Days__c.replace(/;/g, ', ');
@@ -596,7 +606,9 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             Address__c: this.selectedEmployee.Address__c || '',
             Week_Off_Days__c: this.selectedEmployee.Week_Off_Days__c || 'Sunday',
             Channels__c: this.selectedEmployee.Channels__c || '',
-            Gross_Salary__c: this.selectedEmployee.Gross_Salary__c || null
+            Gross_Salary__c: this.selectedEmployee.Gross_Salary__c || null,
+            L1_Approver__c: this.selectedEmployee.L1_Approver__c || null,
+            L2_Approver__c: this.selectedEmployee.L2_Approver__c || null
         };
         this.isEditMode = true;
         this.showEmployeeForm = true;
@@ -604,7 +616,7 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
 
     handleFormChange(event) {
         const field = event.target.dataset.field;
-        if (field === 'Territory__c' || field === 'Reporting_Manager__c' || field === 'User__c') {
+        if (field === 'Territory__c' || field === 'Reporting_Manager__c' || field === 'User__c' || field === 'L1_Approver__c' || field === 'L2_Approver__c') {
             const val = event.detail.value;
             this.employeeForm = { ...this.employeeForm, [field]: Array.isArray(val) ? (val[0] || null) : val };
         } else if (field === 'Is_Active__c') {
@@ -671,7 +683,9 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
                 Address__c: this.employeeForm.Address__c,
                 Week_Off_Days__c: this.employeeForm.Week_Off_Days__c,
                 Channels__c: this.employeeForm.Channels__c,
-                Gross_Salary__c: this.employeeForm.Gross_Salary__c
+                Gross_Salary__c: this.employeeForm.Gross_Salary__c,
+                L1_Approver__c: this.employeeForm.L1_Approver__c,
+                L2_Approver__c: this.employeeForm.L2_Approver__c
             };
             if (this.employeeForm.Id) {
                 employeeRecord.Id = this.employeeForm.Id;

@@ -250,6 +250,14 @@
                                             <span class="detail-label">Gross Salary</span>
                                             <span class="detail-value">{selectedEmployeeSalary}</span>
                                         </div>
+                                        <div class="slds-col slds-size_1-of-3 detail-field">
+                                            <span class="detail-label">L1 Approver (Manager)</span>
+                                            <span class="detail-value">{selectedEmployeeL1Approver}</span>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 detail-field">
+                                            <span class="detail-label">L2 Approver (Finance)</span>
+                                            <span class="detail-value">{selectedEmployeeL2Approver}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -507,6 +515,20 @@
                                         <lightning-input-field field-name="User__c"
                                             value={employeeForm.User__c}
                                             data-field="User__c"
+                                            onchange={handleFormChange}
+                                            variant="label-stacked"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
+                                        <lightning-input-field field-name="L1_Approver__c"
+                                            value={employeeForm.L1_Approver__c}
+                                            data-field="L1_Approver__c"
+                                            onchange={handleFormChange}
+                                            variant="label-stacked"></lightning-input-field>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-m-bottom_small">
+                                        <lightning-input-field field-name="L2_Approver__c"
+                                            value={employeeForm.L2_Approver__c}
+                                            data-field="L2_Approver__c"
                                             onchange={handleFormChange}
                                             variant="label-stacked"></lightning-input-field>
                                     </div>
