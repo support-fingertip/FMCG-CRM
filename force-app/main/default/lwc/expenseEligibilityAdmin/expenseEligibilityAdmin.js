@@ -169,7 +169,7 @@ export default class ExpenseEligibilityAdmin extends LightningElement {
     }
 
     get showReceiptFields() {
-        return ['Lodging', 'Toll', 'Miscellaneous', 'Stationery', 'Printing', 'Mobile'].includes(this.selectedRule?.Expense_Type__c);
+        return !!this.selectedRule?.Expense_Type__c;
     }
 
     get isRulesTab() { return this.activeTab === 'rules'; }
