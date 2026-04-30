@@ -175,6 +175,7 @@ public with sharing class TAM_IncentiveCalculation_Service {
                 inc.Target_Period__c = periodId;
             }
 
+            inc.OwnerId = ta.User__c;
             inc.Target_Actual__c = ta.Id;
             inc.Achievement_Percent__c = achievementPercent.setScale(2, RoundingMode.HALF_UP);
             inc.Incentive_Slab_Ref__c = matchedSlab.Id;
