@@ -676,7 +676,7 @@ public without sharing class EXP_Expense_Service {
     public static List<Expense_Item__c> saveExpenseItems(Id expenseId, List<Expense_Item__c> items) {
         // Validate expense is editable
         Expense__c expense = [
-            SELECT Id, Status__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
+            SELECT Id, Status__c, Comments_History__c FROM Expense__c WHERE Id = :expenseId LIMIT 1
         ];
         if (expense.Status__c == 'Paid') {
             throw new AuraHandledException('Expense cannot be edited after payment.');
