@@ -594,7 +594,9 @@ export default class EmployeeManager extends NavigationMixin(LightningElement) {
             Is_Active__c: this.selectedEmployee.Is_Active__c !== false,
             Profile_Photo_URL__c: this.selectedEmployee.Profile_Photo_URL__c || '',
             Address__c: this.selectedEmployee.Address__c || '',
-            Week_Off_Days__c: this.selectedEmployee.Week_Off_Days__c || 'Sunday'
+            Week_Off_Days__c: this.selectedEmployee.Week_Off_Days__c || 'Sunday',
+            Channels__c: this.selectedEmployee.Channels__c || '',
+            Gross_Salary__c: this.selectedEmployee.Gross_Salary__c || null
         };
         this.isEditMode = true;
         this.showEmployeeForm = true;
