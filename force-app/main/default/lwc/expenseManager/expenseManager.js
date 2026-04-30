@@ -300,7 +300,7 @@ export default class ExpenseManager extends LightningElement {
                 const ruledt = rule.Travel_Type__c || 'All';
                 if (ruledt !== 'All' && ruledt !== dutyType) return;
                 const existing = existingItems.find(i => i.Expense_Type__c === rule.Expense_Type__c);
-                if (!existing && !rule.Auto_Create__c) return;
+                if (!existing && rule.Auto_Create__c === false) return;
                 const matchedRule = existing
                     ? this.findRuleForItem(existing.Expense_Type__c, dutyType)
                     : rule;
