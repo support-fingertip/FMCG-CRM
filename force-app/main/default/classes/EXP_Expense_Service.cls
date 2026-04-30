@@ -142,6 +142,11 @@ public without sharing class EXP_Expense_Service {
     public static Expense__c getOrCreateReport(Id userId, String month, Integer year) {
         Employee__c emp = getEmployeeForUser(userId);
 
+        Id effectiveL1 = emp.L1_Approver__c != null
+            ? emp.L1_Approver__c
+            : emp.Reporting_Manager__r.User__c;
+        Id effectiveL2 = emp.L2_Approver__c;
+
         List<Expense__c> existing = [
             SELECT Id, Name, Month__c, Year__c, Status__c, Employee__c, User__c,
                    Period_Start__c, Period_End__c, Working_Days__c, Total_Distance_KM__c,
@@ -154,7 +159,20 @@ public without sharing class EXP_Expense_Service {
         ];
 
         if (!existing.isEmpty()) {
-            return existing[0];
+            Expense__c report = existing[0];
+            Boolean needsUpdate = false;
+            if (report.L1_Approver__c != effectiveL1) {
+                report.L1_Approver__c = effectiveL1;
+                needsUpdate = true;
+            }
+            if (report.L2_Approver__c != effectiveL2) {
+                report.L2_Approver__c = effectiveL2;
+                needsUpdate = true;
+            }
+            if (needsUpdate) {
+                update report;
+            }
+            return report;
         }
 
         Integer monthNum = MONTH_MAP.get(month);
@@ -191,8 +209,8 @@ public without sharing class EXP_Expense_Service {
             Status__c = 'Draft',
             Working_Days__c = workingDays,
             Total_Distance_KM__c = totalDist,
-            L1_Approver__c = emp.L1_Approver__c,
-            L2_Approver__c = emp.L2_Approver__c
+            L1_Approver__c = effectiveL1,
+            L2_Approver__c = effectiveL2
         );
         insert report;
 
@@ -1545,6 +1563,7 @@ public without sharing class EXP_Expense_Service {
     private static Employee__c getEmployeeForUser(Id userId) {
         List<Employee__c> emps = [
             SELECT Id, Band__c, User__c, Reporting_Manager__c,
+                   Reporting_Manager__r.User__c,
                    First_Name__c, Last_Name__c, HQ_City__c,
                    L1_Approver__c, L2_Approver__c
             FROM Employee__c
