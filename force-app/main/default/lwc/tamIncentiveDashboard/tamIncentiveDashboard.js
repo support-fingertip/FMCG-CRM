@@ -178,7 +178,13 @@ export default class TamIncentiveDashboard extends LightningElement {
         runCalculation({ periodId: this.selectedPeriod })
             .then(result => {
                 this.showToast('Success', result || 'Calculation complete', 'success');
-                this._reloadIncentives();
+                if (result && result.includes('background')) {
+                    // Batch mode — auto-refresh after delay
+                    // eslint-disable-next-line @lwc/lwc/no-async-operation
+                    setTimeout(() => { this._reloadIncentives(); }, 5000);
+                } else {
+                    this._reloadIncentives();
+                }
             })
             .catch(e => this.showToast('Error', e?.body?.message || 'Calculation failed', 'error'))
             .finally(() => { this.isLoading = false; });
