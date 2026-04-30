@@ -114,7 +114,12 @@ public with sharing class TAM_IncentiveDashboard_Controller {
             TAM_IncentiveCalculation_Service.calculateAnnualBonus(periodId);
         }
 
-        return results.size() + ' incentive records calculated from ' + actuals.size() + ' targets.';
+        String msg = results.size() + ' incentive records calculated from ' + actuals.size() + ' targets.';
+        List<String> skips = TAM_IncentiveCalculation_Service.lastSkipReasons;
+        if (!skips.isEmpty()) {
+            msg += ' Skipped: ' + String.join(skips, '; ');
+        }
+        return msg;
     }
 
     @AuraEnabled

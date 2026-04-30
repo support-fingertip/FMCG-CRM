@@ -110,6 +110,7 @@ public with sharing class TAM_IncentiveCalculation_Service {
 
         Date today = Date.today();
         List<Incentive__c> results = new List<Incentive__c>();
+        List<String> skipReasons = new List<String>();
 
         for (Target_Actual__c ta : actuals) {
             Decimal individualTarget = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
@@ -117,13 +118,19 @@ public with sharing class TAM_IncentiveCalculation_Service {
             Decimal targetValue = individualTarget + teamsTarget;
             Decimal achievementValue = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
                 + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
-            if (targetValue == 0) continue;
+            if (targetValue == 0) {
+                skipReasons.add(ta.Target_Criteria__r.Name + ': total target is 0');
+                continue;
+            }
 
             Decimal achievementPercent = (achievementValue / targetValue) * 100;
 
             // Get criteria config
             Target_Criteria__c criteria = criteriaMap.get(ta.Target_Criteria__c);
-            if (criteria == null) continue;
+            if (criteria == null) {
+                skipReasons.add(ta.Target_Criteria__r.Name + ': criteria not found');
+                continue;
+            }
 
             // ── PREREQUISITE CHECK ──
             if (criteria.Prerequisite_Criteria__c != null) {
@@ -134,6 +141,7 @@ public with sharing class TAM_IncentiveCalculation_Service {
                     ? criteria.Prerequisite_Min_Percent__c : 90;
 
                 if (prereqPct < minRequired) {
+                    skipReasons.add(ta.Target_Criteria__r.Name + ': prerequisite not met (' + prereqPct.setScale(1) + '% < ' + minRequired + '% required)');
                     continue; // Skip — prerequisite not met
                 }
             }
@@ -147,7 +155,10 @@ public with sharing class TAM_IncentiveCalculation_Service {
                 userProfile, userTerritory, allSlabs, today
             );
 
-            if (matchedSlab == null) continue;
+            if (matchedSlab == null) {
+                skipReasons.add(ta.Target_Criteria__r.Name + ': no slab matches ' + achievementPercent.setScale(1) + '% for profile=' + userProfile + ', territory=' + userTerritory);
+                continue;
+            }
 
             // ── COMPUTE PAYOUT ──
             Decimal salary = userSalaryMap.containsKey(ta.User__c)
@@ -192,8 +203,15 @@ public with sharing class TAM_IncentiveCalculation_Service {
             upsert results;
         }
 
+        if (!skipReasons.isEmpty()) {
+            System.debug('Skipped targets: ' + String.join(skipReasons, ' | '));
+            lastSkipReasons = skipReasons;
+        }
+
         return results;
     }
+
+    public static List<String> lastSkipReasons = new List<String>();
 
     // ═══════════════════════════════════════════════════════════════
     // 4-TIER SLAB MATCHING
