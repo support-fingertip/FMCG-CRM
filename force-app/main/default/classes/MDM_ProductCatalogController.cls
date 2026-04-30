@@ -146,13 +146,16 @@ public with sharing class MDM_ProductCatalogController {
         return [
             SELECT Id, Name, Unit_Price__c, Price_Type__c, Channel__c,
                    Region__c, Region__r.Name, Effective_From__c, Effective_To__c,
-                   Min_Qty__c, Is_Active__c
+                   Min_Qty__c, Is_Active__c, Priority__c,
+                   Customer__c, Customer__r.Name,
+                   Territory__c, Territory__r.Name,
+                   Category__c, Category__r.Name
             FROM Price_List__c
             WHERE Product_Ext__c = :productId
               AND Is_Active__c = true
               AND (Effective_To__c = null OR Effective_To__c >= TODAY)
               AND Effective_From__c <= TODAY
-            ORDER BY Price_Type__c ASC, Channel__c ASC
+            ORDER BY Priority__c ASC, Price_Type__c ASC, Channel__c ASC
         ];
     }
 

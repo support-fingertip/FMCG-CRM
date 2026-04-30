@@ -283,8 +283,11 @@
                                                                             <tr class="slds-line-height_reset">
                                                                                 <th scope="col"><div class="slds-truncate" title="Type">Type</div></th>
                                                                                 <th scope="col"><div class="slds-truncate" title="Channel">Channel</div></th>
+                                                                                <th scope="col"><div class="slds-truncate" title="Customer">Customer</div></th>
+                                                                                <th scope="col"><div class="slds-truncate" title="Territory">Territory</div></th>
                                                                                 <th scope="col"><div class="slds-truncate" title="Unit Price">Unit Price</div></th>
                                                                                 <th scope="col"><div class="slds-truncate" title="Min Qty">Min Qty</div></th>
+                                                                                <th scope="col"><div class="slds-truncate" title="Pricebook">Pricebook</div></th>
                                                                                 <th scope="col"><div class="slds-truncate" title="From">From</div></th>
                                                                                 <th scope="col"><div class="slds-truncate" title="To">To</div></th>
                                                                             </tr>
@@ -294,8 +297,11 @@
                                                                                 <tr key={price.Id}>
                                                                                     <td><div class="slds-truncate">{price.Price_Type__c}</div></td>
                                                                                     <td><div class="slds-truncate">{price.Channel__c}</div></td>
+                                                                                    <td><div class="slds-truncate">{price.customerName}</div></td>
+                                                                                    <td><div class="slds-truncate">{price.territoryName}</div></td>
                                                                                     <td><div class="slds-truncate price-value">{price.Unit_Price__c}</div></td>
                                                                                     <td><div class="slds-truncate">{price.Min_Qty__c}</div></td>
+                                                                                    <td><div class="slds-truncate">{price.Name}</div></td>
                                                                                     <td><div class="slds-truncate">{price.Effective_From__c}</div></td>
                                                                                     <td><div class="slds-truncate">{price.Effective_To__c}</div></td>
                                                                                 </tr>
