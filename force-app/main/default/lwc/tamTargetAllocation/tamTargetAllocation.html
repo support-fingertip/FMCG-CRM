@@ -26,6 +26,8 @@
                     placeholder="Select User"></lightning-combobox>
             </div>
             <div class="ta-control-buttons">
+                <lightning-button label="Sync Achievements" variant="brand-outline" icon-name="utility:sync"
+                    onclick={handleSyncAchievements} class="slds-m-right_small"></lightning-button>
                 <lightning-button label="Distribute" variant="brand" icon-name="utility:hierarchy"
                     onclick={openDistributeModal} class="slds-m-right_small"></lightning-button>
                 <template if:true={isAdmin}>

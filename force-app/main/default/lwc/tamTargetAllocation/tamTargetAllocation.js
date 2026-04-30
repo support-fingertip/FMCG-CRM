@@ -5,6 +5,7 @@ import getUserTargetActuals from '@salesforce/apex/TAM_TargetAllocation_Controll
 import saveTargets from '@salesforce/apex/TAM_TargetAllocation_Controller.saveTargets';
 import saveAdminTargetActuals from '@salesforce/apex/TAM_TargetAllocation_Controller.saveAdminTargets';
 import saveInlineTarget from '@salesforce/apex/TAM_TargetAllocation_Controller.saveInlineTarget';
+import syncAchievements from '@salesforce/apex/TAM_TargetAllocation_Controller.syncAchievements';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { CurrentPageReference } from 'lightning/navigation';
 
@@ -192,6 +193,23 @@ export default class TamTargetAllocation extends LightningElement {
                 this.showToast('Error', error?.body?.message || 'Failed to save', 'error');
                 this._loadTargetActuals(); // Reload on error
             });
+    }
+
+    // ===== SYNC ACHIEVEMENTS =====
+    handleSyncAchievements() {
+        if (!this.selectedPeriod) {
+            this.showToast('Warning', 'Select a period first', 'warning');
+            return;
+        }
+        this.isLoading = true;
+        syncAchievements({ periodId: this.selectedPeriod })
+            .then(result => {
+                this.showToast('Success', result, 'success');
+                // eslint-disable-next-line @lwc/lwc/no-async-operation
+                setTimeout(() => { this.fetchAllData(); }, 4000);
+            })
+            .catch(e => this.showToast('Error', e?.body?.message || 'Sync failed', 'error'))
+            .finally(() => { this.isLoading = false; });
     }
 
     // ===== DISTRIBUTE MODAL =====

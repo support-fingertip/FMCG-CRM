@@ -240,6 +240,15 @@ public class TAM_TargetAllocation_Controller {
         ];
     }
 
+    @AuraEnabled
+    public static String syncAchievements(String periodId) {
+        if (String.isBlank(periodId)) {
+            throw new AuraHandledException('Please select a period first.');
+        }
+        Database.executeBatch(new TAM_Achievement_Batch(periodId), 50);
+        return 'Achievement sync started. Click refresh in a few seconds to see updated values.';
+    }
+
     // Shared query method
     private static List<Target_Actual__c> queryTargetActuals(String period, Set<Id> userIds) {
         return [
