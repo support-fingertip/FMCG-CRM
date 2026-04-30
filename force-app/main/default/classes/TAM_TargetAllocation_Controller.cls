@@ -186,6 +186,7 @@ public class TAM_TargetAllocation_Controller {
                 item1.Parent_Target__c = itm.Parent_Target__c;
                 item1.Target_Period__c = selectedPeriod;
                 item1.User__c = itm.User__c;
+                item1.OwnerId = itm.User__c;
 
                 if (itm.Id != null) {
                     item1.Id = itm.Id;
@@ -209,6 +210,7 @@ public class TAM_TargetAllocation_Controller {
             for (Target_Actual__c ta : targetActuals) {
                 ta.Target_Period__c = selectedAdminPeriod;
                 ta.User__c = userId;
+                ta.OwnerId = userId;
                 if (ta.Achievement_Value__c == null) {
                     ta.Achievement_Value__c = 0;
                 }
