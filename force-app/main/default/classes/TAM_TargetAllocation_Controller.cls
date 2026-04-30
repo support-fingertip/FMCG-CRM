@@ -197,6 +197,7 @@ public class TAM_TargetAllocation_Controller {
 
         if (!itemsToUpdate.isEmpty()) {
             upsert itemsToUpdate;
+            TAM_Rollup_Service.run(itemsToUpdate);
         }
 
         return queryTargetActuals(selectedPeriod, userIds);
