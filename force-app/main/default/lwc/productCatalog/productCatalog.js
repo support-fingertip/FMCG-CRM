@@ -112,14 +112,15 @@ export default class ProductCatalog extends LightningElement {
         this.isDetailLoading = true;
         getProductDetail({ productId: productId })
             .then(result => {
-                if (result && result.priceLists) {
-                    result.priceLists = result.priceLists.map(p => ({
+                const detail = { ...result };
+                if (detail.priceLists) {
+                    detail.priceLists = detail.priceLists.map(p => ({
                         ...p,
                         customerName: p.Customer__r ? p.Customer__r.Name : '',
                         territoryName: p.Territory__r ? p.Territory__r.Name : ''
                     }));
                 }
-                this.productDetail = result;
+                this.productDetail = detail;
                 this.isDetailLoading = false;
             })
             .catch(error => {
