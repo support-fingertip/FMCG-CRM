@@ -50,7 +50,7 @@ public without sharing class EXP_Expense_Service {
     // ── Status Transitions ────────────────────────────────────────────────
     private static final Map<String, Set<String>> VALID_TRANSITIONS = new Map<String, Set<String>>{
         'Draft'             => new Set<String>{ 'Submitted' },
-        'Submitted'         => new Set<String>{ 'Manager Approved', 'Rejected' },
+        'Submitted'         => new Set<String>{ 'Draft', 'Manager Approved', 'Rejected' },
         'Manager Approved'  => new Set<String>{ 'Finance Approved', 'Rejected' },
         'Rejected'          => new Set<String>{ 'Draft' },
         'Finance Approved'  => new Set<String>{ 'Paid' },
