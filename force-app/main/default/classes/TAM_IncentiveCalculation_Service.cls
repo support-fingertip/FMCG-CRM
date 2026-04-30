@@ -454,30 +454,15 @@ public with sharing class TAM_IncentiveCalculation_Service {
     private static Map<Id, Id> loadUserTerritories(Set<Id> userIds) {
         Map<Id, Id> territoryMap = new Map<Id, Id>();
 
-        // Look up territory from Employee__c Region__c field
-        // Map region name to Territory_Master__c Id
-        Map<String, Id> regionToTerritoryMap = new Map<String, Id>();
-        for (Territory_Master__c tm : [
-            SELECT Id, Name FROM Territory_Master__c WHERE Is_Active__c = true
-        ]) {
-            regionToTerritoryMap.put(tm.Name.toLowerCase(), tm.Id);
-        }
-
         for (Employee__c emp : [
-            SELECT Id, User__c, Region__c
+            SELECT Id, User__c, Territory__c
             FROM Employee__c
             WHERE User__c IN :userIds
             AND Is_Active__c = true
-            AND Region__c != null
+            AND Territory__c != null
         ]) {
-            String region = emp.Region__c.toLowerCase();
-            if (regionToTerritoryMap.containsKey(region)) {
-                territoryMap.put(emp.User__c, regionToTerritoryMap.get(region));
-            }
+            territoryMap.put(emp.User__c, emp.Territory__c);
         }
-
-        // Alternative: look at recent Target_Actual__c for territory context
-        // For MVP, territory matching on slabs is optional
 
         return territoryMap;
     }
