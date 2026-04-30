@@ -85,9 +85,28 @@ public with sharing class TAM_IncentiveDashboard_Controller {
         ];
     }
 
+    private static final Integer SYNC_THRESHOLD = 200;
+
     @AuraEnabled
     public static String runCalculation(String periodId) {
         Target_Period__c period = [SELECT Id, Type__c FROM Target_Period__c WHERE Id = :periodId];
+
+        Integer recordCount = [
+            SELECT COUNT() FROM Target_Actual__c
+            WHERE Target_Period__c = :periodId
+            AND Target_Criteria__r.Active__c = true
+            AND Target_Value__c > 0
+        ];
+
+        if (recordCount == 0) {
+            return 'No target records found for this period.';
+        }
+
+        if (recordCount > SYNC_THRESHOLD) {
+            Boolean calcBonus = (period.Type__c == 'Yearly');
+            Database.executeBatch(new TAM_IncentiveCalculation_Batch(periodId, calcBonus), 50);
+            return 'Large dataset (' + recordCount + ' targets). Calculation running in background — refresh in a few moments.';
+        }
 
         List<Target_Actual__c> actuals = [
             SELECT Id, User__c, Target_Criteria__c, Target_Criteria__r.Name,
@@ -103,10 +122,6 @@ public with sharing class TAM_IncentiveDashboard_Controller {
             AND Target_Criteria__r.Active__c = true
             AND Target_Value__c > 0
         ];
-
-        if (actuals.isEmpty()) {
-            return 'No target records found for this period.';
-        }
 
         List<Incentive__c> results = TAM_IncentiveCalculation_Service.calculateForTargetActuals(actuals, periodId);
 
