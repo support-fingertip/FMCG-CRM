@@ -86,11 +86,35 @@ public with sharing class TAM_IncentiveDashboard_Controller {
     }
 
     @AuraEnabled
-    public static void runCalculation(String periodId) {
-        // Check if this is a yearly period — if so, also calculate annual bonus
+    public static String runCalculation(String periodId) {
         Target_Period__c period = [SELECT Id, Type__c FROM Target_Period__c WHERE Id = :periodId];
-        Boolean calcBonus = (period.Type__c == 'Yearly');
-        Database.executeBatch(new TAM_IncentiveCalculation_Batch(periodId, calcBonus), 50);
+
+        List<Target_Actual__c> actuals = [
+            SELECT Id, User__c, Target_Criteria__c, Target_Criteria__r.Name,
+                   Target_Criteria__r.Incentive_Weight__c,
+                   Target_Criteria__r.Prerequisite_Criteria__c,
+                   Target_Criteria__r.Prerequisite_Min_Percent__c,
+                   Target_Value__c, Achievement_Value__c,
+                   Teams_Target__c, Teams_Achievement__c,
+                   Target_Period__c, Target_Period__r.Start_Date__c,
+                   Target_Period__r.End_Date__c, Target_Period__r.Type__c
+            FROM Target_Actual__c
+            WHERE Target_Period__c = :periodId
+            AND Target_Criteria__r.Active__c = true
+            AND Target_Value__c > 0
+        ];
+
+        if (actuals.isEmpty()) {
+            return 'No target records found for this period.';
+        }
+
+        List<Incentive__c> results = TAM_IncentiveCalculation_Service.calculateForTargetActuals(actuals, periodId);
+
+        if (period.Type__c == 'Yearly') {
+            TAM_IncentiveCalculation_Service.calculateAnnualBonus(periodId);
+        }
+
+        return results.size() + ' incentive records calculated from ' + actuals.size() + ' targets.';
     }
 
     @AuraEnabled
