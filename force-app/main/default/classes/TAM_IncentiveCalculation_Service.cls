@@ -67,8 +67,10 @@ public with sharing class TAM_IncentiveCalculation_Service {
         // Build achievement map for prerequisite checking (userId+criteriaId → %)
         Map<String, Decimal> achievementPercentMap = new Map<String, Decimal>();
         for (Target_Actual__c ta : actuals) {
-            Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
-            Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
+            Decimal tv = (ta.Target_Value__c != null ? ta.Target_Value__c : 0)
+                + (ta.Teams_Target__c != null ? ta.Teams_Target__c : 0);
+            Decimal av = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
+                + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
             Decimal pct = tv > 0 ? (av / tv) * 100 : 0;
             achievementPercentMap.put(ta.User__c + '-' + ta.Target_Criteria__c, pct);
         }
@@ -108,8 +110,11 @@ public with sharing class TAM_IncentiveCalculation_Service {
         List<Incentive__c> results = new List<Incentive__c>();
 
         for (Target_Actual__c ta : actuals) {
-            Decimal targetValue = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
-            Decimal achievementValue = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
+            Decimal individualTarget = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
+            Decimal teamsTarget = ta.Teams_Target__c != null ? ta.Teams_Target__c : 0;
+            Decimal targetValue = individualTarget + teamsTarget;
+            Decimal achievementValue = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
+                + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
             if (targetValue == 0) continue;
 
             Decimal achievementPercent = (achievementValue / targetValue) * 100;

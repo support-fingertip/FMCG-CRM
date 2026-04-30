@@ -34,6 +34,7 @@ public class TAM_IncentiveCalculation_Batch implements Database.Batchable<SObjec
                    Target_Criteria__r.Prerequisite_Criteria__c,
                    Target_Criteria__r.Prerequisite_Min_Percent__c,
                    Target_Value__c, Achievement_Value__c,
+                   Teams_Target__c, Teams_Achievement__c,
                    Target_Period__c, Target_Period__r.Start_Date__c,
                    Target_Period__r.End_Date__c, Target_Period__r.Type__c
             FROM Target_Actual__c
