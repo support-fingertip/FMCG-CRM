@@ -81,8 +81,10 @@ public with sharing class TAM_IncentiveCalculation_Service {
             // Rebuild achievement map with cumulative values
             achievementPercentMap.clear();
             for (Target_Actual__c ta : actuals) {
-                Decimal tv = ta.Target_Value__c != null ? ta.Target_Value__c : 0;
-                Decimal av = ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0;
+                Decimal tv = (ta.Target_Value__c != null ? ta.Target_Value__c : 0)
+                    + (ta.Teams_Target__c != null ? ta.Teams_Target__c : 0);
+                Decimal av = (ta.Achievement_Value__c != null ? ta.Achievement_Value__c : 0)
+                    + (ta.Teams_Achievement__c != null ? ta.Teams_Achievement__c : 0);
                 Decimal pct = tv > 0 ? (av / tv) * 100 : 0;
                 achievementPercentMap.put(ta.User__c + '-' + ta.Target_Criteria__c, pct);
             }
@@ -299,7 +301,8 @@ public with sharing class TAM_IncentiveCalculation_Service {
             // No children — fall back to direct period actuals
             return [
                 SELECT Id, User__c, Target_Criteria__c, Target_Criteria__r.Name,
-                       Target_Value__c, Achievement_Value__c, Target_Period__c
+                       Target_Value__c, Achievement_Value__c,
+                       Teams_Target__c, Teams_Achievement__c, Target_Period__c
                 FROM Target_Actual__c
                 WHERE Target_Period__c = :parentPeriodId
                 AND User__c IN :userIds
@@ -311,7 +314,9 @@ public with sharing class TAM_IncentiveCalculation_Service {
         List<AggregateResult> aggs = [
             SELECT User__c userId, Target_Criteria__c criteriaId,
                    SUM(Target_Value__c) totalTarget,
-                   SUM(Achievement_Value__c) totalAchievement
+                   SUM(Achievement_Value__c) totalAchievement,
+                   SUM(Teams_Target__c) totalTeamsTarget,
+                   SUM(Teams_Achievement__c) totalTeamsAchievement
             FROM Target_Actual__c
             WHERE Target_Period__c IN :childPeriodIds
             AND User__c IN :userIds
@@ -328,6 +333,8 @@ public with sharing class TAM_IncentiveCalculation_Service {
             ta.Target_Criteria__c = (Id) ar.get('criteriaId');
             ta.Target_Value__c = (Decimal) ar.get('totalTarget');
             ta.Achievement_Value__c = (Decimal) ar.get('totalAchievement');
+            ta.Teams_Target__c = (Decimal) ar.get('totalTeamsTarget');
+            ta.Teams_Achievement__c = (Decimal) ar.get('totalTeamsAchievement');
             ta.Target_Period__c = parentPeriodId;
             cumulativeActuals.add(ta);
         }
