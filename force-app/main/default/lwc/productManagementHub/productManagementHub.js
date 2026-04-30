@@ -72,6 +72,9 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     // ── Categories ─────────────────────────────────────────────────────
     @track categories = [];
+    @track categorySearchTerm = '';
+    @track categoryLevelFilter = '';
+    @track categoryActiveOnly = false;
     @track showCategoryModal = false;
     @track editCategory = {};
     @track isNewCategory = false;
@@ -356,6 +359,13 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
             { label: 'GT', value: 'GT' },
             { label: 'MT', value: 'MT' },
             { label: 'E-Commerce', value: 'E-Commerce' }
+        ];
+    }
+    get categoryLevelOptions() {
+        return [
+            { label: 'All Levels', value: '' },
+            { label: 'Category', value: 'Category' },
+            { label: 'Sub-Category', value: 'Sub-Category' }
         ];
     }
     get classificationFilterOptions() {
@@ -651,7 +661,11 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
 
     async loadCategories() {
         try {
-            const rawCategories = await getCategories();
+            const rawCategories = await getCategories({
+                searchTerm: this.categorySearchTerm || null,
+                level: this.categoryLevelFilter || null,
+                activeOnly: this.categoryActiveOnly
+            });
             this.categories = rawCategories.map(c => ({
                 ...c,
                 parentCategoryName: c.Parent_Category__r ? c.Parent_Category__r.Name : ''
@@ -665,6 +679,24 @@ export default class ProductManagementHub extends NavigationMixin(LightningEleme
         } catch (error) {
             this.showError('Error loading categories', this.reduceErrors(error));
         }
+    }
+
+    handleCategorySearch(event) {
+        this.categorySearchTerm = event.target.value;
+        clearTimeout(this._categorySearchTimer);
+        this._categorySearchTimer = setTimeout(() => {
+            this.loadCategories();
+        }, 300);
+    }
+
+    handleCategoryLevelFilter(event) {
+        this.categoryLevelFilter = event.target.value;
+        this.loadCategories();
+    }
+
+    handleCategoryActiveFilter(event) {
+        this.categoryActiveOnly = event.target.checked;
+        this.loadCategories();
     }
 
     handleNewCategory() {

@@ -132,12 +132,22 @@ public with sharing class ProductManagementController {
     // ─── Product Category CRUD ─────────────────────────────────────────
 
     @AuraEnabled
-    public static List<Product_Category__c> getCategories() {
-        return [SELECT Id, Name, Category_Code__c, Level__c, Is_Active__c, Sort_Order__c,
-                       Parent_Category__c, Parent_Category__r.Name
-                FROM Product_Category__c
-                ORDER BY Sort_Order__c ASC, Name ASC
-                LIMIT 500];
+    public static List<Product_Category__c> getCategories(String searchTerm, String level, Boolean activeOnly) {
+        String query = 'SELECT Id, Name, Category_Code__c, Level__c, Is_Active__c, Sort_Order__c, ' +
+                       'Parent_Category__c, Parent_Category__r.Name ' +
+                       'FROM Product_Category__c WHERE Id != null';
+        if (activeOnly == true) {
+            query += ' AND Is_Active__c = true';
+        }
+        if (String.isNotBlank(level)) {
+            query += ' AND Level__c = :level';
+        }
+        if (String.isNotBlank(searchTerm)) {
+            String searchKey = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
+            query += ' AND (Name LIKE :searchKey OR Category_Code__c LIKE :searchKey)';
+        }
+        query += ' ORDER BY Sort_Order__c ASC, Name ASC LIMIT 500';
+        return Database.query(query);
     }
 
     @AuraEnabled

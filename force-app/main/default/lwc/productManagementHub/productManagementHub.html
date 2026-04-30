@@ -214,7 +214,16 @@
             <!-- ─── Categories Section ──────────────────────────────────── -->
             <template if:true={showCategories}>
                 <div class="section-toolbar">
-                    <div class="toolbar-left"></div>
+                    <div class="toolbar-left">
+                        <lightning-input type="search" label="Search" variant="label-hidden"
+                            placeholder="Search name, code..."
+                            value={categorySearchTerm} onchange={handleCategorySearch}></lightning-input>
+                        <lightning-combobox label="Level" value={categoryLevelFilter}
+                            options={categoryLevelOptions} onchange={handleCategoryLevelFilter}
+                            variant="label-hidden" placeholder="All Levels"></lightning-combobox>
+                        <lightning-input type="checkbox" label="Active Only" checked={categoryActiveOnly}
+                            onchange={handleCategoryActiveFilter}></lightning-input>
+                    </div>
                     <div class="toolbar-right">
                         <lightning-button label="New Category" variant="brand" icon-name="utility:add"
                             onclick={handleNewCategory}></lightning-button>
