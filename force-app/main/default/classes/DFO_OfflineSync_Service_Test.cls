@@ -22,13 +22,14 @@ private class DFO_OfflineSync_Service_Test {
         }
         insert visits;
 
-        // Create offline orders
+        // Create offline orders on different dates to avoid duplicate validation
         Visit__c visit = [SELECT Id FROM Visit__c LIMIT 1];
         List<Sales_Order__c> orders = new List<Sales_Order__c>();
         for (Integer i = 0; i < 2; i++) {
             Sales_Order__c order = TestDataFactory.createSalesOrder(acct.Id, UserInfo.getUserId(), visit.Id);
             order.Offline_Created__c = true;
             order.Is_Synced__c = false;
+            order.Order_Date__c = Date.today().addDays(-i);
             orders.add(order);
         }
         insert orders;
