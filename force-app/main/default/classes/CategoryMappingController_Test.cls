@@ -94,6 +94,7 @@ private class CategoryMappingController_Test {
             Employee_Code__c = 'EMP-CMC01',
             Is_Active__c = true,
             Territory__c = territory.Id,
+            Channels__c = 'GT',
             User__c = UserInfo.getUserId()
         );
         Employee__c emp2 = new Employee__c(
@@ -101,7 +102,8 @@ private class CategoryMappingController_Test {
             Last_Name__c = 'TestEmpBeta',
             Employee_Code__c = 'EMP-CMC02',
             Is_Active__c = true,
-            Territory__c = territory.Id
+            Territory__c = territory.Id,
+            Channels__c = 'GT'
         );
         insert new List<Employee__c>{ emp1, emp2 };
 
