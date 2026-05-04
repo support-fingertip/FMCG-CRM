@@ -122,7 +122,7 @@ public class OVE_Collection_TriggerHandler extends TriggerHandler {
             // Create reversal ledger entry
             reversalEntries.add(new Ledger_Entry__c(
                 Account__c        = coll.Account__c,
-                Entry_Type__c     = 'Payment Reversal',
+                Entry_Type__c     = 'Adjustment',
                 Amount__c         = amount,
                 Reference_Type__c = 'Collection',
                 Reference_Id__c   = coll.Id,
