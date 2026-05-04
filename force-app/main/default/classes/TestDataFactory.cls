@@ -79,7 +79,8 @@ public class TestDataFactory {
             Beat_Code__c = code,
             Territory__c = territoryId,
             Is_Active__c = true,
-            Frequency__c = 'Weekly'
+            Frequency__c = 'Weekly',
+            Day_of_Week__c = 'Monday'
         );
         return beat;
     }
