@@ -86,6 +86,7 @@ private class DKD_Dashboard_Controller_Test {
                 Order_Date__c = Date.today(),
                 Status__c = 'Approved',
                 Salesperson__c = UserInfo.getUserId(),
+                Territory__c = ter.Id,
                 Total_Net_Amount__c = 7500
             );
         } finally {
@@ -141,6 +142,7 @@ private class DKD_Dashboard_Controller_Test {
                 Order_Date__c = Date.today().addDays(-15),
                 Status__c = 'Approved',
                 Salesperson__c = UserInfo.getUserId(),
+                Territory__c = ter2.Id,
                 Total_Net_Amount__c = 3000
             );
         } finally {
