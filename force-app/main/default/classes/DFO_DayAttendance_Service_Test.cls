@@ -105,7 +105,6 @@ private class DFO_DayAttendance_Service_Test {
             System.assert(false, 'Expected AuraHandledException for duplicate day start');
         } catch (AuraHandledException e) {
             System.assertNotEquals(null, e);
-            );
         }
 
         // Also verify trigger-level duplicate prevention via DML
