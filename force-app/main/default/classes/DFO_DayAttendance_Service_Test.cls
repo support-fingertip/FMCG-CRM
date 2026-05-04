@@ -529,7 +529,6 @@ private class DFO_DayAttendance_Service_Test {
         endReq.endLatitude = 19.0800;
         endReq.endLongitude = 72.8800;
         endReq.endAccuracy = 15.0;
-        endReq.batteryLevel = 40;
         endReq.odometerEnd = 12600.0;
 
         Test.startTest();
