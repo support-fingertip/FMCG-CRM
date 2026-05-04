@@ -243,10 +243,14 @@ public with sharing class BeatPlanController {
             ];
 
             if (plan.Status__c == 'Approved') {
-                throw new AuraHandledException('This journey plan has already been approved.');
+                AuraHandledException ex = new AuraHandledException('This journey plan has already been approved.');
+                ex.setMessage('This journey plan has already been approved.');
+                throw ex;
             }
             if (plan.Status__c == 'Submitted') {
-                throw new AuraHandledException('This journey plan has already been submitted for approval.');
+                AuraHandledException ex = new AuraHandledException('This journey plan has already been submitted for approval.');
+                ex.setMessage('This journey plan has already been submitted for approval.');
+                throw ex;
             }
 
             plan.Status__c = 'Submitted';
@@ -647,7 +651,9 @@ public with sharing class BeatPlanController {
                 SELECT Id, Status__c FROM Journey_Plan__c WHERE Id = :journeyPlanId LIMIT 1
             ];
             if (plan.Status__c == 'Approved' || plan.Status__c == 'Submitted') {
-                throw new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+                AuraHandledException ex = new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+                ex.setMessage('Cannot modify a plan that is submitted or approved.');
+                throw ex;
             }
 
             Integer outletCount = [
@@ -700,7 +706,9 @@ public with sharing class BeatPlanController {
                 FROM Journey_Plan_Day__c WHERE Id = :planDayId LIMIT 1
             ];
             if (day.Journey_Plan__r.Status__c == 'Approved' || day.Journey_Plan__r.Status__c == 'Submitted') {
-                throw new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+                AuraHandledException ex = new AuraHandledException('Cannot modify a plan that is submitted or approved.');
+                ex.setMessage('Cannot modify a plan that is submitted or approved.');
+                throw ex;
             }
             delete day;
         } catch (AuraHandledException ahe) {
@@ -764,7 +772,9 @@ public with sharing class BeatPlanController {
                 SELECT Id, Status__c FROM Journey_Plan__c WHERE Id = :journeyPlanId LIMIT 1
             ];
             if (plan.Status__c == 'Approved' || plan.Status__c == 'Submitted') {
-                throw new AuraHandledException('Cannot modify a submitted or approved plan.');
+                AuraHandledException ex = new AuraHandledException('Cannot modify a submitted or approved plan.');
+                ex.setMessage('Cannot modify a submitted or approved plan.');
+                throw ex;
             }
             List<Journey_Plan_Day__c> days = [
                 SELECT Id FROM Journey_Plan_Day__c
