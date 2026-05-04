@@ -69,7 +69,7 @@ private class CollectionController_Test {
         // 90+ days overdue
         Invoice__c inv4 = TestDataFactory.createInvoice(orders[3].Id, retailer.Id);
         inv4.Invoice_Date__c = Date.today().addDays(-120);
-        inv4.Due_Date__c = Date.today().addDays(-90);
+        inv4.Due_Date__c = Date.today().addDays(-91);
         inv4.Total_Amount__c = 25000;
         inv4.Net_Amount__c = 29500;
         inv4.Balance_Due__c = 29500;
