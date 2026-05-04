@@ -75,7 +75,7 @@ private class DKD_Dashboard_Controller_Test {
 
     @IsTest
     static void testGetKpiValues() {
-        Account acc = new Account(Name = 'DKD Ctrl Test', Type = 'Distributor');
+        Account acc = new Account(Name = 'DKD Ctrl Test', Type = 'Distributor', Outlet_Type__c = 'Grocery');
         insert acc;
 
         TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
@@ -129,7 +129,7 @@ private class DKD_Dashboard_Controller_Test {
 
     @IsTest
     static void testGetPreviousPeriodValues() {
-        Account acc = new Account(Name = 'DKD Prev Test', Type = 'Distributor');
+        Account acc = new Account(Name = 'DKD Prev Test', Type = 'Distributor', Outlet_Type__c = 'Grocery');
         insert acc;
 
         TriggerHandler.bypass('OMS_SalesOrder_TriggerHandler');
