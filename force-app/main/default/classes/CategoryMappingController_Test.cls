@@ -93,13 +93,15 @@ private class CategoryMappingController_Test {
             Last_Name__c = 'TestEmpAlpha',
             Employee_Code__c = 'EMP-CMC01',
             Is_Active__c = true,
+            Territory__c = territory.Id,
             User__c = UserInfo.getUserId()
         );
         Employee__c emp2 = new Employee__c(
             First_Name__c = 'CMC',
             Last_Name__c = 'TestEmpBeta',
             Employee_Code__c = 'EMP-CMC02',
-            Is_Active__c = true
+            Is_Active__c = true,
+            Territory__c = territory.Id
         );
         insert new List<Employee__c>{ emp1, emp2 };
 
