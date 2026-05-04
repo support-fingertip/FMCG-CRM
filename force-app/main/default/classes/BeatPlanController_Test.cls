@@ -512,4 +512,90 @@ private class BeatPlanController_Test {
         }
         Test.stopTest();
     }
+
+    // ── Update Outlet Sequences ───────────────────────────────────
+
+    @isTest
+    static void testUpdateOutletSequences() {
+        Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'BPC Beat 0' LIMIT 1];
+        List<Beat_Outlet__c> outlets = [SELECT Id, Visit_Sequence__c FROM Beat_Outlet__c WHERE Beat__c = :beat.Id];
+        if (outlets.isEmpty()) return;
+
+        Integer seq = 1;
+        for (Beat_Outlet__c bo : outlets) {
+            bo.Visit_Sequence__c = seq++;
+        }
+
+        Test.startTest();
+        List<Beat_Outlet__c> result = BeatPlanController.updateOutletSequences(outlets);
+        Test.stopTest();
+
+        System.assert(result.size() > 0, 'Should return reordered outlets');
+    }
+
+    // ── Clone Beat with Defaults ────────────────────────────────────
+
+    @isTest
+    static void testCloneBeatDefaults() {
+        Beat__c beat = [SELECT Id FROM Beat__c LIMIT 1];
+
+        Test.startTest();
+        Beat__c cloned = BeatPlanController.cloneBeat(beat.Id, null, null, null);
+        Test.stopTest();
+
+        System.assert(cloned.Name.contains('(Copy)'), 'Default name should contain (Copy)');
+    }
+
+    // ── Remove Beat from Locked Plan ────────────────────────────────
+
+    @isTest
+    static void testRemoveBeatFromLockedPlan() {
+        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        jp.Status__c = 'Submitted';
+        update jp;
+        jp.Status__c = 'Approved';
+        update jp;
+
+        Beat__c beat = [SELECT Id FROM Beat__c LIMIT 1];
+
+        Test.startTest();
+        try {
+            BeatPlanController.removeBeatFromPlan(jp.Id, beat.Id);
+            System.assert(false, 'Should throw for locked plan');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    // ── Submit Already Submitted Plan ───────────────────────────────
+
+    @isTest
+    static void testSubmitForApprovalAlreadySubmitted() {
+        Journey_Plan__c jp = [SELECT Id FROM Journey_Plan__c LIMIT 1];
+        jp.Status__c = 'Submitted';
+        update jp;
+
+        Test.startTest();
+        try {
+            BeatPlanController.submitForApproval(jp.Id);
+            System.assert(false, 'Should throw for already submitted plan');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    // ── Get Accounts with Null Territory ─────────────────────────────
+
+    @isTest
+    static void testGetAccountsByTerritoryNullParams() {
+        Test.startTest();
+        BeatPlanController.AccountPageResult result = BeatPlanController.getAccountsByTerritory(
+            null, null, null, null
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result);
+    }
 }
