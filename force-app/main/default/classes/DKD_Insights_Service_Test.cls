@@ -553,4 +553,96 @@ private class DKD_Insights_Service_Test {
         List<Map<String, Object>> insights = (List<Map<String, Object>>) result.get('insights');
         System.assert(insights.size() <= 8, 'Insights should be trimmed to max 8');
     }
+
+    // ── Direct tests for anomaly detection logic ────────────────────
+
+    @IsTest
+    static void testBuildAnomalyInsight_High() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        // Build mock series: 6 months of ~1000 each
+        List<Map<String, Object>> series = new List<Map<String, Object>>();
+        for (Integer i = 0; i < 6; i++) {
+            series.add(new Map<String, Object>{ 'value' => 1000 + (i * 10) });
+        }
+
+        Test.startTest();
+        // curVal = 5000 is way above mean of ~1025 → anomaly_high
+        Map<String, Object> result = DKD_Insights_Service.buildAnomalyInsight(m, series, 5000);
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Should detect high anomaly');
+        System.assertEquals('anomaly_high', result.get('type'));
+        System.assertEquals('success', result.get('severity'));
+        System.assertNotEquals(null, result.get('message'));
+        System.assertNotEquals(null, result.get('zScore'));
+    }
+
+    @IsTest
+    static void testBuildAnomalyInsight_Low() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        List<Map<String, Object>> series = new List<Map<String, Object>>();
+        for (Integer i = 0; i < 6; i++) {
+            series.add(new Map<String, Object>{ 'value' => 10000 + (i * 100) });
+        }
+
+        Test.startTest();
+        // curVal = 100 is way below mean of ~10250 → anomaly_low
+        Map<String, Object> result = DKD_Insights_Service.buildAnomalyInsight(m, series, 100);
+        Test.stopTest();
+
+        System.assertNotEquals(null, result, 'Should detect low anomaly');
+        System.assertEquals('anomaly_low', result.get('type'));
+        System.assertEquals('critical', result.get('severity'));
+    }
+
+    @IsTest
+    static void testBuildAnomalyInsight_WithinNormal() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        List<Map<String, Object>> series = new List<Map<String, Object>>();
+        for (Integer i = 0; i < 6; i++) {
+            series.add(new Map<String, Object>{ 'value' => 1000 });
+        }
+
+        Test.startTest();
+        // curVal = 1000 equals mean exactly → stdDev = 0 → returns null
+        Map<String, Object> result = DKD_Insights_Service.buildAnomalyInsight(m, series, 1000);
+        Test.stopTest();
+
+        System.assertEquals(null, result, 'No anomaly when value equals mean');
+    }
+
+    @IsTest
+    static void testBuildAnomalyInsight_TooFewPoints() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        List<Map<String, Object>> series = new List<Map<String, Object>>();
+        series.add(new Map<String, Object>{ 'value' => 1000 });
+        series.add(new Map<String, Object>{ 'value' => 2000 });
+
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.buildAnomalyInsight(m, series, 5000);
+        Test.stopTest();
+
+        System.assertEquals(null, result, 'Too few data points should return null');
+    }
+
+    @IsTest
+    static void testBuildAnomalyInsight_NullValues() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        List<Map<String, Object>> series = new List<Map<String, Object>>();
+        for (Integer i = 0; i < 6; i++) {
+            series.add(new Map<String, Object>{ 'value' => (i < 4) ? (Object)(1000 + i * 100) : null });
+        }
+
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.buildAnomalyInsight(m, series, 8000);
+        Test.stopTest();
+
+        // 4 valid points, curVal=8000 vs mean ~1150 → should detect anomaly
+        System.assertNotEquals(null, result);
+    }
 }

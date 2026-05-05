@@ -178,7 +178,6 @@ public with sharing class DKD_Insights_Service {
         String userScope,
         Decimal curVal
     ) {
-        // Pull the last 6 months of monthly buckets to establish a trend baseline
         List<Map<String, Object>> series;
         try {
             series = DKD_QueryEngine_Service.queryTimeSeries(
@@ -190,8 +189,13 @@ public with sharing class DKD_Insights_Service {
             return null;
         }
         if (series == null || series.size() < 3) return null;
+        return buildAnomalyInsight(metric, series, curVal);
+    }
 
-        // Compute mean and std dev of historical values
+    @TestVisible
+    private static Map<String, Object> buildAnomalyInsight(
+        KPI_Metric__c metric, List<Map<String, Object>> series, Decimal curVal
+    ) {
         Decimal sum = 0;
         Integer n = 0;
         for (Map<String, Object> row : series) {
@@ -218,7 +222,6 @@ public with sharing class DKD_Insights_Service {
         Decimal z = (curVal - mean) / stdDev;
         if (Math.abs(z) < ANOMALY_THRESHOLD_SIGMA) return null;
 
-        // Anomaly detected!
         Boolean above = z > 0;
         String type = above ? 'anomaly_high' : 'anomaly_low';
         String severity = above ? 'success' : 'critical';
