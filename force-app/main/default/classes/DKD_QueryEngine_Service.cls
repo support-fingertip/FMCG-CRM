@@ -113,6 +113,7 @@ public with sharing class DKD_QueryEngine_Service {
      *              AggregateResult.get(alias) returns Integer for COUNT and
      *              Decimal for SUM/AVG/MIN/MAX.
      */
+    @TestVisible
     private static Decimal toDecimal(Object value) {
         if (value == null) return 0;
         if (value instanceof Decimal) return (Decimal) value;
@@ -320,6 +321,7 @@ public with sharing class DKD_QueryEngine_Service {
 
     // ── Time Series Helpers ──────────────────────────────────────────────────
 
+    @TestVisible
     private static String buildDateFunction(String interval, String dateField) {
         String safeField = sanitizeField(dateField);
         if (interval == 'DAY') return 'DAY_ONLY(' + safeField + ')';
@@ -330,6 +332,7 @@ public with sharing class DKD_QueryEngine_Service {
         return 'CALENDAR_MONTH(' + safeField + ')';
     }
 
+    @TestVisible
     private static String formatPeriodLabel(Object periodVal, String interval) {
         if (periodVal == null) return '';
         String raw = String.valueOf(periodVal);
@@ -515,6 +518,7 @@ public with sharing class DKD_QueryEngine_Service {
         return fields;
     }
 
+    @TestVisible
     private static String humanLabel(String field) {
         if (String.isBlank(field)) return '';
         String cleaned = field.replace('__c', '').replace('__r', '').replace('_', ' ');
@@ -535,6 +539,7 @@ public with sharing class DKD_QueryEngine_Service {
      *              only letters, numbers, underscore, and dot (for relationship
      *              fields like Account.Territory__r.Name).
      */
+    @TestVisible
     private static String sanitizeField(String field) {
         if (String.isBlank(field)) {
             throw new DKD_QueryException('Field name cannot be blank');

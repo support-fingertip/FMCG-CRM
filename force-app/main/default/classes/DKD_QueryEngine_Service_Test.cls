@@ -504,4 +504,143 @@ private class DKD_QueryEngine_Service_Test {
         Test.stopTest();
         System.assertNotEquals(null, result.get('rows'));
     }
+
+    // ── Direct private method tests ─────────────────────────────────
+
+    @IsTest
+    static void testFormatPeriodLabel_Month() {
+        Test.startTest();
+        System.assertEquals('Jan', DKD_QueryEngine_Service.formatPeriodLabel(1, 'MONTH'));
+        System.assertEquals('Jun', DKD_QueryEngine_Service.formatPeriodLabel(6, 'MONTH'));
+        System.assertEquals('Dec', DKD_QueryEngine_Service.formatPeriodLabel(12, 'MONTH'));
+        System.assertEquals('', DKD_QueryEngine_Service.formatPeriodLabel(null, 'MONTH'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testFormatPeriodLabel_Quarter() {
+        Test.startTest();
+        System.assertEquals('Q1', DKD_QueryEngine_Service.formatPeriodLabel(1, 'QUARTER'));
+        System.assertEquals('Q4', DKD_QueryEngine_Service.formatPeriodLabel(4, 'QUARTER'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testFormatPeriodLabel_Other() {
+        Test.startTest();
+        System.assertEquals('2026', DKD_QueryEngine_Service.formatPeriodLabel(2026, 'YEAR'));
+        System.assertEquals('2026-05-01', DKD_QueryEngine_Service.formatPeriodLabel('2026-05-01', 'DAY'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testHumanLabel() {
+        Test.startTest();
+        System.assertEquals('Total Net Amount', DKD_QueryEngine_Service.humanLabel('Total_Net_Amount__c'));
+        System.assertEquals('Name', DKD_QueryEngine_Service.humanLabel('Name'));
+        System.assertEquals('Order Date', DKD_QueryEngine_Service.humanLabel('Order_Date__c'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testSanitizeField_Valid() {
+        Test.startTest();
+        System.assertEquals('Status__c', DKD_QueryEngine_Service.sanitizeField('Status__c'));
+        System.assertEquals('Account__r.Name', DKD_QueryEngine_Service.sanitizeField('Account__r.Name'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testSanitizeField_Invalid() {
+        Boolean thrown = false;
+        Test.startTest();
+        try {
+            DKD_QueryEngine_Service.sanitizeField('Status__c; DELETE');
+        } catch (DKD_QueryEngine_Service.DKD_QueryException e) {
+            thrown = true;
+        }
+        Test.stopTest();
+        System.assert(thrown, 'Should reject fields with invalid characters');
+    }
+
+    @IsTest
+    static void testBuildDateFunction_AllIntervals() {
+        Test.startTest();
+        System.assert(DKD_QueryEngine_Service.buildDateFunction('DAY', 'Order_Date__c').contains('DAY_ONLY'));
+        System.assert(DKD_QueryEngine_Service.buildDateFunction('WEEK', 'Order_Date__c').contains('WEEK_IN_YEAR'));
+        System.assert(DKD_QueryEngine_Service.buildDateFunction('MONTH', 'Order_Date__c').contains('CALENDAR_MONTH'));
+        System.assert(DKD_QueryEngine_Service.buildDateFunction('QUARTER', 'Order_Date__c').contains('CALENDAR_QUARTER'));
+        System.assert(DKD_QueryEngine_Service.buildDateFunction('YEAR', 'Order_Date__c').contains('CALENDAR_YEAR'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testToDecimal_AllTypes() {
+        Test.startTest();
+        System.assertEquals(0, DKD_QueryEngine_Service.toDecimal(null));
+        System.assertEquals(100, DKD_QueryEngine_Service.toDecimal(100.0));
+        System.assertEquals(42, DKD_QueryEngine_Service.toDecimal(42));
+        System.assertEquals(50, DKD_QueryEngine_Service.toDecimal('50'));
+        System.assertEquals(0, DKD_QueryEngine_Service.toDecimal('not_a_number'));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testQueryMetric_WithFiltersJson() {
+        Test.startTest();
+        List<Map<String, Object>> results = DKD_QueryEngine_Service.queryMetric(
+            'test_revenue', '[]', null,
+            Date.today().addDays(-1), Date.today().addDays(1), 'self'
+        );
+        Test.stopTest();
+        System.assertNotEquals(null, results);
+    }
+
+    @IsTest
+    static void testQueryTimeSeries_DayInterval() {
+        Test.startTest();
+        List<Map<String, Object>> series = DKD_QueryEngine_Service.queryTimeSeries(
+            'test_revenue', null,
+            Date.today().addDays(-7), Date.today().addDays(1),
+            'DAY', 'self'
+        );
+        Test.stopTest();
+        System.assertNotEquals(null, series);
+    }
+
+    @IsTest
+    static void testQueryTimeSeries_QuarterInterval() {
+        Test.startTest();
+        List<Map<String, Object>> series = DKD_QueryEngine_Service.queryTimeSeries(
+            'test_revenue', null,
+            Date.today().addMonths(-12), Date.today(),
+            'QUARTER', 'self'
+        );
+        Test.stopTest();
+        System.assertNotEquals(null, series);
+    }
+
+    @IsTest
+    static void testDrillDown_OrgScope() {
+        Test.startTest();
+        Map<String, Object> result = DKD_QueryEngine_Service.drillDownRecords(
+            'test_revenue', null, null, null,
+            Date.today().addDays(-1), Date.today().addDays(1),
+            'org', 50
+        );
+        Test.stopTest();
+        System.assertNotEquals(null, result.get('rows'));
+    }
+
+    @IsTest
+    static void testDrillDown_TeamScope() {
+        Test.startTest();
+        Map<String, Object> result = DKD_QueryEngine_Service.drillDownRecords(
+            'test_revenue', null, null, null,
+            Date.today().addDays(-1), Date.today().addDays(1),
+            'team', 50
+        );
+        Test.stopTest();
+        System.assertNotEquals(null, result.get('rows'));
+    }
 }
