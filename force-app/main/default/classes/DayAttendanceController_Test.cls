@@ -246,11 +246,14 @@ private class DayAttendanceController_Test {
     @isTest
     static void testSearchEmployees() {
         // Create an active employee for search
+        Territory_Master__c ter = [SELECT Id FROM Territory_Master__c LIMIT 1];
         Employee__c emp = new Employee__c(
             First_Name__c = 'John',
             Last_Name__c = 'TestCompanion',
             Employee_Code__c = 'EMP-COMP01',
-            Is_Active__c = true
+            Is_Active__c = true,
+            Territory__c = ter.Id,
+            Channels__c = 'GT'
         );
         insert emp;
 
