@@ -432,7 +432,7 @@ private class DKD_Insights_Service_Test {
         System.assertEquals(0, DKD_Insights_Service.toDecimal(null));
         System.assertEquals(100, DKD_Insights_Service.toDecimal(100.0));
         System.assertEquals(42, DKD_Insights_Service.toDecimal(42));
-        System.assertEquals(999, DKD_Insights_Service.toDecimal(Long.valueOf(999)));
+        System.assertEquals(999, DKD_Insights_Service.toDecimal((Long)999));
         System.assertEquals(3.14, DKD_Insights_Service.toDecimal(Double.valueOf(3.14)));
         System.assertEquals(50, DKD_Insights_Service.toDecimal('50'));
         System.assertEquals(0, DKD_Insights_Service.toDecimal('not a number'));
