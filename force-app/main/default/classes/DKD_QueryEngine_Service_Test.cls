@@ -597,12 +597,12 @@ private class DKD_QueryEngine_Service_Test {
     }
 
     @IsTest
-    static void testQueryTimeSeries_DayInterval() {
+    static void testQueryTimeSeries_WeekInterval() {
         Test.startTest();
         List<Map<String, Object>> series = DKD_QueryEngine_Service.queryTimeSeries(
             'test_revenue', null,
-            Date.today().addDays(-7), Date.today().addDays(1),
-            'DAY', 'self'
+            Date.today().addDays(-30), Date.today().addDays(1),
+            'WEEK', 'self'
         );
         Test.stopTest();
         System.assertNotEquals(null, series);
