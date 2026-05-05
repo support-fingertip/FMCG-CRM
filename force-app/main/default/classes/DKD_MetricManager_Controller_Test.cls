@@ -159,7 +159,7 @@ private class DKD_MetricManager_Controller_Test {
 
     @IsTest
     static void testSaveMetricUpdate() {
-        KPI_Metric__c existing = [SELECT Id, Label__c, Metric_Key__c, Source_Object__c, Aggregation__c, Date_Field__c, User_Field__c, Format__c, Category__c FROM KPI_Metric__c WHERE Metric_Key__c = 'revenue_total' LIMIT 1];
+        KPI_Metric__c existing = [SELECT Id, Metric_Key__c, Label__c, Source_Object__c, Aggregation__c, Aggregate_Field__c, Date_Field__c, User_Field__c, Format__c, Category__c, Default_Filter__c, Allow_Forecast__c, Is_Active__c FROM KPI_Metric__c WHERE Metric_Key__c = 'revenue_total' LIMIT 1];
         existing.Label__c = 'Updated Revenue Label';
 
         Test.startTest();
