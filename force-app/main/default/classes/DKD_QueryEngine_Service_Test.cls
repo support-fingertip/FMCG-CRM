@@ -66,7 +66,8 @@ private class DKD_QueryEngine_Service_Test {
         insert metrics;
 
         // ── Account ──
-        Account acc = new Account(Name = 'DKD Test Account');
+        Territory_Master__c ter = TestDataFactory.createAndInsertTerritory('DKD QE Territory', 'TER-DKDQE01');
+        Account acc = new Account(Name = 'DKD Test Account', Outlet_Type__c = 'Grocery', Territory__c = ter.Id, Channel__c = 'GT');
         insert acc;
 
         // ── Sales Orders ──
@@ -82,6 +83,7 @@ private class DKD_QueryEngine_Service_Test {
                 Order_Date__c = Date.today(),
                 Status__c = 'Approved',
                 Salesperson__c = uid,
+                Territory__c = ter.Id,
                 Total_Net_Amount__c = 1000
             ));
             orders.add(new Sales_Order__c(
@@ -89,6 +91,7 @@ private class DKD_QueryEngine_Service_Test {
                 Order_Date__c = Date.today(),
                 Status__c = 'Approved',
                 Salesperson__c = uid,
+                Territory__c = ter.Id,
                 Total_Net_Amount__c = 2000
             ));
             orders.add(new Sales_Order__c(
@@ -96,6 +99,7 @@ private class DKD_QueryEngine_Service_Test {
                 Order_Date__c = Date.today(),
                 Status__c = 'Approved',
                 Salesperson__c = uid,
+                Territory__c = ter.Id,
                 Total_Net_Amount__c = 3000
             ));
 
@@ -105,6 +109,7 @@ private class DKD_QueryEngine_Service_Test {
                 Order_Date__c = Date.today(),
                 Status__c = 'Draft',
                 Salesperson__c = uid,
+                Territory__c = ter.Id,
                 Total_Net_Amount__c = 9999
             ));
 
@@ -114,6 +119,7 @@ private class DKD_QueryEngine_Service_Test {
                 Order_Date__c = Date.today().addMonths(-6),
                 Status__c = 'Approved',
                 Salesperson__c = uid,
+                Territory__c = ter.Id,
                 Total_Net_Amount__c = 5000
             ));
 
