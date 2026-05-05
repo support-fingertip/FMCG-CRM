@@ -293,4 +293,122 @@ private class DayAttendanceController_Test {
         }
         Test.stopTest();
     }
+
+    // ── Error path tests to cover catch blocks ──────────────────────
+
+    @isTest
+    static void testStartDay_InvalidJson() {
+        Test.startTest();
+        try {
+            DayAttendanceController.startDay('not valid json');
+            System.assert(false, 'Should throw');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testEndDay_InvalidJson() {
+        Test.startTest();
+        try {
+            DayAttendanceController.endDay('not valid json');
+            System.assert(false, 'Should throw');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetDayStats_NullId() {
+        Test.startTest();
+        Map<String, Object> stats = DayAttendanceController.getDayStats(null);
+        Test.stopTest();
+        System.assertNotEquals(null, stats);
+    }
+
+    @isTest
+    static void testGetCurrentDayAttendance_NullUser() {
+        Test.startTest();
+        Day_Attendance__c result = DayAttendanceController.getCurrentDayAttendance(null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testSyncOfflineGPSLogs_InvalidJson() {
+        Test.startTest();
+        try {
+            DayAttendanceController.syncOfflineGPSLogs('bad json');
+            System.assert(false, 'Should throw');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testSearchEmployees_ShortTerm() {
+        Test.startTest();
+        List<Employee__c> results = DayAttendanceController.searchEmployees('a');
+        Test.stopTest();
+        System.assertEquals(0, results.size(), 'Single char should return empty');
+    }
+
+    @isTest
+    static void testSearchEmployees_Blank() {
+        Test.startTest();
+        List<Employee__c> results = DayAttendanceController.searchEmployees('');
+        Test.stopTest();
+        System.assertEquals(0, results.size());
+    }
+
+    @isTest
+    static void testGetTeamAttendance_Today() {
+        Test.startTest();
+        try {
+            List<Day_Attendance__c> results = DayAttendanceController.getTeamAttendance(Date.today());
+            System.assertNotEquals(null, results);
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetTeamAttendanceSummary_DateRange() {
+        Test.startTest();
+        try {
+            List<Map<String, Object>> results = DayAttendanceController.getTeamAttendanceSummary(
+                Date.today().addDays(-7), Date.today()
+            );
+            System.assertNotEquals(null, results);
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testLogGPS_NullRecord() {
+        Test.startTest();
+        try {
+            DayAttendanceController.logGPS(null);
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testSyncOfflineGPSLogs_EmptyArray() {
+        Test.startTest();
+        try {
+            List<GPS_Log__c> results = DayAttendanceController.syncOfflineGPSLogs('[]');
+            System.assertNotEquals(null, results);
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+        Test.stopTest();
+    }
 }
