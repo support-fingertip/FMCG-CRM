@@ -438,4 +438,119 @@ private class DKD_Insights_Service_Test {
         System.assertEquals(0, DKD_Insights_Service.toDecimal('not a number'));
         Test.stopTest();
     }
+
+    @IsTest
+    static void testDetectAnomaly_NoHistoricalData() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c, Allow_Forecast__c
+                           FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.detectAnomaly(
+            m, null, Date.today().addDays(-30), Date.today(), 'self', 5000
+        );
+        Test.stopTest();
+
+        // No historical time series data exists, so should return null
+        System.assertEquals(null, result);
+    }
+
+    @IsTest
+    static void testFindTopPerformer_Self() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.findTopPerformer(
+            new List<String>{ 'test_revenue_ins' },
+            null,
+            Date.today().addDays(-30),
+            Date.today(),
+            'self'
+        );
+        Test.stopTest();
+
+        // May or may not find a top performer depending on data
+    }
+
+    @IsTest
+    static void testFindTopPerformer_Org() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.findTopPerformer(
+            new List<String>{ 'test_revenue_ins' },
+            null,
+            Date.today().addDays(-30),
+            Date.today(),
+            'org'
+        );
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testFindTopPerformer_UnknownMetric() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.findTopPerformer(
+            new List<String>{ 'nonexistent_metric' },
+            null,
+            Date.today().addDays(-7),
+            Date.today(),
+            'org'
+        );
+        Test.stopTest();
+
+        System.assertEquals(null, result, 'Unknown metric should return null');
+    }
+
+    @IsTest
+    static void testDetectAnomaly_WithMetricNoForecast() {
+        KPI_Metric__c m = new KPI_Metric__c(
+            Name = 'No Forecast Metric',
+            Metric_Key__c = 'test_no_forecast',
+            Label__c = 'No Forecast',
+            Source_Object__c = 'Sales_Order__c',
+            Aggregation__c = 'COUNT',
+            Date_Field__c = 'Order_Date__c',
+            User_Field__c = 'Salesperson__c',
+            Format__c = 'Number',
+            Category__c = 'Sales',
+            Allow_Forecast__c = false,
+            Is_Active__c = true
+        );
+        insert m;
+
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.detectAnomaly(
+            m, null, Date.today().addDays(-30), Date.today(), 'self', 100
+        );
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testGenerateInsights_ManyMetricsTrimsTo8() {
+        // Create multiple metrics to test the trim-to-8 logic
+        List<KPI_Metric__c> metrics = new List<KPI_Metric__c>();
+        List<String> keys = new List<String>();
+        for (Integer i = 0; i < 5; i++) {
+            String key = 'test_trim_' + i;
+            keys.add(key);
+            metrics.add(new KPI_Metric__c(
+                Name = 'Trim Metric ' + i,
+                Metric_Key__c = key,
+                Label__c = 'Trim ' + i,
+                Source_Object__c = 'Sales_Order__c',
+                Aggregation__c = 'COUNT',
+                Date_Field__c = 'Order_Date__c',
+                User_Field__c = 'Salesperson__c',
+                Format__c = 'Number',
+                Category__c = 'Sales',
+                Is_Active__c = true
+            ));
+        }
+        insert metrics;
+
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            keys, null, Date.today().addDays(-30), Date.today(), 'self'
+        );
+        Test.stopTest();
+
+        List<Map<String, Object>> insights = (List<Map<String, Object>>) result.get('insights');
+        System.assert(insights.size() <= 8, 'Insights should be trimmed to max 8');
+    }
 }

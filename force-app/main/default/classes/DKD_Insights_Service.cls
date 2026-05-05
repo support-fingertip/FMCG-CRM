@@ -169,6 +169,7 @@ public with sharing class DKD_Insights_Service {
         return insight;
     }
 
+    @TestVisible
     private static Map<String, Object> detectAnomaly(
         KPI_Metric__c metric,
         String filtersJson,
@@ -242,6 +243,7 @@ public with sharing class DKD_Insights_Service {
         return insight;
     }
 
+    @TestVisible
     private static Map<String, Object> findTopPerformer(
         List<String> metricKeys,
         String filtersJson,
