@@ -237,7 +237,8 @@ private class DKD_Forecast_Service_Test {
             Is_Active__c = true
         );
 
-        Account acc = new Account(Name = 'Forecast Test Account');
+        Territory_Master__c ter = TestDataFactory.createAndInsertTerritory('Forecast Territory', 'TER-FCST01');
+        Account acc = new Account(Name = 'Forecast Test Account', Outlet_Type__c = 'Grocery', Territory__c = ter.Id, Channel__c = 'GT');
         insert acc;
 
         Id uid = UserInfo.getUserId();
@@ -251,6 +252,7 @@ private class DKD_Forecast_Service_Test {
                     Order_Date__c = Date.today().addMonths(-i),
                     Status__c = 'Approved',
                     Salesperson__c = uid,
+                    Territory__c = ter.Id,
                     Total_Net_Amount__c = 1000 + (i * 100)
                 ));
             }
