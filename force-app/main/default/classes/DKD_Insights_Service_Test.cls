@@ -286,4 +286,156 @@ private class DKD_Insights_Service_Test {
 
         System.assertNotEquals(null, result);
     }
+
+    // ── Direct private method tests via @TestVisible ────────────────
+
+    @IsTest
+    static void testBuildTrendInsight_Up() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        Test.startTest();
+        Map<String, Object> insight = DKD_Insights_Service.buildTrendInsight(m, 'mom', 15000, 10000, 'previous period');
+        Test.stopTest();
+
+        System.assertNotEquals(null, insight, 'Should generate trend_up insight');
+        System.assertEquals('trend_up', insight.get('type'));
+        System.assertEquals('success', insight.get('severity'));
+        System.assertNotEquals(null, insight.get('message'));
+    }
+
+    @IsTest
+    static void testBuildTrendInsight_Down() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        Test.startTest();
+        Map<String, Object> insight = DKD_Insights_Service.buildTrendInsight(m, 'mom', 5000, 10000, 'previous period');
+        Test.stopTest();
+
+        System.assertNotEquals(null, insight, 'Should generate trend_down insight');
+        System.assertEquals('trend_down', insight.get('type'));
+    }
+
+    @IsTest
+    static void testBuildTrendInsight_CriticalDown() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        Test.startTest();
+        Map<String, Object> insight = DKD_Insights_Service.buildTrendInsight(m, 'yoy', 2000, 10000, 'same period last year');
+        Test.stopTest();
+
+        System.assertNotEquals(null, insight);
+        System.assertEquals('critical', insight.get('severity'));
+    }
+
+    @IsTest
+    static void testBuildTrendInsight_MinorChangeReturnsNull() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        Test.startTest();
+        Map<String, Object> insight = DKD_Insights_Service.buildTrendInsight(m, 'mom', 10200, 10000, 'previous period');
+        Test.stopTest();
+
+        System.assertEquals(null, insight, 'Less than 5% change should return null');
+    }
+
+    @IsTest
+    static void testBuildTrendInsight_ZeroPrevReturnsNull() {
+        KPI_Metric__c m = [SELECT Id, Metric_Key__c, Label__c, Format__c FROM KPI_Metric__c WHERE Metric_Key__c = 'test_revenue_ins' LIMIT 1];
+
+        Test.startTest();
+        Map<String, Object> insight = DKD_Insights_Service.buildTrendInsight(m, 'mom', 5000, 0, 'previous period');
+        Test.stopTest();
+
+        System.assertEquals(null, insight, 'Zero previous value should return null');
+    }
+
+    @IsTest
+    static void testFormatValue_Currency() {
+        KPI_Metric__c m = new KPI_Metric__c(Format__c = 'Currency');
+
+        Test.startTest();
+        String result = DKD_Insights_Service.formatValue(1234567, m);
+        Test.stopTest();
+
+        System.assert(result.startsWith('₹'), 'Currency format should start with ₹');
+        System.assert(result.contains(','), 'Should have Indian number formatting');
+    }
+
+    @IsTest
+    static void testFormatValue_Percent() {
+        KPI_Metric__c m = new KPI_Metric__c(Format__c = 'Percent');
+
+        Test.startTest();
+        String result = DKD_Insights_Service.formatValue(85.5, m);
+        Test.stopTest();
+
+        System.assert(result.contains('%'), 'Percent format should contain %');
+    }
+
+    @IsTest
+    static void testFormatValue_Duration() {
+        KPI_Metric__c m = new KPI_Metric__c(Format__c = 'Duration');
+
+        Test.startTest();
+        String result = DKD_Insights_Service.formatValue(120, m);
+        Test.stopTest();
+
+        System.assert(result.contains('min'), 'Duration should contain min');
+    }
+
+    @IsTest
+    static void testFormatValue_Number() {
+        KPI_Metric__c m = new KPI_Metric__c(Format__c = 'Number');
+
+        Test.startTest();
+        String result = DKD_Insights_Service.formatValue(1500000, m);
+        Test.stopTest();
+
+        System.assert(result.contains(','), 'Number should have Indian formatting');
+    }
+
+    @IsTest
+    static void testFormatValue_Null() {
+        KPI_Metric__c m = new KPI_Metric__c(Format__c = 'Number');
+
+        Test.startTest();
+        String result = DKD_Insights_Service.formatValue(null, m);
+        Test.stopTest();
+
+        System.assertEquals('0', result);
+    }
+
+    @IsTest
+    static void testFormatIndianNumber_Various() {
+        Test.startTest();
+        System.assertEquals('0', DKD_Insights_Service.formatIndianNumber(0));
+        System.assertEquals('500', DKD_Insights_Service.formatIndianNumber(500));
+        System.assertEquals('1,000', DKD_Insights_Service.formatIndianNumber(1000));
+        System.assertEquals('10,000', DKD_Insights_Service.formatIndianNumber(10000));
+        System.assertEquals('1,00,000', DKD_Insights_Service.formatIndianNumber(100000));
+        System.assertEquals('12,34,567', DKD_Insights_Service.formatIndianNumber(1234567));
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void testFormatIndianNumber_Negative() {
+        Test.startTest();
+        String result = DKD_Insights_Service.formatIndianNumber(-50000);
+        Test.stopTest();
+
+        System.assert(result.startsWith('-'), 'Negative numbers should have minus sign');
+    }
+
+    @IsTest
+    static void testToDecimal_AllTypes() {
+        Test.startTest();
+        System.assertEquals(0, DKD_Insights_Service.toDecimal(null));
+        System.assertEquals(100, DKD_Insights_Service.toDecimal(100.0));
+        System.assertEquals(42, DKD_Insights_Service.toDecimal(42));
+        System.assertEquals(999, DKD_Insights_Service.toDecimal(Long.valueOf(999)));
+        System.assertEquals(3.14, DKD_Insights_Service.toDecimal(Double.valueOf(3.14)));
+        System.assertEquals(50, DKD_Insights_Service.toDecimal('50'));
+        System.assertEquals(0, DKD_Insights_Service.toDecimal('not a number'));
+        Test.stopTest();
+    }
 }

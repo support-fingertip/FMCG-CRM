@@ -115,6 +115,7 @@ public with sharing class DKD_Insights_Service {
 
     // ── Insight builders ─────────────────────────────────────────────────────
 
+    @TestVisible
     private static Map<String, Object> buildTrendInsight(
         KPI_Metric__c metric,
         String kind,
@@ -314,6 +315,7 @@ public with sharing class DKD_Insights_Service {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    @TestVisible
     private static String formatValue(Decimal value, KPI_Metric__c metric) {
         if (value == null) return '0';
         String format = metric.Format__c != null ? metric.Format__c : 'Number';
@@ -330,6 +332,7 @@ public with sharing class DKD_Insights_Service {
         return formatIndianNumber(value);
     }
 
+    @TestVisible
     private static String formatIndianNumber(Decimal value) {
         if (value == null) return '0';
         Long rounded = Math.round(value.doubleValue());
@@ -354,6 +357,7 @@ public with sharing class DKD_Insights_Service {
         return (negative ? '-' : '') + result;
     }
 
+    @TestVisible
     private static Decimal toDecimal(Object value) {
         if (value == null) return 0;
         if (value instanceof Decimal) return (Decimal) value;
