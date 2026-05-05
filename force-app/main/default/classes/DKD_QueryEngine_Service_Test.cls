@@ -589,7 +589,7 @@ private class DKD_QueryEngine_Service_Test {
     static void testQueryMetric_WithFiltersJson() {
         Test.startTest();
         List<Map<String, Object>> results = DKD_QueryEngine_Service.queryMetric(
-            'test_revenue', '[]', null,
+            'test_revenue', '{}', null,
             Date.today().addDays(-1), Date.today().addDays(1), 'self'
         );
         Test.stopTest();
