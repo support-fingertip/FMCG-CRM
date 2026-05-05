@@ -183,4 +183,107 @@ private class DKD_Insights_Service_Test {
         System.assertEquals(0, (Integer) result.get('generated'),
             'Unknown metric should produce no insights');
     }
+
+    @IsTest
+    static void testGenerateInsights_TeamScope() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            new List<String>{ 'test_revenue_ins' },
+            null,
+            Date.today().addDays(-30),
+            Date.today(),
+            'team'
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result);
+        System.assertNotEquals(null, result.get('insights'));
+    }
+
+    @IsTest
+    static void testGenerateInsights_NullMetrics() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            null, null, Date.today(), Date.today(), 'self'
+        );
+        Test.stopTest();
+        System.assertEquals(0, (Integer) result.get('generated'));
+    }
+
+    @IsTest
+    static void testGenerateInsights_WiderDateRange() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            new List<String>{ 'test_revenue_ins' },
+            null,
+            Date.today().addDays(-60),
+            Date.today(),
+            'self'
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result);
+        List<Map<String, Object>> insights = (List<Map<String, Object>>) result.get('insights');
+        System.assertNotEquals(null, insights);
+    }
+
+    @IsTest
+    static void testGenerateInsights_MultipleMetrics() {
+        KPI_Metric__c m2 = new KPI_Metric__c(
+            Name = 'Test Count Insights2',
+            Metric_Key__c = 'test_count_ins2',
+            Label__c = 'Test Count2',
+            Source_Object__c = 'Sales_Order__c',
+            Aggregation__c = 'COUNT',
+            Date_Field__c = 'Order_Date__c',
+            User_Field__c = 'Salesperson__c',
+            Format__c = 'Number',
+            Category__c = 'Sales',
+            Is_Active__c = true
+        );
+        insert m2;
+
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            new List<String>{ 'test_revenue_ins', 'test_count_ins2' },
+            null,
+            Date.today().addDays(-30),
+            Date.today(),
+            'self'
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result);
+    }
+
+    @IsTest
+    static void testGenerateInsights_OrgScopeWiderRange() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            new List<String>{ 'test_revenue_ins' },
+            null,
+            Date.today().addDays(-30),
+            Date.today(),
+            'org'
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result);
+        System.assertNotEquals(null, result.get('insights'));
+    }
+
+    @IsTest
+    static void testGenerateInsights_WithFiltersJson() {
+        Test.startTest();
+        Map<String, Object> result = DKD_Insights_Service.generateInsights(
+            new List<String>{ 'test_revenue_ins' },
+            '{}',
+            Date.today().addDays(-7),
+            Date.today(),
+            'self'
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, result);
+    }
 }
