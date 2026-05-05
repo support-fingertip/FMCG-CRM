@@ -24,7 +24,8 @@ private class DKD_Insights_Service_Test {
         );
         insert m;
 
-        Account acc = new Account(Name = 'DKD Insights Test');
+        Territory_Master__c ter = TestDataFactory.createAndInsertTerritory('DKD Insights Ter', 'TER-DKDI01');
+        Account acc = new Account(Name = 'DKD Insights Test', Outlet_Type__c = 'Grocery', Territory__c = ter.Id, Channel__c = 'GT');
         insert acc;
 
         // Create orders: strong current period, weak previous period
@@ -40,6 +41,7 @@ private class DKD_Insights_Service_Test {
                     Order_Date__c = Date.today(),
                     Status__c = 'Approved',
                     Salesperson__c = uid,
+                    Territory__c = ter.Id,
                     Total_Net_Amount__c = 3333.33
                 ));
             }
@@ -50,6 +52,7 @@ private class DKD_Insights_Service_Test {
                     Order_Date__c = Date.today().addDays(-3),
                     Status__c = 'Approved',
                     Salesperson__c = uid,
+                    Territory__c = ter.Id,
                     Total_Net_Amount__c = 2500
                 ));
             }
