@@ -172,7 +172,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
         slabs.add(new Expense_Rate_Slab__c(
             Expense_Eligibility__c = rule.Id,
             Travel_Mode__c = 'Bus',
-            Rate_Type__c = 'Per Day',
+            Rate_Type__c = 'Per KM',
             Rate_Amount__c = 200,
             Max_Amount__c = 200,
             Distance_From__c = 0,
@@ -197,7 +197,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
         List<Expense_Rate_Slab__c> slabs = new List<Expense_Rate_Slab__c>();
         slabs.add(new Expense_Rate_Slab__c(
             Travel_Mode__c = 'Train',
-            Rate_Type__c = 'Per Day',
+            Rate_Type__c = 'Per KM',
             Rate_Amount__c = 300,
             Max_Amount__c = 300,
             Sort_Order__c = 1
