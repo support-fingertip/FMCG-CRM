@@ -1221,20 +1221,35 @@ export default class VisitManager extends NavigationMixin(LightningElement) {
         event.stopPropagation();
         const orderId = event.currentTarget.dataset.id;
         if (!orderId) return;
-        this[NavigationMixin.Navigate]({
-            type: 'standard__webPage',
-            attributes: { url: '/apex/SalesOrderPDF?id=' + orderId }
-        });
+        const url = '/apex/SalesOrderPDF?id=' + orderId;
+        if (this.isMobileDevice) {
+            this[NavigationMixin.Navigate]({
+                type: 'standard__webPage',
+                attributes: { url }
+            });
+        } else {
+            window.open(url, '_blank');
+        }
     }
 
     handleDownloadReceipt(event) {
         event.stopPropagation();
         const collectionId = event.currentTarget.dataset.id;
         if (!collectionId) return;
-        this[NavigationMixin.Navigate]({
-            type: 'standard__webPage',
-            attributes: { url: '/apex/CollectionReceipt?id=' + collectionId }
-        });
+        const url = '/apex/CollectionReceipt?id=' + collectionId;
+        if (this.isMobileDevice) {
+            this[NavigationMixin.Navigate]({
+                type: 'standard__webPage',
+                attributes: { url }
+            });
+        } else {
+            window.open(url, '_blank');
+        }
+    }
+
+    get isMobileDevice() {
+        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            document.documentElement.clientWidth <= 768;
     }
 
     handleActivityFormSuccess() {
