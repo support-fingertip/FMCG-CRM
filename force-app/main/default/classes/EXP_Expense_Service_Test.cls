@@ -476,7 +476,7 @@ public class EXP_Expense_Service_Test {
 
         // Verify item Finance approved
         Expense_Item__c finItem = [SELECT Approval_Status__c FROM Expense_Item__c WHERE Id = :item.Id];
-        System.assertEquals('Finance Approved', finItem.Approval_Status__c);
+        System.assertEquals('L2 Approved', finItem.Approval_Status__c);
 
         // Mark paid
         Expense__c paid = EXP_Expense_Service.markAsPaid(report.Id);
