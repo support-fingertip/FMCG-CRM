@@ -453,6 +453,18 @@
                                             <template if:true={item.minQuantity}>
                                                 <span class="oef-min-qty-badge">Min: {item.minQuantity}</span>
                                             </template>
+                                            <template if:true={item.schemeName}>
+                                                <div class="oef-scheme-info-strip">
+                                                    <lightning-icon icon-name="utility:discount" size="xx-small" class="oef-scheme-info-icon"></lightning-icon>
+                                                    <span class="oef-scheme-info-name">{item.schemeName}</span>
+                                                    <template if:true={item.freeQty}>
+                                                        <span class="oef-scheme-info-free">+{item.freeQty} Free</span>
+                                                    </template>
+                                                    <template if:true={item.discountAmount}>
+                                                        <span class="oef-scheme-info-disc">-{item.discountFormatted}</span>
+                                                    </template>
+                                                </div>
+                                            </template>
                                         </td>
                                         <td class="oef-td-rate">{item.rateFormatted}</td>
                                         <td class="oef-td-stock">

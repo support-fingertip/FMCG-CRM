@@ -950,6 +950,39 @@
     color: var(--brand);
 }
 
+/* ── Scheme info strip (desktop: compact row under product name) ── */
+.oef-scheme-info-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 3px 8px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    font-size: 11px;
+}
+.oef-scheme-info-icon {
+    --sds-c-icon-color-foreground-default: #16a34a;
+    flex-shrink: 0;
+}
+.oef-scheme-info-name {
+    color: #15803d;
+    font-weight: 600;
+}
+.oef-scheme-info-free {
+    color: #fff;
+    background: #16a34a;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 10px;
+}
+.oef-scheme-info-disc {
+    color: #dc2626;
+    font-weight: 700;
+}
+
 .oef-td-rate {
     font-weight: 600;
 }
@@ -1275,182 +1308,170 @@
 }
 
 /* ====================================================
-   RESPONSIVE
+   RESPONSIVE — Mobile card layout
    ==================================================== */
 @media (max-width: 768px) {
-    .oef-header {
-        padding: 16px;
-    }
-
-    .oef-body {
-        padding: 8px;
-    }
-
-    .oef-search-bar {
-        flex-direction: column;
-    }
-
+    .oef-header { padding: 12px; }
+    .oef-body { padding: 6px; }
+    .oef-search-bar { flex-direction: column; }
     .oef-search-input-wrap,
-    .oef-search-filter-wrap {
-        flex: auto;
-        width: 100%;
-    }
+    .oef-search-filter-wrap { flex: auto; width: 100%; }
+    .oef-summary-grid { grid-template-columns: 1fr; }
+    .oef-outlet-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .oef-must-sell-grid { grid-template-columns: 1fr; }
+    .oef-action-bar { flex-wrap: wrap; }
+    .oef-product-main { flex-direction: column; }
+    .oef-product-action-row { flex-wrap: wrap; }
 
-    .oef-summary-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .oef-outlet-card {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .oef-must-sell-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .oef-action-bar {
-        flex-wrap: wrap;
-    }
-
-    .oef-product-main {
-        flex-direction: column;
-    }
-
-    .oef-product-action-row {
-        flex-wrap: wrap;
-    }
-
-    /* ── Mobile Cart: table → stacked cards ── */
-    .oef-cart-table-wrap {
-        overflow-x: visible;
-    }
-
-    .oef-cart-table thead {
-        display: none;
-    }
-
+    /* ── Hide table header, convert to block ── */
+    .oef-cart-table-wrap { overflow-x: visible; }
+    .oef-cart-table thead { display: none; }
     .oef-cart-table,
     .oef-cart-table tbody,
     .oef-cart-table tr,
-    .oef-cart-table td {
-        display: block;
-        width: 100%;
-    }
+    .oef-cart-table td { display: block; width: 100%; }
 
+    /* ── Card container ── */
     .oef-cart-table tr {
-        background: #fff;
-        border: 1px solid var(--border-light);
-        border-radius: 10px;
-        margin-bottom: 10px;
-        padding: 12px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        padding: 0;
         position: relative;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .oef-cart-table td { padding: 0; border-bottom: none; }
+
+    /* ── Hide serial, scheme, free (shown in scheme strip instead) ── */
+    .oef-td-serial,
+    .oef-td-scheme,
+    .oef-td-free { display: none !important; }
+
+    /* ── Product header area ── */
+    .oef-td-product {
+        padding: 12px 44px 10px 14px !important;
+        background: linear-gradient(135deg, #fafbff 0%, #f1f5f9 100%);
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+    .oef-cart-product-name {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        color: #1e293b !important;
+        line-height: 1.3;
+    }
+    .oef-cart-product-sku {
+        font-size: 11px !important;
+        color: #94a3b8 !important;
+    }
+    .oef-scheme-info-strip {
+        margin-top: 6px;
+        font-size: 11px;
     }
 
-    .oef-cart-table td {
-        padding: 3px 0;
-        border-bottom: none;
+    /* ── Delete button top-right ── */
+    .oef-td-action {
+        position: absolute !important;
+        top: 8px;
+        right: 8px;
+        width: auto !important;
+        padding: 0 !important;
+    }
+    .oef-td-action .oef-delete-btn {
+        --sds-c-icon-color-foreground-default: #ef4444;
+    }
+
+    /* ── Price row: Rate + Stock ── */
+    .oef-td-rate,
+    .oef-td-stock {
+        display: inline-flex !important;
+        align-items: center;
+        width: 50% !important;
+        padding: 8px 14px !important;
+        box-sizing: border-box;
         font-size: 13px;
     }
-
-    .oef-td-rate::before { content: 'Rate'; }
-    .oef-td-stock::before { content: 'Stock'; }
-    .oef-td-qty::before { content: 'Qty'; }
-    .oef-td-uom::before { content: 'UOM'; }
-    .oef-td-free::before { content: 'Free'; }
-    .oef-td-scheme::before { content: 'Scheme'; }
-    .oef-td-discount::before { content: 'Disc.'; }
-    .oef-td-tax::before { content: 'Tax'; }
-    .oef-td-total::before { content: 'Total'; }
-
-    .oef-cart-table td::before {
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: inline-block;
-        min-width: 50px;
-        margin-right: 6px;
+    .oef-td-rate::before,
+    .oef-td-stock::before {
+        font-size: 10px; font-weight: 700; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        min-width: 42px; margin-right: 6px;
     }
+    .oef-td-rate::before { content: 'RATE'; }
+    .oef-td-stock::before { content: 'STOCK'; }
+    .oef-td-rate { font-weight: 700; color: #1e293b; }
 
-    .oef-td-serial {
-        display: none !important;
-    }
-
-    .oef-td-product {
-        padding-bottom: 6px !important;
-        margin-bottom: 6px;
-        border-bottom: 1px solid var(--border-light) !important;
-    }
-
-    .oef-td-product::before {
-        display: none !important;
-    }
-
-    .oef-cart-product-name {
-        font-size: 14px !important;
-        font-weight: 600 !important;
-    }
-
+    /* ── Input row: Qty + UOM ── */
     .oef-td-qty,
     .oef-td-uom {
         display: inline-block !important;
-        width: 48% !important;
+        width: 50% !important;
+        padding: 6px 14px 6px !important;
+        box-sizing: border-box;
         vertical-align: top;
     }
-
     .oef-td-qty::before,
     .oef-td-uom::before {
-        display: block !important;
+        content: ''; display: block;
+        font-size: 10px; font-weight: 700; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 0.5px;
         margin-bottom: 2px;
     }
+    .oef-td-qty::before { content: 'QTY'; }
+    .oef-td-uom::before { content: 'UOM'; }
+    .oef-cart-qty-input,
+    .oef-cart-uom-input { width: 100%; }
 
-    .oef-td-free,
-    .oef-td-scheme,
+    /* ── Discount row ── */
     .oef-td-discount {
-        display: inline-block !important;
-        width: 32% !important;
+        display: block !important;
+        padding: 2px 14px !important;
     }
-
-    .oef-td-rate,
-    .oef-td-stock {
-        display: inline-block !important;
-        width: 48% !important;
+    .oef-td-discount::before {
+        content: 'DISCOUNT'; font-size: 10px; font-weight: 700;
+        color: #94a3b8; text-transform: uppercase;
+        letter-spacing: 0.5px; min-width: 70px;
+        margin-right: 6px; display: inline-block;
     }
+    .oef-discount-value { color: #dc2626; font-weight: 600; }
 
+    /* ── Total row: Tax + Total ── */
     .oef-td-tax,
     .oef-td-total {
-        display: inline-block !important;
-        width: 48% !important;
+        display: inline-flex !important;
+        align-items: center;
+        width: 50% !important;
+        padding: 8px 14px !important;
+        box-sizing: border-box;
+        border-top: 1px solid #f1f5f9;
     }
-
+    .oef-td-tax::before,
+    .oef-td-total::before {
+        font-size: 10px; font-weight: 700; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        min-width: 42px; margin-right: 6px;
+    }
+    .oef-td-tax::before { content: 'TAX'; }
+    .oef-td-total::before { content: 'TOTAL'; }
     .oef-td-total {
-        font-weight: 700 !important;
-        font-size: 15px !important;
-        color: var(--primary) !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
+        color: #1d4ed8 !important;
+        background: #f8fafc;
+        border-radius: 0 0 14px 0;
+    }
+    .oef-td-tax {
+        background: #f8fafc;
+        border-radius: 0 0 0 14px;
     }
 
-    .oef-td-action {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: auto !important;
-    }
-
-    .oef-cart-qty-input,
-    .oef-cart-uom-input {
-        width: 100%;
-    }
-
+    /* ── Reset fixed widths ── */
     .oef-th-serial, .oef-td-serial,
     .oef-th-qty, .oef-td-qty,
     .oef-th-uom, .oef-td-uom,
     .oef-th-free, .oef-td-free,
-    .oef-th-action, .oef-td-action {
-        width: auto;
-    }
+    .oef-th-action, .oef-td-action { width: auto; }
 }
 
 /* ---- Scrollbar Styling ---- */
