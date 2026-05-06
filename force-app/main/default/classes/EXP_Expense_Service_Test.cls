@@ -861,4 +861,144 @@ public class EXP_Expense_Service_Test {
         System.assert(caught, 'Should throw error for missing override reason');
         Test.stopTest();
     }
+
+    // ── Direct private method tests ─────────────────────────────────
+
+    @isTest
+    static void testGetLodgingLimit_CityTier1() {
+        Expense_Item__c item = new Expense_Item__c(City_Tier__c = 'Tier 1');
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            City_Tier_1_Limit__c = 3000, City_Tier_2_Limit__c = 2000, City_Tier_3_Limit__c = 1500
+        );
+        System.assertEquals(3000, EXP_Expense_Service.getLodgingLimit(item, rule));
+    }
+
+    @isTest
+    static void testGetLodgingLimit_CityTier2() {
+        Expense_Item__c item = new Expense_Item__c(City_Tier__c = 'Tier 2');
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            City_Tier_1_Limit__c = 3000, City_Tier_2_Limit__c = 2000, City_Tier_3_Limit__c = 1500
+        );
+        System.assertEquals(2000, EXP_Expense_Service.getLodgingLimit(item, rule));
+    }
+
+    @isTest
+    static void testGetLodgingLimit_CityTier3() {
+        Expense_Item__c item = new Expense_Item__c(City_Tier__c = 'Tier 3');
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            City_Tier_1_Limit__c = 3000, City_Tier_2_Limit__c = 2000, City_Tier_3_Limit__c = 1500
+        );
+        System.assertEquals(1500, EXP_Expense_Service.getLodgingLimit(item, rule));
+    }
+
+    @isTest
+    static void testGetLodgingLimit_Metro() {
+        Expense_Item__c item = new Expense_Item__c(Is_Metro__c = true);
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            Lodging_Metro_Limit__c = 4000, Lodging_Non_Metro_Limit__c = 2500
+        );
+        System.assertEquals(4000, EXP_Expense_Service.getLodgingLimit(item, rule));
+    }
+
+    @isTest
+    static void testGetLodgingLimit_NonMetro() {
+        Expense_Item__c item = new Expense_Item__c(Is_Metro__c = false);
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            Lodging_Non_Metro_Limit__c = 2500
+        );
+        System.assertEquals(2500, EXP_Expense_Service.getLodgingLimit(item, rule));
+    }
+
+    @isTest
+    static void testGetLodgingLimit_NoLimits() {
+        Expense_Item__c item = new Expense_Item__c();
+        Expense_Eligibility__c rule = new Expense_Eligibility__c();
+        System.assertEquals(0, EXP_Expense_Service.getLodgingLimit(item, rule));
+    }
+
+    @isTest
+    static void testGetAppliedDistance_Manual() {
+        Expense_Item__c item = new Expense_Item__c(
+            Manual_Distance_KM__c = 50, GPS_Distance_KM__c = 30
+        );
+        System.assertEquals(50, EXP_Expense_Service.getAppliedDistance(item));
+    }
+
+    @isTest
+    static void testGetAppliedDistance_GPS() {
+        Expense_Item__c item = new Expense_Item__c(GPS_Distance_KM__c = 30);
+        System.assertEquals(30, EXP_Expense_Service.getAppliedDistance(item));
+    }
+
+    @isTest
+    static void testGetAppliedDistance_Null() {
+        Expense_Item__c item = new Expense_Item__c();
+        System.assertEquals(0, EXP_Expense_Service.getAppliedDistance(item));
+    }
+
+    @isTest
+    static void testCalculateSlabAmount() {
+        List<Expense_Rate_Slab__c> slabs = new List<Expense_Rate_Slab__c>();
+        slabs.add(new Expense_Rate_Slab__c(
+            Distance_From__c = 0, Distance_To__c = 30, Rate_Amount__c = 5
+        ));
+        slabs.add(new Expense_Rate_Slab__c(
+            Distance_From__c = 30, Distance_To__c = 100, Rate_Amount__c = 8
+        ));
+
+        // 50 km: first 30 @ 5 = 150, next 20 @ 8 = 160 → total 310
+        Decimal result = EXP_Expense_Service.calculateSlabAmount(slabs, 50);
+        System.assertEquals(310, result);
+    }
+
+    @isTest
+    static void testCalculateSlabAmount_WithinFirstSlab() {
+        List<Expense_Rate_Slab__c> slabs = new List<Expense_Rate_Slab__c>();
+        slabs.add(new Expense_Rate_Slab__c(
+            Distance_From__c = 0, Distance_To__c = 100, Rate_Amount__c = 3
+        ));
+
+        Decimal result = EXP_Expense_Service.calculateSlabAmount(slabs, 25);
+        System.assertEquals(75, result);
+    }
+
+    @isTest
+    static void testResolveCityTier() {
+        Map<String, String> tierMap = new Map<String, String>{
+            'Mumbai' => 'Tier 1', 'Pune' => 'Tier 2', 'Nashik' => 'Tier 3'
+        };
+        System.assertEquals('Tier 1', EXP_Expense_Service.resolveCityTier('Mumbai', tierMap));
+        System.assertEquals('Tier 2', EXP_Expense_Service.resolveCityTier('Pune', tierMap));
+        System.assertEquals(null, EXP_Expense_Service.resolveCityTier('Unknown', tierMap));
+        System.assertEquals(null, EXP_Expense_Service.resolveCityTier(null, tierMap));
+        System.assertEquals(null, EXP_Expense_Service.resolveCityTier('Mumbai', null));
+    }
+
+    @isTest
+    static void testCalculateTAAmount_PerKM() {
+        Expense_Item__c item = new Expense_Item__c(
+            GPS_Distance_KM__c = 40, Travel_Mode__c = 'Bike'
+        );
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Per KM', Rate_Amount__c = 5,
+            Daily_KM_Limit__c = 100, Max_Per_Day__c = 500
+        );
+
+        Decimal result = EXP_Expense_Service.calculateTAAmount(item, rule);
+        System.assertEquals(200, result, '40 km * 5 = 200');
+    }
+
+    @isTest
+    static void testCalculateTAAmount_WithDailyKMLimit() {
+        Expense_Item__c item = new Expense_Item__c(
+            GPS_Distance_KM__c = 150, Travel_Mode__c = 'Car'
+        );
+        Expense_Eligibility__c rule = new Expense_Eligibility__c(
+            Rate_Type__c = 'Per KM', Rate_Amount__c = 8,
+            Daily_KM_Limit__c = 100, Max_Per_Day__c = 1000
+        );
+
+        Decimal result = EXP_Expense_Service.calculateTAAmount(item, rule);
+        System.assertEquals(800, result, '100 km (capped) * 8 = 800');
+    }
 }

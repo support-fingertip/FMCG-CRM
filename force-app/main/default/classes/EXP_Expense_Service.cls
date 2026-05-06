@@ -407,6 +407,7 @@ public without sharing class EXP_Expense_Service {
         return fullRate;
     }
 
+    @TestVisible
     private static Decimal calculateTAAmount(Expense_Item__c item, Expense_Eligibility__c rule) {
         String mode = item.Travel_Mode__c;
 
@@ -450,6 +451,7 @@ public without sharing class EXP_Expense_Service {
         return appliedDistance * rate;
     }
 
+    @TestVisible
     private static Decimal getLodgingLimit(Expense_Item__c item, Expense_Eligibility__c rule) {
         // Priority 1: City tier-based limits
         String cityTier = item.City_Tier__c;
@@ -467,6 +469,7 @@ public without sharing class EXP_Expense_Service {
         return 0;
     }
 
+    @TestVisible
     private static Decimal getAppliedDistance(Expense_Item__c item) {
         return item.Manual_Distance_KM__c != null
             ? item.Manual_Distance_KM__c
@@ -494,6 +497,7 @@ public without sharing class EXP_Expense_Service {
         return slabs;
     }
 
+    @TestVisible
     private static Decimal calculateSlabAmount(List<Expense_Rate_Slab__c> slabs, Decimal distance) {
         Decimal total = 0;
         for (Expense_Rate_Slab__c slab : slabs) {
@@ -510,6 +514,7 @@ public without sharing class EXP_Expense_Service {
         return total;
     }
 
+    @TestVisible
     private static String resolveCityTier(String cityName, Map<String, String> cityTierMap) {
         if (String.isBlank(cityName) || cityTierMap == null) return null;
         return cityTierMap.get(cityName);
