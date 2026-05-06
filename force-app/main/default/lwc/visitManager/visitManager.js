@@ -1,5 +1,6 @@
 import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
 
 import getInitialContext from '@salesforce/apex/VisitManagerController.getInitialContext';
 import startDayApex from '@salesforce/apex/VisitManagerController.startDay';
@@ -65,7 +66,7 @@ const INR = new Intl.NumberFormat('en-IN', {
 
 const ADDR_LEN = 45;
 
-export default class VisitManager extends LightningElement {
+export default class VisitManager extends NavigationMixin(LightningElement) {
 
     // ── SCREEN STATE ──
     @track currentScreen = SCREEN.LOADING;
@@ -1220,14 +1221,20 @@ export default class VisitManager extends LightningElement {
         event.stopPropagation();
         const orderId = event.currentTarget.dataset.id;
         if (!orderId) return;
-        window.open('/apex/SalesOrderPDF?id=' + orderId, '_blank');
+        this[NavigationMixin.Navigate]({
+            type: 'standard__webPage',
+            attributes: { url: '/apex/SalesOrderPDF?id=' + orderId }
+        });
     }
 
     handleDownloadReceipt(event) {
         event.stopPropagation();
         const collectionId = event.currentTarget.dataset.id;
         if (!collectionId) return;
-        window.open('/apex/CollectionReceipt?id=' + collectionId, '_blank');
+        this[NavigationMixin.Navigate]({
+            type: 'standard__webPage',
+            attributes: { url: '/apex/CollectionReceipt?id=' + collectionId }
+        });
     }
 
     handleActivityFormSuccess() {
