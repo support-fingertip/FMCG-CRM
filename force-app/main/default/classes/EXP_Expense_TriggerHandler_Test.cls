@@ -76,4 +76,30 @@ public class EXP_Expense_TriggerHandler_Test {
         Expense__c final1 = [SELECT Status__c FROM Expense__c WHERE Id = :expense.Id];
         System.assertEquals('Paid', final1.Status__c);
     }
+
+    @isTest
+    static void testInvalidStatusTransition() {
+        Employee__c emp = [SELECT Id FROM Employee__c LIMIT 1];
+
+        Expense__c expense = new Expense__c(
+            Employee__c = emp.Id,
+            User__c = UserInfo.getUserId(),
+            Month__c = 'January',
+            Year__c = Date.today().year(),
+            Status__c = 'Draft',
+            Period_Start__c = Date.newInstance(Date.today().year(), 1, 1),
+            Period_End__c = Date.newInstance(Date.today().year(), 1, 31)
+        );
+        insert expense;
+
+        Test.startTest();
+        try {
+            expense.Status__c = 'Paid';
+            update expense;
+            System.assert(false, 'Should throw for invalid transition Draft→Paid');
+        } catch (DmlException e) {
+            System.assert(e.getMessage().contains('Invalid status transition') || e.getMessage().contains('FIELD_CUSTOM_VALIDATION_EXCEPTION'));
+        }
+        Test.stopTest();
+    }
 }
