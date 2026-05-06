@@ -119,7 +119,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
         Expense_Eligibility__c newRule = new Expense_Eligibility__c(
             Band__c = 'Band 3',
             Expense_Type__c = 'Lodging',
-            Expense_Category__c = 'Stay',
+            Expense_Category__c = 'Travel',
             Rate_Type__c = 'Per Day',
             Rate_Amount__c = 2000,
             Max_Per_Day__c = 2000,
