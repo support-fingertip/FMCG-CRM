@@ -39,6 +39,7 @@ public class EXP_Expense_Service_Test {
         for (Integer i = 0; i < 5; i++) {
             attendances.add(new Day_Attendance__c(
                 User__c = UserInfo.getUserId(),
+                Salesperson__c = UserInfo.getUserId(),
                 Attendance_Date__c = monthStart.addDays(i),
                 Start_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(9, 0, 0, 0)),
                 End_Time__c = Datetime.newInstance(monthStart.addDays(i), Time.newInstance(18, 0, 0, 0)),
