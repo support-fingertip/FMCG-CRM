@@ -138,7 +138,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
+    padding: 10px 16px;
+    min-height: 44px;
     border: none;
     border-radius: var(--hp-radius-xl);
     background: transparent;

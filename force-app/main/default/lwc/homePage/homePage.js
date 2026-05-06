@@ -99,19 +99,17 @@ export default class HomePage extends NavigationMixin(LightningElement) {
         return this.data.isDayStarted ? 'hp-badge hp-badge-success' : 'hp-badge hp-badge-warning';
     }
 
-    // ── Navigation Helpers (open in new tab) ──
+    // ── Navigation Helpers ──
 
     navigateTo(event) {
         const tabName = event.currentTarget.dataset.target;
         if (!tabName) return;
 
-        this[NavigationMixin.GenerateUrl]({
+        this[NavigationMixin.Navigate]({
             type: 'standard__navItemPage',
             attributes: {
                 apiName: tabName
             }
-        }).then(url => {
-            window.open(url, '_blank');
         });
     }
 
@@ -119,7 +117,7 @@ export default class HomePage extends NavigationMixin(LightningElement) {
         const objectName = event.currentTarget.dataset.object;
         if (!objectName) return;
 
-        this[NavigationMixin.GenerateUrl]({
+        this[NavigationMixin.Navigate]({
             type: 'standard__objectPage',
             attributes: {
                 objectApiName: objectName,
@@ -128,8 +126,6 @@ export default class HomePage extends NavigationMixin(LightningElement) {
             state: {
                 filterName: 'Recent'
             }
-        }).then(url => {
-            window.open(url, '_blank');
         });
     }
 
