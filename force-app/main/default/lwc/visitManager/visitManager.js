@@ -1201,6 +1201,7 @@ export default class VisitManager extends NavigationMixin(LightningElement) {
      * they remain read-only.
      */
     handleOrderRowClick(e) {
+        if (e.target.closest('lightning-button-icon')) return;
         const orderId = e.currentTarget.dataset.id;
         const status = e.currentTarget.dataset.status;
         if (!orderId || status !== 'Draft') return;
@@ -1219,13 +1220,14 @@ export default class VisitManager extends NavigationMixin(LightningElement) {
 
     handleDownloadOrderPdf(event) {
         event.stopPropagation();
-        const orderId = event.currentTarget.dataset.id;
+        event.preventDefault();
+        const orderId = event.currentTarget.dataset.id || event.target.dataset.id;
         if (!orderId) return;
         const url = '/apex/SalesOrderPDF?id=' + orderId;
         if (this.isMobileDevice) {
             this[NavigationMixin.Navigate]({
                 type: 'standard__webPage',
-                attributes: { url }
+                attributes: { url: window.location.origin + url }
             });
         } else {
             window.open(url, '_blank');
@@ -1234,13 +1236,14 @@ export default class VisitManager extends NavigationMixin(LightningElement) {
 
     handleDownloadReceipt(event) {
         event.stopPropagation();
-        const collectionId = event.currentTarget.dataset.id;
+        event.preventDefault();
+        const collectionId = event.currentTarget.dataset.id || event.target.dataset.id;
         if (!collectionId) return;
         const url = '/apex/CollectionReceipt?id=' + collectionId;
         if (this.isMobileDevice) {
             this[NavigationMixin.Navigate]({
                 type: 'standard__webPage',
-                attributes: { url }
+                attributes: { url: window.location.origin + url }
             });
         } else {
             window.open(url, '_blank');
