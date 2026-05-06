@@ -4,13 +4,17 @@ public class EXP_Expense_Service_Test {
     @TestSetup
     static void setupTestData() {
         // Create employee with band
+        Territory_Master__c ter = TestDataFactory.createAndInsertTerritory('EXP Test Ter', 'TER-EXPT01');
+
         Employee__c emp = new Employee__c(
             First_Name__c = 'Test',
             Last_Name__c = 'Employee',
             Employee_Code__c = 'EMP-TEST01',
             Is_Active__c = true,
             User__c = UserInfo.getUserId(),
-            Band__c = 'Band 1'
+            Band__c = 'Band 1',
+            Territory__c = ter.Id,
+            Channels__c = 'GT'
         );
         insert emp;
 
@@ -20,7 +24,9 @@ public class EXP_Expense_Service_Test {
             Last_Name__c = 'Test',
             Employee_Code__c = 'EMP-MGR01',
             Is_Active__c = true,
-            Band__c = 'Band 3'
+            Band__c = 'Band 3',
+            Territory__c = ter.Id,
+            Channels__c = 'GT'
         );
         insert mgr;
         emp.Reporting_Manager__c = mgr.Id;
