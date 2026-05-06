@@ -76,7 +76,7 @@ public class EXP_Expense_Service_Test {
         ));
         rules.add(new Expense_Eligibility__c(
             Band__c = 'Band 1', Expense_Type__c = 'Food', Expense_Category__c = 'Miscellaneous',
-            Rate_Type__c = 'Flat Monthly', Rate_Amount__c = 3000, Max_Per_Day__c = 200,
+            Rate_Type__c = 'Flat Monthly', Rate_Amount__c = 3000, Max_Per_Day__c = null,
             Max_Per_Month__c = 3000, Is_Active__c = true, Sort_Order__c = 4,
             Travel_Mode__c = 'All'
         ));
