@@ -9,7 +9,9 @@ public class EXP_ExpenseItem_TriggerHandler_Test {
             Employee_Code__c = 'EMP-TRG01',
             Is_Active__c = true,
             User__c = UserInfo.getUserId(),
-            Band__c = 'Band 1'
+            Band__c = 'Band 1',
+            Territory__c = TestDataFactory.createAndInsertTerritory('EXP Trigger Ter', 'TER-EXPTRG01').Id,
+            Channels__c = 'GT'
         );
         insert emp;
 
