@@ -5,10 +5,10 @@ private class EXP_EligibilityAdmin_Controller_Test {
     static void setupData() {
         // Create expense eligibility rules
         Expense_Eligibility__c rule1 = new Expense_Eligibility__c(
-            Band__c = 'L1',
+            Band__c = 'Band 1',
             Expense_Type__c = 'Daily Allowance',
             Expense_Category__c = 'Travel',
-            Rate_Type__c = 'Fixed',
+            Rate_Type__c = 'Per Day',
             Rate_Amount__c = 500,
             Max_Per_Day__c = 500,
             Max_Per_Month__c = 15000,
@@ -16,15 +16,15 @@ private class EXP_EligibilityAdmin_Controller_Test {
             Receipt_Threshold__c = 1000,
             Is_Active__c = true,
             Sort_Order__c = 1,
-            Description__c = 'L1 Daily Allowance',
-            Travel_Type__c = 'Local',
+            Description__c = 'Band 1 Daily Allowance',
+            Travel_Type__c = 'HQ',
             Mandatory_Remarks__c = false,
             Daily_KM_Limit__c = 100
         );
 
         Expense_Eligibility__c rule2 = new Expense_Eligibility__c(
-            Band__c = 'L2',
-            Expense_Type__c = 'Travel',
+            Band__c = 'Band 2',
+            Expense_Type__c = 'Travelling Allowance',
             Expense_Category__c = 'Travel',
             Rate_Type__c = 'Per KM',
             Rate_Amount__c = 8,
@@ -34,8 +34,8 @@ private class EXP_EligibilityAdmin_Controller_Test {
             Receipt_Threshold__c = 500,
             Is_Active__c = true,
             Sort_Order__c = 2,
-            Description__c = 'L2 Travel',
-            Travel_Type__c = 'Outstation',
+            Description__c = 'Band 2 Travel',
+            Travel_Type__c = 'EX-HQ',
             Mandatory_Remarks__c = true,
             Daily_KM_Limit__c = 200
         );
