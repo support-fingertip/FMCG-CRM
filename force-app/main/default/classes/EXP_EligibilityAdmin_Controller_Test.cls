@@ -13,7 +13,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
             Max_Per_Day__c = 500,
             Max_Per_Month__c = 15000,
             Receipt_Required__c = false,
-            Receipt_Threshold__c = 1000,
+            Receipt_Threshold__c = null,
             Is_Active__c = true,
             Sort_Order__c = 1,
             Description__c = 'Band 1 Daily Allowance',
