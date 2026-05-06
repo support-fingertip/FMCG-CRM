@@ -117,10 +117,10 @@ private class EXP_EligibilityAdmin_Controller_Test {
     @IsTest
     static void testSaveEligibilityRule_New() {
         Expense_Eligibility__c newRule = new Expense_Eligibility__c(
-            Band__c = 'L3',
+            Band__c = 'Band 3',
             Expense_Type__c = 'Lodging',
             Expense_Category__c = 'Stay',
-            Rate_Type__c = 'Fixed',
+            Rate_Type__c = 'Per Day',
             Rate_Amount__c = 2000,
             Max_Per_Day__c = 2000,
             Max_Per_Month__c = 30000,
@@ -134,7 +134,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
         Test.stopTest();
 
         System.assertNotEquals(null, result.Id, 'Should have an Id after save');
-        System.assertEquals('L3', result.Band__c, 'Band should match');
+        System.assertEquals('Band 3', result.Band__c, 'Band should match');
     }
 
     // ── saveEligibilityRule (update) ────────────────────────────────
@@ -142,7 +142,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
     @IsTest
     static void testSaveEligibilityRule_Update() {
         Expense_Eligibility__c rule = [SELECT Id, Rate_Amount__c FROM Expense_Eligibility__c
-                                        WHERE Band__c = 'L1' LIMIT 1];
+                                        WHERE Band__c = 'Band 1' LIMIT 1];
         rule.Rate_Amount__c = 600;
 
         Test.startTest();
@@ -156,7 +156,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
 
     @IsTest
     static void testSaveRateSlabs_UpsertAndDelete() {
-        Expense_Eligibility__c rule = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'L2' LIMIT 1];
+        Expense_Eligibility__c rule = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'Band 2' LIMIT 1];
         List<Expense_Rate_Slab__c> existingSlabs = [
             SELECT Id FROM Expense_Rate_Slab__c WHERE Expense_Eligibility__c = :rule.Id
         ];
@@ -172,7 +172,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
         slabs.add(new Expense_Rate_Slab__c(
             Expense_Eligibility__c = rule.Id,
             Travel_Mode__c = 'Bus',
-            Rate_Type__c = 'Fixed',
+            Rate_Type__c = 'Per Day',
             Rate_Amount__c = 200,
             Max_Amount__c = 200,
             Distance_From__c = 0,
@@ -191,13 +191,13 @@ private class EXP_EligibilityAdmin_Controller_Test {
 
     @IsTest
     static void testSaveRateSlabs_NewSlabWithoutParent() {
-        Expense_Eligibility__c rule = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'L1' LIMIT 1];
+        Expense_Eligibility__c rule = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'Band 1' LIMIT 1];
 
         // Slab with no Expense_Eligibility__c set (should be auto-assigned)
         List<Expense_Rate_Slab__c> slabs = new List<Expense_Rate_Slab__c>();
         slabs.add(new Expense_Rate_Slab__c(
             Travel_Mode__c = 'Train',
-            Rate_Type__c = 'Fixed',
+            Rate_Type__c = 'Per Day',
             Rate_Amount__c = 300,
             Max_Amount__c = 300,
             Sort_Order__c = 1
@@ -216,7 +216,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
 
     @IsTest
     static void testDeleteEligibilityRule() {
-        Expense_Eligibility__c rule = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'L1' LIMIT 1];
+        Expense_Eligibility__c rule = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'Band 1' LIMIT 1];
 
         Test.startTest();
         EXP_EligibilityAdmin_Controller.deleteEligibilityRule(rule.Id);
@@ -230,16 +230,16 @@ private class EXP_EligibilityAdmin_Controller_Test {
 
     @IsTest
     static void testCloneEligibilityRule() {
-        Expense_Eligibility__c source = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'L2' LIMIT 1];
+        Expense_Eligibility__c source = [SELECT Id FROM Expense_Eligibility__c WHERE Band__c = 'Band 2' LIMIT 1];
 
         Test.startTest();
         Expense_Eligibility__c cloned = EXP_EligibilityAdmin_Controller.cloneEligibilityRule(
-            source.Id, 'L4', 'Outstation'
+            source.Id, 'Band 4', 'EX-HQ'
         );
         Test.stopTest();
 
         System.assertNotEquals(null, cloned.Id, 'Cloned rule should have an Id');
-        System.assertEquals('L4', cloned.Band__c, 'Clone should have new band');
+        System.assertEquals('Band 4', cloned.Band__c, 'Clone should have new band');
         System.assertEquals(true, cloned.Is_Active__c, 'Clone should be active');
 
         // Verify child slabs were cloned
@@ -252,7 +252,7 @@ private class EXP_EligibilityAdmin_Controller_Test {
     @IsTest
     static void testCloneEligibilityRule_DefaultBandAndDuty() {
         Expense_Eligibility__c source = [SELECT Id, Band__c, Travel_Type__c FROM Expense_Eligibility__c
-                                          WHERE Band__c = 'L1' LIMIT 1];
+                                          WHERE Band__c = 'Band 1' LIMIT 1];
 
         Test.startTest();
         Expense_Eligibility__c cloned = EXP_EligibilityAdmin_Controller.cloneEligibilityRule(
